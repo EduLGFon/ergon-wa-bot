@@ -1,5 +1,4 @@
-import makeWASocket, { AnyMessageContent, BaileysEventMap, ConnectionState, DisconnectReason, useMultiFileAuthState } from '@whiskeysockets/baileys';
-import type { Boom } from '@hapi/boom';
+import makeWASocket, { AnyMessageContent, BaileysEventMap, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import { readdirSync } from 'fs'; // DENO point
 
 export default class BotClient {

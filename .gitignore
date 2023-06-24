@@ -1,5 +1,5 @@
 # Settings
-src/Settings.json
+src/config.json
 *.env
 auth_info_baileys/
 

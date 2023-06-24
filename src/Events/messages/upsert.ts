@@ -1,5 +1,5 @@
 import { MessageUpsertType, proto } from '@whiskeysockets/baileys';
-import { devs, prefix } from '../../Settings.json';
+import config from '../../config.json';
 import BotClient from '../../Client';
 
 export default async function (bot: BotClient, m: { messages: proto.IWebMessageInfo[]; type: MessageUpsertType }) {
@@ -18,6 +18,10 @@ export default async function (bot: BotClient, m: { messages: proto.IWebMessageI
 		text: m.messages[0].message?.conversation?.trim()!,
 		status: m.messages[0].status!,
 	};
+	const { devs, prefix } = config;
+	// Eu sei que poderia ter feito isso diretamente no import,
+	// porém o DENO não aceita isso e estou deixando as coisas preparadas
+	// para um possível porte para o DENO no futuro
 
 	if (msg?.text.slice(0, prefix.length) != prefix) return;
 
@@ -25,7 +29,7 @@ export default async function (bot: BotClient, m: { messages: proto.IWebMessageI
 	const cmd = bot.commands.get(args.shift()?.toLowerCase()!);
 
 	if (!cmd) return;
-	if (cmd.access?.onlyDevs && (!devs.includes(msg.chat) || !devs.includes(msg.participant))) return;
+	if (cmd.access?.onlyDevs && !(devs.includes(msg.chat) || devs.includes(msg.participant))) return;
 
 	try {
 		await bot.sock.sendPresenceUpdate('composing', msg.chat);
