@@ -23,7 +23,7 @@ export default async function (bot: BotClient, m: { messages: proto.IWebMessageI
 	// porém o DENO não aceita isso e estou deixando as coisas preparadas
 	// para um possível porte para o DENO no futuro
 
-	if (msg?.text.slice(0, prefix.length) != prefix) return;
+	if (msg?.text?.slice(0, prefix.length) != prefix) return;
 
 	const args: string[] = msg.text.replace(prefix, '').trim().split(' ');
 	const cmd = bot.commands.get(args.shift()?.toLowerCase()!);
