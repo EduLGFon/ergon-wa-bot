@@ -7,7 +7,8 @@ export default function (bot: BotClient, update: Partial<ConnectionState>) {
 
 	if (connection !== 'close') return console.log('Conexão estabilizada');
 
-	const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+	const shouldReconnect =
+		(lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
 	// Se o código de erro não for o de logout, deve reconectar
 
 	console.log(`Conexão encerrada por: ${lastDisconnect?.error}`);

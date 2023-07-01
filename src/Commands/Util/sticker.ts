@@ -1,6 +1,5 @@
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import BotClient from '../../Client';
-import { writeFileSync } from 'fs';
 
 export default class implements Command {
 	public aliases = ['s', 'makesticker'];
