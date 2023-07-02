@@ -1,4 +1,4 @@
 {
-	"prefix": ".", // Seu prefixo
-	"devs": [] // ID da sua conta do whatsapp
+	"prefix": ".", // Prefixo do bot
+	"devs": [] // ID dos usuários desenvolvedores
 }
