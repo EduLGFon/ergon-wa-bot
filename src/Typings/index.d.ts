@@ -1,7 +1,7 @@
 interface Msg {
 	id: string;
+	author: string;
 	chat: string;
-	participant: string;
 	timestamp: number;
 	username: string;
 	text: string;
