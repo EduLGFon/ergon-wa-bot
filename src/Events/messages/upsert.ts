@@ -1,29 +1,35 @@
 import { convertMsgData } from '../../Core/Utils';
 import { devs, prefix } from '../../config.json';
-import BotClient from '../../Client';
-import { proto } from 'baileys';
+import type bot from '../../Core/Bot';
+import { type proto } from 'baileys';
 
-export default async function (bot: BotClient, rawMsg: { messages: proto.IWebMessageInfo[] }) {
-	if (!rawMsg.messages[0].message) return;
+export default async function (this: bot, raw: { messages: proto.IWebMessageInfo[] }, e: string) {
+	if (!raw.messages[0].message) return;
 
-	const msg = await convertMsgData(rawMsg.messages[0], bot);
+	const msg = await convertMsgData(raw.messages[0], this);
+
+	if (this.wait.has(e)) this.wait.get(e)!.bind(this, msg);
 
 	if (!msg.text.startsWith(prefix)) return;
 
 	const args: string[] = msg.text.replace(prefix, '').trim().split(' ');
 	const callCmd = args.shift()!.toLowerCase()!;
 	// procura o cmd pelo nome no Map de cmds e no Map de aliases
-	const cmd = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!);
+	const cmd = this.cmds.get(callCmd) || this.cmds.get(this.aliases.get(callCmd)!);
 
-	if (!cmd) return;
-	if (cmd.access?.onlyDevs && !devs.includes(msg.author)) return;
+	if (!cmd) return this.react(msg, '🤔');
+	if (cmd.access?.onlyDevs && !devs.includes(msg.author)) {
+		return this.react(msg, '🚫');
+	}
 
+	const t = setTimeout(() => this.react(msg, '⏳'), 1_500);
 	try {
-		bot.react(msg, '⏳');
-		await cmd.run!(bot, msg, args);
-		bot.react(msg, '✅');
+		await cmd.run!.bind(this)(msg, args);
+		this.react(msg, '✅');
 	} catch (e: any) {
 		console.log(`Error on ${cmd.name}: ${e.stack}`);
-		bot.react(msg, '❌');
+		this.react(msg, '❌');
+	} finally {
+		clearTimeout(t);
 	}
 }

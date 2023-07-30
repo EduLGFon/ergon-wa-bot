@@ -1,14 +1,14 @@
-import { proto } from 'baileys';
-import BotClient from '../Client';
+import { type proto } from 'baileys';
+import type bot from './Bot';
 
-export async function convertMsgData(raw: proto.IWebMessageInfo, bot?: BotClient) {
+export async function convertMsgData(raw: proto.IWebMessageInfo, bot?: bot) {
 	const { message, key, pushName } = raw;
 
 	const type = Object.keys(message!)[0] as MsgTypes;
 	// tipo da msg
 
 	let group; // metadados do grupo, se a msg for de um grupo
-	if (key.participant) group = await bot?.sock.groupMetadata(key.remoteJid!);
+	if (key.participant) group = await bot?.getGroup(key.remoteJid!);
 
 	return {
 		id: key.id!, // id da msg
@@ -48,4 +48,10 @@ export function getQuoted(raw: proto.IWebMessageInfo) {
 		text: String(quotedMsg.conversation || quotedMsg?.text || quotedMsg?.caption).trim(),
 		raw: { message: quotedRaw }, // obj bruto
 	} as Partial<Msg>;
+}
+
+export async function cacheAllGroups(bot: bot) {
+	const groupList = await bot.sock.groupFetchAllParticipating();
+
+	Object.keys(groupList).forEach((g) => bot.groups.set(g, groupList[g]));
 }
