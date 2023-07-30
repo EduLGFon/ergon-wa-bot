@@ -10,8 +10,9 @@ import makeWASocket, {
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import { readdirSync } from 'fs'; // DENO point
 import type { pino } from 'pino';
+import { readdirSync } from 'fs'; // DENO point
+import { resolve } from 'path';
 
 export default class Bot {
 	auth: string;
@@ -64,10 +65,10 @@ export default class Bot {
 		// salva as credenciais de login
 
 		// Carregando comandos
-		await this.folderHandler(`${__dirname}/Commands`, this.loadCommands);
+		await this.folderHandler(`../Commands`, this.loadCommands);
 		// folderHandler() vai ler uma pasta e chamar a função fornecida
 		// para cada arquivo contido nela
-		this.folderHandler(`${__dirname}/Events`, this.loadEvents);
+		this.folderHandler(`../Events`, this.loadEvents);
 		// Carregando eventos
 	}
 
@@ -85,6 +86,8 @@ export default class Bot {
 	}
 
 	async folderHandler(path: string, handler: Function) {
+		path = resolve(__dirname, path);
+
 		for (const category of readdirSync(path)) {
 			// Para cada pasta de categorias
 			for (const file of readdirSync(`${path}/${category}`)) {
