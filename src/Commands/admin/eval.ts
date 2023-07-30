@@ -1,6 +1,4 @@
-import { devs, prefix } from '../../config.json';
-import * as utils from '../../Core/Utils';
-import BotClient from '../../Client';
+import type bot from '../../Core/Bot';
 import { inspect } from 'util';
 
 export default class implements Command {
@@ -11,9 +9,7 @@ export default class implements Command {
 		onlyDevs: true,
 	};
 
-	run = async (bot: BotClient, msg: Msg, args: string[]) => {
-		const { getQuoted, convertMsgData } = utils;
-
+	run = async function (this: bot, msg: Msg, args: string[]) {
 		const startTime = Date.now(),
 			initialRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2); // DENO
 
@@ -38,7 +34,7 @@ export default class implements Command {
 				`🎞️ *RAM:* ${initialRam}/${currentRam}MB\n` +
 				`*${title}:*\n\n ` + '```\n' + evaled + '```';
 
-			return await bot.send(msg.chat, text, msg.raw);
+			return await this.send(msg, text);
 		}
 	};
 }

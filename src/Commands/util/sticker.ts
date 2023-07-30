@@ -1,6 +1,6 @@
 import { extractMetadata, Sticker, StickerTypes } from 'wa-sticker-formatter';
-import { downloadMediaMessage } from 'baileys';
-import BotClient from '../../Client';
+import type bot from '../../Core/Bot';
+import { link } from '../../config.json';
 import Jimp from 'jimp';
 
 export default class implements Command {
@@ -8,14 +8,14 @@ export default class implements Command {
 	public access = { dm: true, group: true };
 	public cooldown = 0;
 
-	run = async (bot: BotClient, msg: Msg, args: string[]) => {
+	run = async function (this: bot, msg: Msg, args: string[]) {
 		let sticker: string | Buffer;
 		let mediaTypes = ['imageMessage', 'videoMessage', 'stickerMessage'];
 
 		switch (msg.type) {
-			case mediaTypes[0]: // imageMessage
-			case mediaTypes[1]: // videoMessage
-				sticker = await downloadMediaMessage(msg.raw, 'buffer', {})! as Buffer;
+			case 'imageMessage':
+			case 'videoMessage':
+				sticker = await this.downloadMedia(msg);
 				break;
 			case 'conversation':
 			case 'extendedTextMessage':
@@ -23,11 +23,7 @@ export default class implements Command {
 
 				// se a msg ta respondendo outra msg q contém uma mídia
 				if (msg.quoted && mediaTypes.includes(msg.quoted.type!)) {
-					sticker = await downloadMediaMessage(
-						msg.quoted.raw,
-						'buffer',
-						{},
-					)! as Buffer;
+					sticker = await this.downloadMedia(msg.quoted);
 
 					if (msg.quoted.type === 'stickerMessage') {
 						const stkMeta = await extractMetadata(sticker);
@@ -37,7 +33,7 @@ export default class implements Command {
 							`*Emojis:* ${stkMeta.emojis || '[]'}\n` +
 							`*ID:* ${stkMeta['sticker-pack-id'] || ''}`;
 
-						return await bot.send(msg.chat, { caption, image: sticker });
+						return await this.send(msg, { caption, image: sticker });
 					}
 					break;
 				}
@@ -76,7 +72,7 @@ export default class implements Command {
 			'╭︰꒰👑꒱・Author:\n' +
 			'│︰꒰⛄꒱・Group:\n' +
 			'│︰꒰🤖꒱・Bot:\n' +
-			'│︰꒰❤️꒱・Developer:\n' +
+			'│︰꒰❤️꒱・Owner:\n' +
 			'╰︰꒰❓꒱・Support:';
 
 		const author = '꒷︶꒷꒦ Metadata ꒷꒦︶꒷\n' +
@@ -85,7 +81,7 @@ export default class implements Command {
 			'︰' + (msg.group?.subject || 'Not a group') + '\n' +
 			'︰Wall-E ⚡\n' +
 			'︰Lucas/Sunf3r ⛄\n' +
-			'︰dsc.gg/sunf3r';
+			`︰${link}`;
 
 		let type = StickerTypes[args[0]?.toUpperCase() as 'FULL'] || StickerTypes.ROUNDED;
 
@@ -95,9 +91,9 @@ export default class implements Command {
 			type,
 			categories: ['🎉'],
 			id: '12345',
-			quality: 75,
+			quality: msg.type === 'videoMessage' ? 1 : 45,
 		});
 
-		return await bot.send(msg.chat, await metadata.toMessage(), msg.raw);
+		return await this.send(msg, await metadata.toMessage());
 	};
 }

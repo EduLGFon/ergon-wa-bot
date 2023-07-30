@@ -1,4 +1,4 @@
-import BotClient from '../../Client';
+import type bot from '../../Core/Bot';
 
 export default class implements Command {
 	public aliases = ['p'];
@@ -7,10 +7,10 @@ export default class implements Command {
 		groups: true,
 	};
 
-	run = async (bot: BotClient, msg: Msg) => {
+	run = async function (this: bot, msg: Msg) {
 		const time = Date.now();
-		await bot.send(msg.chat, '...');
+		await this.send(msg.chat, '...');
 
-		return await bot.send(msg.chat, `Ping: *${Date.now() - time}ms*`, msg.raw);
+		return await this.send(msg, `Ping: *${Date.now() - time}ms*`);
 	};
 }

@@ -1,4 +1,4 @@
-import BotClient from '../../Client';
+import type bot from '../../Core/Bot';
 
 export default class implements Command {
 	public access = {
@@ -6,10 +6,10 @@ export default class implements Command {
 		groups: true,
 	};
 
-	run = async (bot: BotClient, msg: Msg, args: string[]) => {
+	run = async function (this: bot, msg: Msg, args: string[]) {
 		const options = args.join(' ').split(',');
 		const randomOption = options[Math.floor(Math.random() * options.length)];
 
-		return await bot.send(msg.chat, '```' + randomOption + '```');
+		return await this.send(msg, '```' + randomOption + '```');
 	};
 }
