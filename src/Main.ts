@@ -1,14 +1,10 @@
 import MAIN_LOGGER from 'baileys/lib/Utils/logger';
-import { makeInMemoryStore } from 'baileys';
-import BotClient from './Client';
+import Bot from './Core/Bot';
 
 const logger = MAIN_LOGGER.child({});
 logger.level = 'info';
 
-const store = makeInMemoryStore({ logger });
-// mantém os dados da conexão na memória pra serem usados depois
-
-const bot = new BotClient('auth_info_baileys', logger, store);
+const bot = new Bot('auth_info_baileys', logger);
 // auth_info_baileys é uma pasta com autenticação para
 // fazer login sem precisar escanear o QR Code novamente
 

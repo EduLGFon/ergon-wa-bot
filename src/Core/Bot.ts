@@ -1,44 +1,41 @@
 import makeWASocket, {
-	AnyMessageContent,
-	BaileysEventMap,
+	type AnyMessageContent,
+	type BaileysEventMap,
+	Browsers,
+	downloadMediaMessage,
 	fetchLatestBaileysVersion,
+	GroupMetadata,
 	makeCacheableSignalKeyStore,
-	makeInMemoryStore,
-	proto,
+	type proto,
 	useMultiFileAuthState,
-	WAMessageContent,
-	WAMessageKey,
 } from 'baileys';
-import RequestCode from './Core/RequestCode';
-import NodeCache from 'node-cache';
+// import RequestCode from './RequestCode';
 import { readdirSync } from 'fs'; // DENO point
 import type { pino } from 'pino';
 
-export default class BotClient {
+export default class Bot {
 	auth: string;
 	logger: pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;
 	sock!: ReturnType<typeof makeWASocket>;
-	store!: ReturnType<typeof makeInMemoryStore>;
+	wait: Map<string, Function>;
+	groups: Map<string, GroupMetadata>;
 	cmds: Map<string, Command>;
 	events: Map<string, Function>;
 	aliases: Map<string, string>;
 
-	constructor(auth: string, logger: any, store: any) {
+	constructor(auth: string, logger: any) {
 		this.logger = logger;
-		this.store = store;
 		this.auth = auth; // pasta de autenticação
 		this.sock;
+		this.wait = new Map<string, Function>();
+		// funções arbitrárias q serão chamadas em alguns eventos
+		this.groups = new Map<string, GroupMetadata>(); // Map de grupos
 		this.events = new Map<string, Function>(); // Map de eventos
 		this.cmds = new Map<string, Command>(); // Map de comandos
 		this.aliases = new Map<string, string>(); // Map de aliases de comandos
 	}
 
 	async connect() {
-		this.store?.readFromFile('./baileys_store_multi.json');
-
-		// Salva a cada 10s
-		setInterval(() => this.store?.writeToFile('./baileys_store_multi.json'), 10_000);
-
 		const { version } = await fetchLatestBaileysVersion();
 		console.log(`WhatsApp v${version.join('.')}`);
 		// Puxa a versão mais recente do WhatsApp Web
@@ -52,18 +49,16 @@ export default class BotClient {
 				// o cache faz a store enviar/receber msgs mais rápido
 				keys: makeCacheableSignalKeyStore(state.keys, this.logger),
 			},
-			getMessage: this.getMessage,
+			browser: Browsers.macOS('Desktop'),
 			logger: this.logger,
 			markOnlineOnConnect: false,
 			// mobile: true,
-			msgRetryCounterCache: new NodeCache(),
 			printQRInTerminal: true,
+			syncFullHistory: true,
 			version,
 		});
-		// abre o socket
-		this.store?.bind(this.sock.ev);
 
-		if (process.argv.includes('--mobile')) await RequestCode(this.sock);
+		// if (process.argv.includes('--mobile')) await RequestCode(this.sock);
 
 		this.sock.ev.on('creds.update', saveCreds);
 		// salva as credenciais de login
@@ -76,15 +71,13 @@ export default class BotClient {
 		// Carregando eventos
 	}
 
-	async send(chatId: string, content: string | AnyMessageContent, reply?: proto.IWebMessageInfo) {
+	async send(id: string | Msg, body: string | AnyMessageContent, reply?: proto.IWebMessageInfo) {
 		// Função intermediária para facilitar o envio de msgs
-		return await this.sock.sendMessage(
-			chatId!, // ID do chat
-			typeof content === 'string' ? { text: content } : content,
-			// corpo da solicitação
-			reply ? { quoted: reply! } : {},
-			// Msg a ser respondida
-		);
+		const chat = typeof id === 'string' ? id : id.chat;
+		const text = typeof body === 'object' ? body : { text: body };
+		const quote = reply ? { quoted: reply } : typeof id === 'string' ? {} : { quoted: id?.raw };
+
+		return await this.sock.sendMessage(chat, text, quote);
 	}
 
 	async react(m: Msg, emoji: string) { // reage em uma msg
@@ -104,7 +97,7 @@ export default class BotClient {
 		}
 	}
 
-	async loadCommands(file: string, category: string, imported: any) { // DENO point
+	async loadCommands(file: string, _category: string, imported: any) { // DENO point
 		const cmd: Command = new imported.default.default();
 
 		const properties = Object.assign({
@@ -141,17 +134,23 @@ export default class BotClient {
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// Mas quando for chamado, vai consultar no Map
 			// Isso permite modificar eventos em runtime
-			this.events.get(name)!(this, ...args);
+			this.events.get(name)!.bind(this)(...args, name);
 			// eventFunction(this, ...args);
 		});
 	}
 
-	async getMessage(key: WAMessageKey): Promise<WAMessageContent | undefined> {
-		if (this.store) { // Puxa uma mensagem da Store
-			const msg = await this.store.loadMessage(key.remoteJid!, key.id!);
-			return msg?.message || undefined;
-		}
+	async getGroup(id: string) {
+		if (this.groups.has(id)) return this.groups.get(id);
 
-		return proto.Message.fromObject({});
+		const group = await this.sock.groupMetadata(id);
+
+		if (group) return this.groups.set(id, group) && group;
+	}
+
+	async downloadMedia(msg: Msg) {
+		return await downloadMediaMessage(msg.raw, 'buffer', {}, {
+			logger: this.logger,
+			reuploadRequest: this.sock.updateMediaMessage,
+		})! as Buffer;
 	}
 }
