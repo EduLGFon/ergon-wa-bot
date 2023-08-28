@@ -1,5 +1,6 @@
 import { proto } from 'baileys';
 import { GroupMetadata } from 'baileys';
+import Bot from '../Core/Bot';
 
 interface Msg {
 	id: string;
@@ -31,4 +32,5 @@ interface CmdContext {
 	msg: Msg;
 	args: string[];
 	cmd: Map<string, Cmd>;
+	bot: Bot;
 }

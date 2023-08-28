@@ -102,23 +102,17 @@ export default class Bot {
 	}
 
 	async loadCommands(file: string, _category: string, imported: any) { // DENO point
-		const cmd: Cmd = new imported.default.default(this);
+		const cmd: Cmd = new imported.default.default();
+		cmd.name = file.slice(0, -3);
 
 		const properties = Object.assign({
-			name: file.slice(0, -3),
+			name: '',
 			aliases: [],
 			cooldown: 3,
 			run: cmd.run,
 		} as Cmd, cmd);
 		// Isso vai comparar as propriedades do cmd com esse "template"
 		// Os dados que o cmd não tiver, serão preenchidas com o default
-
-		properties.access = Object.assign({
-			dm: false,
-			groups: false,
-			onlyDevs: false,
-		}, properties.access);
-		// Compara as permissões do comando
 
 		// Seta o cmd dentro do Map
 		this.cmds.set(properties.name!, properties);

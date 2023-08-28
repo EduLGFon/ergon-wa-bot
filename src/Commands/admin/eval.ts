@@ -3,12 +3,14 @@ import Command from '../../Core/Command';
 import { inspect } from 'util';
 
 export default class extends Command {
-	public aliases = ['e'];
-	public access = {
-		dm: true,
-		groups: true,
-		onlyDevs: true,
-	};
+	constructor() {
+		super({
+			aliases: ['e'],
+			access: {
+				onlyDevs: true,
+			},
+		});
+	}
 
 	async run(ctx: CmdContext) {
 		const startTime = Date.now();
@@ -36,7 +38,7 @@ export default class extends Command {
 				`🎞️ *RAM:* ${initialRam}/${currentRam}MB\n` +
 				`*${title}:*\n\n ` + '```\n' + evaled + '```';
 
-			return await this.bot.send(ctx.msg, text);
+			return await ctx.bot.send(ctx.msg, text);
 		}
 	}
 }

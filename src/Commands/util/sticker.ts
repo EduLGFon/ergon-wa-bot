@@ -5,9 +5,12 @@ import Command from '../../Core/Command';
 import Jimp from 'jimp';
 
 export default class extends Command {
-	public aliases = ['s', 'makesticker'];
-	public access = { dm: true, group: true };
-	public cooldown = 0;
+	constructor() {
+		super({
+			aliases: ['s', 'makesticker'],
+			cooldown: 0,
+		});
+	}
 
 	async run(ctx: CmdContext) {
 		let sticker: string | Buffer;
@@ -16,7 +19,7 @@ export default class extends Command {
 		switch (ctx.msg.type) {
 			case 'imageMessage':
 			case 'videoMessage':
-				sticker = await this.bot.downloadMedia(ctx.msg);
+				sticker = await ctx.bot.downloadMedia(ctx.msg);
 				break;
 			case 'conversation':
 			case 'extendedTextMessage':
@@ -24,7 +27,7 @@ export default class extends Command {
 
 				// se a msg ta respondendo outra ctx.msg q contém uma mídia
 				if (ctx.msg.quoted && mediaTypes.includes(ctx.msg.quoted.type!)) {
-					sticker = await this.bot.downloadMedia(ctx.msg.quoted);
+					sticker = await ctx.bot.downloadMedia(ctx.msg.quoted);
 
 					if (ctx.msg.quoted.type === 'stickerMessage') {
 						const stkMeta = await extractMetadata(sticker);
@@ -34,17 +37,10 @@ export default class extends Command {
 							`*Emojis:* ${stkMeta.emojis || '[]'}\n` +
 							`*ID:* ${stkMeta['sticker-pack-id'] || ''}`;
 
-						return await this.bot.send(ctx.msg, { caption, image: sticker });
+						return await ctx.bot.send(ctx.msg, { caption, image: sticker });
 					}
 					break;
 				}
-
-				const text = ctx.args.join(' ')!;
-				let font: string;
-
-				if (text.length < 10) font = Jimp.FONT_SANS_64_WHITE;
-				else if (text.length > 100) font = Jimp.FONT_SANS_16_WHITE;
-				else font = Jimp.FONT_SANS_32_WHITE;
 
 				sticker = await this.createSticker(ctx.args);
 				break;
@@ -77,7 +73,7 @@ export default class extends Command {
 			quality: 1,
 		});
 
-		return await this.bot.send(ctx.msg, await metadata.toMessage());
+		return await ctx.bot.send(ctx.msg, await metadata.toMessage());
 	}
 
 	createSticker = async (args: string[]): Promise<string | Buffer> => {

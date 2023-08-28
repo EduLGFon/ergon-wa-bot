@@ -3,7 +3,12 @@ import { execSync } from 'child_process';
 import Command from '../../Core/Command';
 
 export default class extends Command {
-	public aliases = ['exec', 'run', 'execute'];
+	constructor() {
+		super({
+			aliases: ['exec', 'run', 'execute'],
+			access: { onlyDevs: true },
+		});
+	}
 
 	async run(ctx: CmdContext) {
 		const startTime = Date.now();
@@ -29,7 +34,7 @@ export default class extends Command {
 				`🎞️ *RAM:* ${initialRam}/${currentRam}MB\n` +
 				`*${title}:*\n\n ` + '```\n' + (output || '- Sem retorno.') + '```';
 
-			return await this.bot.send(ctx.msg, text);
+			return await ctx.bot.send(ctx.msg, text);
 		}
 	}
 }
