@@ -17,14 +17,14 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	// procura o cmd pelo nome no Map de cmds e no Map de aliases
 	const cmd = this.cmds.get(callCmd) || this.cmds.get(this.aliases.get(callCmd)!);
 
-	if (!cmd) return this.react(msg, '🤔');
+	if (!cmd) return; // this.react(msg, '🤔');
 	if (cmd.access?.onlyDevs && !devs.includes(msg.author)) {
 		return this.react(msg, '🚫');
 	}
 
 	const t = setTimeout(() => this.react(msg, '⏳'), 1_500);
 	try {
-		await cmd.run!.bind(this)(msg, args);
+		await cmd.run!({ msg, args, cmd });
 		this.react(msg, '✅');
 	} catch (e: any) {
 		console.log(`Error on ${cmd.name}: ${e.stack}`);

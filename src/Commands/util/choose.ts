@@ -1,15 +1,16 @@
-import type bot from '../../Core/Bot';
+import type { CmdContext } from '../../Typings';
+import Command from '../../Core/Command';
 
-export default class implements Command {
+export default class extends Command {
 	public access = {
 		dm: true,
 		groups: true,
 	};
 
-	run = async function (this: bot, msg: Msg, args: string[]) {
-		const options = args.join(' ').split(',');
+	async run(ctx: CmdContext) {
+		const options = ctx.args.join(' ').split(',');
 		const randomOption = options[Math.floor(Math.random() * options.length)];
 
-		return await this.send(msg, '```' + randomOption + '```');
-	};
+		return await this.bot.send(ctx.msg, '```' + randomOption + '```');
+	}
 }

@@ -1,5 +1,5 @@
-// import { proto } from 'baileys';
-// import { GroupMetadata } from "baileys";
+import { proto } from 'baileys';
+import { GroupMetadata } from 'baileys';
 
 interface Msg {
 	id: string;
@@ -15,7 +15,7 @@ interface Msg {
 
 type MsgTypes = 'conversation' | 'extendedTextMessage' | 'videoMessage' | 'imageMessage';
 
-interface Command {
+interface Cmd {
 	name?: string;
 	aliases?: string[];
 	cooldown?: number;
@@ -25,4 +25,10 @@ interface Command {
 		onlyDevs?: boolean;
 	};
 	run?: Function;
+}
+
+interface CmdContext {
+	msg: Msg;
+	args: string[];
+	cmd: Map<string, Cmd>;
 }

@@ -1,16 +1,11 @@
-import type bot from '../../Core/Bot';
+import Command from '../../Core/Command';
+import { CmdContext } from '../../Typings';
 
-export default class implements Command {
-	public aliases = ['p'];
-	public access = {
-		dm: true,
-		groups: true,
-	};
-
-	run = async function (this: bot, msg: Msg) {
+export default class extends Command {
+	async run(ctx: CmdContext) {
 		const time = Date.now();
-		await this.send(msg.chat, '...');
+		await this.bot.send(ctx.msg.chat, 'Calculando...');
 
-		return await this.send(msg, `Ping: *${Date.now() - time}ms*`);
-	};
+		return await this.bot.send(ctx.msg, `Ping: *${Date.now() - time}ms*`);
+	}
 }

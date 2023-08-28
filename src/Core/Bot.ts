@@ -10,6 +10,7 @@ import makeWASocket, {
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
+import { Cmd, Msg } from '../Typings';
 import type { pino } from 'pino';
 import { readdirSync } from 'fs'; // DENO point
 import { resolve } from 'path';
@@ -20,7 +21,7 @@ export default class Bot {
 	sock!: ReturnType<typeof makeWASocket>;
 	wait: Map<string, Function>;
 	groups: Map<string, GroupMetadata>;
-	cmds: Map<string, Command>;
+	cmds: Map<string, Cmd>;
 	events: Map<string, Function>;
 	aliases: Map<string, string>;
 
@@ -32,7 +33,7 @@ export default class Bot {
 		// funções arbitrárias q serão chamadas em alguns eventos
 		this.groups = new Map<string, GroupMetadata>(); // Map de grupos
 		this.events = new Map<string, Function>(); // Map de eventos
-		this.cmds = new Map<string, Command>(); // Map de comandos
+		this.cmds = new Map<string, Cmd>(); // Map de comandos
 		this.aliases = new Map<string, string>(); // Map de aliases de comandos
 	}
 
@@ -101,13 +102,14 @@ export default class Bot {
 	}
 
 	async loadCommands(file: string, _category: string, imported: any) { // DENO point
-		const cmd: Command = new imported.default.default();
+		const cmd: Cmd = new imported.default.default(this);
 
 		const properties = Object.assign({
 			name: file.slice(0, -3),
 			aliases: [],
 			cooldown: 3,
-		} as Command, cmd);
+			run: cmd.run,
+		} as Cmd, cmd);
 		// Isso vai comparar as propriedades do cmd com esse "template"
 		// Os dados que o cmd não tiver, serão preenchidas com o default
 

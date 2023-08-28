@@ -1,40 +1,33 @@
 import type { CmdContext } from '../../Typings';
+import { execSync } from 'child_process';
 import Command from '../../Core/Command';
-import { inspect } from 'util';
 
 export default class extends Command {
-	public aliases = ['e'];
-	public access = {
-		dm: true,
-		groups: true,
-		onlyDevs: true,
-	};
+	public aliases = ['exec', 'run', 'execute'];
 
 	async run(ctx: CmdContext) {
 		const startTime = Date.now();
 		const initialRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2); // DENO
 
-		const code = ctx.args.join(' ');
-		let evaled, title;
+		let title;
+		let output;
 
 		try {
-			// Roda o eval em uma função assíncrona se ele conter a palavra "await"
-			evaled = code.includes('await')
-				? await eval(`(async () => { ${code} })()`)
-				: await eval(code);
+			output = execSync(ctx.args.join(' ') || '').toString();
 
 			title = '🎉 Retorno'; // Título da msg
-			evaled = inspect(evaled, { depth: null }); // Retorno do eval
 		} catch (error) {
 			title = '❌ Falha'; // Título da msg
-			evaled = error; // Retorno do eval
+			output = String(error); // Retorno do eval
 		} finally {
-			// Consumo de RAM ao final do eval
+			output = output!.trim();
+
+			// Consumo de RAM ao final do processo
 			const currentRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
 
 			const text = `⏰ *Duração:* ${Date.now() - startTime}ms\n` +
 				`🎞️ *RAM:* ${initialRam}/${currentRam}MB\n` +
-				`*${title}:*\n\n ` + '```\n' + evaled + '```';
+				`*${title}:*\n\n ` + '```\n' + (output || '- Sem retorno.') + '```';
 
 			return await this.bot.send(ctx.msg, text);
 		}

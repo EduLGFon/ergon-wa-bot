@@ -1,3 +1,4 @@
+import type { Msg, MsgTypes } from '../Typings';
 import { type proto } from 'baileys';
 import type bot from './Bot';
 
