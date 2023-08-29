@@ -57,6 +57,7 @@ export default class Bot {
 			// mobile: true,
 			printQRInTerminal: true,
 			syncFullHistory: true,
+			shouldIgnoreJid: (jid: string) => jid.includes('broadcast'),
 			version,
 		});
 
@@ -143,7 +144,7 @@ export default class Bot {
 
 		const group = await this.sock.groupMetadata(id);
 
-		if (group) return this.groups.set(id, group) && group;
+		if (group) return this.groups.set(group.id, group) && group;
 	}
 
 	async downloadMedia(msg: Msg) {
