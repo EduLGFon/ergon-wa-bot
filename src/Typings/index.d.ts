@@ -2,6 +2,8 @@ import { proto } from 'baileys';
 import { GroupMetadata } from 'baileys';
 import Bot from '../Core/Bot';
 
+type MsgTypes = 'conversation' | 'extendedTextMessage' | 'videoMessage' | 'imageMessage';
+
 interface Msg {
 	id: string;
 	author: string;
@@ -14,7 +16,8 @@ interface Msg {
 	quoted: Msg;
 }
 
-type MsgTypes = 'conversation' | 'extendedTextMessage' | 'videoMessage' | 'imageMessage';
+interface User {
+}
 
 interface Cmd {
 	name?: string;

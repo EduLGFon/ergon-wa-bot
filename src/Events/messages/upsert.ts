@@ -22,12 +22,12 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 		return this.react(msg, '🚫');
 	}
 
-	const t = setTimeout(() => this.react(msg, '⏳'), 1_500);
+	const t = setTimeout(() => this.react(msg, '⏳'), 2_000);
 	try {
 		await cmd.run!({ msg, args, cmd, bot: this });
 		this.react(msg, '✅');
 	} catch (e: any) {
-		console.log(`Error on ${cmd.name}: ${e.stack}`);
+		this.send(msg, `[⚠️] Error: ${e}`);
 		this.react(msg, '❌');
 	} finally {
 		clearTimeout(t);
