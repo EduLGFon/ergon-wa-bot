@@ -1,8 +1,7 @@
 {
-	"prefix": ".", // Prefixo do bot
-	"devs": [], // id dos usuários com permissões especiais
-	// id = número sem caracteres especiais + '@s.whatsapp.net'
-	// ex: +55 (11) 9 1234-5678 => 55119123456789@s.whatsapp.net
+	"prefix": ".", // command prefix
+	"devs": [], // devs ID
+	// id = number without special characters + '@s.whatsapp.net'
 	"link": "dsc.gg/wallebot",
 	"pack": [
 		"your",

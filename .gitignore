@@ -1,7 +1,7 @@
 # Settings
 src/config.json
 *.env
-auth_info_baileys/
+auth/
 baileys_store_multi.json
 
 # Yarn
@@ -9,7 +9,7 @@ baileys_store_multi.json
 .yarn*
 
 # Builds
-Build/
+build/
 node_modules/
 
 # Logs / Lokefiles

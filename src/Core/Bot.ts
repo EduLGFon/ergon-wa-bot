@@ -10,14 +10,11 @@ import makeWASocket, {
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import { Cmd, Msg, User } from '../Typings';
-import type { pino } from 'pino';
+import { Cmd, Logger, Msg, User } from '../Typings';
 import { readdirSync } from 'fs'; // DENO point
 import { resolve } from 'path';
 
 export default class Bot {
-	auth: string;
-	logger: pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;
 	sock!: ReturnType<typeof makeWASocket>;
 	wait: Map<string, Function>;
 	cmds: Map<string, Cmd>;
@@ -26,31 +23,31 @@ export default class Bot {
 	events: Map<string, Function>;
 	groups: Map<string, GroupMetadata>;
 
-	constructor(auth: string, logger: any) {
+	constructor(public auth: string, public logger: Logger) {
 		this.logger = logger;
-		this.auth = auth; // pasta de autenticação
+		this.auth = auth; // auth folder
 		this.sock;
 		this.wait = new Map<string, Function>();
-		// funções arbitrárias q serão chamadas em alguns eventos
-		this.users = new Map<string, User>(); // Map de usuários
-		this.groups = new Map<string, GroupMetadata>(); // Map de grupos
-		this.events = new Map<string, Function>(); // Map de eventos
-		this.cmds = new Map<string, Cmd>(); // Map de comandos
-		this.aliases = new Map<string, string>(); // Map de aliases de comandos
+		// arbitrary functions that can be called on events
+		this.users = new Map<string, User>(); // Users map
+		this.groups = new Map<string, GroupMetadata>(); // Groups map
+		this.events = new Map<string, Function>(); // Events map
+		this.cmds = new Map<string, Cmd>(); // Cmds map
+		this.aliases = new Map<string, string>(); // Cmd aliases map
 	}
 
 	async connect() {
 		const { version } = await fetchLatestBaileysVersion();
 		console.log(`WhatsApp v${version.join('.')}`);
-		// Puxa a versão mais recente do WhatsApp Web
+		// Fetch latest WA Web version
 
 		const { state, saveCreds } = await useMultiFileAuthState(this.auth);
-		// recupera a sessão
+		// Use saved session
 
 		this.sock = makeWASocket({
 			auth: {
 				creds: state.creds,
-				// o cache faz a store enviar/receber msgs mais rápido
+				// cache makes the store send/receive msgs faster
 				keys: makeCacheableSignalKeyStore(state.keys, this.logger),
 			},
 			browser: Browsers.macOS('Desktop'),
@@ -59,6 +56,7 @@ export default class Bot {
 			// mobile: true,
 			printQRInTerminal: true,
 			syncFullHistory: true,
+			// ignore status updates
 			shouldIgnoreJid: (jid: string) => jid.includes('broadcast'),
 			version,
 		});
@@ -66,18 +64,18 @@ export default class Bot {
 		// if (process.argv.includes('--mobile')) await RequestCode(this.sock);
 
 		this.sock.ev.on('creds.update', saveCreds);
-		// salva as credenciais de login
+		// save login creds
 
-		// Carregando comandos
+		// Loading commands
 		await this.folderHandler(`../Commands`, this.loadCommands);
-		// folderHandler() vai ler uma pasta e chamar a função fornecida
-		// para cada arquivo contido nela
+		// folderHandler() reads a folder and call the function
+		// for each file
 		this.folderHandler(`../Events`, this.loadEvents);
-		// Carregando eventos
+		// Loading Events
 	}
 
 	async send(id: string | Msg, body: string | AnyMessageContent, reply?: proto.IWebMessageInfo) {
-		// Função intermediária para facilitar o envio de msgs
+		// Intermediate function to send msgs easier
 		const chat = typeof id === 'string' ? id : id.chat;
 		const text = typeof body === 'object' ? body : { text: body };
 		const quote = reply ? { quoted: reply } : typeof id === 'string' ? {} : { quoted: id?.raw };
@@ -85,7 +83,7 @@ export default class Bot {
 		return await this.sock.sendMessage(chat, text, quote);
 	}
 
-	async react(m: Msg, emoji: string) { // reage em uma msg
+	async react(m: Msg, emoji: string) { // reacts on a msg
 		this.send(m.chat, { react: { text: emoji, key: m.raw.key } });
 	}
 
@@ -93,12 +91,12 @@ export default class Bot {
 		path = resolve(__dirname, path);
 
 		for (const category of readdirSync(path)) {
-			// Para cada pasta de categorias
+			// For each category folder
 			for (const file of readdirSync(`${path}/${category}`)) {
-				// Para cada arquivo de cada categoria
+				// for each file of each category
 				const imported = await import(`file:${path}/${category}/${file}`);
 
-				// chama a função fornecida para este arquivo
+				// call function to this file
 				await handler.bind(this)(file, category, imported);
 			}
 		}
@@ -114,38 +112,39 @@ export default class Bot {
 			cooldown: 3,
 			run: cmd.run,
 		} as Cmd, cmd);
-		// Isso vai comparar as propriedades do cmd com esse "template"
-		// Os dados que o cmd não tiver, serão preenchidas com o default
+		// Compare cmd properties with a 'template base'
+		// Fill missing data with default data
 
-		// Seta o cmd dentro do Map
+		// Set cmd
 		this.cmds.set(properties.name!, properties);
 
 		properties.aliases
 			?.forEach((a) => this.aliases.set(a, properties.name!));
-		// Seta as aliases do cmd
+		// Set cmd aliases
 	}
 
 	async loadEvents(file: string, category: string, imported: any) {
 		const event = imported.default.default;
 		const name = `${category}.${file.slice(0, -3)}`;
-		// as pastas e arquivos seguem a mesma nomenclatura
-		// que a lib usa em seus eventos
+		// folder/file names are the same of lib events
 		this.events.set(name, event);
 
-		// O evento já é declarado aqui
+		// Listen to the event here
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
-			// Mas quando for chamado, vai consultar no Map
-			// Isso permite modificar eventos em runtime
+			// It allows to modify events in run time
 			this.events.get(name)!.bind(this)(...args, name);
 			// eventFunction(this, ...args);
 		});
 	}
 
 	async getGroup(id: string) {
+		// check group cache
 		if (this.groups.has(id)) return this.groups.get(id);
 
+		// fetch group data
 		const group = await this.sock.groupMetadata(id);
 
+		// set group data and return it
 		if (group) return this.groups.set(group.id, group) && group;
 	}
 
