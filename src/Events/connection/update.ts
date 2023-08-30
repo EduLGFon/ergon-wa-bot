@@ -9,21 +9,21 @@ export default async function (this: bot, update: Partial<ConnectionState>) {
 	switch (connection) {
 		case 'open':
 			await cacheAllGroups(this);
+			// don't show online mark when the bot is running
 			await this.sock.sendPresenceUpdate('unavailable');
 
-			return console.log('Conexão estabilizada');
+			return console.log('Connection stabilized');
 
 		case 'connecting':
-			return console.log('Conectando...');
+			return console.log('Connecting...');
 		case 'close':
 			const shouldReconnect =
 				(lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-			// Se o código de erro não for o de logout, deve reconectar
 
-			console.log(`Conexão encerrada por:`, lastDisconnect?.error);
-			console.log(`Deve tentar reconectar: ${shouldReconnect}`);
+			console.log(`Connection closed by:`, lastDisconnect?.error);
+			console.log(`Should try to reconnect: ${shouldReconnect}`);
 
-			// Reconectar se não caiu por causa de um logout
+			// reconnect if it's not a logout
 			if (shouldReconnect) this.connect();
 	}
 }
