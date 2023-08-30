@@ -29,7 +29,7 @@ export function getQuoted(raw: proto.IWebMessageInfo) {
 	const m = raw.message;
 
 	//@ts-ignore quotedMsg is missing on lib types
-	const quotedRaw = m![type]?.contextInfo?.quotedMessage || m?.extendedTextMessage.quotedMessage;
+	const quotedRaw = m![type]?.contextInfo?.quotedMessage || m?.extendedTextMessage?.quotedMessage;
 
 	if (!quotedRaw) return;
 
@@ -55,7 +55,7 @@ export async function cacheAllGroups(bot: bot) {
 export function getMsgText(m: proto.IMessage, type: MsgTypes) {
 	return String(
 		//@ts-ignore
-		m?.conversation || m![type]?.text || m[type]?.caption || m.extendedTextMessage.text ||
+		m?.conversation || m[type]?.text || m[type]?.caption || m?.extendedTextMessage?.text ||
 			'',
 	);
 }
