@@ -29,6 +29,7 @@ interface Cmd {
 		groups?: boolean;
 		onlyDevs?: boolean;
 	};
+	react?: boolean;
 	run?: Function;
 }
 

@@ -13,6 +13,7 @@ import makeWASocket, {
 import { Cmd, Logger, Msg, User } from '../Typings';
 import { readdirSync } from 'fs'; // DENO point
 import { resolve } from 'path';
+import { convertMsgData } from './Utils';
 
 export default class Bot {
 	sock!: ReturnType<typeof makeWASocket>;
@@ -80,7 +81,9 @@ export default class Bot {
 		const text = typeof body === 'object' ? body : { text: body };
 		const quote = reply ? { quoted: reply } : typeof id === 'string' ? {} : { quoted: id?.raw };
 
-		return await this.sock.sendMessage(chat, text, quote);
+		const msg = await this.sock.sendMessage(chat, text, quote);
+
+		return await convertMsgData(msg!, this);
 	}
 
 	async react(m: Msg, emoji: string) { // reacts on a msg

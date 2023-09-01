@@ -6,39 +6,46 @@ export default class extends Command {
 	constructor() {
 		super({
 			aliases: ['e'],
-			access: {
-				onlyDevs: true,
-			},
+			// react: false,
+			access: { onlyDevs: true },
 		});
 	}
 
 	async run(ctx: CmdContext) {
 		const startTime = Date.now();
-		const initialRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2); // DENO
+		const startRAM = this.getRAM(); // DENO
 
 		const code = ctx.args.join(' ');
-		let evaled, title;
+		let output, reaction = '✅'; // Reaction emoji
 
 		try {
 			// Run eval in async function if it contains 'await'
-			evaled = code.includes('await')
+			output = code.includes('await')
 				? await eval(`(async () => { ${code} })()`)
 				: await eval(code);
 
-			title = '[✅] Return'; // Msg title
-			evaled = inspect(evaled, { depth: null }); // eval result
-		} catch (error) {
-			title = '[❌] Fail'; // Msg title
-			evaled = error;
+			output = inspect(output, { depth: null }); // eval result
+		} catch (e: any) {
+			reaction = '❌'; // Reaction emoji
+			output = String(e?.stack || e);
 		} finally {
-			// RAM usage when the eval ends
-			const currentRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
+			// difference between initial RAM and final RAM
+			const endRAM = this.getRAM();
+			const RAMRange = Number((endRAM - startRAM).toFixed(2));
+			const duration = (Date.now() - startTime).toLocaleString('pt'); // db
 
-			const text = `*[⏰] Duration:* ${Date.now() - startTime}ms\n` +
-				`*[🎞️] RAM:* ${initialRam}/${currentRam}MB\n` +
-				`*${title}:*\n\n ` + '```\n' + evaled + '```';
+			const text = `*[👨‍💻] - Eval*\n` +
+				`*[⏰]: ${duration}ms*\n` +
+				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
+				'```\n' + output.trim() + '```';
 
-			return await ctx.bot.send(ctx.msg, text);
+			const msg = await ctx.bot.send(ctx.msg, text);
+			return await ctx.bot.react(msg, reaction);
 		}
 	}
+
+	getRAM = () => {
+		const RAMUsage = process.memoryUsage().rss / 1024 / 1024;
+		return Number(RAMUsage.toFixed(2));
+	};
 }

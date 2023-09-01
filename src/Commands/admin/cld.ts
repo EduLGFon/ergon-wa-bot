@@ -12,29 +12,34 @@ export default class extends Command {
 
 	async run(ctx: CmdContext) {
 		const startTime = Date.now();
-		const initialRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2); // DENO
+		const startRAM = this.getRAM(); // DENO
 
-		let title;
-		let output;
+		let reaction = '✅', // Reaction emoji
+			output = '';
 
 		try {
-			output = execSync(ctx.args.join(' ') || '').toString();
-
-			title = '[✅] Result'; // Msg title
-		} catch (error) {
-			title = '[❌] Fail'; // Msg title
-			output = String(error); // process return
+			output = execSync(ctx.args.join(' ')).toString();
+		} catch (e: any) {
+			reaction = '❌'; // Reaction emoji
+			output = String(e?.stack || e); // process error
 		} finally {
-			output = output!.trim();
+			// difference between initial RAM and final RAM
+			const endRAM = this.getRAM();
+			const RAMRange = Number((endRAM - startRAM).toFixed(2));
+			const duration = (Date.now() - startTime).toLocaleString('pt'); // db
 
-			// RAM usage when the process ends
-			const currentRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
+			const text = `*[👨‍💻] - Child Process*\n` +
+				`*[⏰]: ${duration}ms*\n` +
+				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
+				'```\n' + output.trim() + '```';
 
-			const text = `*[⏰] Duration:* ${Date.now() - startTime}ms\n` +
-				`*[🎞️] RAM:* ${initialRam}/${currentRam}MB\n` +
-				`*${title}:*\n\n ` + '```\n' + output + '```';
-
-			return await ctx.bot.send(ctx.msg, text);
+			const msg = await ctx.bot.send(ctx.msg, text);
+			return await ctx.bot.react(msg, reaction);
 		}
 	}
+
+	getRAM = () => {
+		const RAMUsage = process.memoryUsage().rss / 1024 / 1024;
+		return Number(RAMUsage.toFixed(2));
+	};
 }

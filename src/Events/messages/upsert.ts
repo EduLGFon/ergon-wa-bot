@@ -36,9 +36,10 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	const t = setTimeout(() => this.react(msg, '⏳'), 2_000);
 	try {
 		await cmd.run!({ msg, args, cmd, callCmd, bot: this });
+
 		this.react(msg, '✅');
 	} catch (e: any) {
-		this.send(msg, `[⚠️] Error: ${e}`);
+		this.send(msg, `[⚠️] ${e?.stack || e}`);
 		this.react(msg, '❌');
 	} finally {
 		clearTimeout(t);

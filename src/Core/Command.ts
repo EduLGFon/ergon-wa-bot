@@ -4,6 +4,7 @@ export default abstract class Command implements Cmd {
 	name?: string;
 	aliases?: string[];
 	cooldown?: number;
+	react?: boolean;
 	access?: {
 		dm?: boolean;
 		groups?: boolean;
@@ -14,6 +15,7 @@ export default abstract class Command implements Cmd {
 		this.name = '';
 		this.aliases = c.aliases || [];
 		this.cooldown = c.cooldown || 3;
+		this.react = true;
 		this.access = Object.assign({
 			dm: true,
 			groups: true,
