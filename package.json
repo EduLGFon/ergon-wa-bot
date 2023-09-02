@@ -6,12 +6,12 @@
 		"test": "ts-node --esm --files Test.ts"
 	},
 	"dependencies": {
+		"@prisma/client": "^5.2.0",
 		"baileys": "https://github.com/WhiskeySockets/Baileys",
 		"google-translate": "github:iamtraction/google-translate",
 		"jimp": "^0.16.13",
 		"libphonenumber-js": "^1.10.37",
 		"link-preview-js": "^3.0.4",
-		"node-cache": "^5.1.2",
 		"qrcode-terminal": "^0.12.0",
 		"readline": "^1.3.0",
 		"wa-sticker-formatter": "^4.4.4"
@@ -22,6 +22,7 @@
 		"@jimp/png": "^0.22.10",
 		"@jimp/types": "^0.22.8",
 		"@types/node": "^20.4.5",
+		"prisma": "^5.2.0",
 		"typescript": "^5.1.6"
 	}
 }
