@@ -1,6 +1,6 @@
 import { CmdContext } from '../../Typings';
 import { getCtx } from '../../Core/Utils';
-import { devs } from '../../config.json';
+import { DEVS } from '../../config.json';
 import type bot from '../../Core/Bot';
 import { type proto } from 'baileys';
 import { appendFile } from 'fs';
@@ -13,11 +13,7 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	const { msg, group, user, prisma } = await getCtx(raw.messages[0], this);
 
 	// message log
-	appendFile(
-		'log/messages.log',
-		`\n${msg.author}: ${msg.text} (${msg.type})\n${inspect(msg, { depth: null })}`,
-		() => {},
-	);
+	appendFile('log/messages.log', inspect(msg, { depth: null }), () => {});
 
 	// run 'waitFor' events
 	if (this.wait.has(e)) this.wait.get(e)!.bind(this)(msg);
@@ -31,7 +27,7 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 
 	if (!cmd) return;
 	// block only devs cmds for normal people
-	if (cmd.access?.onlyDevs && !devs.includes(user.id)) return this.react(msg, '🚫');
+	if (cmd.access?.onlyDevs && !DEVS.includes(user.id)) return this.react(msg, '🚫');
 
 	const ctx: CmdContext = {
 		prisma,

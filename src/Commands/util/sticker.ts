@@ -1,5 +1,5 @@
 import { extractMetadata, Sticker } from 'wa-sticker-formatter';
-import { author, link, pack } from '../../config.json';
+import { AUTHOR, LINK, PACK } from '../../config.json';
 import { CmdContext, Msg } from '../../Typings';
 import Command from '../../Core/Command';
 import Jimp from 'jimp';
@@ -43,19 +43,19 @@ export default class extends Command {
 		}
 
 		const types = ['rounded', 'full', 'crop', 'circle'];
-		const fixedAuthor = author.join('')
+		const fixedAuthor = AUTHOR.join('')
 			.replace('{username}', msg.author)
-			.replace('{link}', link)
+			.replace('{link}', LINK)
 			.replace('{group}', group?.subject || 'Not a group');
 
 		for (let type of types) {
 			const metadata = new Sticker(sticker!, {
-				pack: pack.join(''),
+				pack: PACK.join(''),
 				author: fixedAuthor,
 				type,
 				categories: ['🎉'],
 				id: '12345',
-				quality: 1,
+				quality: 60,
 			});
 
 			await bot.send(msg.chat, await metadata.toMessage());
