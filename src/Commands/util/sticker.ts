@@ -1,8 +1,9 @@
 import { extractMetadata, Sticker } from 'wa-sticker-formatter';
 import { getStickerAuthor } from '../../Core/Utils';
+import { readFileSync, writeFileSync } from 'fs';
 import { CmdContext, Msg } from '../../Typings';
 import Command from '../../Core/Command';
-import Bot from '../../Core/Bot';
+import { execSync } from 'child_process';
 
 export default class extends Command {
 	constructor() {
@@ -12,16 +13,23 @@ export default class extends Command {
 		});
 	}
 
-	async run({ msg, bot, group }: CmdContext) {
+	async run({ msg, bot, args, group }: CmdContext) {
 		let stickerTypes = ['rounded', 'full', 'crop', 'circle'];
 		let targetMsg: Msg;
 
 		if (msg.quoted && msg.quoted.isMedia) targetMsg = msg.quoted;
 		else targetMsg = msg;
 
-		const buffer = await bot.downloadMedia(targetMsg)
+		let buffer = await bot.downloadMedia(targetMsg)
 			.catch(() => {});
 		if (!buffer) return;
+
+		if (args[0] === 'nobg') {
+			const name = Math.random();
+			writeFileSync(`temp/${name}.webp`, buffer);
+			execSync(`python3 src/Core/removeBg.py temp/${name}.webp temp/${name}.png`);
+			buffer = readFileSync(`temp/${name}.png`) || buffer;
+		}
 
 		switch (targetMsg.type) {
 			case 'videoMessage':

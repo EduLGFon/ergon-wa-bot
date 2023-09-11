@@ -14,7 +14,7 @@ build/
 node_modules/
 
 # Logs / Lokefiles
-Test/
+temp/*
 *lock.json
 *.lock
 *.log
