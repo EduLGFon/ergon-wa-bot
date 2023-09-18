@@ -3,8 +3,6 @@ import { getCtx } from '../../Components/Core/Utils';
 import bot from '../../Components/Classes/Bot';
 import { DEVS } from '../../JSON/config.json';
 import { type proto } from 'baileys';
-import { appendFile } from 'fs';
-import { inspect } from 'util';
 import i18next from 'i18next';
 
 export default async function (this: bot, raw: { messages: proto.IWebMessageInfo[] }, e: string) {

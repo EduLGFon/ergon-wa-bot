@@ -14,7 +14,7 @@ export default class extends Command {
 
 		user.lang = args[0].slice(0, 2);
 
-		await bot.send(msg, t('language', { lng: user.lang }));
+		await bot.send(msg, t('language.changed', { lng: user.lang }));
 		return true;
 	}
 }
