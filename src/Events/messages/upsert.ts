@@ -32,14 +32,10 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 
 	const sendUsage = async () => {
 		clearTimeout(timeout);
+		args[0] = cmd.name;
 
-		const usage = `*[❗] - ${t('usage:usage.title')}*\n\n` +
-			`➠ ${user.prefix}${cmd.name} ${t(`usage:${cmd.name}`)}` +
-			`\n\n[📖] ${t(`usage:usage.args`)}`;
-
+		this.cmds.get('help').run(ctx);
 		this.react(msg, '🤔');
-		await this.send(msg, usage);
-
 		return;
 	};
 

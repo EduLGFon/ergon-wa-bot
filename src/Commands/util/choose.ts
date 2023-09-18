@@ -11,9 +11,9 @@ export default class extends Command {
 		const options = args.join(' ').split(',');
 		if (!options[1]) return sendUsage();
 
-		const choosedOne = options[Math.floor(Math.random() * options.length)];
+		const chosen = options[Math.floor(Math.random() * options.length)];
 
-		await bot.send(msg, t('result', { choosedOne: choosedOne.encode() }));
+		await bot.send(msg, t('choose.result', { chosen: chosen.encode() }));
 		return true;
 	}
 }
