@@ -27,6 +27,6 @@
 		"@types/i18next-node-fs-backend": "^2.1.2",
 		"@types/node": "^20.4.5",
 		"prisma": "^5.2.0",
-		"typescript": "^5.1.6"
+		"typescript": "^5.2.2"
 	}
 }
