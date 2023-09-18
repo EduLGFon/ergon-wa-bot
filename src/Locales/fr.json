@@ -1,0 +1,75 @@
+{
+    "usage": {
+        "title": "*[❗] - Comment l'utiliser ?*",
+        "args": "*[💡] - Types de paramètres :*\n<obligatoire>\n[facultatif]",
+        "examples": "*[💯] - Exemples :*"
+    },
+    "choose": {
+        "usage": "<option 1>, <option 2>, [option 3], [...]",
+        "desc": "Choisissez ceci ou cela au hasard, ou pas...",
+        "examples": [
+            "Pizza, gâteau, pudding, pomme",
+            "Je devrais faire ça, je ne devrais pas faire ça",
+            "Biscuit, biscuit"
+        ],
+        "result": "*[🏆] - Option choisie :* {{chosen}}"
+    },
+    "help": {
+        "usage": "[nom d'une commande]",
+        "desc": "Afficher cette liste ou détailler une commande",
+        "examples": [
+            "traduire",
+            "autocollant"
+        ],
+        "title": "*[📖] - Menu Aide*",
+        "prefix": "[⚙️] Modifier le préfixe : *{{prefix}}*",
+        "lang": "[🌎] Changer de langue : *{{lang}}*"
+    },
+    "language": {
+        "usage": "<code langue>",
+        "desc": "Changer la langue du bot",
+        "examples": [
+            "TP",
+            "fr"
+        ],
+        "changed": "[🌎] – La langue a été modifiée avec succès en *{{lng}}*"
+    },
+    "prefix": {
+        "usage": "<préfixe avec jusqu'à 3 chiffres>",
+        "desc": "Changer le préfixe de la commande",
+        "examples": [
+            ".",
+            "!"
+        ],
+        "changed": "[ ✔️ ] - Votre nouveau préfixe est : *{{prefix}}*"
+    },
+    "ping": {
+        "desc": "Calcule le délai du bot",
+        "pinging": "Calcul du temps de réponse..."
+    },
+    "sticker": {
+        "usage": "<image/gif joint> [nobg : supprimer l'arrière-plan]",
+        "desc": "Créez un autocollant avec image/gif et supprimez l'arrière-plan",
+        "examples": [
+            "nobg <image jointe>",
+            "<gif ci-joint>"
+        ],
+        "nobuffer": "[⚠️] - Image incompatible ou introuvable"
+    },
+    "stext": {
+        "usage": "<texte/phrase/mot>",
+        "desc": "Créer un autocollant de texte",
+        "examples": [
+            "Vous ne pouvez pas changer votre passé, mais vous pouvez ruiner votre avenir",
+            "Aucun obstacle n'est trop grand pour ceux qui abandonnent"
+        ]
+    },
+    "translate": {
+        "usage": "<code langue : en/pt/fr...> <texte/phrase/mot>",
+        "desc": "traducteur Google",
+        "examples": [
+            "fr Chatte",
+            "es La guerre c'est l'amour"
+        ]
+    }
+}
