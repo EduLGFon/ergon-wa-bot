@@ -14,6 +14,17 @@
 		],
 		"result": "*[🏆] - Opção escolhida:* {{chosen}}"
 	},
+	"download": {
+		"usage": "<audio/video> <url>",
+		"desc": "Baixa um vídeo ou um áudio de várias plataformas diferentes",
+		"examples": [
+			"audio https://music.youtube.com/watch?v=4QLvEIXlF6Q",
+			"a https://youtu.be/4QLvEIXlF6Q",
+			"video https://youtu.be/4QLvEIXlF6Q"
+		],
+		"true": "*[⌛] - Baixando o vídeo... Por favor aguarde um momento.*",
+		"false": "*[⌛] - Baixando o áudio... Por favor aguarde um momento.*"
+	},
 	"help": {
 		"usage": "[nome de um comando]",
 		"desc": "Exibe esta lista ou detalha um comando",
