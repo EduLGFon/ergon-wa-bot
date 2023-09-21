@@ -1,16 +1,18 @@
 import { LANG, PREFIX } from '../../JSON/config.json';
-import prisma from '../Core/Prisma';
+import { Prisma } from '../Typings';
 
 export default class User {
 	name: string;
+	prisma: Prisma;
 	_userLanguage: string;
 	_userPrefix: string;
 
-	constructor(public id: string, name: string, userLanguage?: string, userPrefix?: string) {
+	constructor(public id: string, name: string, prisma: Prisma) {
 		this.id = id;
 		this.name = name;
-		this._userLanguage = userLanguage || LANG;
-		this._userPrefix = userPrefix || PREFIX;
+		this.prisma = prisma;
+		this._userLanguage = LANG;
+		this._userPrefix = PREFIX;
 	}
 	public get lang() {
 		return this._userLanguage;
@@ -20,7 +22,7 @@ export default class User {
 		this._userLanguage = value;
 
 		(async () =>
-			await prisma.users.upsert({
+			await this.prisma.users.upsert({
 				create: {
 					id: this.id,
 					lang: value,
@@ -41,7 +43,7 @@ export default class User {
 		this._userPrefix = value;
 
 		(async () =>
-			prisma.users.upsert({
+			this.prisma.users.upsert({
 				create: {
 					id: this.id,
 					lang: this._userLanguage,
@@ -55,10 +57,10 @@ export default class User {
 	}
 
 	async checkData() {
-		let data = await prisma.users.findUnique({ where: { id: this.id } });
+		let data = await this.prisma.users.findUnique({ where: { id: this.id } });
 
 		if (!data) {
-			data = await prisma.users.create({
+			data = await this.prisma.users.create({
 				data: {
 					id: this.id,
 					lang: this._userLanguage,

@@ -18,7 +18,7 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 
 	let user = bot.users.get(userID);
 	if (!user) {
-		user = await new User(userID, pushName!).checkData();
+		user = await new User(userID, pushName!, prisma).checkData();
 		bot.users.set(userID, user);
 	}
 
@@ -27,7 +27,6 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 		msg: {
 			id: key.id!, // msg id
 			chat: key?.remoteJid!, // msg chat id
-			author: pushName!, // msg author name
 			text: getMsgText(message!),
 			type,
 			isMedia: isMedia(type),
@@ -84,12 +83,12 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 	return Object.keys(m!)[0] as MsgTypes;
 }
 
-export function getStickerAuthor(msg: Msg, group: GroupMetadata) {
+export function getStickerAuthor(user: User, group: GroupMetadata) {
 	return {
 		pack: PACK.join(''),
 
 		author: AUTHOR.join('')
-			.replace('{username}', msg?.author)
+			.replace('{username}', user.name)
 			.replace('{link}', LINK)
 			.replace('{group}', group?.subject || 'Not a group'),
 	};

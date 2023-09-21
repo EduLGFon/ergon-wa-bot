@@ -7,7 +7,7 @@ export default class extends Command {
 			aliases: ['p'],
 		});
 	}
-	async run({ t, bot, msg, prisma }: CmdContext) {
+	async run({ t, bot, user, msg, prisma }: CmdContext) {
 		// Calculate WA Ping
 		let startTime = Date.now();
 		await bot.send(msg.chat, t('ping.pinging'));
@@ -15,7 +15,7 @@ export default class extends Command {
 
 		// Calculate DB Ping
 		startTime = Date.now();
-		await prisma.users.findUnique({ where: { id: msg.author } });
+		await prisma.users.findUnique({ where: { id: user.id } });
 		const DBPing = Date.now() - startTime;
 
 		await bot.send(
