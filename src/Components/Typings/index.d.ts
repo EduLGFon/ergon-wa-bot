@@ -56,3 +56,4 @@ interface CmdContext {
 
 type Logger = pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;
 type Prisma = PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>;
+type Lang = 'py' | 'lua' | 'deno' | 'node' | 'eval' | 'cpp';

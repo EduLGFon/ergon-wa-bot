@@ -1,6 +1,7 @@
-import type { CmdContext } from '../../Components/Typings/index';
+import type { CmdContext, Lang } from '../../Components/Typings/index';
+import { langs, run } from '../../Components/Plugins/RunOtherLangs';
+import { clearTemp } from '../../Components/Core/Utils';
 import Command from '../../Components/Classes/Command';
-import { inspect } from 'util';
 
 export default class extends Command {
 	constructor() {
@@ -13,32 +14,31 @@ export default class extends Command {
 
 	async run(ctx: CmdContext) {
 		const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx;
+
+		const lang = (langs.includes(args[0] as 'py') ? args.shift() : 'eval') as Lang;
+
+		let output, reaction = '✅'; // Reaction emoji
+
 		const startTime = Date.now();
 		const startRAM = this.getRAM(); // DENO
 
-		const code = args.join(' ');
-		let output, reaction = '✅'; // Reaction emoji
-
 		try {
-			// Run eval in async function if it contains 'await'
-			output = code.includes('await')
-				? await eval(`(async () => { ${code} })()`)
-				: await eval(code);
-
-			output = inspect(output, { depth: null }); // eval result
+			output = await run.bind(this)(lang, args.join(' '));
 		} catch (e: any) {
 			reaction = '❌'; // Reaction emoji
 			output = String(e?.stack || e);
 		} finally {
 			// difference between initial RAM and final RAM
+			const duration = (Date.now() - startTime).toLocaleString('pt');
 			const endRAM = this.getRAM();
 			const RAMRange = Number((endRAM - startRAM).toFixed(2));
-			const duration = (Date.now() - startTime).toLocaleString('pt'); // db
 
-			const text = `*[👨‍💻] - Eval*\n` +
+			const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
 				`[📊]: ${duration}ms - ` +
 				`${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)\n` +
-				output.trim().encode();
+				output;
+
+			clearTemp();
 
 			const sentMsg = await bot.send(msg, text);
 			await bot.react(sentMsg.msg, reaction);

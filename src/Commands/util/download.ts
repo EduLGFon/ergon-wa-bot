@@ -1,6 +1,7 @@
-import { readFileSync, statSync, unlinkSync } from 'fs';
+import { clearTemp } from '../../Components/Core/Utils';
 import Command from '../../Components/Classes/Command';
 import { CmdContext } from '../../Components/Typings';
+import { readFileSync, statSync } from 'fs';
 import { AnyMessageContent } from 'baileys';
 import { execSync } from 'child_process';
 
@@ -60,11 +61,12 @@ export default class extends Command {
 			attachMedia(msgBody, file, path);
 			await bot.send(msg, msgBody as AnyMessageContent);
 
-			unlinkSync(path);
+			clearTemp();
 		} catch (e: any) {
 			// remove yt-dlp cli to prevent showing social password
-			e = (e?.stack || e).replace(ytdlArgs.join(' '), 'yt-dlp');
-			await bot.send(msg, `YT-DLP Error: ${e}`);
+			const error = (e?.stack || e).replace(ytdlArgs.join(' '), 'yt-dlp');
+
+			await bot.send(msg, `YT-DLP Error: ${error}`);
 		}
 
 		return true;

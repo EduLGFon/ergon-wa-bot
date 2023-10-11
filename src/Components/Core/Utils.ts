@@ -2,6 +2,7 @@ import type { CmdContext, Msg, MsgTypes } from '../Typings/index';
 import { AUTHOR, LINK, PACK } from '../../JSON/config.json';
 import { isMedia, msgTypes } from '../Plugins/MsgTypes';
 import { GroupMetadata, type proto } from 'baileys';
+import { readdirSync, unlink } from 'fs';
 import User from '../Classes/User';
 import Bot from '../Classes/Bot';
 import prisma from './Prisma';
@@ -115,4 +116,10 @@ export function findKey(obj: any, key: string): any {
 	}
 
 	return;
+}
+
+export async function clearTemp() {
+	const files = readdirSync('./temp/');
+
+	files.forEach((f) => unlink(`./temp/${f}`, () => {}));
 }

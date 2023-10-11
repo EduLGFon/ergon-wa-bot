@@ -1,7 +1,7 @@
-import { CmdContext, Msg } from '../../Components/Typings/index';
-import { getStickerAuthor } from '../../Components/Core/Utils';
-import { readFileSync, unlink, writeFileSync } from 'fs';
+import { clearTemp, getStickerAuthor } from '../../Components/Core/Utils';
+import { CmdContext } from '../../Components/Typings/index';
 import Command from '../../Components/Classes/Command';
+import { readFileSync, writeFileSync } from 'fs';
 import { Sticker } from 'wa-sticker-formatter';
 import { execSync } from 'child_process';
 
@@ -30,8 +30,8 @@ export default class extends Command {
 				`python3 src/Components/Plugins/removeBg.py temp/${name}.webp temp/${name}.png`,
 			);
 			buffer = readFileSync(`temp/${name}.png`) || buffer;
-			unlink(`temp/${name}.png`, () => {});
-			unlink(`temp/${name}.webp`, () => {});
+
+			clearTemp();
 		}
 
 		switch (targetMsg.type) {
