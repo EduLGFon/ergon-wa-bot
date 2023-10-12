@@ -1,7 +1,7 @@
-import type { CmdContext, Lang } from '../../Components/Typings/index';
-import { langs, run } from '../../Components/Plugins/RunOtherLangs';
-import { clearTemp } from '../../Components/Core/Utils';
-import Command from '../../Components/Classes/Command';
+import type { CmdContext, Lang } from '../../Core/Typings/index';
+import { langs, run } from '../../Core/Plugins/RunOtherLangs';
+import { clearTemp } from '../../Core/Components/Utils';
+import Command from '../../Core/Classes/Command';
 
 export default class extends Command {
 	constructor() {

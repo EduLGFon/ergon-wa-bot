@@ -1,6 +1,6 @@
-import { clearTemp, getStickerAuthor } from '../../Components/Core/Utils';
-import { CmdContext } from '../../Components/Typings/index';
-import Command from '../../Components/Classes/Command';
+import { clearTemp, getStickerAuthor } from '../../Core/Components/Utils';
+import { CmdContext } from '../../Core/Typings/index';
+import Command from '../../Core/Classes/Command';
 import { readFileSync, writeFileSync } from 'fs';
 import { Sticker } from 'wa-sticker-formatter';
 import { execSync } from 'child_process';
@@ -27,7 +27,7 @@ export default class extends Command {
 
 			writeFileSync(`temp/${name}.webp`, buffer);
 			execSync(
-				`python3 src/Components/Plugins/removeBg.py temp/${name}.webp temp/${name}.png`,
+				`python3 src/Core/Plugins/removeBg.py temp/${name}.webp temp/${name}.png`,
 			);
 			buffer = readFileSync(`temp/${name}.png`) || buffer;
 

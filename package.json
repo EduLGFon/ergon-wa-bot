@@ -5,7 +5,7 @@
 		"tsnd": "ts-node --esm --files src/Main.ts",
 		"test": "ts-node --esm --files Test.ts"
 	},
-	"prisma": "src/Components/Prisma/schema.prisma",
+	"prisma": "src/Core/Prisma/schema.prisma",
 	"dependencies": {
 		"@prisma/client": "^5.2.0",
 		"baileys": "https://github.com/WhiskeySockets/Baileys",
@@ -15,6 +15,7 @@
 		"jimp": "^0.22.10",
 		"libphonenumber-js": "^1.10.37",
 		"link-preview-js": "^3.0.4",
+		"luxon": "^3.4.3",
 		"qrcode-terminal": "^0.12.0",
 		"readline": "^1.3.0",
 		"wa-sticker-formatter": "^4.4.4"
@@ -25,6 +26,7 @@
 		"@jimp/png": "^0.22.10",
 		"@jimp/types": "^0.22.8",
 		"@types/i18next-node-fs-backend": "^2.1.2",
+		"@types/luxon": "^3.3.2",
 		"@types/node": "^20.4.5",
 		"prisma": "^5.2.0",
 		"typescript": "^5.2.2"

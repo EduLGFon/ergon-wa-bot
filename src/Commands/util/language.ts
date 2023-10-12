@@ -1,5 +1,5 @@
-import Command from '../../Components/Classes/Command';
-import { CmdContext } from '../../Components/Typings';
+import Command from '../../Core/Classes/Command';
+import { CmdContext } from '../../Core/Typings';
 import i18next from 'i18next';
 
 export default class extends Command {

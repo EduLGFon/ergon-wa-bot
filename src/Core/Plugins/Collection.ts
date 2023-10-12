@@ -1,12 +1,11 @@
 class Base {
-	constructor() {
-	}
+	constructor() {}
 }
 
 export default class Collection<N, T extends Base> extends Map {
 	base: Base;
 
-	constructor(base: Base, public limit?: number) {
+	constructor(base: Base, public limit?: num) {
 		super();
 		this.base = base;
 		this.limit = limit;
@@ -37,7 +36,7 @@ export default class Collection<N, T extends Base> extends Map {
 		return obj;
 	}
 
-	every(f: Function): boolean {
+	every(f: Function): bool {
 		for (const item of this.values()) {
 			if (!f(item)) return false;
 		}
@@ -95,7 +94,7 @@ export default class Collection<N, T extends Base> extends Map {
 		return item;
 	}
 
-	some(f: Function): boolean {
+	some(f: Function): bool {
 		for (const item of this.values()) {
 			if (f(item)) return true;
 		}

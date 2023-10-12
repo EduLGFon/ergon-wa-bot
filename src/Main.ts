@@ -1,10 +1,10 @@
-import loadPrototypes from './Components/Plugins/Prototypes';
-import loadLocales from './Components/Core/Locales';
+import loadPrototypes from './Core/Components/Prototypes';
+import loadLocales from './Core/Components/Locales';
 import MAIN_LOGGER from 'baileys/lib/Utils/logger';
-import Bot from './Components/Classes/Bot';
+import Bot from './Core/Classes/Bot';
 
 const logger = MAIN_LOGGER.child({});
-logger.level = 'info';
+logger.level = 'fatal';
 
 loadPrototypes();
 loadLocales();

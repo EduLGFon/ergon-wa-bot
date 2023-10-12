@@ -32,7 +32,7 @@ const langInfo = {
 	},
 };
 
-export async function run(lang: Lang, code: string) {
+export async function run(lang: Lang, code: str) {
 	let output = '';
 
 	if (lang === 'eval') {

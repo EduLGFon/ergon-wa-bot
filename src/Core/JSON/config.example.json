@@ -1,6 +1,7 @@
 {
 	"PREFIX": "!",
 	"LANG": "en",
+	"TIMEZONE": "America/Sao_Paulo",
 	"DEVS": [
 		"devs ID",
 		"id = number without special",

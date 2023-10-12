@@ -1,6 +1,6 @@
-import { getStickerAuthor } from '../../Components/Core/Utils';
-import { CmdContext } from '../../Components/Typings/index';
-import Command from '../../Components/Classes/Command';
+import { getStickerAuthor } from '../../Core/Components/Utils';
+import { CmdContext } from '../../Core/Typings/index';
+import Command from '../../Core/Classes/Command';
 import Sticker from 'wa-sticker-formatter';
 import Jimp from 'jimp';
 

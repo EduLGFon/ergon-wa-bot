@@ -1,6 +1,6 @@
-import { clearTemp } from '../../Components/Core/Utils';
-import Command from '../../Components/Classes/Command';
-import { CmdContext } from '../../Components/Typings';
+import { clearTemp } from '../../Core/Components/Utils';
+import Command from '../../Core/Classes/Command';
+import { CmdContext } from '../../Core/Typings';
 import { readFileSync, statSync } from 'fs';
 import { AnyMessageContent } from 'baileys';
 import { execSync } from 'child_process';
@@ -9,9 +9,9 @@ type msgMedia = {
 	audio?: Buffer;
 	video?: Buffer;
 	document?: Buffer;
-	mimetype: string;
-	ptt?: boolean;
-	fileName: string;
+	mimetype: str;
+	ptt?: bool;
+	fileName: str;
 };
 
 export default class extends Command {
@@ -73,7 +73,7 @@ export default class extends Command {
 	}
 }
 
-function attachMedia(obj: msgMedia, data: Buffer, path: string) {
+function attachMedia(obj: msgMedia, data: Buffer, path: str) {
 	const stat = statSync(path);
 
 	if (obj.audio) {

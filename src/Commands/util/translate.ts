@@ -1,5 +1,5 @@
-import { CmdContext } from '../../Components/Typings/index';
-import Command from '../../Components/Classes/Command';
+import { CmdContext } from '../../Core/Typings/index';
+import Command from '../../Core/Classes/Command';
 import translate from 'google-translate';
 
 export default class extends Command {

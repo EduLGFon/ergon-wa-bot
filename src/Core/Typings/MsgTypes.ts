@@ -1,4 +1,4 @@
-import { MsgTypes } from '../Typings/index';
+import { MsgTypes } from './index';
 
 const textMsgs = {
 	'conversation': 'text',
