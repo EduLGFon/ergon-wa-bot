@@ -114,7 +114,7 @@ export default class Bot {
 		console.log(
 			'HANDLER',
 			`${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`,
-			'magenta',
+			'magentaBright',
 		);
 		return;
 	}

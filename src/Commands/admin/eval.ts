@@ -1,5 +1,5 @@
+import { langs, runOtherLang } from '../../Core/Plugins/RunOtherLangs.js';
 import type { CmdContext, Lang } from '../../Core/Typings/index.d.ts';
-import { langs, run } from '../../Core/Plugins/RunOtherLangs.js';
 import { getRAM } from '../../Core/Components/Prototypes.js';
 import { clearTemp } from '../../Core/Components/Utils.js';
 import Command from '../../Core/Classes/Command.js';
@@ -14,9 +14,7 @@ export default class extends Command {
 	}
 
 	async run(ctx: CmdContext) {
-		const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx;
-
-		const lang = (langs.includes(args[0] as 'py') ? args.shift() : 'eval') as Lang;
+		const lang = (langs.includes(ctx.args[0] as 'py') ? ctx.args.shift() : 'eval') as Lang;
 
 		let output, reaction = '✅'; // Reaction emoji
 
@@ -24,7 +22,7 @@ export default class extends Command {
 		const startRAM = getRAM(true) as number;
 
 		try {
-			output = await run.bind(ctx)(lang, args.join(' '));
+			output = await runOtherLang({ lang, code: ctx.args.join(' '), ctx });
 		} catch (e: any) {
 			reaction = '❌'; // Reaction emoji
 			output = String(e?.stack || e);
@@ -37,12 +35,12 @@ export default class extends Command {
 			const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
 				`[📊]: ${duration}ms - ` +
 				`${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)\n` +
-				output;
+				output!.trim().encode();
 
 			clearTemp();
 
-			const reply = await bot.send(msg, text);
-			bot.react(reply.msg, reaction);
+			const reply = await ctx.bot.send(ctx.msg, text);
+			ctx.bot.react(reply.msg, reaction);
 			return;
 		}
 	}
