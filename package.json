@@ -1,19 +1,20 @@
 {
+	"name": "walle",
+	"module": "./build/Main.js",
 	"type": "module",
 	"exports": "./build/Main.js",
 	"engines": {
 		"node": ">=18"
 	},
 	"scripts": {
-		"postinstall": "npm run prisma && npm run build",
 		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma",
-		"build": "rm -r build/ && tsc",
+		"build": "rm -r build/ & tsc",
 		"start": "rm log/* temp/* & node build/Main.js",
 		"tsnd": "ts-node --esm --files src/Main.ts"
 	},
 	"dependencies": {
 		"@prisma/client": "^5.2.0",
-		"baileys": "https://github.com/WhiskeySockets/Baileys",
+		"baileys": "github:WhiskeySockets/Baileys",
 		"chalk": "^5.3.0",
 		"google-translate": "github:iamtraction/google-translate",
 		"i18next": "^23.5.1",
@@ -33,6 +34,7 @@
 		"@jimp/types": "^0.22.8",
 		"@types/luxon": "^3.3.2",
 		"@types/node": "^20.8.6",
+		"bun-types": "latest",
 		"prisma": "^5.2.0",
 		"typescript": "^5.2.2"
 	}

@@ -16,6 +16,6 @@ build/
 # Logs / Lokefiles
 *lock.json
 **/*.log
-*.lock
+*.lock*
 temp/*
 logs/*

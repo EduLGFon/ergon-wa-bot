@@ -1,9 +1,9 @@
 import loadPrototypes from './Core/Components/Prototypes.js';
 import loadLocales from './Core/Components/Locales.js';
-import MAIN_LOGGER from 'baileys/lib/Utils/logger.js';
 import Bot from './Core/Classes/Bot.js';
+import P from 'pino';
 
-const logger = MAIN_LOGGER.default.child({});
+const logger = P.default({ timestamp: () => `,"time":"${new Date().toJSON()}"` }).child({});
 logger.level = 'warn';
 
 loadPrototypes();

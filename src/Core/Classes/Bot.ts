@@ -1,10 +1,11 @@
-import { makeWASocket,
+import {
 	type AnyMessageContent,
 	type BaileysEventMap,
 	Browsers,
 	downloadMediaMessage,
 	fetchLatestBaileysVersion,
 	makeCacheableSignalKeyStore,
+	makeWASocket,
 	type proto,
 	useMultiFileAuthState,
 	type WASocket,
@@ -102,7 +103,7 @@ export default class Bot {
 			// For each category folder
 			for (const file of readdirSync(`${path}/${category}`)) {
 				// for each file of each category
-				const imported = await import(`file://${path}/${category}/${file}`);				
+				const imported = await import(`file://${path}/${category}/${file}`);
 
 				// call function to this file
 				handler.bind(this)(file, category, imported.default);
@@ -110,12 +111,16 @@ export default class Bot {
 			}
 		}
 
-		console.log('HANDLER', `${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`, 'magenta')
+		console.log(
+			'HANDLER',
+			`${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`,
+			'magenta',
+		);
 		return;
 	}
 
 	async loadCommands(file: str, _category: str, imported: any) { // DENO point
-		const cmd: Cmd = new imported()
+		const cmd: Cmd = new imported();
 		cmd.name = file.slice(0, -3);
 
 		const properties = Object.assign({
@@ -136,7 +141,7 @@ export default class Bot {
 	}
 
 	async loadEvents(file: str, category: str, imported: any) {
-		const event = imported
+		const event = imported;
 		const name = `${category}.${file.slice(0, -3)}`;
 		// folder/file names are the same of lib events
 		this.events.set(name, event);
@@ -151,7 +156,7 @@ export default class Bot {
 
 	async getGroup(id: str) {
 		// check group cache
-		let group = this.groups.get(id)
+		let group = this.groups.get(id);
 		if (group) return group;
 
 		// fetch group data
@@ -159,9 +164,9 @@ export default class Bot {
 
 		// set group data and return it
 		if (group) {
-			this.groups.set(group.id, group)
+			this.groups.set(group.id, group);
 			return group;
-		} 
+		}
 	}
 
 	async downloadMedia(msg: Msg) {
