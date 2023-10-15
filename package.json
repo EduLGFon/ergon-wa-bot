@@ -3,14 +3,14 @@
 		"postinstall": "npm run prisma && npm run build",
 		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma",
 		"build": "rm -r build/ && tsc",
-		"prestart": "rm log/* temp/*",
-		"start": "pm2 start walle.json",
+		"start": "rm log/* temp/* & pm2 start walle.json",
 		"tsnd": "ts-node --esm --files src/Main.ts"
 	},
 	"prisma": "src/Core/Prisma/schema.prisma",
 	"dependencies": {
 		"@prisma/client": "^5.2.0",
 		"baileys": "https://github.com/WhiskeySockets/Baileys",
+		"chalk": "^5.3.0",
 		"google-translate": "github:iamtraction/google-translate",
 		"i18next": "^23.5.1",
 		"i18next-fs-backend": "^2.2.0",

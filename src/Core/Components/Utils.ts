@@ -65,7 +65,7 @@ export async function cacheAllGroups(bot: Bot) {
 	let groups = Object.keys(groupList)
 
 	groups.forEach((g) => bot.groups.set(g, groupList[g]));
-	console.log('[CACHE', `${groups.length} groups cached.`, 'green')
+	console.log('[CACHE', `${groups.length} groups cached.`, 'blue')
 	return;
 }
 

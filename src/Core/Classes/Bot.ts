@@ -42,7 +42,7 @@ export default class Bot {
 
 	async connect() {
 		const { version } = await fetchLatestBaileysVersion();
-		console.log('[API', `Connecting on latest version: v${version.join('.')}`);
+		console.log('[WEBSOCKET', `Connecting to WA v${version.join('.')}`, 'green');
 		// Fetch latest WA version
 
 		const { state, saveCreds } = await useMultiFileAuthState(this.auth);
@@ -109,7 +109,7 @@ export default class Bot {
 			}
 		}
 
-		console.log('[HANDLER', `${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`)
+		console.log('[HANDLER', `${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`, 'yellow')
 		return;
 	}
 

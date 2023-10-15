@@ -4,7 +4,7 @@ import MAIN_LOGGER from 'baileys/lib/Utils/logger';
 import Bot from './Core/Classes/Bot';
 
 const logger = MAIN_LOGGER.child({});
-logger.level = 'fatal';
+logger.level = 'warn';
 
 loadPrototypes();
 loadLocales();
@@ -13,7 +13,7 @@ const bot = new Bot('auth', logger);
 
 bot.connect();
 
-process // anti-crash to handle lib instabilities
-	.on('Uhandled Rej.', (e) => console.log('Unhandled Rejection: ', e?.stack))
-	.on('Uncaught Excep.', (e) => console.log('Uncaught Exception: ', e?.stack))
-	.on('Uncaught Excep.', (e) => console.log('Uncaught Exception Monitor: ', e?.stack));
+process // "anti-crash" to handle lib instabilities
+	.on('unhandledRejection', (e: any) => console.error('[ANTI-CRASH', `Unhandled Rej: ${e?.stack}`))
+	.on('uncaughtException', (e) => console.error('[ANTI-CRASH', `Uncaught Excep.: ${e?.stack}`))
+	.on('uncaughtExceptionMonitor', (e) => console.error('[ANTI-CRASH', `Uncaught Excep.M.: ${e?.stack}`));

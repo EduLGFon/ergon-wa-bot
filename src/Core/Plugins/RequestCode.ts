@@ -53,11 +53,11 @@ export default async function (sock: ReturnType<typeof makeWASocket>) {
 				const response = await sock.register(
 					code.replace(/["']/g, '').trim().toLowerCase(),
 				);
-				console.log('[API', 'Successfully registered');
+				console.log('[API', 'Successfully registered', 'green');
 				console.log(response);
 				rl.close();
 			} catch (error) {
-				console.error('[API', 'Failed to register: ' + error);
+				console.error('[API', `Failed to register: ${error}`);
 				
 				askForOTP();
 			}

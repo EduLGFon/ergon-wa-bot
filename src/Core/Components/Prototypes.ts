@@ -1,5 +1,7 @@
 import { LANG, TIMEZONE } from '../JSON/config.json';
 import { DateTime } from 'luxon';
+//@ts-ignore chalk is now pure ESM and Node is CommonJS
+import chalk from 'chalk';
 
 const now = () =>
 	DateTime.now()
@@ -50,11 +52,12 @@ export default () => {
 			return;
 		}
 
-		const [title, msg] = [...args];
+		const [title, msg, color] = [...args];
 
 		const str = `${title} | ${now()} | ${getRAM()}] - ${msg}`;
 
-		console.info(str); // [ TITLE | 18:04 | 69MB ] - msg
+		console.info(chalk[color as 'red'].bold(str)); 
+		// it prints: [ TITLE | 18:04 | 69MB ] - msg (colored)
 		return;
 	};
 

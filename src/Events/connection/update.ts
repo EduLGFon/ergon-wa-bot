@@ -12,17 +12,17 @@ export default async function (this: bot, update: Partial<ConnectionState>) {
 			// don't show online mark when the bot is running
 			this.sock.sendPresenceUpdate('unavailable');
 
-			return console.log('[WEBSOCKET', 'Connection stabilized');
+			return console.log('[WEBSOCKET', 'Connection stabilized', 'green');
 
 		case 'connecting':
-			return console.log('[WEBSOCKET', 'Connecting...');
+			return console.log('[WEBSOCKET', 'Connecting...', 'gray');
 
 		case 'close':
 			const shouldReconnect =
 				(lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
 
-			console.log('[WEBSOCKET', `Connection closed by:`, lastDisconnect?.error);
-			console.log('[WEBSOCKET', `Should try to reconnect: ${shouldReconnect}`);
+			console.error('[WEBSOCKET', `Connection closed by: ${lastDisconnect?.error}`);
+			console.log('[WEBSOCKET', `Should try to reconnect: ${shouldReconnect}`, 'blue');
 
 			// reconnect if it's not a logout
 			if (shouldReconnect) this.connect();
