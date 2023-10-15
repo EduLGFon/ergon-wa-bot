@@ -9,7 +9,7 @@
 	"scripts": {
 		"postinstall": "npm run prisma && npm run build",
 		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma",
-		"build": "rm -r build/ & tsc",
+		"build": "rm -r build/ & rm package-lock.json & tsc",
 		"start": "rm log/* temp/* & node build/Main.js",
 		"tsnd": "ts-node --esm --files src/Main.ts"
 	},
