@@ -3,7 +3,7 @@
 		"postinstall": "npm run prisma && npm run build",
 		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma",
 		"build": "rm -r build/ && tsc",
-		"prestart": "rm -r log/* && rm temp/*",
+		"prestart": "rm log/* temp/*",
 		"start": "pm2 start walle.json",
 		"tsnd": "ts-node --esm --files src/Main.ts"
 	},
