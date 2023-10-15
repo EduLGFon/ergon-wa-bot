@@ -1,4 +1,4 @@
-import { MsgTypes } from './index';
+import type { MsgTypes } from './index.d.ts';
 
 const textMsgs = {
 	'conversation': 'text',

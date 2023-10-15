@@ -1,8 +1,8 @@
-import makeWASocket, { PHONENUMBER_MCC } from 'baileys';
+import { PHONENUMBER_MCC, type WASocket } from 'baileys';
 import parsePhoneNumber from 'libphonenumber-js';
 import readline from 'readline';
 
-export default async function (sock: ReturnType<typeof makeWASocket>) {
+export default async function (sock: WASocket) {
 	if (!sock.authState.creds.registered) {
 		const question = (text: str) => new Promise<str>((r) => rl.question(text, r));
 
@@ -53,11 +53,11 @@ export default async function (sock: ReturnType<typeof makeWASocket>) {
 				const response = await sock.register(
 					code.replace(/["']/g, '').trim().toLowerCase(),
 				);
-				console.log('[API', 'Successfully registered', 'green');
+				console.log('API', 'Successfully registered', 'green');
 				console.log(response);
 				rl.close();
 			} catch (error) {
-				console.error('[API', `Failed to register: ${error}`);
+				console.error('API', `Failed to register: ${error}`);
 				
 				askForOTP();
 			}

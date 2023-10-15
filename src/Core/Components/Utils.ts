@@ -1,11 +1,11 @@
-import type { CmdContext, Msg, MsgTypes } from '../Typings/index';
-import { AUTHOR, LINK, PACK } from '../JSON/config.json';
-import { isMedia, msgTypes } from '../Typings/MsgTypes';
+import config from '../JSON/config.json' assert { type: 'json' };
+import type { CmdContext, Msg, MsgTypes } from '../Typings/index.d.ts';
+import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
 import { GroupMetadata, type proto } from 'baileys';
-import { readdirSync, unlink } from 'fs';
-import User from '../Classes/User';
-import Bot from '../Classes/Bot';
-import prisma from './Prisma';
+import { readdirSync, unlink } from 'node:fs';
+import User from '../Classes/User.js';
+import Bot from '../Classes/Bot.js';
+import prisma from './Prisma.js';
 
 export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	const { message, key, pushName } = raw;
@@ -65,7 +65,7 @@ export async function cacheAllGroups(bot: Bot) {
 	let groups = Object.keys(groupList)
 
 	groups.forEach((g) => bot.groups.set(g, groupList[g]));
-	console.log('[CACHE', `${groups.length} groups cached.`, 'blue')
+	console.log('CACHE', `${groups.length} groups cached.`, 'blue')
 	return;
 }
 
@@ -90,11 +90,11 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 
 export function getStickerAuthor(user: User, group: GroupMetadata) {
 	return {
-		pack: PACK.join('\n'),
+		pack: config.PACK.join('\n'),
 
-		author: AUTHOR.join('\n')
+		author: config.AUTHOR.join('\n')
 			.replace('{username}', user.name)
-			.replace('{link}', LINK)
+			.replace('{link}', config.LINK)
 			.replace('{group}', group?.subject || 'Not a group'),
 	};
 }
