@@ -1,12 +1,12 @@
-import { LANG, TIMEZONE } from '../JSON/config.json';
+import config from '../JSON/config.json' assert { type: 'json' };
 import { DateTime } from 'luxon';
 //@ts-ignore chalk is now pure ESM and Node is CommonJS
 import chalk from 'chalk';
 
 const now = () =>
 	DateTime.now()
-		.setZone(TIMEZONE)
-		.setLocale(LANG)
+		.setZone(config.TIMEZONE)
+		.setLocale(config.LANG)
 		.toFormat('T');
 
 const getRAM = (backAsNumber?: bool) => {
@@ -33,6 +33,15 @@ export default () => {
 				return '```\n' + this + '```';
 			},
 		},
+		align: {
+			value: function (limit: number) {
+				const ratio = (limit - this.length) / 2
+				const start = ' '.repeat(Math.ceil(ratio));
+				const end = ' '.repeat(Math.floor(ratio));
+
+				return (start + this + end).slice(0, limit);
+			}
+		}
 	});
 
 	/*      console.error        */
@@ -41,26 +50,26 @@ export default () => {
 		const msg = String(error?.stack || error)
 			.slice(0, 512);
 
-		console.log('[ERROR', msg, 'red');
+		console.log('ERROR', msg, 'red');
 	};
 
 	/*      console.log        */
 	// The same console.log but styled differently
 	console.log = (...args) => {
-		if (typeof args[0] !== 'string' || !args[1] || !args[0].startsWith('[')) {
+		if (typeof args[0] !== 'string' || !args[2]) {
 			console.info(...args);
 			return;
 		}
 
 		const [title, msg, color] = [...args];
 
-		const str = `${title} | ${now()} | ${getRAM()}] - ${msg}`;
+		const str = `[${title.align(12)}| ${now()} | ${getRAM()}] - ${msg}`;
 
-		console.info(chalk[color as 'red'].bold(str)); 
+		console.info(chalk.bold[color as 'red'](str)); 
 		// it prints: [ TITLE | 18:04 | 69MB ] - msg (colored)
 		return;
 	};
 
-	console.log('[PROTOTYPES', 'All set.', 'yellow');
+	console.log('PROTOTYPES', 'All set.', 'yellow');
 	return;
 };

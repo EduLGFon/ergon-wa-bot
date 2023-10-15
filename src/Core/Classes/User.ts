@@ -1,5 +1,5 @@
-import { LANG, PREFIX } from '../JSON/config.json';
-import { Prisma } from '../Typings';
+import config from '../JSON/config.json' assert { type: 'json' };
+import type { Prisma } from '../Typings/index.d.ts';
 
 export default class User {
 	name: str;
@@ -11,8 +11,8 @@ export default class User {
 		this.id = id;
 		this.name = name;
 		this.prisma = prisma;
-		this._userLanguage = LANG;
-		this._userPrefix = PREFIX;
+		this._userLanguage = config.LANG;
+		this._userPrefix = config.PREFIX;
 	}
 	public get lang() {
 		return this._userLanguage;

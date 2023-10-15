@@ -1,9 +1,9 @@
-import { clearTemp, getStickerAuthor } from '../../Core/Components/Utils';
-import { CmdContext } from '../../Core/Typings/index';
-import Command from '../../Core/Classes/Command';
-import { readFileSync, writeFileSync } from 'fs';
+import { clearTemp, getStickerAuthor } from '../../Core/Components/Utils.js';
+import type { CmdContext } from '../../Core/Typings/index.d.ts';
+import { readFileSync, writeFileSync } from 'node:fs';
+import Command from '../../Core/Classes/Command.js';
 import { Sticker } from 'wa-sticker-formatter';
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 
 export default class extends Command {
 	constructor() {

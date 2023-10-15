@@ -1,4 +1,4 @@
-import type { Cmd, CmdContext } from '../Typings/index';
+import type { Cmd, CmdContext } from '../Typings/index.d.ts';
 
 export default abstract class Command implements Cmd {
 	name?: str;

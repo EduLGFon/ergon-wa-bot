@@ -1,7 +1,7 @@
-import { CmdContext } from '../../Core/Typings/index';
-import { getCtx } from '../../Core/Components/Utils';
-import { DEVS } from '../../Core/JSON/config.json';
-import bot from '../../Core/Classes/Bot';
+import config from '../../Core/JSON/config.json' assert { type: 'json' };
+import type { CmdContext } from '../../Core/Typings/index.d.ts';
+import { getCtx } from '../../Core/Components/Utils.js';
+import bot from '../../Core/Classes/Bot.js';
 import { type proto } from 'baileys';
 import i18next from 'i18next';
 
@@ -24,7 +24,7 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 
 	if (!cmd) return;
 	// block only devs cmds for normal people
-	if (cmd.access?.onlyDevs && !DEVS.includes(user.id)) return this.react(msg, '🚫');
+	if (cmd.access?.onlyDevs && !config.DEVS.includes(user.id)) return this.react(msg, '🚫');
 
 	const sendUsage = async () => {
 		args[0] = cmd.name;

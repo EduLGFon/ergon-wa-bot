@@ -1,9 +1,9 @@
-import { clearTemp } from '../../Core/Components/Utils';
-import Command from '../../Core/Classes/Command';
-import { CmdContext } from '../../Core/Typings';
-import { readFileSync, statSync } from 'fs';
+import type{ CmdContext } from '../../Core/Typings/index.d.ts';
+import { clearTemp } from '../../Core/Components/Utils.js';
+import Command from '../../Core/Classes/Command.js';
+import { readFileSync, statSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { AnyMessageContent } from 'baileys';
-import { execSync } from 'child_process';
 
 type msgMedia = {
 	audio?: Buffer;
