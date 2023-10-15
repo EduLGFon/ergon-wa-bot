@@ -39,6 +39,7 @@ export default class extends Command {
 			}
 		}
 
-		return bot.send(msg, text);
+		bot.send(msg, text);
+		return;
 	}
 }

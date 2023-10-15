@@ -42,8 +42,8 @@ export default class Bot {
 
 	async connect() {
 		const { version } = await fetchLatestBaileysVersion();
-		console.log(`WhatsApp v${version.join('.')}`);
-		// Fetch latest WA Web version
+		console.log('[API', `Connecting on latest version: v${version.join('.')}`);
+		// Fetch latest WA version
 
 		const { state, saveCreds } = await useMultiFileAuthState(this.auth);
 		// Use saved session
@@ -71,7 +71,7 @@ export default class Bot {
 		// save login creds
 
 		// Loading commands
-		await this.folderHandler(`../../Commands`, this.loadCommands);
+		this.folderHandler(`../../Commands`, this.loadCommands);
 		// folderHandler() reads a folder and call the function
 		// for each file
 		this.folderHandler(`../../Events`, this.loadEvents);
@@ -90,11 +90,12 @@ export default class Bot {
 	}
 
 	async react(m: Msg, emoji: str) { // reacts on a msg
-		this.send(m.chat, { react: { text: emoji, key: m.raw.key } });
+		return await this.send(m.chat, { react: { text: emoji, key: m.raw.key } });
 	}
 
 	async folderHandler(path: str, handler: Function) {
 		path = resolve(__dirname, path);
+		let counter = 0;
 
 		for (const category of readdirSync(path)) {
 			// For each category folder
@@ -103,9 +104,13 @@ export default class Bot {
 				const imported = await import(`file:${path}/${category}/${file}`);
 
 				// call function to this file
-				await handler.bind(this)(file, category, imported);
+				handler.bind(this)(file, category, imported);
+				counter++;
 			}
 		}
+
+		console.log('[HANDLER', `${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`)
+		return;
 	}
 
 	async loadCommands(file: str, _category: str, imported: any) { // DENO point
@@ -145,13 +150,17 @@ export default class Bot {
 
 	async getGroup(id: str) {
 		// check group cache
-		if (this.groups.has(id)) return this.groups.get(id);
+		let group = this.groups.get(id)
+		if (group) return group;
 
 		// fetch group data
-		const group = await this.sock.groupMetadata(id);
+		group = await this.sock.groupMetadata(id);
 
 		// set group data and return it
-		if (group) return this.groups.set(group.id, group) && group;
+		if (group) {
+			this.groups.set(group.id, group)
+			return group;
+		} 
 	}
 
 	async downloadMedia(msg: Msg) {

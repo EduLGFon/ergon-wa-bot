@@ -13,6 +13,7 @@ export default class extends Command {
 
 		user.prefix = args[0].slice(0, 3);
 
-		return bot.send(msg, t('prefix.changed', { prefix: user.prefix }));
+		bot.send(msg, t('prefix.changed', { prefix: user.prefix }));
+		return;
 	}
 }

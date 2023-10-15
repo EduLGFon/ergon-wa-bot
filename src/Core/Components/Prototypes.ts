@@ -45,16 +45,19 @@ export default () => {
 	/*      console.log        */
 	// The same console.log but styled differently
 	console.log = (...args) => {
-		if (typeof args[0] !== 'string' || !args[2] || !args[0].startsWith('[')) {
-			return console.info(...args);
+		if (typeof args[0] !== 'string' || !args[1] || !args[0].startsWith('[')) {
+			console.info(...args);
+			return;
 		}
 
 		const [title, msg] = [...args];
 
 		const str = `${title} | ${now()} | ${getRAM()}] - ${msg}`;
 
-		return console.info(str); // [ TITLE | 18:04 | 69MB ] - msg
+		console.info(str); // [ TITLE | 18:04 | 69MB ] - msg
+		return;
 	};
 
-	console.log('[PROTOTYPES', 'All set.');
+	console.log('[PROTOTYPES', 'All set.', 'yellow');
+	return;
 };

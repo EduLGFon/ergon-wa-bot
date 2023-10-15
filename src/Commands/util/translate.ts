@@ -21,9 +21,10 @@ export default class extends Command {
 				`*${translation?.from.language.iso}  ➟  ${toLang}*\n` +
 				translation?.text.encode();
 
-			return bot.send(msg, text);
+			bot.send(msg, text);
 		} catch (_e) {
-			return sendUsage();
+			sendUsage();
 		}
+		return;
 	}
 }

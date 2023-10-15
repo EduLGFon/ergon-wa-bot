@@ -61,13 +61,14 @@ export default class extends Command {
 			attachMedia(msgBody, file, path);
 			await bot.send(msg, msgBody as AnyMessageContent);
 
-			return clearTemp();
+			clearTemp();
 		} catch (e: any) {
 			// remove yt-dlp cli to prevent showing social password
 			const error = (e?.stack || e).replace(ytdlArgs.join(' '), 'yt-dlp');
 
-			return bot.send(msg, `YT-DLP Error: ${error}`);
+			bot.send(msg, `YT-DLP Error: ${error}`);
 		}
+		return;
 	}
 }
 
