@@ -7,6 +7,7 @@
 		"node": ">=18"
 	},
 	"scripts": {
+		"postinstall": "npm run prisma && npm run build",
 		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma",
 		"build": "rm -r build/ & tsc",
 		"start": "rm log/* temp/* & node build/Main.js",
