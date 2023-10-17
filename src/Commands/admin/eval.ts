@@ -30,7 +30,7 @@ export default class extends Command {
 			// difference between initial RAM and final RAM
 			const duration = (Date.now() - startTime).toLocaleString('pt');
 			const endRAM = getRAM(true) as number;
-			const RAMRange = endRAM - startRAM;
+			const RAMRange = Number((endRAM - startRAM).toFixed(2));
 
 			const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
 				`[📊]: ${duration}ms - ` +
