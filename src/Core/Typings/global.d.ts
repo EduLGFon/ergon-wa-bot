@@ -5,4 +5,5 @@ type bool = boolean;
 interface String {
 	encode(): str;
 	toPascalCase(): str;
+	align(limit: num, position: 'start' | 'end'): str;
 }

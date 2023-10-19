@@ -34,12 +34,13 @@ export default () => {
 			},
 		},
 		align: {
-			value: function (limit: number) {
+			value: function (limit: number, position: 'start' | 'end' = 'start') {
 				const ratio = (limit - this.length) / 2;
 				const start = ' '.repeat(Math.ceil(ratio));
 				const end = ' '.repeat(Math.floor(ratio));
 
-				return (start + this + end).slice(0, limit);
+				if (position === 'start') return (start + this + end).slice(0, limit);
+				else return (end + this + start).slice(0, limit)
 			},
 		},
 	});
@@ -63,9 +64,10 @@ export default () => {
 
 		const [title, msg, color] = [...args];
 
-		const str = `[${title.align(12)}| ${now()} | ${getRAM()}] - ${msg}`;
+		const str = `[${title.align(12)}| ${now()} | ${(getRAM() as str).align(11, 'end')}] - ${msg}`;
 
-		console.info(chalk.bold[color as 'red'](str));
+		console.log(str);
+		//console.info(chalk.bold[color as 'red'](str));
 		// it prints: [ TITLE | 18:04 | 69MB ] - msg (colored)
 		return;
 	};

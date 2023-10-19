@@ -25,17 +25,18 @@ export default class extends Command {
 			output = await runOtherLang({ lang, code: ctx.args.join(' '), ctx });
 		} catch (e: any) {
 			reaction = '❌'; // Reaction emoji
-			output = String(e?.stack || e);
+			output = String(e?.message || e);
 		} finally {
 			// difference between initial RAM and final RAM
 			const duration = (Date.now() - startTime).toLocaleString('pt');
 			const endRAM = getRAM(true) as number;
-			const RAMRange = Number((endRAM - startRAM).toFixed(2));
+			let RAMRange: str | num = Number((endRAM - startRAM).toFixed(2));			
+			RAMRange = RAMRange < 0 ? RAMRange : `+${RAMRange}`	
 
 			const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
-				`[📊]: ${duration}ms - ` +
-				`${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)\n` +
-				output!.trim().encode();
+				`[📊]: ${duration}ms - ` + `${endRAM}MB (${RAMRange}MB)\n` +
+				output!.trim()
+				.encode();
 
 			clearTemp();
 
