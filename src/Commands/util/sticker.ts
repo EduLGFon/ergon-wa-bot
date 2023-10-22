@@ -22,7 +22,7 @@ export default class extends Command {
 		let buffer = await bot.downloadMedia(targetMsg);
 		if (!buffer) return bot.send(msg, t('sticker.nobuffer'));
 
-		if (args[0] === 'nobg') {
+		if (args[0] === 'rmbg') {
 			const name = Math.random();
 
 			writeFileSync(`temp/${name}.webp`, buffer);
