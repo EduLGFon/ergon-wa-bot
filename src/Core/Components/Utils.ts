@@ -1,9 +1,10 @@
 import type { CmdContext, Msg, MsgTypes } from '../Typings/types.js';
 import config from '../JSON/config.json' assert { type: 'json' };
 import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
-import { GroupMetadata, type proto } from 'baileys';
 import { readdirSync, unlink } from 'node:fs';
+import Group from '../Classes/Group.js';
 import User from '../Classes/User.js';
+import { type proto } from 'baileys';
 import Bot from '../Classes/Bot.js';
 import prisma from './Prisma.js';
 
@@ -14,12 +15,12 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	// msg type
 	const userID = key.participant || key?.remoteJid!;
 
-	let group; // group metadata
-	if (key.participant) group = await bot.getGroup(key?.remoteJid!);
+	let group: Group; // group metadata
+	if (key.participant) group = await bot.getGroup(key?.remoteJid!) as Group;
 
 	let user = bot.users.get(userID);
 	if (!user) {
-		user = await new User(userID, pushName!, prisma).checkData();
+		user = await new User(userID, pushName!).checkData();
 		bot.users.set(userID, user);
 	}
 
@@ -28,6 +29,7 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 		msg: {
 			id: key.id!, // msg id
 			chat: key?.remoteJid!, // msg chat id
+			edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
 			text: getMsgText(message!),
 			type,
 			isMedia: isMedia(type),
@@ -35,7 +37,7 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 			raw, // raw msg obj
 		},
 		user,
-		group,
+		group: group!,
 		bot,
 	} as CmdContext;
 }
@@ -49,7 +51,7 @@ export async function cacheAllGroups(bot: Bot) {
 
 	let groups = Object.keys(groupList);
 
-	groups.forEach((g) => bot.groups.set(g, groupList[g]));
+	groups.forEach((g) => new Group(groupList[g]).checkData());
 	console.log('CACHE', `${groups.length} groups cached.`, 'blue');
 	return;
 }
@@ -106,14 +108,14 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 	return Object.keys(m!)[0] as MsgTypes;
 }
 
-export function getStickerAuthor(user: User, group: GroupMetadata) {
+export function getStickerAuthor(user: User, group?: Group) {
 	return {
 		pack: config.PACK.join('\n'),
 
 		author: config.AUTHOR.join('\n')
 			.replace('{username}', user.name)
 			.replace('{link}', config.LINK)
-			.replace('{group}', group?.subject || 'Not a group'),
+			.replace('{group}', group?.name || 'Not a group'),
 	};
 }
 

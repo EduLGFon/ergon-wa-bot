@@ -19,9 +19,9 @@ export default class extends Command {
 		});
 
 		res = res
-			.replace(process.env.BARD_TOKEN1, 'BARD_TOKEN')
-			.replace(process.env.BARD_TOKEN2, 'BARD_TOKEN')
-			.replace(process.env.BARD_TOKEN3, 'BARD_TOKEN');
+			.replace(process.env.BARD_TOKEN1!, 'BARD_TOKEN')
+			.replace(process.env.BARD_TOKEN2!, 'BARD_TOKEN')
+			.replace(process.env.BARD_TOKEN3!, 'BARD_TOKEN');
 
 		bot.send(msg, res);
 		return;

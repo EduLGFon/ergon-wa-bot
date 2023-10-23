@@ -22,8 +22,7 @@ export default class extends Command {
 
 		const text = `*[👨‍💻] - ${lang.toUpperCase()}* ` +
 			`${duration}ms - ${getRAM()}` + '\n\n' +
-			output.trim()
-				.slice(0, 256);
+			output.trim();
 
 		clearTemp();
 

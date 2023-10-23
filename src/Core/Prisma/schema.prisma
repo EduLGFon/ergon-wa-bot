@@ -11,4 +11,17 @@ model users {
   id     String @id
   lang   String
   prefix String
+  cmds   Int
+}
+
+model msgs {
+  author  String @id
+  count   Int
+  groupId String
+  group   groups @relation(fields: [groupId], references: [id])
+}
+
+model groups {
+  id   String @id
+  msgs msgs[]
 }

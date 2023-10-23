@@ -11,6 +11,8 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	// get abstract msg obj
 	const { msg, group, user, prisma } = await getCtx(raw.messages[0], this);
 
+	if (group) await group.addMsg(user.id);
+
 	// run 'waitFor' events
 	if (this.wait.has(e)) this.wait.get(e)!.bind(this)(msg);
 
@@ -25,6 +27,8 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	if (!cmd) return;
 	// block only devs cmds for normal people
 	if (cmd.access?.onlyDevs && !config.DEVS.includes(user.id)) return this.react(msg, '🚫');
+
+	user.addCmd();
 
 	const sendUsage = async () => {
 		args[0] = cmd.name;
