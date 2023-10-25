@@ -1,8 +1,8 @@
-import type { CmdContext, Lang } from '../Typings/types.ts';
+import type { CmdContext, Lang } from '../Typings/types.d.ts';
 import { delay } from '../Components/Utils.js';
 import { execSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
 import { inspect } from 'node:util';
+import fs from 'node:fs';
 
 export const langs: Lang[] = ['py', 'lua', 'deno', 'node', 'eval', 'cpp'];
 
@@ -63,7 +63,7 @@ export async function runOtherLang({ lang, code, ctx, file }: runParams) {
 			data = langInfo[lang!];
 
 			file = `temp/exec.${data.ext}`;
-			writeFileSync(file, code!);
+			fs.writeFileSync(file, code!);
 			code = '';
 			// don't write code in CLI to prevent issues
 		}
@@ -78,8 +78,8 @@ export async function runOtherLang({ lang, code, ctx, file }: runParams) {
 	} catch (e: any) {
 		const regex = `(${cli.join('|').filterForRegex()})`;
 
-		return String(e?.stack || e)
-			.replace(`Error: Command failed: `, '') // clean errors
+		return String(e?.message || e)
+			.replace(`Command failed: `, '') // clean errors
 			.replace(new RegExp(regex, 'gi'), '') // remove cli
 			.replace(new RegExp(file!.filterForRegex(), 'gi'), 'file'); // remove file name
 

@@ -12,6 +12,7 @@ auth/
 # Builds
 node_modules/
 build/
+Test/
 
 # Logs / Lokefiles
 *lock.json

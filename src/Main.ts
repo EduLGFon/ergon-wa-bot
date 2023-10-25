@@ -4,7 +4,7 @@ import Bot from './Core/Classes/Bot.js';
 import P from 'pino';
 
 const logger = P.default().child({});
-logger.level = 'error';
+logger.level = 'fatal';
 
 loadPrototypes();
 loadLocales();
