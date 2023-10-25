@@ -39,7 +39,7 @@ export default class extends Command {
 			ytdlArgs.push('-x', '--audio-format mp3');
 			path = `temp/${Math.random()}.mp3`;
 			msgBody = {
-				audio: file!,
+				document: file!,
 				mimetype: 'audio/mpeg',
 				fileName: `audio.mp3`,
 				ptt: true,
@@ -53,7 +53,7 @@ export default class extends Command {
 		);
 
 		try {
-			bot.send(msg, t(`download.${isVideo}`));
+			await bot.send(msg, t(`download.${isVideo}`));
 			execSync(`yt-dlp ${ytdlArgs.join(' ')} ${args[1]}`);
 
 			const file = readFileSync(path);
@@ -75,14 +75,7 @@ export default class extends Command {
 function attachMedia(obj: msgMedia, data: Buffer, path: str) {
 	const stat = statSync(path);
 
-	if (obj.audio) {
-		if (stat.size / 1024 / 1024 < 10) return obj.audio = data;
-
-		delete obj.audio;
-		return obj.document = data;
-	}
-
-	if (stat.size / 1024 / 1024 < 40) return obj.video = data;
+	if (obj.video && stat.size / 1024 / 1024 < 40) return obj.video = data;
 
 	delete obj.video;
 	return obj.document = data;
