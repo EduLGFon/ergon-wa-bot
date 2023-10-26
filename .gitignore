@@ -1,6 +1,5 @@
 # Settings
 baileys_store_multi.json
-**/Prisma/migrations
 **/config.json
 *.env
 auth/

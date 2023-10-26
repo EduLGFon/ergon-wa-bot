@@ -1,5 +1,5 @@
 import config from '../JSON/config.json' assert { type: 'json' };
-import prisma from '../Components/Prisma.js';
+import pg from '../Components/PostgreSQL.js';
 
 export default class User {
 	name: str;
@@ -23,17 +23,12 @@ export default class User {
 		this._userLanguage = value;
 
 		(async () =>
-			await prisma.users.upsert({
-				create: {
-					id: this.id,
-					lang: value,
-					prefix: this._userPrefix,
-					cmds: this._cmdsCount,
-				},
-				update: {
+			await pg.users.update({
+				id: this.id,
+				data: {
 					lang: value,
 				},
-				where: { id: this.id },
+				createIfNull: true,
 			}))();
 	}
 
@@ -45,17 +40,10 @@ export default class User {
 		this._userPrefix = value;
 
 		(async () =>
-			prisma.users.upsert({
-				create: {
-					id: this.id,
-					lang: this._userLanguage,
-					prefix: value,
-					cmds: this._cmdsCount,
-				},
-				update: {
-					prefix: value,
-				},
-				where: { id: this.id },
+			pg.users.update({
+				id: this.id,
+				data: { prefix: value },
+				createIfNull: true,
 			}))();
 	}
 
@@ -66,34 +54,26 @@ export default class User {
 	async addCmd() {
 		this._cmdsCount++;
 
-		return await prisma.users.upsert({
-			where: { id: this.id },
-			create: {
-				id: this.id,
-				lang: this._userLanguage,
-				prefix: this._userPrefix,
-				cmds: 1,
-			},
-			update: {
-				cmds: {
-					increment: 1,
-				},
+		return await pg.users.update({
+			id: this.id,
+			data: {
+				cmds: this.cmds + 1,
 			},
 		});
 	}
 
 	async checkData() {
-		let data = await prisma.users.findUnique({ where: { id: this.id } });
+		let data = await pg.users.find({ id: this.id }) as User;
 
 		if (!data) {
-			data = await prisma.users.create({
+			data = await pg.users.create({
+				id: this.id,
 				data: {
-					id: this.id,
 					lang: this._userLanguage,
 					prefix: this._userPrefix,
-					cmds: this._cmdsCount,
+					cmds: 0,
 				},
-			});
+			}) as User;
 		}
 
 		this._userLanguage = data.lang;

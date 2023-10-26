@@ -1,6 +1,7 @@
 import type { CmdContext, Lang } from '../Typings/types.js';
 import { delay } from '../Components/Utils.js';
 import { execSync } from 'node:child_process';
+import pg from '../Components/PostgreSQL.js';
 import { inspect } from 'node:util';
 import fs from 'node:fs';
 
@@ -47,8 +48,9 @@ export async function runCode({ lang, code, ctx, file }: runParams) {
 			file = import.meta.url;
 
 			const func: Function = (async () => {}).constructor(code);
+			let output = await func.bind({ ...ctx, delay, pg })();
 
-			return inspect(await func.bind({ ...ctx, delay })(), { depth: null });
+			return inspect(output, { depth: null });
 		}
 
 		if (file) {

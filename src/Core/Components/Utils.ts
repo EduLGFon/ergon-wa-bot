@@ -6,7 +6,6 @@ import Group from '../Classes/Group.js';
 import User from '../Classes/User.js';
 import { type proto } from 'baileys';
 import Bot from '../Classes/Bot.js';
-import prisma from './Prisma.js';
 
 export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	const { message, key, pushName } = raw;
@@ -25,7 +24,6 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	}
 
 	return {
-		prisma,
 		msg: {
 			id: key.id!, // msg id
 			chat: key?.remoteJid!, // msg chat id

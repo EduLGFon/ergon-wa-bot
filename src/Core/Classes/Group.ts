@@ -1,5 +1,5 @@
 import { GroupMetadata, GroupParticipant } from 'baileys';
-import prisma from '../Components/Prisma.js';
+import pg from '../Components/PostgreSQL.js';
 
 export default class Group {
 	id: str;
@@ -41,21 +41,18 @@ export default class Group {
 	}
 
 	async getMsgs() {
-		return await prisma.msgs.findMany({
+		return await pg.groups.getAll({
 			orderBy: {
-				count: 'desc',
+				key: 'count',
+				type: 'DESC',
 			},
 		});
 	}
 
 	async checkData() {
-		let data = await prisma.groups.findUnique({ where: { id: this.id } });
+		let data = await pg.groups.find({ id: this.id });
 
-		if (!data) {
-			data = await prisma.groups.create({
-				data: { id: this.id },
-			});
-		}
+		if (!data) data = await pg.groups.create({ id: this.id });
 
 		return this;
 	}
