@@ -39,10 +39,10 @@ export default class extends Command {
 			ytdlArgs.push('-x', '--audio-format mp3');
 			path = `temp/${Math.random()}.mp3`;
 			msgBody = {
-				document: file!,
+				audio: file!,
 				mimetype: 'audio/mpeg',
 				fileName: `audio.mp3`,
-				ptt: true,
+				// ptt: true,
 			};
 		}
 
@@ -73,9 +73,11 @@ export default class extends Command {
 }
 
 function attachMedia(obj: msgMedia, data: Buffer, path: str) {
-	const stat = statSync(path);
+	const size = statSync(path).size.bytes(true) as number;
 
-	if (obj.video && stat.size / 1024 / 1024 < 40) return obj.video = data;
+	if (obj.video && size < 40) return obj.video = data;
+
+	if (size < 5) return obj.audio = data;
 
 	delete obj.video;
 	return obj.document = data;

@@ -8,3 +8,7 @@ interface String {
 	align(limit: num, position: 'start' | 'end'): str;
 	filterForRegex(): str;
 }
+
+interface Number {
+	bytes(onlyNumbers?: bool): string | number;
+}
