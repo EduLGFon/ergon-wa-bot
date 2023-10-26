@@ -3,14 +3,14 @@ import { cacheAllGroups } from '../../Core/Components/Utils.js';
 import type bot from '../../Core/Classes/Bot.js';
 import type { Boom } from '@hapi/boom';
 
-export default async function (this: bot, update: Partial<ConnectionState>) {
+export default async function (bot: bot, update: Partial<ConnectionState>) {
 	const { connection, lastDisconnect } = update;
 
 	switch (connection) {
 		case 'open':
-			cacheAllGroups(this);
+			cacheAllGroups(bot);
 			// don't show online mark when the bot is running
-			this.sock.sendPresenceUpdate('unavailable');
+			bot.sock.sendPresenceUpdate('unavailable');
 
 			return console.log('WEBSOCKET', 'Connection stabilized', 'green');
 
@@ -25,7 +25,8 @@ export default async function (this: bot, update: Partial<ConnectionState>) {
 			console.log('WEBSOCKET', `Should try to reconnect: ${shouldReconnect}`, 'blue');
 
 			// reconnect if it's not a logout
-			if (shouldReconnect) this.connect();
+			if (shouldReconnect) bot.connect();
 			return;
 	}
+	return;
 }

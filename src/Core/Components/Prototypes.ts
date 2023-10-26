@@ -85,7 +85,7 @@ export default () => {
 		const [title, msg, color] = [...args];
 
 		const str = `[${title.align(12)}| ${now()} | ${
-			(process.memoryUsage().rss.bytes() as str).align(11, 'end')
+			(process.memoryUsage().rss.bytes() as str).align(10, 'end')
 		}] - ${msg}`;
 
 		// console.log(str);

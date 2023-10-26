@@ -24,7 +24,7 @@ export default class extends Command {
 			.toHuman({ unitDisplay: 'narrow' });
 		const RAM = process.memoryUsage().rss.bytes();
 
-		const text = `*[👨‍💻] - ${lang.toUpperCase()}* ${dur} - ${RAM}\n` +
+		const text = `*[👨‍💻] - ${lang.toUpperCase()}* [${dur} - ${RAM}]\n` +
 			output.trim();
 
 		clearTemp();

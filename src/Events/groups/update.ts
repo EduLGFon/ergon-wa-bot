@@ -2,14 +2,15 @@ import Group from '../../Core/Classes/Group.js';
 import Bot from '../../Core/Classes/Bot.js';
 import { GroupMetadata } from 'baileys';
 
-export default async function (this: Bot, groups: Partial<GroupMetadata>[]) {
+export default async function (bot: Bot, groups: Partial<GroupMetadata>[]) {
 	// fetch group metadata
-	const g = await this.sock.groupMetadata(groups[0].id!);
+	const g = await bot.sock.groupMetadata(groups[0].id!);
 	// fetching is better than use this event parameter
 	// bc it could be incomplete
 
 	const group = await new Group(g).checkData();
 
 	// save new group info
-	this.groups.set(g.id, group);
+	bot.groups.set(g.id, group);
+	return;
 }

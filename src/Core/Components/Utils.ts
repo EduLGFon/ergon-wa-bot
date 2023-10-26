@@ -16,7 +16,7 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	const userID = key.participant || key?.remoteJid!;
 
 	let group: Group; // group metadata
-	if (key.participant) group = await bot.getGroup(key?.remoteJid!) as Group;
+	if (key.participant && key.remoteJid) group = await bot.getGroup(key.remoteJid);
 
 	let user = bot.users.get(userID);
 	if (!user) {
@@ -51,7 +51,12 @@ export async function cacheAllGroups(bot: Bot) {
 
 	let groups = Object.keys(groupList);
 
-	groups.forEach((g) => new Group(groupList[g]).checkData());
+	groups.forEach(async (g) => {
+		const group = new Group(groupList[g]);
+
+		bot.groups.set(group.id, await group.checkData());
+	});
+
 	console.log('CACHE', `${groups.length} groups cached.`, 'blue');
 	return;
 }

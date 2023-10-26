@@ -7,11 +7,11 @@
 		"node": ">=18"
 	},
 	"scripts": {
-		"postinstall": "npm run prisma && npm run build",
-		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma",
-		"build": "rm -r build/ & rm package-lock.json & tsc",
+		"postinstall": "rm package-lock.json & npm run prisma && npm run build",
+		"build": "rm -r build/ & tsc",
 		"start": "rm log/* temp/* & node build/Main.js",
-		"tsnd": "ts-node --esm --files src/Main.ts"
+		"tsnd": "ts-node --esm src/Main.ts",
+		"prisma": "npx prisma generate --schema src/Core/Prisma/schema.prisma"
 	},
 	"dependencies": {
 		"@prisma/client": "^5.2.0",

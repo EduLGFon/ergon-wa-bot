@@ -44,15 +44,11 @@ export async function runCode({ lang, code, ctx, file }: runParams) {
 
 	try {
 		if (lang === 'eval') {
-			const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx!;
-			delay; // i may need it, so TS won't remove from build if it's here
 			file = import.meta.url;
 
-			let output = code!.includes('await')
-				? await eval(`(async () => { ${code} })()`)
-				: await eval(code!);
+			const func: Function = (async () => {}).constructor(code);
 
-			return inspect(output, { depth: null });
+			return inspect(await func.bind({ ...ctx, delay })(), { depth: null });
 		}
 
 		if (file) {

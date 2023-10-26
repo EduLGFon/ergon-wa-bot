@@ -149,18 +149,22 @@ export default class Bot {
 		// Listen to the event here
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// It allows to modify events in run time
-			this.events.get(name)!.bind(this)(...args, name);
+			this.events.get(name)!(this, ...args, name);
 			// eventFunction(this, ...args);
 		});
 	}
 
-	async getGroup(id: str) {
-		// fetch group
-		let group = this.groups.get(id) || await this.sock.groupMetadata(id);
+	async getGroup(id: str): Promise<Group> {
+		let group = this.groups.get(id);
 
-		if (group) {
-			this.groups.set(group.id, group);
-			return await new Group(group).checkData();
+		if (group) return group;
+		else {
+			// fetch group
+			group = await this.sock.groupMetadata(id);
+			const groupData = new Group(group);
+
+			this.groups.set(groupData.id, await groupData.checkData());
+			return groupData;
 		}
 	}
 
