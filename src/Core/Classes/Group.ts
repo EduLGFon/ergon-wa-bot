@@ -1,5 +1,6 @@
 import { GroupMetadata, GroupParticipant } from 'baileys';
 import pg from '../Components/PostgreSQL.js';
+import { GroupMsg } from '../Typings/types.js';
 
 export default class Group {
 	id: str;
@@ -38,21 +39,43 @@ export default class Group {
 	}
 
 	async addMsg(author: str) {
-	}
+		const id = `${author}|${this.id}`;
+		let userCounter = await pg.msgs.find({ id }) as GroupMsg;
 
-	async getMsgs() {
-		return await pg.groups.getAll({
-			orderBy: {
-				key: 'count',
-				type: 'DESC',
+		if (!userCounter) {
+			userCounter = await pg.msgs.create({
+				id,
+				data: {
+					count: 1,
+				},
+			}) as GroupMsg;
+		}
+
+		await pg.msgs.update({
+			id,
+			data: {
+				count: userCounter.count + 1,
 			},
 		});
+		return;
+	}
+
+	async getMsgs(author?: str) {
+		if (author) {
+			return await pg.msgs.find({
+				id: `${author}|${this.id}`,
+			});
+		}
+
+		return (await pg.msgs.getAll()).filter((m) => m.author.includes(this.id));
 	}
 
 	async checkData() {
 		let data = await pg.groups.find({ id: this.id });
 
-		if (!data) data = await pg.groups.create({ id: this.id });
+		if (!data) {
+			data = await pg.groups.create({ id: this.id });
+		}
 
 		return this;
 	}

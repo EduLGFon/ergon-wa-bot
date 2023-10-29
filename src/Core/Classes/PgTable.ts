@@ -169,7 +169,7 @@ export default class Table<T> {
 		let values: str | str[] = [];
 		let keys = '';
 
-		if (data) {
+		if (data && !isEmpty(data)) {
 			if (type === 'update') {
 				Object.entries(data)
 					.forEach(([key, value]) => {

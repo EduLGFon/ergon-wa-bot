@@ -14,7 +14,7 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	if (group) await group.addMsg(user.id);
 
 	// run 'waitFor' events
-	if (bot.wait.has(e)) bot.wait.get(e)!.bind(bot)(msg);
+	if (bot.wait.has(e)) bot.wait.get(e)(bot, msg);
 
 	if (!msg.text.startsWith(user.prefix)) return;
 

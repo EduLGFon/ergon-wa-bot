@@ -77,4 +77,5 @@ interface pg<T extends Record<string, postgres.PostgresType> = {}> extends
 	> {
 	users: Table<User>;
 	groups: Table<Group>;
+	msgs: Table<GroupMsg>;
 }

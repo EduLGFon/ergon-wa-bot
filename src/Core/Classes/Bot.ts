@@ -149,7 +149,8 @@ export default class Bot {
 		// Listen to the event here
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// It allows to modify events in run time
-			this.events.get(name)!(this, ...args, name);
+			this.events.get(name)!(this, ...args, name)
+				.catch((e: any) => console.error(`Events#${name}: ${e.stack}`));
 			// eventFunction(this, ...args);
 		});
 	}
