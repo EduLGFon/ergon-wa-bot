@@ -25,11 +25,11 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 		}
 	}
 
-	let user = bot.users.get(userID);
+	let user: User = bot.users.get(userID);
 
 	if (!user) {
 		user = await new User(userID!, pushName!).checkData();
-		bot.users.set(userID, user);
+		bot.users.set(user.id, user);
 	}
 
 	return {
