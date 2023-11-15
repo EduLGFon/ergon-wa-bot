@@ -1,5 +1,5 @@
 {
-	"name": "walle",
+	"name": "walledev",
 	"module": "./build/Main.js",
 	"type": "module",
 	"exports": "./build/Main.js",
