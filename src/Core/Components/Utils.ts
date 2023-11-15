@@ -1,7 +1,7 @@
 import type { CmdContext, Msg, MsgTypes } from '../Typings/types.js';
 import config from '../JSON/config.json' assert { type: 'json' };
 import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
-import { readdirSync, unlink } from 'node:fs';
+import { readdirSync, unlink, existsSync, mkdir, mkdirSync } from 'node:fs';
 import Group from '../Classes/Group.js';
 import User from '../Classes/User.js';
 import { type proto } from 'baileys';
@@ -156,6 +156,7 @@ export function findKey(obj: any, key: str): any {
 
 export async function clearTemp() {
 	// clear temp folder
+	if (!existsSync("./temp/")) mkdirSync("./temp/");
 	const files = readdirSync('./temp/');
 
 	files.forEach((f) => unlink(`./temp/${f}`, () => {}));
