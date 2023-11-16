@@ -4,5 +4,6 @@
 		"singleQuote": true,
 		"useTabs": true,
 		"lineWidth": 100
-	}
+	},
+	"unstable": ["byonm"]
 }
