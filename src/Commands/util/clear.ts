@@ -8,13 +8,13 @@ export default class extends Command {
         });
     }
 
-    async run ({ t, bot, msg, args, group }: CmdContext) {
+    async run ({ bot, msg, args, group }: CmdContext) {
         const qnt = Number(args[0]) > 20 ? 20 : Number(args[0]);
         const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
         group?.getCachedMsgs(qnt).forEach(async groupMsg => {
             await bot.send(msg.chat, { delete: groupMsg.key });
-            sleep(200);
+            await sleep(200);
         });
 
         return;
