@@ -23,6 +23,7 @@ export default class extends Command {
 		if (!buffer) return bot.send(msg, t('sticker.nobuffer'));
 
 		if (args[0] === 'rmbg') {
+			bot.react(msg, '⌛');
 			const name = Math.random();
 
 			writeFileSync(`temp/${name}.webp`, buffer);
@@ -37,6 +38,7 @@ export default class extends Command {
 
 		switch (targetMsg.type) {
 			case 'video':
+				bot.react(msg, '⌛');
 				stickerTypes = ['full', 'rounded'];
 				break;
 			case 'sticker':
@@ -53,6 +55,7 @@ export default class extends Command {
 			await bot.send(msg.chat, await metadata.toMessage());
 		}
 
+		bot.react(msg, '✅');
 		return;
 	}
 }
