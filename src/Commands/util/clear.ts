@@ -14,7 +14,7 @@ export default class extends Command {
 
     async run ({ bot, msg, args, group }: CmdContext) {
         let qnt = Number(args[0]);
-        if (!Number.isNaN(qnt) || Number(qnt) <= 0) return bot.send(msg.chat, "Oi amigo, você esqueceu de dizer quantas menssagens você quer limpar, ou informou da forma incorreta ☝️");
+        if (Number.isNaN(qnt) || Number(qnt) <= 0) return bot.send(msg.chat, "Oi amigo, você esqueceu de dizer quantas menssagens você quer limpar, ou informou da forma incorreta ☝️");
         qnt = qnt > this.limit ? this.limit : qnt;
 
         const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
