@@ -14,6 +14,7 @@ export default class extends Command {
 
         group?.getCachedMsgs(qnt).forEach(async groupMsg => {
             await bot.send(msg.chat, { delete: groupMsg.key });
+            group.cachedMsgs.delete(groupMsg.id);
             await sleep(200);
         });
 
