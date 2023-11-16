@@ -16,7 +16,7 @@ export default class extends Command {
         let qnt = Number(args[0]);
 
         if (qnt === 0) return bot.send(msg.chat, "\"clear 0\" ? Tá achando que aqui é seu quarto que você não limpa nada?");
-        if (Number.isNaN(qnt) || qnt < 0 || !Number.isInteger(qnt)) return bot.send(msg.chat, "Oi amigo, você esqueceu de dizer quantas menssagens você quer limpar, ou informou da forma incorreta ☝️");
+        if (Number.isNaN(qnt) || qnt < 0 || !Number.isInteger(qnt)) return bot.send(msg.chat, "Oi amigo, você esqueceu de dizer quantas mensagens você quer limpar, ou informou da forma incorreta ☝️");
         qnt = qnt > this.limit ? this.limit : qnt;
 
         const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
