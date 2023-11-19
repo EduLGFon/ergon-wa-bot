@@ -6,11 +6,11 @@
 		"node": ">=20"
 	},
 	"scripts": {
-		"postinstall": "rm package-lock.json & npm run prisma && npm run build",
+		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r build/ & tsc",
 		"start": "rm log/* temp/* & node --no-warnings --expose-gc build/Main.js",
-		"prisma": "npx prisma generate",
-		"prismaInit": "npx prisma db push",
+		"prisma:gen": "npx prisma generate",
+		"prisma:push": "npx prisma db push",
 		"tsnd": "ts-node --esm src/Main.ts"
 	},
 	"dependencies": {
