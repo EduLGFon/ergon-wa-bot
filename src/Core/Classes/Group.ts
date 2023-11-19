@@ -1,5 +1,8 @@
-import { GroupMetadata, GroupParticipant } from 'baileys';
+import { GroupMetadata, GroupParticipant, proto } from 'baileys';
 import prisma from '../Components/Prisma.js';
+import Message from './Message.js';
+import Collection from '../Plugins/Collection.js';
+import { Msg } from '../Typings/types.js';
 
 export default class Group {
 	id: str;
@@ -20,6 +23,7 @@ export default class Group {
 	invite?: str;
 	/** the person who added you */
 	author?: str;
+	cachedMsgs: Collection<string, Message>;
 
 	constructor(g: GroupMetadata) {
 		this.id = g.id;
@@ -35,6 +39,7 @@ export default class Group {
 		this.ephemeral = g.ephemeralDuration;
 		this.invite = g.inviteCode;
 		this.author = g.author;
+		this.cachedMsgs = new Collection({}, 100);
 	}
 
 	async addMsg(author: str) {
@@ -76,6 +81,20 @@ export default class Group {
 		});
 
 		return msgs;
+	}
+
+	getCachedMsgs (limit?: number): Message[] {
+		let arrayMsgs: Message[] = [];
+		this.cachedMsgs.forEach(m => arrayMsgs.push(m));
+		arrayMsgs.reverse();
+
+		if (limit) arrayMsgs.length = limit;
+	
+		return arrayMsgs;
+	}
+
+	cacheMsg (msg: Msg) {
+		return this.cachedMsgs.set(msg.key.id as string, new Message(msg));
 	}
 
 	async checkData() {

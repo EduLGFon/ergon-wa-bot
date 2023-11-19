@@ -11,7 +11,10 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	// get abstract msg obj
 	const { msg, group, user } = await getCtx(raw.messages[0], bot);
 
-	if (group) await group.addMsg(user.id);
+	if (group) {
+		await group.addMsg(user.id);
+		group.cacheMsg(msg);
+	}
 
 	// run 'waitFor' events
 	if (bot.wait.has(e)) bot.wait.get(e)(bot, msg, user, group);
