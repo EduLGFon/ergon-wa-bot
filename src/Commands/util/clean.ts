@@ -1,32 +1,33 @@
-import { CmdContext } from "../../Core/Typings/types.js";
-import Command from "../../Core/Classes/Command.js";
+import { delay, isValidPositiveIntenger } from '../../Core/Components/Utils.js';
+import { CmdContext } from '../../Core/Typings/types.js';
+import Command from '../../Core/Classes/Command.js';
 
 export default class extends Command {
-    limit: number;
+	constructor() {
+		super({
+			cooldown: 10,
+		});
+	}
 
-    constructor () {
-        super({
-            cooldown: 10
-        });
+	async run({ bot, msg, args, group, sendUsage }: CmdContext) {
+		const amount = Number(args[0]);
 
-        this.limit = 20;
-    }
+		if (amount === 0) {
+			return bot.send(
+				msg,
+				'"clean 0"? Tá achando que aqui é seu quarto que você não limpa nada?',
+			);
+		}
 
-    async run ({ bot, msg, args, group }: CmdContext) {
-        let qnt = Number(args[0]);
+		if (!isValidPositiveIntenger(amount)) return sendUsage();
 
-        if (qnt === 0) return bot.send(msg.chat, "\"clean 0\" ? Tá achando que aqui é seu quarto que você não limpa nada?");
-        if (Number.isNaN(qnt) || qnt < 0 || !Number.isInteger(qnt)) return bot.send(msg.chat, "Oi amigo, você esqueceu de dizer quantas mensagens você quer limpar, ou informou da forma incorreta ☝️");
-        qnt = qnt > this.limit ? this.limit : qnt;
+		for (const m of group!.getCachedMsgs(amount)) {
+			await bot.deleteMsg(m);
+			group!.cachedMsgs.remove(m.id!);
 
-        const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+			await delay(350);
+		}
 
-        group?.getCachedMsgs(qnt).forEach(async groupMsg => {
-            await bot.send(msg.chat, { delete: groupMsg.key });
-            group.cachedMsgs.delete(groupMsg.id);
-            await sleep(200);
-        });
-
-        return;
-    }
+		return;
+	}
 }

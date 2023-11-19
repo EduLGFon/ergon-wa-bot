@@ -1,48 +1,53 @@
 import { GroupMetadata, GroupParticipant, proto } from 'baileys';
-import prisma from '../Components/Prisma.js';
-import Message from './Message.js';
 import Collection from '../Plugins/Collection.js';
+import prisma from '../Components/Prisma.js';
 import { Msg } from '../Typings/types.js';
 
 export default class Group {
 	id: str;
 	owner?: str;
 	name: str;
-	/** group subject modification date */
-	nameTimestamp?: num;
-	creation?: num;
+	// group name modification date
+	// nameTimestamp?: num;
+	// creation?: num;
 	desc?: str;
-	/** is set when the group only allows admins to change group settings */
+	// is set when the group only allows admins to change group settings
 	restrict?: bool;
-	/** is set when the group only allows admins to write messages */
+	// is set when the group only allows admins to write msgs
 	announce?: bool;
-	/** number of group participants */
-	size?: num;
+	// number of group members/participants
 	members: GroupParticipant[];
-	ephemeral?: num;
+	size: num;
+	// ephemeral?: num;
 	invite?: str;
 	/** the person who added you */
 	author?: str;
-	cachedMsgs: Collection<string, Message>;
+
+	cachedMsgs: Collection<string, proto.IMessageKey>;
 
 	constructor(g: GroupMetadata) {
 		this.id = g.id;
 		this.name = g.subject;
 		this.owner = g.owner;
-		this.nameTimestamp = g.subjectTime;
-		this.creation = g.creation;
+		// this.nameTimestamp = g.subjectTime;
+		// this.creation = g.creation;
 		this.desc = g.desc;
 		this.restrict = g.restrict;
 		this.announce = g.announce;
-		this.size = g.size;
 		this.members = g.participants;
-		this.ephemeral = g.ephemeralDuration;
+		this.size = g.size || this.members.length;
+		// this.ephemeral = g.ephemeralDuration;
 		this.invite = g.inviteCode;
 		this.author = g.author;
-		this.cachedMsgs = new Collection({}, 100);
+		this.cachedMsgs = new Collection(Group.getMsgsCacheLimit());
 	}
 
-	async addMsg(author: str) {
+	static getMsgsCacheLimit() {
+		// Change here, change in all places.
+		return 200;
+	}
+
+	async countMsg(author: str) {
 		await prisma.msgs.upsert({
 			where: {
 				author_group: {
@@ -62,7 +67,7 @@ export default class Group {
 		return;
 	}
 
-	async getMsgs(author?: str) {
+	async getCountedMsgs(author?: str) {
 		if (author) {
 			return await prisma.msgs.findUnique({
 				where: {
@@ -83,21 +88,24 @@ export default class Group {
 		return msgs;
 	}
 
-	getCachedMsgs (limit?: number): Message[] {
-		let arrayMsgs: Message[] = [];
-		this.cachedMsgs.forEach(m => arrayMsgs.push(m));
-		arrayMsgs.reverse();
+	getCachedMsgs(limit?: number): proto.IMessageKey[] {
+		const msgs = this.cachedMsgs
+			.filter((m: proto.IMessageKey) => m.id) // Checks if the key really exists
+			.reverse() // latest msgs first
+			.slice(0, limit || Group.getMsgsCacheLimit()); // limits the number of msgs
 
-		if (limit) arrayMsgs.length = limit;
-	
-		return arrayMsgs;
+		return msgs;
 	}
 
-	cacheMsg (msg: Msg) {
-		return this.cachedMsgs.set(msg.key.id as string, new Message(msg));
+	cacheMsg(msg: Msg) {
+		return this.cachedMsgs.add(msg.key.id!, msg.key);
 	}
 
 	async checkData() {
+		// I don't save any data of groups, but I let this func here bc
+		// if some day I store groups data,
+		// the code will be prepared to check these data
+
 		return this;
 	}
 }

@@ -1,7 +1,7 @@
 import config from '../../Core/JSON/config.json' assert { type: 'json' };
 import type { CmdContext } from '../../Core/Typings/types.js';
 import { getCtx } from '../../Core/Components/Utils.js';
-import Bot from '../../Core/Classes/Bot.js';
+import type Bot from '../../Core/Classes/Bot.js';
 import { type proto } from 'baileys';
 import i18next from 'i18next';
 
@@ -12,7 +12,7 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	const { msg, group, user } = await getCtx(raw.messages[0], bot);
 
 	if (group) {
-		await group.addMsg(user.id);
+		group.countMsg(user.id);
 		group.cacheMsg(msg);
 	}
 
