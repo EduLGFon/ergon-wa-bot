@@ -17,9 +17,9 @@ export default class extends Command {
 	async run({ bot, msg, group, t }: CmdContext) {
 		let text = `*[🏆] - ${group!.name}'s Rank*\n\n`;
 
-		let msgs = await group!.getMsgs() as GroupMsg[];
+		let msgs = await group!.getCountedMsgs() as GroupMsg[];
 
-		// "ORDERBY count DESC"
+		// same as SQL "ORDERBY count DESC"
 		msgs = msgs.sort((a, b) => b.count - a.count);
 
 		for (const i in msgs) {
