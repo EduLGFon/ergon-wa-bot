@@ -1,7 +1,7 @@
 import type { CmdContext } from '../../Core/Typings/types.js';
 import { cleanTemp } from '../../Core/Components/Utils.js';
-import Command from '../../Core/Classes/Command.js';
 import { readFileSync, statSync } from 'node:fs';
+import Cmd from '../../Core/Classes/Command.js';
 import { execSync } from 'node:child_process';
 import { AnyMessageContent } from 'baileys';
 
@@ -14,7 +14,7 @@ type msgMedia = {
 	fileName: str;
 };
 
-export default class extends Command {
+export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['d'],

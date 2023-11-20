@@ -11,12 +11,12 @@ import {
 	type WASocket,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import type { Cmd, Logger, Msg } from '../Typings/types.js';
+import type { Logger, Msg } from '../Typings/types.js';
 import { getCtx, getMsgMeta } from '../Components/Utils.js';
 import Collection from '../Plugins/Collection.js';
 import { readdirSync } from 'node:fs'; // DENO point
 import { resolve } from 'node:path';
-import Command from './Command.js';
+import Cmd from './Command.js';
 import Group from './Group.js';
 import User from './User.js';
 
@@ -45,7 +45,7 @@ export default class Bot {
 		// Events collection (0 means no limit)
 		this.events = new Collection(0);
 		// Cmds collection
-		this.cmds = new Collection(0, Command);
+		this.cmds = new Collection(0, Cmd);
 		// Cmd aliases map
 		this.aliases = new Collection(0);
 	}
@@ -169,20 +169,19 @@ export default class Bot {
 		const cmd: Cmd = new imported();
 		cmd.name = file.slice(0, -3);
 
-		const properties = Object.assign({
+		const properties: Cmd = Object.assign({
 			name: '',
 			aliases: [],
 			cooldown: 3,
 			run: cmd.run,
-		} as Cmd, cmd);
+		}, cmd);
 		// Compare cmd properties with a 'template base'
 		// Fill missing data with default data
 
 		// Set cmd
 		this.cmds.set(properties.name!, properties);
 
-		properties.aliases
-			?.forEach((a) => this.aliases.set(a, properties.name!));
+		properties.aliases.forEach((a) => this.aliases.set(a, properties.name!));
 		// Set cmd aliases
 	}
 

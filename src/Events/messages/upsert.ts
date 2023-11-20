@@ -3,7 +3,9 @@ import type { CmdContext } from '../../Core/Typings/types.js';
 import { coolMsgTypes } from '../../Core/Typings/MsgTypes.js';
 import { getCtx } from '../../Core/Components/Utils.js';
 import type Bot from '../../Core/Classes/Bot.js';
+import Cmd from '../../Core/Classes/Command.js';
 import { type proto } from 'baileys';
+import { Duration } from 'luxon';
 import i18next from 'i18next';
 
 export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
@@ -25,13 +27,11 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	const args: str[] = msg.text.replace(user.prefix, '').trim().split(' ');
 	const callCmd = args.shift()!.toLowerCase()!;
 	// search command by name or by aliases
-	const cmd = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!);
+	const cmd: Cmd = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!);
 
 	if (!cmd) return;
 	// block only devs cmds for normal people
-	if (cmd.access?.onlyDevs && !config.DEVS.includes(user.id)) return bot.react(msg, '🚫');
-
-	user.addCmd();
+	if (cmd.access.onlyDevs && !config.DEVS.includes(user.id)) return bot.react(msg, '⛔');
 
 	const ctx: CmdContext = {
 		// get locales function
@@ -45,6 +45,22 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 		cmd,
 		msg,
 	};
+
+	const cooldown = user.lastCmd.time + cmd.cooldown * 1_000 - Date.now();
+	if (cooldown > 699) {
+		const time = Duration
+			.fromMillis(cooldown)
+			.rescale()
+			.shiftTo('seconds')
+			.toHuman({ unitDisplay: 'long' });
+
+		return bot.send(
+			msg,
+			`[📛] - Hold on! You need to wait *${time}* before executing another command.`,
+		);
+	}
+
+	user.addCmd();
 
 	try {
 		// start typing (expires after about 10 seconds.)

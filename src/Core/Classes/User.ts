@@ -6,9 +6,14 @@ export default class User {
 	_userLanguage: str;
 	_userPrefix: str;
 	_cmdsCount: num;
+	lastCmd: {
+		time: num;
+		cmdReply?: str;
+	};
 
 	constructor(public id: str, username: str) {
 		this.id = id.split('@')[0].split(':')[0];
+		this.lastCmd = { time: 0 };
 
 		this._username = username;
 		this._userLanguage = config.LANG;
@@ -63,6 +68,7 @@ export default class User {
 	}
 
 	async addCmd() {
+		this.lastCmd = { time: Date.now() };
 		this._cmdsCount++;
 
 		await prisma.users.update({

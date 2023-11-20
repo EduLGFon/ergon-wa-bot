@@ -1,9 +1,9 @@
 import { CmdContext, GroupMsg } from '../../Core/Typings/types.js';
-import Command from '../../Core/Classes/Command.js';
 import prisma from '../../Core/Components/Prisma.js';
+import Cmd from '../../Core/Classes/Command.js';
 import User from '../../Core/Classes/User.js';
 
-export default class extends Command {
+export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['r'],

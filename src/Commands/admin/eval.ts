@@ -1,10 +1,10 @@
 import type { CmdContext, Lang } from '../../Core/Typings/types.d.ts';
 import { langs, runCode } from '../../Core/Plugins/RunCode.js';
 import { cleanTemp } from '../../Core/Components/Utils.js';
-import Command from '../../Core/Classes/Command.js';
+import Cmd from '../../Core/Classes/Command.js';
 import { Duration } from 'luxon';
 
-export default class extends Command {
+export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['e'],
