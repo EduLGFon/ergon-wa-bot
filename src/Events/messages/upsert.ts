@@ -7,12 +7,15 @@ import Cmd from '../../Core/Classes/Command.js';
 import { type proto } from 'baileys';
 import { Duration } from 'luxon';
 import i18next from 'i18next';
+import { inspect } from 'node:util';
 
 export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
 	if (!raw.messages[0].message) return;
 
 	// get abstract msg obj
 	const { msg, group, user } = await getCtx(raw.messages[0], bot);
+
+	console.log(msg.type, msg.text);
 
 	if (group && Object.values(coolMsgTypes).includes(msg.type)) {
 		group.cacheMsg(msg);

@@ -1,11 +1,9 @@
-import type { CmdContext, Lang } from '../Typings/types.js';
-import { delay } from '../Components/Utils.js';
+// import bc, { workerMsg } from '../Components/WorkerUtil.js';
+import type { Lang } from '../Typings/types.js';
 import { execSync } from 'node:child_process';
-import prisma from '../Components/Prisma.js';
-import { inspect } from 'node:util';
 import fs from 'node:fs';
 
-export const langs: Lang[] = ['py', 'lua', 'deno', 'node', 'eval', 'cpp'];
+export const langs: Lang[] = ['py', 'lua', 'deno', 'node', 'cpp'];
 
 const langInfo = {
 	py: {
@@ -24,39 +22,30 @@ const langInfo = {
 		cmd: ['node '],
 		ext: 'js',
 	},
-	eval: {
-		cmd: ['eval'],
-		ext: 'js',
-	},
 	cpp: {
 		cmd: ['g++ -o temp/main ', './temp/main # '],
 		ext: 'cpp',
 	},
 };
 
-interface runParams {
+interface Params {
 	lang?: Lang;
 	code?: str;
-	ctx?: CmdContext;
 	file?: string;
 }
-export async function runCode({ lang, code, ctx, file }: runParams) {
+
+// bc.onMsg = async (msg: workerMsg) => {
+// 	if (msg.target !== 'run') return;
+
+// 	bc.send({
+// 		text: await runCode(msg.data),
+// 	});
+// };
+
+export async function runCode({ lang, code, file }: Params) {
 	let data, cli: str[] = [];
 
 	try {
-		if (lang === 'eval') {
-			const { args, bot, msg, user, group, cmd, callCmd, t, sendUsage } = ctx!;
-			delay; // i may need it, so TS won't remove from build if it's here
-			prisma;
-			file = import.meta.url;
-
-			let output = code!.includes('await')
-				? await eval(`(async () => { ${code} })()`)
-				: await eval(code!);
-
-			return inspect(output, { depth: null });
-		}
-
 		if (file) {
 			lang = file.split('.')[1] as 'py';
 

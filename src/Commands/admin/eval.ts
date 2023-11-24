@@ -1,7 +1,10 @@
 import type { CmdContext, Lang } from '../../Core/Typings/types.d.ts';
 import { langs, runCode } from '../../Core/Plugins/RunCode.js';
 import { cleanTemp } from '../../Core/Components/Utils.js';
+import { delay } from '../../Core/Components/Utils.js';
+import prisma from '../../Core/Components/Prisma.js';
 import Cmd from '../../Core/Classes/Command.js';
+import { inspect } from 'node:util';
 import { Duration } from 'luxon';
 
 export default class extends Cmd {
@@ -17,19 +20,33 @@ export default class extends Cmd {
 		const { args, bot, msg } = ctx;
 
 		// Language to be runned
-		const lang = (langs.includes(args[0] as 'py') ? args.shift() : 'eval') as Lang;
+		const lang = (langs.includes(args[0] as 'cpp') ? args.shift() : null) as Lang | null;
+		const code = args.join(' ');
+		let output, startTime: num;
 		bot.react(msg, '⌛');
 
-		const startTime = Date.now();
-		const output = await runCode({ lang, code: args.join(' '), ctx });
+		if (!lang) {
+			const { user, group, cmd, callCmd, t, sendUsage } = ctx;
+			prisma;
+			delay; // i may need it, so TS won't remove from build if it's here
+
+			let evaled = code.includes('await')
+				? await eval(`(async () => { ${code} })()`)
+				: await eval(code!);
+
+			output = inspect(evaled, { depth: null });
+		} else {
+			startTime = Date.now();
+			output = await runCode({ lang, code });
+		}
 
 		const dur = Duration
-			.fromMillis(Date.now() - startTime || 1)
+			.fromMillis(Date.now() - startTime! || 1)
 			.rescale()
 			.toHuman({ unitDisplay: 'narrow' });
 		const RAMusage = process.memoryUsage().rss.bytes();
 
-		const text = `*[👨‍💻] - ${lang.toUpperCase()}* [${dur} - ${RAMusage}]\n` +
+		const text = `*[👨‍💻] - ${(lang || 'EVAL').toUpperCase()}* [${dur} - ${RAMusage}]\n` +
 			output.trim();
 
 		cleanTemp();
