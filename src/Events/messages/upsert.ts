@@ -15,8 +15,6 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	// get abstract msg obj
 	const { msg, group, user } = await getCtx(raw.messages[0], bot);
 
-	console.log(msg.type, msg.text);
-
 	if (group && Object.values(coolMsgTypes).includes(msg.type)) {
 		group.cacheMsg(msg);
 		if (!msg.isBot) group.countMsg(user.id);
