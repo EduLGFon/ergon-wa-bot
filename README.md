@@ -1,4 +1,4 @@
-# ⭐ WALL-E ⭐
+# ⭐ WALL-E 🤖⭐
 
 ### ✨ WALL-E is a WhatsApp chat bot with some cool features. ✨
 
@@ -6,7 +6,7 @@
 
 ---
 
-# What do you mean by "cool features"? 🤔:
+# 🤔 What do you mean by "cool features"?:
 
 - [x] Translate text;
 - [x] Search on Google;
@@ -21,44 +21,44 @@
 
 **and more.**
 
-# How to install? 🤔
+# 🤔 How to install?
 
 ### `1 -` 🛠️ Install these tools to get started:
 
-- [DENO](https://deno.com/)
+- [DENO 🦕](https://deno.com/)
 
-> ⚠️ » _Recommended version: 1.38 or higher_
+> 🪧 » _Recommended version: 1.38 or higher_
 
-- [NodeJS](https://nodejs.org/pt-br/)
+- [NodeJS 💩](https://nodejs.org/pt-br/)
 
-> ⚠️ » _Recommended version: 20 or higher_
+> 🪧 » _Recommended version: 20 or higher_
 
-- [Python](https://www.python.org/)
+- [Python 🐍](https://www.python.org/)
 
-> ⚠️ » _Recommended version: 3.10 or higher_
+> 🪧 » _Recommended version: 3.10 or higher_
 
-- [PostgreSQL](https://www.postgresql.org/download/)
+- [PostgreSQL 🐘](https://www.postgresql.org/download/)
 
-> ⚠️ » _Recommended version: 14 or higher_
+> 🪧 » _Recommended version: 14 or higher_
 
 - [GIT CLI](https://git-scm.com/downloads)
 
-> ⚠️ » _Only required to clone this repo_
+> 🪧 » _Only required to clone this repo_
 
 **OPTIONAL TOOLS REQUIRED ONLY TO RUN CODE:**
 
-- [LUA](https://www.lua.org/)
+- [LUA 🌙](https://www.lua.org/)
 
-> ⚠️ » _Recommended version: 5.4 or higher_
+> 🪧 » _Recommended version: 5.4 or higher_
 
-- [G++]()
+- [G++ 🔥]()
 
-> ⚠️ » _Recommended version: 11.4 or higher_
+> 🪧 » _Recommended version: 11.4 or higher_
 
 ### `2 -` 📁 Download or clone the repository:
 
 ```bash
-Button "Code" > "Download ZIP"
+"Code" > "Download ZIP"
 
 or
 
@@ -67,11 +67,11 @@ git clone https://github.com/Sunf3r/WALL-E # Clone this repo
 
 ### `3 -` 🧰 Install dependencies:
 
-> ⚠️ » _Open the folder in terminal_
+> 💡 » _Open the folder in terminal_
 
 ```bash
 npm install # Download and build dependencies
-npm install -g typescript pm2 prisma
+npm install -g typescript pm2 prisma # production packages
 ```
 
 ### `4 -` 🌿 Preparing the environment
