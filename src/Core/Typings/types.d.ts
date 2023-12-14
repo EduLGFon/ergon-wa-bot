@@ -1,12 +1,12 @@
 // import { BroadcastChannel } from 'node:worker_threads';
-import { GroupMetadata, proto } from 'baileys';
 import Group from '../Classes/Group.ts';
 import Cmd from '../Classes/Command.ts';
 import User from '../Classes/User.ts';
+import _globals from './global.d.ts';
 import { TFunction } from 'i18next';
 import Bot from '../Classes/Bot.ts';
+import { proto } from 'baileys';
 import { pino } from 'pino';
-
 type Lang = 'py' | 'lua' | 'deno' | 'node' | 'cpp';
 
 type Logger = pino.Logger<{ timestamp: () => str } & pino.ChildLoggerOptions>;

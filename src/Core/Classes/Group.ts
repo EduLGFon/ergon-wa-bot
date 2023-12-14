@@ -1,7 +1,7 @@
 import { GroupMetadata, GroupParticipant, proto } from 'baileys';
 import Collection from '../Plugins/Collection.js';
+import type { Msg } from '../Typings/types.d.ts';
 import prisma from '../Components/Prisma.js';
-import { Msg } from '../Typings/types.js';
 
 export default class Group {
 	id: str;

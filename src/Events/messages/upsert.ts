@@ -4,7 +4,7 @@ import { coolMsgTypes } from '../../Core/Typings/MsgTypes.js';
 import { getCtx } from '../../Core/Components/Utils.js';
 import type Bot from '../../Core/Classes/Bot.js';
 import Cmd from '../../Core/Classes/Command.js';
-import { type proto } from 'baileys';
+import { type proto } from '@whiskeysockets/baileys';
 import { Duration } from 'luxon';
 import i18next from 'i18next';
 

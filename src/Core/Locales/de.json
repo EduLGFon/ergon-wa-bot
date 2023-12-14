@@ -45,7 +45,10 @@
 		"examples": [".", "!"],
 		"changed": "[✔️] – Ihr neues Präfix ist: *{{prefix}}*"
 	},
-	"ping": { "desc": "Berechnet die Bot-Verzögerung", "pinging": "Reaktionszeit berechnen..." },
+	"ping": {
+		"desc": "Berechnet die Bot-Verzögerung",
+		"pinging": "Reaktionszeit berechnen..."
+	},
 	"sticker": {
 		"usage": "<Bild/GIF angehängt> [nobg: Hintergrund entfernen]",
 		"desc": "Erstellen Sie einen Aufkleber mit Bild/GIF und entfernen Sie sogar den Hintergrund",

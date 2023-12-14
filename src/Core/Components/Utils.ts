@@ -1,4 +1,4 @@
-import type { CmdContext, Msg, MsgTypes } from '../Typings/types.js';
+import type { CmdContext, Msg, MsgTypes } from '../Typings/types.d.ts';
 import { existsSync, mkdirSync, readdirSync, unlink } from 'node:fs';
 import config from '../JSON/config.json' assert { type: 'json' };
 import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
@@ -164,8 +164,8 @@ function isValidPositiveIntenger(value: num): bool {
 	return !Number.isNaN(value) && value > 0 && Number.isInteger(value);
 }
 
-// getMsgMeta: get some meta data from a msg
-function getMsgMeta(
+// msgMeta: get some meta data from a msg
+function msgMeta(
 	msg: str | Msg | proto.IMessageKey,
 	body: str | AnyMessageContent,
 	reply?: proto.IWebMessageInfo,
@@ -201,10 +201,10 @@ export {
 	findKey,
 	genStickerMeta,
 	getCtx,
-	getMsgMeta,
 	getMsgText,
 	getMsgType,
 	getQuoted,
 	isEmpty,
 	isValidPositiveIntenger,
+	msgMeta,
 };

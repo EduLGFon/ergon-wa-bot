@@ -16,7 +16,8 @@ export default class Collection<K, V> extends Map {
 		if (existing) return existing;
 
 		if (this.base) {
-			value = (value instanceof this.base || value?.constructor?.name === this.base.name)
+			value = (value instanceof this.base ||
+					value?.constructor?.name === this.base.name)
 				? value
 				: new this.base(key, ...extra!);
 		}

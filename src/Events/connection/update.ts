@@ -18,11 +18,15 @@ export default async function (bot: bot, update: Partial<ConnectionState>) {
 			return console.log('WEBSOCKET', 'Connecting...', 'gray');
 
 		case 'close':
-			const shouldReconnect =
-				(lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+			const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !==
+				DisconnectReason.loggedOut;
 
 			console.error(`Connection closed by: ${lastDisconnect?.error}`);
-			console.log('WEBSOCKET', `Should try to reconnect: ${shouldReconnect}`, 'blue');
+			console.log(
+				'WEBSOCKET',
+				`Should try to reconnect: ${shouldReconnect}`,
+				'blue',
+			);
 
 			// reconnect if it's not a logout
 			if (shouldReconnect) bot.connect();

@@ -11,8 +11,8 @@ import {
 	type WASocket,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import type { Logger, Msg } from '../Typings/types.js';
-import { getCtx, getMsgMeta } from '../Components/Utils.js';
+import { getCtx, msgMeta } from '../Components/Utils.js';
+import type { Logger, Msg } from '../Typings/types.d.ts';
 import Collection from '../Plugins/Collection.js';
 import { readdirSync } from 'node:fs'; // DENO point
 import { resolve } from 'node:path';
@@ -88,11 +88,12 @@ export default class Bot {
 
 		// Load events
 		this.folderHandler(`./build/Events`, this.loadEvents);
+		return;
 	}
 
 	// Send: Intermediate function to send msgs easier
 	async send(id: str | Msg, body: str | AnyMessageContent, reply?: proto.IWebMessageInfo) {
-		let { text, chat, quote } = getMsgMeta(id, body, reply);
+		let { text, chat, quote } = msgMeta(id, body, reply);
 
 		const msg = await this.sock.sendMessage(chat, text, quote);
 
@@ -113,7 +114,7 @@ export default class Bot {
 	}
 
 	async deleteMsg(msgOrKey: Msg | proto.IMessageKey) {
-		const { chat, key } = getMsgMeta(msgOrKey, '');
+		const { chat, key } = msgMeta(msgOrKey, '');
 
 		return await this.send(chat, { delete: key });
 	}

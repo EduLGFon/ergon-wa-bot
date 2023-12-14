@@ -6,7 +6,10 @@ export default async function (sock: WASocket) {
 	if (!sock.authState.creds.registered) {
 		const question = (text: str) => new Promise<str>((r) => rl.question(text, r));
 
-		const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+		const rl = readline.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		});
 		const { registration: r } = sock.authState.creds || { registration: {} };
 
 		if (!r.phoneNumber) r.phoneNumber = await question('Insert your phone number: ');

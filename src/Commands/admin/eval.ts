@@ -20,19 +20,26 @@ export default class extends Cmd {
 		const { args, bot, msg } = ctx;
 
 		// Language to be runned
-		const lang = (langs.includes(args[0] as 'cpp') ? args.shift() : null) as Lang | null;
+		const lang = (langs.includes(args[0] as 'cpp') ? args.shift() : null) as
+			| Lang
+			| null;
 		const code = args.join(' ');
 		let output, startTime: num;
 		bot.react(msg, '⌛');
 
 		if (!lang) {
 			const { user, group, cmd, callCmd, t, sendUsage } = ctx;
+			let evaled;
 			prisma;
 			delay; // i may need it, so TS won't remove from build if it's here
 
-			let evaled = code.includes('await')
-				? await eval(`(async () => { ${code} })()`)
-				: await eval(code!);
+			try {
+				evaled = code.includes('await')
+					? await eval(`(async () => { ${code} })()`)
+					: await eval(code!);
+			} catch (e: any) {
+				evaled = e.message;
+			}
 
 			output = inspect(evaled, { depth: null });
 		} else {
@@ -46,7 +53,8 @@ export default class extends Cmd {
 			.toHuman({ unitDisplay: 'narrow' });
 		const RAMusage = process.memoryUsage().rss.bytes();
 
-		const text = `*[👨‍💻] - ${(lang || 'EVAL').toUpperCase()}* [${dur} - ${RAMusage}]\n` +
+		const text =
+			`*[👨‍💻] - ${(lang || 'EVAL').toUpperCase()}* [${dur} - ${RAMusage}]\n` +
 			output.trim();
 
 		cleanTemp();

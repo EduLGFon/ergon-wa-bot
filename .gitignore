@@ -2,7 +2,7 @@
 baileys_store_multi.json
 **/config.json
 *.env
-auth/
+auth*
 
 # Yarn
 .pnp.*

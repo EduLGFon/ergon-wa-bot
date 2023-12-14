@@ -56,7 +56,8 @@ export default class extends Cmd {
 					additional_params: { hl: user.lang },
 				});
 
-				const { title, type, description, metadata } = moreInfo?.knowledge_panel;
+				const { title, type, description, metadata } = moreInfo
+					?.knowledge_panel;
 
 				text += `*${title || word}* (${type || phonetic})`;
 				// e.g.: *Donald Trump* (45th U.S. President)
@@ -64,7 +65,9 @@ export default class extends Cmd {
 				if (description) text += `\n> ${description}\n`;
 				// > Donald John Trump is bla bla bla
 
-				for (const { title: key, value } of metadata) text += `\n*> ${key}*: ${value}`;
+				for (const { title: key, value } of metadata) {
+					text += `\n*> ${key}*: ${value}`;
+				}
 			},
 			CURRENCY(r: g.CurrencyResultNode) {
 				const { formula } = r;

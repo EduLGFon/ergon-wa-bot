@@ -28,10 +28,14 @@ export default class extends Cmd {
 			let user: User = bot.users.get(author);
 
 			if (!user) {
-				user = await prisma.users.findUnique({ where: { id: author } }) as User;
+				user = await prisma.users.findUnique({
+					where: { id: author },
+				}) as User;
 			}
 
-			text += `*${Number(i) + 1}.* ${user?.name || author}: *${count}* messages\n`;
+			text += `*${Number(i) + 1}.* ${
+				user?.name || author
+			}: *${count}* messages\n`;
 		}
 
 		bot.send(msg, text);
