@@ -19,11 +19,9 @@ import { resolve } from 'node:path';
 import Cmd from './Command.js';
 import Group from './Group.js';
 import User from './User.js';
-// import bc from '../Components/WorkerUtil.js';
 
 export default class Bot {
 	sock!: WASocket;
-	// bc!: bc;
 
 	// Collections (Stored data)
 	cmds: Collection<string, Cmd>;

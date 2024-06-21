@@ -106,6 +106,7 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 		if (res) return String(newType).trim() as MsgTypes;
 	}
 
+	console.log('Unknown msg tyṕe:', m);
 	return Object.keys(m!)[0] as MsgTypes;
 }
 // genStickerMeta: Generate the author/pack for a sticker

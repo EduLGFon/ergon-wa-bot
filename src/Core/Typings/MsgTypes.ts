@@ -15,25 +15,35 @@ const mediaMsgs = {
 	'audioMessage': 'audio',
 };
 
+const visualMsgs = {
+	'imageMessage': 'image',
+	'stickerMessage': 'sticker',
+	'videoMessage': 'video',
+};
+
 const coolMsgTypes = {
 	...textMsgs,
 	...mediaMsgs,
 	'locationMessage': 'location',
 };
 
-const msgTypes = {
-	...textMsgs,
-	...mediaMsgs,
-	'protocolMessage': 'protocol',
+const msgTypes = { // all msg types
+	...coolMsgTypes,
 	'reactionMessage': 'reaction',
-	'locationMessage': 'location',
-};
+	'pinInChatMessage': 'pin',
+	'protocolMessage': 'protocol', // Delete msgs
 
-const visualMsgs = {
-	'imageMessage': 'image',
-	'stickerMessage': 'sticker',
-	'videoMessage': 'video',
-};
+	// API Bots
+	'buttonsMessage': 'button',
+	'templateMessage': 'template',
+	'buttonsResponseMessage': 'buttonReply',
+	'templateButtonReplyMessage': 'buttonReply',
+
+	// Polls
+	'pollCreationMessageV3': 'poll',
+	'pollUpdateMessage': 'pollUpdate',
+	
+}
 
 const isMedia = (type: MsgTypes) => Object.values(visualMsgs).includes(type);
 

@@ -9,7 +9,7 @@ import { proto } from 'baileys';
 import { pino } from 'pino';
 type Lang = 'py' | 'lua' | 'deno' | 'node' | 'cpp';
 
-type Logger = pino.Logger<{ timestamp: () => str } & pino.ChildLoggerOptions>;
+export type Logger = P.pino.Logger<never>
 
 type MsgTypes =
 	| 'text'
