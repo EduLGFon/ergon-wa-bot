@@ -7,22 +7,26 @@
 	},
 	"scripts": {
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
-		"build": "rm -r build/ & tsc",
+		"build": "",
 		"start": "rm log/* temp/* & node --no-warnings --expose-gc build/Main.js",
 		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
 		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
+		"fmt": "deno fmt ./ --config=settings/deno.jsonc",
 		"tsnd": "ts-node --esm src/Main.ts"
 	},
 	"dependencies": {
 		"@prisma/client": "^5.5.2",
 		"baileys": "^6.7.5",
+		"chalk": "^5.3.0",
 		"google-translate": "github:iamtraction/google-translate",
 		"i18next": "^23.5.1",
 		"i18next-fs-backend": "^2.2.0",
+		"luxon": "^3.4.4",
 		"qrcode-terminal": "^0.12.0",
 		"wa-sticker-formatter": "^4.4.4"
 	},
 	"devDependencies": {
+		"@types/luxon": "^3.4.2",
 		"@types/node": "^20.14.9",
 		"prisma": "^5.5.2",
 		"typescript": "^5.2.2"
