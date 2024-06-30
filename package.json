@@ -9,13 +9,15 @@
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r build/ & tsc",
 		"clean": "rm -r settings/log/* settings/temp/*",
-		"start": "pm2 start settings/ecosystem.config.cjs --attach",
+		"start": "npm run build && pm2 start settings/ecosystem.config.cjs --attach",
+		"restart": "npm run build && pm2 restart walle --attach",
 		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
 		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"fmt": "deno fmt ./ --config=settings/deno.jsonc",
 		"tsnd": "ts-node --esm main.ts"
 	},
 	"dependencies": {
+		"@google/generative-ai": "^0.14.0",
 		"@prisma/client": "^5.5.2",
 		"baileys": "^6.7.5",
 		"chalk": "^5.3.0",

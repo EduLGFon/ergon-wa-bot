@@ -45,6 +45,7 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 			edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
 			isBot: key.fromMe && !key.participant,
 			isMedia: isMedia(type),
+			mime: findKey(message, 'mimetype'),
 			quoted: getQuoted(raw), // quoted msg
 			raw, // raw msg obj
 		},
@@ -91,6 +92,7 @@ function getQuoted(raw: proto.IWebMessageInfo) {
 		isMedia: isMedia(type),
 		//@ts-ignore
 		text: getMsgText(quotedRaw),
+		mime: findKey(quotedRaw, 'mimetype'),
 		raw: { message: quotedRaw }, // raw quote obj
 	} as Partial<Msg>
 }
