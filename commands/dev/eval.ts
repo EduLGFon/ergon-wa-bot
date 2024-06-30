@@ -40,7 +40,7 @@ export default class extends Cmd {
 			output = inspect(evaled, { depth: null })
 		} else {
 			startTime = Date.now()
-			
+
 			output = await runCode({ lang, code })
 		}
 

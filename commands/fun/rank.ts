@@ -1,4 +1,4 @@
-import { Cmd, CmdCtx, GroupMsg, User, prisma } from '../../map.js'
+import { Cmd, CmdCtx, GroupMsg, prisma, User } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {

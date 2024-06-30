@@ -46,7 +46,6 @@ import {
 	delay,
 	findKey,
 	genStickerMeta,
-	runCode,
 	getCtx,
 	getMsgText,
 	getMsgType,
@@ -54,6 +53,7 @@ import {
 	isEmpty,
 	isValidPositiveIntenger,
 	msgMeta,
+	runCode,
 } from './util/functions.js'
 import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
@@ -65,14 +65,14 @@ export {
 	findKey,
 	genStickerMeta,
 	getCtx,
-	runCode,
 	getMsgText,
 	getMsgType,
 	getQuoted,
 	isEmpty,
 	isValidPositiveIntenger,
-	locale,
 	languages,
+	locale,
 	msgMeta,
 	proto,
+	runCode,
 }
