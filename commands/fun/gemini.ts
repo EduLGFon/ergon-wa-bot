@@ -62,12 +62,12 @@ export default class extends Cmd {
 
 			outputTokens = (await gemini.countTokens(text)).totalTokens
 		} catch (e: any) {
-			text = `Error: ${e.message}`
+			text = `Error: ${e.message.encode()}`
 		}
 
 		bot.send(
 			msg,
-			`${inputTokens} tokens to *${model}* (${outputTokens} tokens):\n${text.encode()}`,
+			`${inputTokens} tokens to *${model}* (${outputTokens} tokens):\n\n${text}`,
 		)
 		bot.react(msg, '✅')
 		return
