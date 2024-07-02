@@ -1,58 +1,50 @@
 import settings from '../settings/settings.json' with { type: 'json' }
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
+import express from 'express'
 
 const languages = Object.keys(settings.runner)
+const app = express()
 
-const handler = async (req: Request): Promise<Response> => {
-	const route = req.url.split('/').pop() as 'run'
+app
+	.use(express.json())
+	.get('/languages', (req, res) => {
+		res.send(languages)
+	})
+	.post('/run', async (req, res) => {
+		const { lang, code, file } = req.body
 
-	const routes = {
-		languages() {
-			return JSON.stringify(languages)
-		},
-		async run() {
-			const { lang, code, file } = await req.json()
+		if ((lang && code) || file) return res.send(await runCode(lang, code, file))
+		res.send('missing data')
+	})
+	.listen(settings.runner.port, () => console.log(`ready! Port: ${settings.runner.port}`))
 
-			if ((lang && code) || file) return runCode(lang, code, file)
-			return 'missing data'
-		},
-	}
-	const func = routes[route]
-
-	if (func) return new Response(await func())
-
-	return new Response('404')
-}
-
-Deno.serve({ port: settings.runner.port }, handler)
-
-function runCode(lang: 'py', code: str = '', file: str) {
-	const cli: str[] = []
+function runCode(lang, code = '', file) {
+	const cli = []
 	let data
 
 	try {
 		if (file) {
-			lang = file.split('.')[1] as 'py'
+			lang = file.split('.')[1]
 
 			data = settings.runner[lang]
 		} else {
-			data = settings.runner[lang!]
+			data = settings.runner[lang]
 
 			file = `settings/temp/exec.${data.ext}`
-			fs.writeFileSync(file, code!)
+			fs.writeFileSync(file, code)
 			code = ''
 			// don't write code in CLI to prevent issues
 		}
 
-		return data.cmd!
+		return data.cmd
 			.map((c, i) => {
 				cli[i] = `${c} ${file} ${code}` // collect CLIs
 
 				return execSync(cli[i])
 			})
 			.join(' ')
-	} catch (e: any) {
+	} catch (e) {
 		const regex = `(${filterForRegex(cli.join('|'))})`
 
 		return String(e?.message || e)
@@ -64,6 +56,6 @@ function runCode(lang: 'py', code: str = '', file: str) {
 	}
 }
 
-function filterForRegex(str: str) {
+function filterForRegex(str) {
 	return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 }

@@ -6,6 +6,9 @@ import { runner } from '../map.js'
 async function runCode(data: { lang?: str; code?: str; file?: str }) {
 	const req = await fetch(`http://localhost:${runner.port}/run`, {
 		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
 		body: JSON.stringify(data),
 	})
 

@@ -2,6 +2,7 @@
 settings.json
 **/auth*
 *.env
+test/
 
 # Builds
 build/
