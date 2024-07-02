@@ -1,24 +1,21 @@
-import { api, Cmd, CmdCtx, gemini } from '../../map.js'
+import { Cmd, CmdCtx } from '../../map.js'
+import { models } from '../../util/api.js'
 
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['g'],
+			aliases: ['gpt', 'gemini', 'g'],
 			cooldown: 4,
 		})
 	}
 
 	async run({ bot, msg, args, sendUsage }: CmdCtx) {
-		if (!args[0]) return sendUsage()
+		const ai = args.shift() as 'gpt'
+		const func = models[ai]
 
+		if (!func) return sendUsage()
 		await bot.react(msg, '⌛')
-		let model = api.aiModel.gemini
 		let buffer, mime
-
-		if (args[0] === 'pro') {
-			args.shift()
-			model = api.aiModel.geminiPro
-		}
 
 		if (msg.isMedia || msg?.quoted?.isMedia) {
 			const target = msg.isMedia ? msg : msg.quoted
@@ -26,18 +23,14 @@ export default class extends Cmd {
 			mime = target.mime
 		}
 
-		const { response, tokens } = await gemini({
+		const { response, model } = await func({
 			content: args.join(' '),
-			model,
+			model: '',
 			buffer,
 			mime,
 		})
 
-		bot.send(
-			msg,
-			`${tokens[0]} tokens to *${model}* (${tokens[1]} tokens):\n\n${response}`,
-		)
+		bot.send(msg, `*${model}*:\n\n${response}`)
 		bot.react(msg, '✅')
-		return
 	}
 }

@@ -27,6 +27,7 @@
 		"i18next": "^23.5.1",
 		"i18next-fs-backend": "^2.2.0",
 		"luxon": "^3.4.4",
+		"openai": "^4.52.2",
 		"pino": "^9.2.0",
 		"qrcode-terminal": "^0.12.0",
 		"wa-sticker-formatter": "^4.4.4"
