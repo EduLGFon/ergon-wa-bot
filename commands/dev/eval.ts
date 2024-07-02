@@ -17,14 +17,12 @@ export default class extends Cmd {
 		const langs = Object.keys(runner)
 
 		// Language to be runned
-		const lang = (langs.includes(args[0] as 'py') ? args.shift() : null) as
-			| Lang
-			| null
+		const lang: Lang = langs.includes(args[0]) ? args.shift() : 'eval'
 		const code = args.join(' ')
 		let output, startTime: num
 		bot.react(msg, '⌛')
 
-		if (!lang) {
+		if (lang === 'eval') {
 			const { user, group, cmd, callCmd, t, sendUsage } = ctx
 			let evaled
 			prisma
@@ -50,10 +48,10 @@ export default class extends Cmd {
 			.fromMillis(Date.now() - startTime! || 1)
 			.rescale()
 			.toHuman({ unitDisplay: 'narrow' })
-		const RAMusage = process.memoryUsage().rss.bytes()
+		const RAM = process.memoryUsage().rss.bytes()
 
-		const text = `*[👨‍💻] - ${(lang || 'EVAL').toUpperCase()}* [${dur} - ${RAMusage}]\n` +
-			output.trim()
+		const text = `\`$ ${lang} (${RAM} | ${dur})\`\n` +
+			output.trim().encode()
 
 		cleanTemp()
 

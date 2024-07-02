@@ -9,7 +9,7 @@ export default class extends Cmd {
 	}
 
 	async run({ msg, args, bot, sendUsage, t }: CmdCtx) {
-		if (!msg.isMedia && !msg.quoted.isMedia) return sendUsage()
+		if (!msg.isMedia && !msg.quoted?.isMedia) return sendUsage()
 
 		let target = msg.isMedia ? msg : msg.quoted
 		let buffer = await bot.downloadMedia(target)
