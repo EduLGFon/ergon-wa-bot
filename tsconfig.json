@@ -16,5 +16,5 @@
 	"ts-node": {
 		"esm": true
 	},
-	"exclude": ["test/", "build/", "plugin/"]
+	"exclude": ["test/", "build/", "!plugin/*.ts"]
 }

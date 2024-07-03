@@ -14,7 +14,7 @@ module.exports = {
 		},
 		{
 			name: 'runner',
-			script: 'plugin/runner.js',
+			script: 'build/plugin/runner.js',
 			node_args,
 			interpreter: 'bun',
 			interpreter_args: 'run',

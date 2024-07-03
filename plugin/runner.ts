@@ -19,13 +19,13 @@ app
 	})
 	.listen(settings.runner.port, () => console.log(`ready! Port: ${settings.runner.port}`))
 
-function runCode(lang, code = '', file) {
-	const cli = []
+function runCode(lang: 'py', code = '', file: str) {
+	const cli: str[] = []
 	let data
 
 	try {
 		if (file) {
-			lang = file.split('.')[1]
+			lang = file.split('.')[1] as 'py'
 
 			data = settings.runner[lang]
 		} else {
@@ -44,7 +44,7 @@ function runCode(lang, code = '', file) {
 				return execSync(cli[i])
 			})
 			.join(' ')
-	} catch (e) {
+	} catch (e: any) {
 		const regex = `(${filterForRegex(cli.join('|'))})`
 
 		return String(e?.message || e)
@@ -56,6 +56,6 @@ function runCode(lang, code = '', file) {
 	}
 }
 
-function filterForRegex(str) {
+function filterForRegex(str: str) {
 	return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 }
