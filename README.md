@@ -140,7 +140,7 @@ npm run update
 # and rebuild the bot
 ```
 
-> ⚠️ » _None of these scripts will update `Python`, `LuaJIT`, `PostgreSQL`, `G++` or `GIT`\nYou still need to do it by yourself_
+> ⚠️ » _None of these scripts will update `Python`, `LuaJIT`, `PostgreSQL`, `G++` or `GIT`. You still need to do it by yourself_
 
 
 ### `4 -` 🔐 Log in:
