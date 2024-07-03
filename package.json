@@ -6,27 +6,29 @@
 		"node": ">=20"
 	},
 	"scripts": {
+		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm start",
+		"update": "npm update --save && deno upgrade && bun upgrade && npm run postinstall",
+		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
+		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
 		"build": "rm -r build/ & tsc",
-		"clean": "rm -r settings/log/* settings/temp/*",
 		"start": "pm2 start settings/ecosystem.config.cjs --attach",
 		"restart": "npm run build && pm2 restart walle --attach",
-		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
-		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"fmt": "deno fmt ./ --config=settings/deno.jsonc",
-		"tsnd": "ts-node --esm main.ts"
+		"tsnd": "ts-node --esm main.ts",
+		"clean": "rm -r settings/log/* settings/temp/*"
 	},
 	"dependencies": {
-		"@google/generative-ai": "^0.14.0",
-		"@prisma/client": "^5.5.2",
+		"@google/generative-ai": "^0.14.1",
+		"@prisma/client": "^5.16.1",
 		"baileys": "^6.7.5",
 		"chalk": "^5.3.0",
 		"express": "^4.19.2",
 		"google-sr": "^3.3.1",
 		"google-translate": "github:iamtraction/google-translate",
 		"googlethis": "^1.8.0",
-		"i18next": "^23.5.1",
-		"i18next-fs-backend": "^2.2.0",
+		"i18next": "^23.11.5",
+		"i18next-fs-backend": "^2.3.1",
 		"luxon": "^3.4.4",
 		"pino": "^9.2.0",
 		"qrcode-terminal": "^0.12.0",
@@ -36,7 +38,7 @@
 		"@types/express": "^4.17.21",
 		"@types/luxon": "^3.4.2",
 		"@types/node": "^20.14.9",
-		"prisma": "^5.5.2",
-		"typescript": "^5.2.2"
+		"prisma": "^5.16.1",
+		"typescript": "^5.5.3"
 	}
 }

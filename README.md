@@ -31,6 +31,10 @@
 
 > 🪧 » _Recommended version: 1.44 or higher_
 
+- [🧁 BUN 🧁](https://deno.com/)
+
+> 🪧 » _Recommended version: 1.1.17 or higher_
+
 - [💩 NodeJS 💩](https://nodejs.org/pt-br/)
 
 > 🪧 » _Recommended version: 20 or higher_
@@ -67,25 +71,15 @@
 git clone https://github.com/Sunf3r/WALL-E # You need git to do this
 ```
 
-### `3 -` 🧰 Install dependencies:
-
-> 💡 » _Open the folder in terminal_
-
-```bash
-npm install # Download and build dependencies
-npm install -g typescript pm2 prisma # production packages
-```
-
-### `4 -` 🌿 Preparing the environment:
+### `3 -` 🌿 Preparing the environment:
 
 You can configure the bot however you want in the following files:
 
-- `settings.json` (`settings/settings.example.json`)
+- `settings.json` (`settings/settings.json`)
 
 ```json
 {
 	"bot": {
-		"owners": [""], // bot owners can use dev cmds
 		"link": "", // support channel link
 		"region": {
 			"timezone": "America/Sao_Paulo",
@@ -94,8 +88,8 @@ You can configure the bot however you want in the following files:
 	},
 
 	"sticker": {
-		"packName": ["pack"], // sticker pack name
-		"author": ["wall-e"] // sticker author name
+		"packName": ["pack", "name"], // sticker pack name
+		"author": ["wall-e", "sticker maker"] // sticker author name
 	},
 
 	"db": {
@@ -111,41 +105,47 @@ You can configure the bot however you want in the following files:
 }
 ```
 
-> 💡 » _Rename "`settings.example.json`" to "`settings.json`"_
-
 - `.env` (`.env.example`)
 
 ```env
 # you NEED a PostgreSQL database to run the bot
 DATABASE_URL="postgresql://role:password@host:port/db"
 
+# Bot devs
+DEVS="number01|number02|number03"
+
 # Optional
 GEMINI_KEY="get a key on https://aistudio.google.com/app/apikey"
+OPENAI_API_KEY="OPENAI API KEY"
 SOCIAL_USERNAME="social media username of the bot to download media"
 SOCIAL_PASSWORD="social media password of the bot to download media"
 ```
 
 > 💡 » _Rename "`.env.example`" to "`.env`"_
 
-### `5 -` 🚀 Starting:
+### `3 -` 🧰 Install dependencies and Starting 🚀:
 
-> 💡 » _If it's your first time running the bot, you need to format the database:_
-
-```bash
-npm run prisma:push
-```
-
-And finally:
+> 💡 » _Open the folder in terminal_
 
 ```bash
-npm run postinstall # build and generate Prisma types
+# This script will do everything to prepare the bot for the first time
+npm run setup
+# It will: install tsc/pm2/prisma as global pkgs, push db schema
+# install dependencies, generate prisma schema, build the bot and
+# start it with pm2
 
-
-npm run start
-or
-npm run tsnd # You need TS-NODE
+# Later, you can update everything just running:
+npm run update
+# It will update node dependencies, update deno and bun, regenerate prisma schema,
+# and rebuild the bot
 ```
 
+> ⚠️ » _None of these scripts will update `Python`, `LuaJIT`, `PostgreSQL`, `G++` or `GIT`\nYou still need to do it by yourself_
+
+
+### `4 -` 🔐 Log in:
+
+Just scan the QR Code that will appear on terminal and your're ready to go!
 ---
 
 ### I Hope you like the project :)

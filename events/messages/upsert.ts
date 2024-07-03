@@ -1,4 +1,4 @@
-import { Baileys, bot as botConfig, Cmd, CmdCtx, coolValues, getCtx } from '../../map.js'
+import { Baileys, Cmd, CmdCtx, coolValues, getCtx } from '../../map.js'
 import { type proto } from 'baileys'
 import { Duration } from 'luxon'
 import i18next from 'i18next'
@@ -7,7 +7,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 	if (!raw.messages[0]) return
 
 	for (const m of raw.messages) {
-		if (!m.message) return
+		if (!m.message) continue
 
 		// get abstract msg obj
 		const { msg, group, user } = await getCtx(m, bot)
@@ -29,7 +29,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 
 		if (!cmd) continue
 		// block only devs cmds for normal people
-		if (cmd.access.onlyDevs && !botConfig.owners.includes(user.id)) {
+		if (cmd.access.onlyDevs && !process.env.DEVS!.includes(user.id)) {
 			bot.react(msg, '⛔')
 			continue
 		}
