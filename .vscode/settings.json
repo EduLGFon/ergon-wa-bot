@@ -1,5 +1,6 @@
 {
 	// DENO settings
+	"deno.enable": false,
 	"deno.unstable": true,
 	"deno.config": "settings/deno.jsonc",
 

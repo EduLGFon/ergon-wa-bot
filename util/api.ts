@@ -30,12 +30,13 @@ async function imgRemover(img: str, quality: number) {
 }
 
 interface aiPrompt {
+	preprompt: str
 	content: str
 	model: str
 	buffer?: Buffer
 	mime?: str
 }
-async function gemini({ content, model, buffer, mime }: aiPrompt) {
+async function gemini({ preprompt, content, model, buffer, mime }: aiPrompt) {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
 
@@ -57,8 +58,8 @@ async function gemini({ content, model, buffer, mime }: aiPrompt) {
 		}],
 	})
 
-	let prompt: str | [str, Part] = content
-	let tokens = [] // tokens[0] = prompt tokens; tokens[1] = response tokens
+	let prompt: str | [str, Part] = preprompt + content
+	let tokens = [] // tokens[1] = prompt tokens; tokens[2] = response tokens
 	let request, response: str
 
 	if (buffer) {
@@ -73,11 +74,12 @@ async function gemini({ content, model, buffer, mime }: aiPrompt) {
 	}
 
 	try {
-		tokens[0] = await gemini.countTokens(prompt)
+		tokens[0] = await gemini.countTokens(preprompt)
+		tokens[1] = await gemini.countTokens(content)
 		request = await gemini.generateContent(prompt)
 
 		response = request.response.text()
-		tokens[1] = await gemini.countTokens(response)
+		tokens[2] = await gemini.countTokens(response)
 	} catch (e: any) {
 		response = `Error: ${e.message.encode()}`
 	}
@@ -85,7 +87,7 @@ async function gemini({ content, model, buffer, mime }: aiPrompt) {
 	return {
 		model,
 		response: response.replaceAll('**', '*'),
-		tokens: [tokens[0].totalTokens, tokens[1].totalTokens],
+		tokens: [tokens[0].totalTokens, tokens[1].totalTokens, tokens[2].totalTokens],
 	}
 }
 

@@ -8,10 +8,11 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ bot, msg, args, sendUsage }: CmdCtx) {
+	async run({ bot, msg, args, user, sendUsage }: CmdCtx) {
 		if (!args[0]) return sendUsage()
-
 		await bot.react(msg, '⌛')
+
+		const preprompt = `Respond to the following prompt in ${user.lang} and give a short answer unless asked for a long answer.:\n`
 		let model = api.aiModel.gemini
 		let buffer, mime
 
@@ -27,6 +28,7 @@ export default class extends Cmd {
 		}
 
 		const { response, tokens } = await gemini({
+			preprompt,
 			content: args.join(' '),
 			model,
 			buffer,
@@ -35,7 +37,7 @@ export default class extends Cmd {
 
 		bot.send(
 			msg,
-			`${tokens[0]} tokens to *${model}* (${tokens[1]} tokens):\n\n${response}`,
+			`${tokens[0]} + ${tokens[1]} tokens to *${model}* (${tokens[2]} tokens):\n\n${response}`,
 		)
 		bot.react(msg, '✅')
 		return
