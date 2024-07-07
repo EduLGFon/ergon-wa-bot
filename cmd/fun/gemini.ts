@@ -12,13 +12,23 @@ export default class extends Cmd {
 		if (!args[0]) return sendUsage()
 		await bot.react(msg, '⌛')
 
-		const preprompt = `Respond to the following prompt in ${user.lang} and give a short answer unless asked for a long answer.:\n`
+		let preprompt =
+			`Create a short and detailed response in ${user.lang} to the prompt, and use bold to highlight key words.
+Template:
+> *Short response:*\n{brief_response}
+> *Detailed response:*\n{detailed_response}
+Prompt: `
 		let model = api.aiModel.gemini
 		let buffer, mime
 
 		if (args[0] === 'pro') {
 			args.shift()
 			model = api.aiModel.geminiPro
+		}
+
+		if (args[0] === 'pure') {
+			args.shift()
+			preprompt = ''
 		}
 
 		if (msg.isMedia || msg?.quoted?.isMedia) {
@@ -37,7 +47,9 @@ export default class extends Cmd {
 
 		bot.send(
 			msg,
-			`${tokens[0]} + ${tokens[1]} tokens to *${model}* (${tokens[2]} tokens):\n\n${response}`,
+			`${tokens[0]} + ${tokens[1]} tokens to *${model}* (${
+				tokens[2]
+			} tokens):\n\n${response}`,
 		)
 		bot.react(msg, '✅')
 		return
