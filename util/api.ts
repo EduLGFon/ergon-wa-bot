@@ -1,5 +1,17 @@
-import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory, Part } from '@google/generative-ai'
+import {
+	EnhancedGenerateContentResponse,
+	GenerateContentStreamResult,
+	GoogleGenerativeAI,
+	HarmBlockThreshold,
+	HarmCategory,
+	Part,
+} from '@google/generative-ai'
 import { runner } from '../map.js'
+import { inspect, log } from 'node:util'
+import { env } from 'node:process'
+import { encode } from 'node:punycode'
+import { stringify } from 'node:querystring'
+import { text, json } from 'node:stream/consumers'
 // import { api } from '../map.js'
 // import OpenAI from 'openai'
 
@@ -29,14 +41,7 @@ async function imgRemover(img: str, quality: number) {
 	return await req.json()
 }
 
-interface aiPrompt {
-	preprompt: str
-	content: str
-	model: str
-	buffer?: Buffer
-	mime?: str
-}
-async function gemini({ preprompt, content, model, buffer, mime }: aiPrompt) {
+async function gemini({ preprompt, content, model, buffer, mime, callback }: aiPrompt): Promise<aiResponse> {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
 
@@ -59,8 +64,8 @@ async function gemini({ preprompt, content, model, buffer, mime }: aiPrompt) {
 	})
 
 	let prompt: str | [str, Part] = preprompt + content
-	let tokens = [] // tokens[1] = prompt tokens; tokens[2] = response tokens
-	let request, response: str
+	let result: GenerateContentStreamResult
+	let text = ''
 
 	if (buffer) {
 		const media = {
@@ -74,21 +79,35 @@ async function gemini({ preprompt, content, model, buffer, mime }: aiPrompt) {
 	}
 
 	try {
-		tokens[0] = await gemini.countTokens(preprompt)
-		tokens[1] = await gemini.countTokens(content)
-		request = await gemini.generateContent(prompt)
+		result = await gemini.generateContentStream(prompt)
 
-		response = request.response.text()
-		tokens[2] = await gemini.countTokens(response)
+		for await (const chunk of result.stream) {
+			text += chunk.text()
+
+			const data = generateResponse(chunk)
+
+			callback(data)
+		}
+		console.log(inspect(result, { depth: null }))
+
+		// text = response.text()
 	} catch (e: any) {
-		response = `Error: ${e.message.encode()}`
+		text = `Error: ${e.message.encode()}`
 	}
-
-	return {
-		model,
-		response: response.replaceAll('**', '*').replaceAll('##', '>'),
-		tokens: [tokens[0].totalTokens, tokens[1].totalTokens, tokens[2].totalTokens],
+	
+	
+	function generateResponse(chunk: EnhancedGenerateContentResponse) {
+		return {
+			model,
+			reason: chunk.candidates![0].finishReason || '',
+			text: text.replaceAll('**', '*').replaceAll('##', '>'),
+			promptTokens: chunk.usageMetadata?.promptTokenCount || 0,
+			responseTokens: chunk.usageMetadata?.candidatesTokenCount || 0,
+		} as aiResponse
 	}
+	
+	const response = await result!.response
+	return generateResponse(response)
 }
 
 // async function gpt({ content, model }: aiPrompt) {

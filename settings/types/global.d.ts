@@ -14,3 +14,20 @@ interface String {
 interface Number {
 	bytes(onlyNumbers?: bool): string | number
 }
+
+interface aiResponse {
+	model: str
+	reason: str
+	text: str
+	promptTokens: number
+	responseTokens: number
+}
+
+interface aiPrompt {
+	preprompt: str
+	content: str
+	model: str
+	buffer?: Buffer
+	mime?: str
+	callback(data: aiResponse): Promise<void>
+}
