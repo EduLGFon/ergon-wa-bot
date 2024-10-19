@@ -4,17 +4,18 @@ import i18next from 'i18next';
 
 export default function () {
 	try {
+		const preload = readdirSync('src/Locales/')
+			.map((l) => l.split('.')[0]);
+
 		i18next
 			.use(translationBackend)
 			.init({
-				ns: ['cmd', 'event', 'usage'],
-				preload: readdirSync('src/Locales/'),
+				preload,
 				fallbackLng: 'en',
-				backend: { loadPath: 'src/Locales/{{lng}}/{{ns}}.json' },
+				backend: { loadPath: 'src/Locales/{{lng}}.json' },
 				interpolation: { escapeValue: false },
 				returnEmptyString: false,
 				returnObjects: true,
-				defaultNS: 'cmd',
 			});
 	} catch (e) {
 		console.error(e);
