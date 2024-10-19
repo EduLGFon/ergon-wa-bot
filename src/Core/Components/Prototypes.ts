@@ -32,7 +32,7 @@ export default () => {
 				return '```\n' + this + '```';
 			},
 		},
-		toRegEx: {
+		filterForRegex: {
 			value: function () {
 				return this.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 			},

@@ -41,10 +41,12 @@ interface runParams {
 }
 export async function runOtherLang({ lang, code, ctx, file }: runParams) {
 	let data, cli: str[] = [];
+
 	try {
 		if (lang === 'eval') {
 			const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx!;
 			delay; // i may need it, so TS won't remove from build if it's here
+			file = import.meta.url;
 
 			let output = code!.includes('await')
 				? await eval(`(async () => { ${code} })()`)
@@ -74,10 +76,12 @@ export async function runOtherLang({ lang, code, ctx, file }: runParams) {
 			})
 			.join(' ');
 	} catch (e: any) {
-		return (e.stack || e || '')
+		const regex = `(${cli.join('|').filterForRegex()})`;
+
+		return String(e?.stack || e)
 			.replace(`Error: Command failed: `, '') // clean errors
-			.replace(new RegExp(`(${cli.join('|').toRegEx()})`, 'gi'), '') // remove cli
-			.replace(new RegExp(file!.toRegEx(), 'gi'), 'file'); // remove file name
+			.replace(new RegExp(regex, 'gi'), '') // remove cli
+			.replace(new RegExp(file!.filterForRegex(), 'gi'), 'file'); // remove file name
 
 		// i made it bc C++ error logs are strogonoffcaly large
 	}

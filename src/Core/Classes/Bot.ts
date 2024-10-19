@@ -155,17 +155,12 @@ export default class Bot {
 	}
 
 	async getGroup(id: str) {
-		// check group cache
-		let group = this.groups.get(id);
-		if (group) return group;
+		// fetch group
+		let group = this.groups.get(id) || await this.sock.groupMetadata(id);
 
-		// fetch group data
-		group = await this.sock.groupMetadata(id);
-
-		// set group data and return it
 		if (group) {
 			this.groups.set(group.id, group);
-			return group;
+			return await new Group(group).checkData();
 		}
 	}
 

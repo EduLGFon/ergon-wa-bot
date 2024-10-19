@@ -1,34 +1,62 @@
 import { GroupMetadata, GroupParticipant } from 'baileys';
+import prisma from '../Components/Prisma.js';
 
-// this file only exists for a Collection base class
-
-export default class Group implements GroupMetadata {
+export default class Group {
 	id: str;
-	owner: str | undefined;
-	subject: str;
-	/** group subject owner */
-	subjectOwner?: str;
+	owner?: str;
+	name: str;
 	/** group subject modification date */
-	subjectTime?: num;
+	nameTimestamp?: num;
 	creation?: num;
 	desc?: str;
-	descOwner?: str;
-	descId?: str;
 	/** is set when the group only allows admins to change group settings */
 	restrict?: bool;
 	/** is set when the group only allows admins to write messages */
 	announce?: bool;
 	/** number of group participants */
 	size?: num;
-	participants: GroupParticipant[];
-	ephemeralDuration?: num;
-	inviteCode?: str;
+	members: GroupParticipant[];
+	ephemeral?: num;
+	invite?: str;
 	/** the person who added you */
 	author?: str;
 
-	constructor(id: str, subject: str, participants: GroupParticipant[]) {
-		this.id = id;
-		this.subject = subject;
-		this.participants = participants;
+	constructor(g: GroupMetadata) {
+		this.id = g.id;
+		this.name = g.subject;
+		this.owner = g.owner;
+		this.nameTimestamp = g.subjectTime;
+		this.creation = g.creation;
+		this.desc = g.desc;
+		this.restrict = g.restrict;
+		this.announce = g.announce;
+		this.size = g.size;
+		this.members = g.participants;
+		this.ephemeral = g.ephemeralDuration;
+		this.invite = g.inviteCode;
+		this.author = g.author;
+	}
+
+	async addMsg(author: str) {
+	}
+
+	async getMsgs() {
+		return await prisma.msgs.findMany({
+			orderBy: {
+				count: 'desc',
+			},
+		});
+	}
+
+	async checkData() {
+		let data = await prisma.groups.findUnique({ where: { id: this.id } });
+
+		if (!data) {
+			data = await prisma.groups.create({
+				data: { id: this.id },
+			});
+		}
+
+		return this;
 	}
 }

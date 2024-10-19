@@ -1,15 +1,16 @@
 import { GroupMetadata, proto } from 'baileys';
 import { PrismaClient } from '@prisma/client';
-import User from '../Classes/User.js';
+import Group from '../Classes/Group.ts';
+import User from '../Classes/User.ts';
 import { TFunction } from 'i18next';
-import Bot from '../Classes/Bot.js';
+import Bot from '../Classes/Bot.ts';
 import { pino } from 'pino';
 
-export type Lang = 'py' | 'lua' | 'deno' | 'node' | 'eval' | 'cpp';
+type Lang = 'py' | 'lua' | 'deno' | 'node' | 'eval' | 'cpp';
 
-export type Logger = pino.Logger<{ timestamp: () => str } & pino.ChildLoggerOptions>;
+type Logger = pino.Logger<{ timestamp: () => str } & pino.ChildLoggerOptions>;
 
-export type MsgTypes =
+type MsgTypes =
 	| 'text'
 	| 'image'
 	| 'sticker'
@@ -21,9 +22,10 @@ export type MsgTypes =
 	| 'reaction'
 	| 'location';
 
-export interface Msg {
+interface Msg {
 	id: str;
 	chat: str;
+	edited: bool;
 	text: str;
 	type: MsgTypes;
 	isMedia: bool;
@@ -31,7 +33,7 @@ export interface Msg {
 	quoted: Msg;
 }
 
-export interface Cmd {
+interface Cmd {
 	name?: str;
 	aliases?: str[];
 	cooldown?: num;
@@ -44,15 +46,20 @@ export interface Cmd {
 	run?: Function;
 }
 
-export interface CmdContext {
+interface CmdContext {
 	prisma: PrismaClient;
 	msg: Msg;
 	user: User;
-	group: GroupMetadata;
+	group: Group | undefined;
 	bot: Bot;
 	args: str[];
 	cmd: Cmd;
 	callCmd: str;
 	t: TFunction<'translation', undefined>;
 	sendUsage(): Promise<void>;
+}
+
+interface GroupMsg {
+	author: str;
+	count: num;
 }

@@ -1,3 +1,4 @@
+import Group from '../../Core/Classes/Group.js';
 import Bot from '../../Core/Classes/Bot.js';
 import { GroupMetadata } from 'baileys';
 
@@ -7,6 +8,8 @@ export default async function (this: Bot, groups: Partial<GroupMetadata>[]) {
 	// fetching is better than use this event parameter
 	// bc it could be incomplete
 
+	const group = await new Group(g).checkData();
+
 	// save new group info
-	this.groups.set(g.id, g);
+	this.groups.set(g.id, group);
 }
