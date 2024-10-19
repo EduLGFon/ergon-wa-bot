@@ -12,5 +12,8 @@
 			"exclude": ["no-explicit-any"] // does not throws at any any
 		}
 	},
-	"unstable": ["byonm"] // DENO unstable features
+	"imports": {
+		"dax": "https://deno.land/x/dax@0.39.2/mod.ts"
+	}
+	// "unstable": ["byonm"] // DENO unstable features
 }

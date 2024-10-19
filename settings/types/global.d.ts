@@ -3,7 +3,7 @@ type num = number
 type bool = boolean
 
 // you can find these functions on `util/proto.ts`
-function print(...args): void
+declare function print(...args: any[]): void
 
 interface String {
 	encode(): str

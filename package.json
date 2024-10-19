@@ -7,21 +7,19 @@
 	},
 	"scripts": {
 		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm start",
-		"update": "git pull origin master && npm update --save; deno upgrade & bun upgrade & npm run postinstall; npm run restart",
-		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
+		"update": "git pull origin master && npm update --save; deno upgrade & bun upgrade & npm run postinstall",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
+		"build": "rm -r build/ & npx tsc",
+		"start": "npx pm2 start settings/ecosystem.config.cjs --attach",
+		"dev": "npx pm2 delete walle && deno run --watch -A -c settings/deno.jsonc plugin/copilot.ts",
+		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
-		"build": "rm -r build/ & tsc",
-		"start": "pm2 start settings/ecosystem.config.cjs --attach",
-		"restart": "pm2 restart walle --attach",
-		"fmt": "deno fmt ./ --config=settings/deno.jsonc",
-		"translate": "npx @parvineyvazov/json-translator locale/pt.json  -m google -f pt -t en es fr pl",
-		"tsnd": "ts-node --esm main.ts",
-		"clean": "rm -r settings/log/* settings/temp/*"
+		"prisma:pull": "npx prisma db pull --schema=settings/schema.prisma",
+		"translate": "npx @parvineyvazov/json-translator locale/pt.json  -m google -f pt -t en es fr pl"
 	},
 	"dependencies": {
 		"@google/generative-ai": "^0.16.0",
-		"@prisma/client": "^5.17.0",
+		"@prisma/client": "^5.18.0",
 		"baileys": "^6.7.5",
 		"chalk": "^5.3.0",
 		"express": "^4.19.2",
@@ -41,7 +39,7 @@
 		"@types/humanize-duration": "^3.27.4",
 		"@types/luxon": "^3.4.2",
 		"@types/node": "^20.14.14",
-		"prisma": "^5.17.0",
+		"prisma": "^5.18.0",
 		"typescript": "^5.5.4"
 	}
 }
