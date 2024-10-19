@@ -1,0 +1,95 @@
+{
+	"usage": {
+		"title": "*[❗] - Hoe gebruik je het?*",
+		"args": "*[💡] - Soorten parameters:*\n<vereist>\n[optioneel]\n{mensagem mencionada/respondida}",
+		"examples": "*[💯] - Voorbeelden:*"
+	},
+	"help": {
+		"usage": "[naam van een commando]",
+		"desc": "Bekijk meer informatie over een opdracht",
+		"examples": ["tweeling", "sticker"],
+		"title": "*[📖] - Helpmenu*",
+		"prefix": "[⚙️] Voorvoegsel wijzigen: *{{prefix}}*",
+		"lang": "[🌎] Taal wijzigen: *{{lang}}*"
+	},
+	"language": {
+		"usage": "<taalcode>",
+		"desc": "Verander de bottaal",
+		"examples": ["in", "nl", "is", "fr", "PT"],
+		"changed": "[🌎] - Taal succesvol gewijzigd in *{{lng}}*"
+	},
+	"prefix": {
+		"usage": "<voorvoegsel met maximaal 3 cijfers>",
+		"desc": "Wijzig het opdrachtvoorvoegsel",
+		"examples": [".", "!"],
+		"changed": "[✔️] - Je nieuwe voorvoegsel is: *{{prefix}}*"
+	},
+	"ping": { "desc": "Bekijk de reactietijd van de bot", "pinging": "Responstijd berekenen..." },
+	"choose": {
+		"usage": "<optie 1>, <optie 2>, [optie 3], [...]",
+		"desc": "Twijfel je over wat je moet doen? Kies dit of dat",
+		"examples": [
+			"Pizza, cake, pudding, appel",
+			"Ik zou dit moeten doen, ik zou dit niet moeten doen",
+			"Ga wandelen, speel videogames"
+		],
+		"result": "*[🏆] - Gekozen optie:* {{chosen}}"
+	},
+	"gemini": {
+		"usage": "<prompt> [{imagem/áudio/vídeo}]",
+		"desc": "Chat met Google AI",
+		"examples": [
+			"Vat de tekst in deze afbeelding samen",
+			"Hoeveel inwoners heeft New York?",
+			"Wees een tiener en leg de kwantumfysica uit met jargon"
+		]
+	},
+	"rank": {
+		"usage": "",
+		"desc": "Bekijk de ranglijst van leden die het meest praten in de groep",
+		"examples": [""]
+	},
+	"sticker": {
+		"usage": "<{imagem/gif}> [rmbg (achtergrond afbeelding verwijderen)]",
+		"desc": "Maak stickers zonder achtergrond!!!!",
+		"examples": ["rmbg <afbeelding bijgevoegd>", "{imagem mencionada}"],
+		"nobuffer": "[⚠️] - Incompatibele of niet gevonden media"
+	},
+	"clean": {
+		"usage": "<aantal berichten (max 200)>",
+		"desc": "Verberg uw misdaden door de nieuwste groepsberichten te verwijderen",
+		"examples": ["10", "200"],
+		"noAmount": "\"schoon 0\"? Denk je dat dit jouw kamer is en dat je niets schoonmaakt?",
+		"deleted": "Ik ga de laatste {{msgsSize}} berichten verwijderen en dan ga ik weer hier in mijn hangmat slapen"
+	},
+	"reveal": {
+		"usage": "{mídia de visualização única} [j]",
+		"desc": "Nog een keer! Onthul unieke kijkmedia",
+		"examples": [
+			"{imagem de visualização única}j",
+			"{vídeo de visualização única}",
+			"{audio de visualização única}j"
+		]
+	},
+	"search": {
+		"usage": "<vraag>",
+		"desc": "Google het!",
+		"examples": ["10 dollar in euro's", "Hoe laat is het in Londen?"]
+	},
+	"translate": {
+		"usage": "<taalcode: en/pt/fr...> <tekst>",
+		"desc": "Google vertaler",
+		"examples": ["fr Kutje", "es Oorlog is liefde"]
+	},
+	"download": {
+		"usage": "<audio/video> <url>",
+		"desc": "Download video's en audio",
+		"examples": [
+			"geluid https://music.youtube.com/watch?v=4QLvEIXlF6Q",
+			"naar https://youtu.be/4QLvEIXlF6Q",
+			"video https://youtu.be/4QLvEIXlF6Q"
+		],
+		"true": "*[⌛] - De video downloaden... Even geduld a.u.b.*",
+		"false": "*[⌛] - Audio downloaden... Even geduld a.u.b.*"
+	}
+}

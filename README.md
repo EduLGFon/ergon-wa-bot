@@ -11,7 +11,7 @@
 - [x] Translate text;
 - [x] Search on Google;
 - [x] Talk to Gemini AI;
-- [x] Speak in 5 languages;
+- [x] Speak in 6 languages;
 - [x] Reveal view once messages;
 - [x] Change its prefix just for you;
 - [x] Remove background from images;

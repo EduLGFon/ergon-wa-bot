@@ -1,34 +1,13 @@
 {
 	"usage": {
-		"title": "*[❗] - ¿Cómo utilizar?*",
-		"args": "*[💡] - Tipos de parámetros:*\n<requerido>\n[opcional]",
+		"title": "*[❗] - ¿Cómo usarlo?*",
+		"args": "*[💡] - Tipos de parámetros:*\n<requerido>\n[opcional]\n{mensagem mencionada/respondida}",
 		"examples": "*[💯] - Ejemplos:*"
-	},
-	"choose": {
-		"usage": "<opción 1>, <opción 2>, [opción 3], [...]",
-		"desc": "Elige esto o aquello al azar, o no...",
-		"examples": [
-			"Pizza, pastel, pudín, manzana.",
-			"Debería hacer esto, no debería hacer esto",
-			"galleta, galleta"
-		],
-		"result": "*[🏆] - Opción elegida:* {{chosen}}"
-	},
-	"download": {
-		"usage": "<audio/vídeo> <url>",
-		"desc": "Descargar un vídeo o audio desde varias plataformas diferentes",
-		"examples": [
-			"sonido https://music.youtube.com/watch?v=4QLvEIXlF6Q",
-			"a https://youtu.be/4QLvEIXlF6Q",
-			"vídeo https://youtu.be/4QLvEIXlF6Q"
-		],
-		"true": "*[⌛] - Descargando el vídeo... Espere un momento.*",
-		"false": "*[⌛] - Descargando audio... Espere un momento.*"
 	},
 	"help": {
 		"usage": "[nombre de un comando]",
-		"desc": "Mostrar esta lista o detallar un comando",
-		"examples": ["traducir", "pegatina"],
+		"desc": "Ver más información sobre un comando",
+		"examples": ["Geminis", "pegatina"],
 		"title": "*[📖] - Menú de ayuda*",
 		"prefix": "[⚙️] Cambiar prefijo: *{{prefix}}*",
 		"lang": "[🌎] Cambiar idioma: *{{lang}}*"
@@ -36,36 +15,84 @@
 	"language": {
 		"usage": "<código de idioma>",
 		"desc": "Cambiar el idioma del bot",
-		"examples": ["PT", "es"],
+		"examples": ["en", "es", "es", "fr", "PT"],
 		"changed": "[🌎] - El idioma se cambió correctamente a *{{lng}}*"
 	},
 	"prefix": {
 		"usage": "<prefijo de hasta 3 dígitos>",
-		"desc": "Cambiar prefijo de comando",
+		"desc": "Cambiar el prefijo del comando",
 		"examples": [".", "!"],
 		"changed": "[✔️] - Tu nuevo prefijo es: *{{prefix}}*"
 	},
 	"ping": {
-		"desc": "Calcula el retraso del bot",
+		"desc": "Ver el tiempo de respuesta del bot",
 		"pinging": "Calculando el tiempo de respuesta..."
 	},
-	"sticker": {
-		"usage": "<imagen/gif adjunto> [nobg: eliminar fondo]",
-		"desc": "Crea una pegatina con imagen/gif e incluso elimina el fondo",
-		"examples": ["nobg <imagen adjunta>", "<gif adjunto>"],
-		"nobuffer": "[⚠️] - Imagen incompatible o no encontrada"
-	},
-	"stext": {
-		"usage": "<texto/oración/palabra>",
-		"desc": "Crear una etiqueta de texto",
+	"choose": {
+		"usage": "<opción 1>, <opción 2>, [opción 3], [...]",
+		"desc": "¿Dudas sobre qué hacer? Elige esto o aquello",
 		"examples": [
-			"No puedes cambiar tu pasado, pero puedes arruinar tu futuro.",
-			"Ningún obstáculo es demasiado grande para aquellos que se dan por vencidos."
+			"Pizza, pastel, pudín, manzana.",
+			"Debería hacer esto, no debería hacer esto",
+			"Sal a caminar, juega videojuegos."
+		],
+		"result": "*[🏆] - Opción elegida:* {{chosen}}"
+	},
+	"gemini": {
+		"usage": "<mensaje> [{imagem/áudio/vídeo}]",
+		"desc": "Chatea con la IA de Google",
+		"examples": [
+			"Resume el texto de esta imagen.",
+			"¿Cuál es la población de Nueva York?",
+			"Sé un adolescente y explica la física cuántica con jerga"
 		]
 	},
+	"rank": {
+		"usage": "",
+		"desc": "Ver el ranking de los miembros que más hablan en el grupo",
+		"examples": [""]
+	},
+	"sticker": {
+		"usage": "<{imagem/gif}> [rmbg (eliminar el fondo de la imagen)]",
+		"desc": "Crea stickers sin fondo!!!!",
+		"examples": ["rmbg <imagen adjunta>", "{imagem mencionada}"],
+		"nobuffer": "[⚠️] - Medios incompatibles o no encontrados"
+	},
+	"clean": {
+		"usage": "<número de mensajes (máx. 200)>",
+		"desc": "Oculta tus crímenes eliminando los últimos mensajes grupales",
+		"examples": ["10", "200"],
+		"noAmount": "¿\"limpio 0\"? ¿Crees que esta es tu habitación y no limpias nada?",
+		"deleted": "Voy a borrar los últimos {{msgsSize}} mensajes y luego me voy a volver a dormir aquí mismo en mi hamaca."
+	},
+	"reveal": {
+		"usage": "{mídia de visualização única} [año]",
+		"desc": "¡Solo una vez mas! Revele medios de visualización únicos",
+		"examples": [
+			"{imagem de visualização única}año",
+			"{vídeo de visualização única}",
+			"{audio de visualização única}año"
+		]
+	},
+	"search": {
+		"usage": "<pregunta>",
+		"desc": "¡Buscalo en Google!",
+		"examples": ["10 dolares en euros", "¿Qué hora es en Londres?"]
+	},
 	"translate": {
-		"usage": "<código de idioma: en/pt/fr...> <texto/frase/palabra>",
+		"usage": "<código de idioma: en/pt/fr...> <texto>",
 		"desc": "traductor de Google",
 		"examples": ["fr coño", "es La guerra es amor"]
+	},
+	"download": {
+		"usage": "<audio/vídeo> <url>",
+		"desc": "Descargar vídeos y audios",
+		"examples": [
+			"sonido https://music.youtube.com/watch?v=4QLvEIXlF6Q",
+			"a https://youtu.be/4QLvEIXlF6Q",
+			"vídeo https://youtu.be/4QLvEIXlF6Q"
+		],
+		"true": "*[⌛] - Descargando el vídeo... Espere un momento.*",
+		"false": "*[⌛] - Descargando audio... Espere un momento.*"
 	}
 }
