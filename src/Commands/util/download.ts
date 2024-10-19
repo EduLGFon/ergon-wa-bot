@@ -30,7 +30,11 @@ export default class extends Command {
 			mediaData = { mimetype: 'audio/mpeg', fileName: 'audio.mp3' };
 		}
 
-		ytdlArgs.push(`-o ${path}`);
+		ytdlArgs.push(
+			`-o ${path}`,
+			`-u "${process.env.SOCIAL_USERNAME}"`,
+			`-p ${process.env.SOCIAL_PASSWORD}`,
+		);
 
 		try {
 			await bot.send(msg, t(`download.${isVideo}`));
