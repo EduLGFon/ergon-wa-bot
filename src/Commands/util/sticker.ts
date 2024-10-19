@@ -1,4 +1,4 @@
-import { clearTemp, getStickerAuthor } from '../../Core/Components/Utils.js';
+import { cleanTemp, genStickerMeta } from '../../Core/Components/Utils.js';
 import type { CmdContext } from '../../Core/Typings/types.js';
 import { runCode } from '../../Core/Plugins/RunCode.js';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -33,7 +33,7 @@ export default class extends Command {
 			});
 			buffer = readFileSync(`temp/${name}.png`) || buffer;
 
-			clearTemp();
+			cleanTemp();
 		}
 
 		switch (targetMsg.type) {
@@ -47,7 +47,7 @@ export default class extends Command {
 
 		for (const type of stickerTypes) {
 			const metadata = new Sticker(buffer!, {
-				...getStickerAuthor(user, group),
+				...genStickerMeta(user, group),
 				type,
 				quality: 60,
 			});

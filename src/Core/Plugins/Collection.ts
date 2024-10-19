@@ -1,30 +1,25 @@
-class Base {
-	constructor() {}
-}
+export default class Collection<K, V> extends Map {
+	limit: num;
+	base?: any;
 
-export default class Collection<N, T extends Base> extends Map {
-	base: Base;
-
-	constructor(base: Base, public limit?: num) {
+	constructor(limit?: num, base?: any) {
 		super();
+		this.limit = limit || 100;
 		this.base = base;
-		this.limit = limit;
 	}
 
-	update(id: N, obj: T): T {
-		if (!id && id !== 0) throw new Error('Missing object id');
+	// Add: adds a value to the collection
+	add(key: K, value: V, extra?: V[]): V {
+		if (!key) throw new Error('Missing object key');
 
-		const item = this.get(id);
-		if (!item) return this.add(id, obj);
+		const existing = this.get(key);
+		if (existing) return existing;
 
-		item.update(id, obj);
+		value = (value instanceof this?.base || value?.constructor?.name === this?.base?.name)
+			? value
+			: new this.base(value, extra);
 
-		return item;
-	}
-
-	add(id: N, obj: T): T {
-		//@ts-ignore
-		if (this.limit === 0) return this.set(id, obj);
+		this.set(key, value);
 
 		if (this.limit && this.size > this.limit) {
 			const iter = this.keys();
@@ -33,59 +28,95 @@ export default class Collection<N, T extends Base> extends Map {
 			}
 		}
 
-		return obj;
+		return value;
 	}
 
-	every(f: Function): bool {
-		for (const item of this.values()) {
-			if (!f(item)) return false;
-		}
-		return true;
+	// Update: updates a item in the collection
+	update(key: K, value: V, extra?: any[]): V {
+		if (!key) throw new Error('Missing object key');
+
+		const item = this.get(key);
+		if (!item) return this.add(key, value, extra);
+
+		value = Object.assign(item, value);
+		this.set(key, value);
+
+		return item;
 	}
 
-	filter(f: Function): T[] {
-		const arr = [];
+	// Filter: same as Array#filter
+	filter(func: Function): V[] {
+		const res = [];
 
 		for (const item of this.values()) {
-			if (f(item)) arr.push(item);
+			if (func(item)) res.push(item);
 		}
-		return arr;
+
+		return res;
 	}
 
-	find(f: Function): T | undefined {
+	// Find: same as Array#find
+	find(func: Function): V | undefined {
 		for (const item of this.values()) {
-			if (f(item)) return item;
+			if (func(item)) return item;
 		}
+
 		return undefined;
 	}
-	map(f: Function): T[] {
+
+	// Map: same as Array#map
+	map(func: Function): V[] {
 		const arr = [];
 
-		for (const item of this.values()) arr.push(f(item));
+		for (const item of this.values()) arr.push(func(item));
 
 		return arr;
 	}
 
-	random(): T | null {
+	// Random: returns a random item of the Map
+	random(): V | undefined {
 		const index = Math.floor(Math.random() * this.size);
 		const iter = this.values();
 
-		for (let i = 0; i < index; ++i) iter.next();
+		for (let c = 0; c < index; ++c) iter.next();
 
 		return iter.next().value;
 	}
 
-	reduce(f: Function, initialValue: any): any {
+	// Every: Returns true if all items pass in the function
+	// Returns false if a item does not pass in the function
+	every(func: Function): bool {
+		for (const item of this.values()) {
+			if (!func(item)) return false;
+		}
+
+		return true;
+	}
+
+	// Some: Returns true if some item passes in the function
+	some(func: Function): bool {
+		for (const item of this.values()) {
+			if (func(item)) return true;
+		}
+
+		return false;
+	}
+
+	// Reduce: same as Array#reduce
+	reduce(func: Function, initialValue: any): any {
 		const iter = this.values();
 		let val;
 		let result = initialValue === undefined ? iter.next().value : initialValue;
 
 		while ((val = iter.next().value) !== undefined) {
-			result = f(result, val);
+			result = func(result, val);
 		}
+
 		return result;
 	}
-	remove(id: N): T | null {
+
+	// Remove: what do you think this method does?
+	remove(id: K): V | null {
 		const item = this.get(id);
 		if (!item) return null;
 
@@ -94,14 +125,7 @@ export default class Collection<N, T extends Base> extends Map {
 		return item;
 	}
 
-	some(f: Function): bool {
-		for (const item of this.values()) {
-			if (f(item)) return true;
-		}
-
-		return false;
-	}
-
+	// toJSON: Returns a JSON object containing the id: value pairs
 	toJSON() {
 		const json = {};
 

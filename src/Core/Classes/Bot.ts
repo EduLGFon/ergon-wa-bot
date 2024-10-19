@@ -12,8 +12,8 @@ import {
 } from 'baileys';
 // import RequestCode from './RequestCode';
 import type { Cmd, Logger, Msg } from '../Typings/types.js';
+import { getCtx, getMsgMeta } from '../Components/Utils.js';
 import Collection from '../Plugins/Collection.js';
-import { getCtx } from '../Components/Utils.js';
 import { readdirSync } from 'node:fs'; // DENO point
 import { resolve } from 'node:path';
 import Command from './Command.js';
@@ -22,33 +22,41 @@ import User from './User.js';
 
 export default class Bot {
 	sock!: WASocket;
-	wait: Collection<string, Function>;
+
+	// Collections (Stored data)
+	cmds: Collection<string, Cmd>;
 	users: Collection<string, User>;
 	groups: Collection<string, Group>;
-	events: Collection<string, Function>;
-	cmds: Collection<string, Cmd>;
+	wait: Collection<string, Function>;
 	aliases: Collection<string, string>;
+	events: Collection<string, Function>;
 
 	constructor(public auth: str, public logger: Logger) {
 		this.logger = logger;
 		this.auth = auth; // auth folder
 		this.sock;
-		this.wait = new Collection(Function);
-		// arbitrary functions that can be called on events
-		this.users = new Collection(User, 500); // Users collection
-		this.groups = new Collection(Group, 500); // Groups collection
-		this.events = new Collection(Function); // Events collection
-		this.cmds = new Collection(Command); // Cmds collection
-		this.aliases = new Collection(String); // Cmd aliases map
+
+		// wait: arbitrary functions that can be called on events
+		this.wait = new Collection(0);
+		// Users collection
+		this.users = new Collection(100, User);
+		// Groups collection
+		this.groups = new Collection(500, Group);
+		// Events collection (0 means no limit)
+		this.events = new Collection(0);
+		// Cmds collection
+		this.cmds = new Collection(0, Command);
+		// Cmd aliases map
+		this.aliases = new Collection(0);
 	}
 
 	async connect() {
+		// Fetch latest WA version
 		const { version } = await fetchLatestBaileysVersion();
 		console.log('WEBSOCKET', `Connecting to WA v${version.join('.')}`, 'green');
-		// Fetch latest WA version
 
-		const { state, saveCreds } = await useMultiFileAuthState(this.auth);
 		// Use saved session
+		const { state, saveCreds } = await useMultiFileAuthState(this.auth);
 
 		this.sock = makeWASocket({
 			auth: {
@@ -69,42 +77,47 @@ export default class Bot {
 
 		// if (process.argv.includes('--mobile')) await RequestCode(this.sock);
 
-		this.sock.ev.on('creds.update', saveCreds);
 		// save login creds
+		this.sock.ev.on('creds.update', saveCreds);
 
-		// Loading commands
-		this.folderHandler(`./build/Commands`, this.loadCommands);
-		// folderHandler() reads a folder and call the function
+		// Load commands*
+		this.folderHandler(`./build/Commands`, this.loadCmds);
+		// * folderHandler() will read a folder and call the function
 		// for each file
+
+		// Load events
 		this.folderHandler(`./build/Events`, this.loadEvents);
-		// Loading Events
 	}
 
+	// Send: Intermediate function to send msgs easier
 	async send(id: str | Msg, body: str | AnyMessageContent, reply?: proto.IWebMessageInfo) {
-		// Intermediate function to send msgs easier
-		const quote = reply ? { quoted: reply } : typeof id === 'string' ? {} : { quoted: id?.raw };
-		const text = typeof body === 'object' ? body : { text: body };
-		let chat = typeof id === 'string' ? id : id.chat;
-
-		if (!chat.includes('@')) chat += '@s.whatsapp.net';
+		let { text, chat, quote } = getMsgMeta(id, body, reply);
 
 		const msg = await this.sock.sendMessage(chat, text, quote);
 
 		return await getCtx(msg!, this);
 	}
 
-	async react(m: Msg, emoji: str) { // reacts on a msg
+	// React: react on a msg
+	async react(m: Msg, emoji: str) {
 		const { chat, key } = m;
 
 		return await this.send(chat, { react: { text: emoji, key } });
 	}
 
-	async edit(m: Msg, text: str) {
-		const { chat, key } = m;
+	async editMsg(msg: Msg, text: str) {
+		const { chat, key } = msg;
 
 		return await this.sock.sendMessage(chat, { edit: key, text });
 	}
 
+	async deleteMsg(msgOrKey: Msg | proto.IMessageKey) {
+		const { chat, key } = getMsgMeta(msgOrKey, '');
+
+		return await this.send(chat, { delete: key });
+	}
+
+	// get a group cache or fetch it
 	async getGroup(id: str): Promise<Group> {
 		let group = this.groups.get(id);
 
@@ -114,7 +127,7 @@ export default class Bot {
 			group = await this.sock.groupMetadata(id);
 			const groupData = new Group(group);
 
-			this.groups.set(groupData.id, await groupData.checkData());
+			this.groups.add(groupData.id, await groupData.checkData());
 			return groupData;
 		}
 	}
@@ -152,7 +165,7 @@ export default class Bot {
 		return;
 	}
 
-	async loadCommands(file: str, _category: str, imported: any) { // DENO point
+	async loadCmds(file: str, _category: str, imported: any) { // DENO point
 		const cmd: Cmd = new imported();
 		cmd.name = file.slice(0, -3);
 

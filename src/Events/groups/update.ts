@@ -11,6 +11,6 @@ export default async function (bot: Bot, groups: Partial<GroupMetadata>[]) {
 	const group = await new Group(g).checkData();
 
 	// save new group info
-	bot.groups.set(g.id, group);
+	bot.groups.add(g.id, group);
 	return;
 }

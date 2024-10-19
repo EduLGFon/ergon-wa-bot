@@ -1,5 +1,5 @@
 import type { CmdContext } from '../../Core/Typings/types.js';
-import { clearTemp } from '../../Core/Components/Utils.js';
+import { cleanTemp } from '../../Core/Components/Utils.js';
 import Command from '../../Core/Classes/Command.js';
 import { readFileSync, statSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -48,10 +48,12 @@ export default class extends Command {
 
 		ytdlArgs.push(`-o ${path}`);
 
-		if (!args[1].includes('tiktok.com')) ytdlArgs.push(
-`-u "${process.env.SOCIAL_USERNAME}"`,
-                        `-p "${process.env.SOCIAL_PASSWORD}"`,
-		)
+		if (!args[1].includes('tiktok.com')) {
+			ytdlArgs.push(
+				`-u "${process.env.SOCIAL_USERNAME}"`,
+				`-p "${process.env.SOCIAL_PASSWORD}"`,
+			);
+		}
 
 		try {
 			await bot.send(msg, t(`download.${isVideo}`));
@@ -62,7 +64,7 @@ export default class extends Command {
 			attachMedia(msgBody, file, path);
 			await bot.send(msg, msgBody as AnyMessageContent);
 
-			clearTemp();
+			cleanTemp();
 		} catch (e: any) {
 			// remove yt-dlp cli to prevent showing social password
 			const error = (e?.stack || e).replace(ytdlArgs.join(' '), 'yt-dlp');
