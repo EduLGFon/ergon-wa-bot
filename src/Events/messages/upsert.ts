@@ -11,9 +11,11 @@ import i18next from 'i18next';
 export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
 	if (!raw.messages[0]) return;
 
-	for (const message of raw.messages) {
+	for (const m of raw.messages) {
+		if (!m.message) return;
+
 		// get abstract msg obj
-		const { msg, group, user } = await getCtx(message, bot);
+		const { msg, group, user } = await getCtx(m, bot);
 
 		if (group && Object.values(coolMsgTypes).includes(msg.type)) {
 			group.cacheMsg(msg);

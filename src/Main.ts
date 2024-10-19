@@ -7,7 +7,7 @@ import P from 'pino';
 // import { resolve } from 'path';
 
 const logger = P.default().child({});
-logger.level = 'fatal';
+logger.level = 'silent';
 
 loadPrototypes();
 loadLocales();

@@ -123,7 +123,7 @@ function genStickerMeta(user: User, group?: Group) {
 // findKey: Search for a key inside an object
 function findKey(obj: any, key: str): any {
 	// if the obj has this key, return it
-	if (obj.hasOwnProperty(key)) return obj[key];
+	if (obj?.hasOwnProperty(key)) return obj[key];
 
 	// search the key on all objs inside the main obj
 	for (const property of Object.getOwnPropertyNames(obj)) {

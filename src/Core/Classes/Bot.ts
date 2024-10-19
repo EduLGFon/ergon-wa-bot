@@ -70,7 +70,7 @@ export default class Bot {
 			markOnlineOnConnect: false,
 			// mobile: true,
 			printQRInTerminal: true,
-			syncFullHistory: true,
+			syncFullHistory: false,
 			// ignore status updates
 			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast'),
 			version,
