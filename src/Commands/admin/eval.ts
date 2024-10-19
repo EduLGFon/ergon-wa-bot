@@ -16,34 +16,28 @@ export default class extends Command {
 	async run(ctx: CmdContext) {
 		const lang = (langs.includes(ctx.args[0] as 'py') ? ctx.args.shift() : 'eval') as Lang;
 
-		let output = '', reaction = '✅'; // Reaction emoji
+		let output = '';
 
 		const startTime = Date.now();
 		const startRAM = getRAM(true) as number;
 
-		try {
-			output = await runOtherLang({ lang, code: ctx.args.join(' '), ctx });
-		} catch (e: any) {
-			reaction = '❌'; // Reaction emoji
-			output = String(e?.stack || e);
-		} finally {
-			// difference between initial RAM and final RAM
-			const duration = (Date.now() - startTime).toLocaleString('pt');
-			const endRAM = getRAM(true) as number;
+		output = await runOtherLang({ lang, code: ctx.args.join(' '), ctx });
 
-			let RAMRange: str | num = Number((endRAM - startRAM).toFixed(2));
-			RAMRange = RAMRange < 0 ? RAMRange : `+${RAMRange}`;
+		// difference between initial RAM and final RAM
+		const duration = (Date.now() - startTime).toLocaleString('pt');
+		const endRAM = getRAM(true) as number;
 
-			const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
-				`[📊]: ${duration}ms - ` + `${endRAM}MB (${RAMRange}MB)\n` +
-				output.trim()
-					.slice(0, 256);
+		let RAMRange: str | num = Number((endRAM - startRAM).toFixed(2));
+		RAMRange = RAMRange < 0 ? RAMRange : `+${RAMRange}`;
 
-			clearTemp();
+		const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
+			`[📊]: ${duration}ms - ` + `${endRAM}MB (${RAMRange}MB)\n` +
+			output.trim()
+				.slice(0, 256);
 
-			const reply = await ctx.bot.send(ctx.msg, text);
-			ctx.bot.react(reply.msg, reaction);
-			return;
-		}
+		clearTemp();
+
+		const reply = await ctx.bot.send(ctx.msg, text);
+		return;
 	}
 }

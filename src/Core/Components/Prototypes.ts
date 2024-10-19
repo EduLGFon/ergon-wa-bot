@@ -1,6 +1,5 @@
 import config from '../JSON/config.json' assert { type: 'json' };
 import { DateTime } from 'luxon';
-//@ts-ignore chalk is now pure ESM and Node is CommonJS
 import chalk from 'chalk';
 
 const now = () =>
@@ -31,6 +30,11 @@ export default () => {
 		encode: {
 			value: function () {
 				return '```\n' + this + '```';
+			},
+		},
+		toRegEx: {
+			value: function () {
+				return this.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 			},
 		},
 		align: {
@@ -68,8 +72,8 @@ export default () => {
 			(getRAM() as str).align(11, 'end')
 		}] - ${msg}`;
 
-		console.log(str);
-		//console.info(chalk.bold[color as 'red'](str));
+		// console.log(str);
+		console.info(chalk.bold[color as 'red'](str));
 		// it prints: [ TITLE | 18:04 | 69MB ] - msg (colored)
 		return;
 	};

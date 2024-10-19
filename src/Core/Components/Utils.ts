@@ -1,4 +1,4 @@
-import type { CmdContext, Msg, MsgTypes } from '../Typings/types.ts';
+import type { CmdContext, Msg, MsgTypes } from '../Typings/types.js';
 import config from '../JSON/config.json' assert { type: 'json' };
 import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
 import { GroupMetadata, type proto } from 'baileys';
@@ -40,6 +40,10 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	} as CmdContext;
 }
 
+export async function delay(time: num) {
+	return await new Promise((r) => setTimeout(() => r(true), time));
+}
+
 export async function cacheAllGroups(bot: Bot) {
 	const groupList = await bot.sock.groupFetchAllParticipating();
 
@@ -48,6 +52,20 @@ export async function cacheAllGroups(bot: Bot) {
 	groups.forEach((g) => bot.groups.set(g, groupList[g]));
 	console.log('CACHE', `${groups.length} groups cached.`, 'blue');
 	return;
+}
+
+export function isEmpty(value: unknown): boolean { // check if a array/obj is empty
+	if (!value) return true;
+
+	if (Array.isArray(value)) {
+		return value.length === 0 ||
+			value.some((item) => item === undefined || isEmpty(item));
+	} else if (typeof value === 'object') {
+		return Object.keys(value!).length === 0;
+		//|| Object.values(value!).some((item) => item === undefined || isEmpty(item));
+	}
+
+	return true;
 }
 
 export function getQuoted(raw: proto.IWebMessageInfo) {

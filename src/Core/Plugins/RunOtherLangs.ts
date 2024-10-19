@@ -1,4 +1,5 @@
 import type { CmdContext, Lang } from '../Typings/types.ts';
+import { delay } from '../Components/Utils.js';
 import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { inspect } from 'node:util';
@@ -39,37 +40,45 @@ interface runParams {
 	file?: string;
 }
 export async function runOtherLang({ lang, code, ctx, file }: runParams) {
-	if (lang === 'eval') {
-		const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx!;
+	let data, cli: str[] = [];
+	try {
+		if (lang === 'eval') {
+			const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx!;
+			delay; // i may need it, so TS won't remove from build if it's here
 
-		let output = code!.includes('await')
-			? await eval(`(async () => { ${code} })()`)
-			: await eval(code!);
+			let output = code!.includes('await')
+				? await eval(`(async () => { ${code} })()`)
+				: await eval(code!);
 
-		return inspect(output, { depth: null });
+			return inspect(output, { depth: null });
+		}
+
+		if (file) {
+			lang = file.split('.')[1] as 'py';
+
+			data = langInfo[lang];
+		} else {
+			data = langInfo[lang!];
+
+			file = `temp/exec.${data.ext}`;
+			writeFileSync(file, code!);
+			code = '';
+			// don't write code in CLI to prevent issues
+		}
+
+		return data.cmd!
+			.map((c, i) => {
+				cli[i] = `${c}${file} ${code}`; // collect CLIs
+
+				return execSync(cli[i]);
+			})
+			.join(' ');
+	} catch (e: any) {
+		return (e.stack || e || '')
+			.replace(`Error: Command failed: `, '') // clean errors
+			.replace(new RegExp(`(${cli.join('|').toRegEx()})`, 'gi'), '') // remove cli
+			.replace(new RegExp(file!.toRegEx(), 'gi'), 'file'); // remove file name
+
+		// i made it bc C++ error logs are strogonoffcaly large
 	}
-
-	let data, clis: str[] = [];
-
-	if (file) {
-		lang = file.split('.')[1] as 'py';
-
-		data = langInfo[lang];
-	} else {
-		data = langInfo[lang!];
-
-		file = `temp/exec.${data.ext}`;
-		writeFileSync(file, code!);
-		code = '';
-		// don't write code in CLI to prevent issues
-	}
-
-	return data.cmd!
-		.map((c, index) => {
-			clis[index] = `${c}${file} ${code}`; // collect CLIs
-
-			return execSync(clis[index]) + '\n';
-		})
-		.join(' ') // remove CLIs from the output
-		.replace(new RegExp(`(${clis.join('|')})`), '');
 }
