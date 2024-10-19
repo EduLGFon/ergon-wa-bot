@@ -24,9 +24,11 @@ model msgs {
 }
 
 model reminders {
-  id       Int    @id @default(autoincrement())
   author   String
   chat     String
   msg      String
   remindAt String
+  isDone   Boolean?
+  id       Int      @id @default(autoincrement())
+
 }

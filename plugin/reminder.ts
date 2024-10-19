@@ -9,7 +9,10 @@ import { prisma } from '../map.js'
 
 console.log('Reminder ready!')
 setInterval(async () => {
-	let reminders = await prisma.reminders.findMany({ orderBy: { remindAt: 'asc' } })
+	let reminders = await prisma.reminders.findMany({
+		orderBy: { remindAt: 'asc' },
+		where: { isDone: null },
+	})
 
 	reminders = reminders.filter((r) => Number(r.remindAt) < Date.now())
 
@@ -21,7 +24,12 @@ setInterval(async () => {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(r),
 		})
-			.then(() => prisma.reminders.delete({ where: { id: r.id } }))
+			.then(() =>
+				prisma.reminders.update({
+					where: { id: r.id },
+					data: { isDone: true },
+				})
+			)
 			.catch((e) => console.log(r, e.message))
 	}
 }, 1_000 * 5)
