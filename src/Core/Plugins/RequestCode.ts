@@ -5,7 +5,7 @@ import readline from 'readline';
 
 export default async function (sock: ReturnType<typeof makeWASocket>) {
 	if (!sock.authState.creds.registered) {
-		const question = (text: string) => new Promise<string>((r) => rl.question(text, r));
+		const question = (text: str) => new Promise<str>((r) => rl.question(text, r));
 
 		const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 		const { registration: r } = sock.authState.creds || { registration: {} };

@@ -11,7 +11,7 @@ import makeWASocket, {
 // import RequestCode from './RequestCode';
 import { Cmd, Logger, Msg } from '../Typings/index';
 import Collection from '../Plugins/Collection';
-import { getCtx } from '../Core/Utils';
+import { getCtx } from '../Components/Utils';
 import { readdirSync } from 'fs'; // DENO point
 import Command from './Command';
 import { resolve } from 'path';
@@ -27,7 +27,7 @@ export default class Bot {
 	cmds: Collection<string, Cmd>;
 	aliases: Collection<string, string>;
 
-	constructor(public auth: string, public logger: Logger) {
+	constructor(public auth: str, public logger: Logger) {
 		this.logger = logger;
 		this.auth = auth; // auth folder
 		this.sock;
@@ -61,7 +61,7 @@ export default class Bot {
 			printQRInTerminal: true,
 			syncFullHistory: true,
 			// ignore status updates
-			shouldIgnoreJid: (jid: string) => jid?.includes('broadcast'),
+			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast'),
 			version,
 		});
 
@@ -78,7 +78,7 @@ export default class Bot {
 		// Loading Events
 	}
 
-	async send(id: string | Msg, body: string | AnyMessageContent, reply?: proto.IWebMessageInfo) {
+	async send(id: str | Msg, body: str | AnyMessageContent, reply?: proto.IWebMessageInfo) {
 		// Intermediate function to send msgs easier
 		const chat = typeof id === 'string' ? id : id.chat;
 		const text = typeof body === 'object' ? body : { text: body };
@@ -89,11 +89,11 @@ export default class Bot {
 		return await getCtx(msg!, this);
 	}
 
-	async react(m: Msg, emoji: string) { // reacts on a msg
+	async react(m: Msg, emoji: str) { // reacts on a msg
 		this.send(m.chat, { react: { text: emoji, key: m.raw.key } });
 	}
 
-	async folderHandler(path: string, handler: Function) {
+	async folderHandler(path: str, handler: Function) {
 		path = resolve(__dirname, path);
 
 		for (const category of readdirSync(path)) {
@@ -108,7 +108,7 @@ export default class Bot {
 		}
 	}
 
-	async loadCommands(file: string, _category: string, imported: any) { // DENO point
+	async loadCommands(file: str, _category: str, imported: any) { // DENO point
 		const cmd: Cmd = new imported.default.default();
 		cmd.name = file.slice(0, -3);
 
@@ -129,7 +129,7 @@ export default class Bot {
 		// Set cmd aliases
 	}
 
-	async loadEvents(file: string, category: string, imported: any) {
+	async loadEvents(file: str, category: str, imported: any) {
 		const event = imported.default.default;
 		const name = `${category}.${file.slice(0, -3)}`;
 		// folder/file names are the same of lib events
@@ -143,7 +143,7 @@ export default class Bot {
 		});
 	}
 
-	async getGroup(id: string) {
+	async getGroup(id: str) {
 		// check group cache
 		if (this.groups.has(id)) return this.groups.get(id);
 

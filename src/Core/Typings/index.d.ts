@@ -6,6 +6,11 @@ import { TFunction } from 'i18next';
 import Bot from '../Classes/Bot';
 import { pino } from 'pino';
 
+type Lang = 'py' | 'lua' | 'deno' | 'node' | 'eval' | 'cpp';
+
+type Prisma = PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>;
+type Logger = pino.Logger<{ timestamp: () => str } & pino.ChildLoggerOptions>;
+
 type MsgTypes =
 	| 'text'
 	| 'image'
@@ -19,25 +24,25 @@ type MsgTypes =
 	| 'location';
 
 interface Msg {
-	id: string;
-	chat: string;
-	text: string;
+	id: str;
+	chat: str;
+	text: str;
 	type: MsgTypes;
-	isMedia: boolean;
+	isMedia: bool;
 	raw: proto.IWebMessageInfo;
 	quoted: Msg;
 }
 
 interface Cmd {
-	name?: string;
-	aliases?: string[];
-	cooldown?: number;
+	name?: str;
+	aliases?: str[];
+	cooldown?: num;
 	access?: {
-		dm?: boolean;
-		groups?: boolean;
-		onlyDevs?: boolean;
+		dm?: bool;
+		groups?: bool;
+		onlyDevs?: bool;
 	};
-	react?: boolean;
+	react?: bool;
 	run?: Function;
 }
 
@@ -47,13 +52,9 @@ interface CmdContext {
 	user: User;
 	group: GroupMetadata;
 	bot: Bot;
-	args: string[];
+	args: str[];
 	cmd: Cmd;
-	callCmd: string;
+	callCmd: str;
 	t: TFunction<'translation', undefined>;
 	sendUsage(): Promise<void>;
 }
-
-type Logger = pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;
-type Prisma = PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>;
-type Lang = 'py' | 'lua' | 'deno' | 'node' | 'eval' | 'cpp';

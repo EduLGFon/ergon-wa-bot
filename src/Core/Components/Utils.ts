@@ -1,6 +1,6 @@
 import type { CmdContext, Msg, MsgTypes } from '../Typings/index';
-import { AUTHOR, LINK, PACK } from '../../JSON/config.json';
-import { isMedia, msgTypes } from '../Plugins/MsgTypes';
+import { AUTHOR, LINK, PACK } from '../JSON/config.json';
+import { isMedia, msgTypes } from '../Typings/MsgTypes';
 import { GroupMetadata, type proto } from 'baileys';
 import { readdirSync, unlink } from 'fs';
 import User from '../Classes/User';
@@ -86,16 +86,16 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 
 export function getStickerAuthor(user: User, group: GroupMetadata) {
 	return {
-		pack: PACK.join(''),
+		pack: PACK.join('\n'),
 
-		author: AUTHOR.join('')
+		author: AUTHOR.join('\n')
 			.replace('{username}', user.name)
 			.replace('{link}', LINK)
 			.replace('{group}', group?.subject || 'Not a group'),
 	};
 }
 
-export function findKey(obj: any, key: string): any {
+export function findKey(obj: any, key: str): any {
 	// if the obj has this key, return it
 	if (obj.hasOwnProperty(key)) return obj[key];
 
@@ -119,6 +119,7 @@ export function findKey(obj: any, key: string): any {
 }
 
 export async function clearTemp() {
+	// clear temp folder
 	const files = readdirSync('./temp/');
 
 	files.forEach((f) => unlink(`./temp/${f}`, () => {}));

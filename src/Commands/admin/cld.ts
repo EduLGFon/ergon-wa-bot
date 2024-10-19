@@ -1,5 +1,5 @@
-import type { CmdContext } from '../../Components/Typings/index';
-import Command from '../../Components/Classes/Command';
+import type { CmdContext } from '../../Core/Typings/index';
+import Command from '../../Core/Classes/Command';
 import { execSync } from 'child_process';
 
 export default class extends Command {
@@ -34,8 +34,8 @@ export default class extends Command {
 				output.trim().encode();
 
 			const sentMsg = await bot.send(msg, text);
-			await bot.react(sentMsg.msg, reaction);
-			return true;
+
+			return bot.react(sentMsg.msg, reaction);
 		}
 	}
 

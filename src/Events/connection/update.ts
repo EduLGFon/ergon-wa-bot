@@ -1,6 +1,6 @@
 import { type ConnectionState, DisconnectReason } from 'baileys';
-import { cacheAllGroups } from '../../Components/Core/Utils';
-import type bot from '../../Components/Classes/Bot';
+import { cacheAllGroups } from '../../Core/Components/Utils';
+import type bot from '../../Core/Classes/Bot';
 import type { Boom } from '@hapi/boom';
 
 export default async function (this: bot, update: Partial<ConnectionState>) {
@@ -12,16 +12,17 @@ export default async function (this: bot, update: Partial<ConnectionState>) {
 			// don't show online mark when the bot is running
 			await this.sock.sendPresenceUpdate('unavailable');
 
-			return console.log('Connection stabilized');
+			return console.log('[WEBSOCKET', 'Connection stabilized');
 
 		case 'connecting':
-			return console.log('Connecting...');
+			return console.log('[WEBSOCKET', 'Connecting...');
+
 		case 'close':
 			const shouldReconnect =
 				(lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
 
-			console.log(`Connection closed by:`, lastDisconnect?.error);
-			console.log(`Should try to reconnect: ${shouldReconnect}`);
+			console.log('[WEBSOCKET', `Connection closed by:`, lastDisconnect?.error);
+			console.log('[WEBSOCKET', `Should try to reconnect: ${shouldReconnect}`);
 
 			// reconnect if it's not a logout
 			if (shouldReconnect) this.connect();

@@ -1,14 +1,14 @@
 import type { Cmd, CmdContext } from '../Typings/index';
 
 export default abstract class Command implements Cmd {
-	name?: string;
-	aliases?: string[];
-	cooldown?: number;
-	react?: boolean;
+	name?: str;
+	aliases?: str[];
+	cooldown?: num;
+	react?: bool;
 	access?: {
-		dm?: boolean;
-		groups?: boolean;
-		onlyDevs?: boolean;
+		dm?: bool;
+		groups?: bool;
+		onlyDevs?: bool;
 	};
 
 	constructor(c: Cmd) {
