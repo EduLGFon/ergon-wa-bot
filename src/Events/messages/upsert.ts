@@ -1,5 +1,5 @@
+import { devs, prefix } from '../../config.json';
 import { proto } from '@whiskeysockets/baileys';
-import config from '../../config.json';
 import BotClient from '../../Client';
 
 export default async function (bot: BotClient, rawMsg: { messages: proto.IWebMessageInfo[] }) {
@@ -10,48 +10,42 @@ export default async function (bot: BotClient, rawMsg: { messages: proto.IWebMes
 
 	while (timestamp.length < 13) {
 		timestamp += '9';
-	}
+	} // Gambiarra pra fazer as 2 datas terem o mesmo tamanho
 
 	const type = Object.keys(m.message)[0];
+	// tipo da msg
 
 	const msg: Msg = {
-		id: m.key.id!,
-		chat: m.key.remoteJid!,
-		participant: m.key.participant!,
-		timestamp: Number(timestamp),
-		username: m.pushName!,
-		//@ts-ignore O nome do obj muda de acordo com o tipo de msg, e a propriedade
-		// do texto também.
+		id: m.key.id!, // id da msg
+		author: m.key.participant || m.key.remoteJid!, // id do autor da msg
+		chat: m.key.remoteJid!, // id do chat da msg
+		timestamp: Number(timestamp), // data
+		username: m.pushName!, // nome do autor da msg
+		//@ts-ignore Dependendo do tipo da msg, o texto pode assumir
+		// várias propriedades diferentes
 		text: String(m.message.conversation || m.message[type]?.text || m.message[type]?.caption)
 			.trim(),
-		type,
-		//@ts-ignore mesmo motivo.
-		raw: m,
+		type, // tipo da msg
+		raw: m, // obj bruto recebido
 	};
 
-	const { devs, prefix } = config;
-	// Eu sei que poderia ter feito isso diretamente no import,
-	// porém o DENO não aceita isso e estou deixando as coisas preparadas
-	// para um possível porte para o DENO no futuro
-
-	if (msg?.text?.slice(0, prefix.length) != prefix) return;
+	if (!msg.text.startsWith(prefix)) return;
 
 	const args: string[] = msg.text.replace(prefix, '').trim().split(' ');
-	const callCmd = args.shift()?.toLowerCase()!;
+	const callCmd = args.shift()!.toLowerCase()!;
+	// procura o cmd pelo nome no Map de cmds e no Map de aliases
 	const cmd = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!);
 
 	if (!cmd) return;
-	if (cmd.access?.onlyDevs && !(devs.includes(msg.chat) || devs.includes(msg.participant))) {
-		return;
-	}
+	if (cmd.access?.onlyDevs && !devs.includes(msg.author)) return;
 
 	try {
 		const timeout = setTimeout(
 			() => bot.send(msg.chat, { react: { text: '⏳', key: m.key } }),
-			// Esse timeout vai reagir no cmd se ele demorar mais de 1.5s
-			// para ser respondido
 			1_500,
 		);
+		// reage na msg do cmd se o bot demorar mais de 1.5s
+		// para executar o cmd
 
 		await cmd.run!(bot, msg, args);
 		clearTimeout(timeout);
