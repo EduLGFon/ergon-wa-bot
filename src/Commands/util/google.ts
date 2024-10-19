@@ -1,7 +1,7 @@
 import { CmdContext } from '../../Core/Typings/types.js';
 import Command from '../../Core/Classes/Command.js';
-import * as g from 'google-sr';
 import googleThis from 'googlethis';
+import * as g from 'google-sr';
 
 export default class extends Command {
 	constructor() {
@@ -13,7 +13,6 @@ export default class extends Command {
 	async run({ args, bot, msg, user, sendUsage, t }: CmdContext) {
 		if (!args[0]) return sendUsage();
 
-		let text = ''; // it's what the bot will say
 		const query = await g.search({
 			query: args.join(' ').trim(),
 			safeMode: false,
@@ -28,11 +27,16 @@ export default class extends Command {
 				params: {
 					hl: user.lang,
 					lr: `lang_${user.lang}`.toLowerCase(),
+					cr: 'countryBR',
 				},
 			},
 		});
 
 		if (!query) return bot.send(msg, t('search:notFound'));
+
+		let text = ''; // it's what the bot will say
+		let pronunciation = '';
+		query.length = 3; // limit to 3 results
 
 		const responseFunctions = {
 			SEARCH(r: g.SearchResultNode) {
@@ -41,19 +45,25 @@ export default class extends Command {
 				text += `*${title}:*\n> ${description} (${link})`;
 			},
 			async DICTIONARY(r: g.DictionaryResultNode) {
-				const moreInfo = await googleThis.search(r.word, {
+				const { word, phonetic, audio } = r;
+
+				if (audio) pronunciation = audio;
+
+				const moreInfo = await googleThis.search(word, {
 					parse_ads: false,
 					safe: false,
 					additional_params: { hl: user.lang },
 				});
 
-				const panel = moreInfo?.knowledge_panel;
+				const { title, type, description, metadata } = moreInfo?.knowledge_panel;
 
-				text += `*${panel?.title}* (${panel?.type})\n> ` + (panel?.description || '');
+				text += `*${title || word}* (${type || phonetic})`;
 				// e.g.: *Donald Trump* (45th U.S. President)
+
+				if (description) text += `\n> ${description}\n`;
 				// > Donald John Trump is bla bla bla
 
-				for (const { title, value } of panel?.metadata) text += `\n*${title}*: ${value}`;
+				for (const { title: key, value } of metadata) text += `\n*> ${key}*: ${value}`;
 			},
 			CURRENCY(r: g.CurrencyResultNode) {
 				const { formula } = r;
@@ -63,9 +73,9 @@ export default class extends Command {
 				query.length = 1;
 			},
 			TIME(r: g.TimeResultNode) {
-				const { timeInWords } = r;
+				const { location, time, timeInWords, type } = r;
 
-				text += `*${timeInWords}*`;
+				text += `*${time}* - ${timeInWords.split('\n')[0]} (${location})`;
 
 				query.length = 1;
 			},
@@ -73,13 +83,13 @@ export default class extends Command {
 				const { source: src, translation: res } = r;
 
 				text += `${src.language}  ➟  ${res.language}\n`;
-				text += `*${res.text}* (${res.pronunciation})`;
+				text += `*${res.text}* `;
+
+				if (res.pronunciation) text += `(${res.pronunciation})`;
 
 				query.length = 1;
 			},
 		};
-
-		query.length = 3; // limit to 3 results
 
 		for (const result of query) {
 			text += '\n\n';
@@ -87,7 +97,15 @@ export default class extends Command {
 			await responseFunctions[result.type as 'SEARCH'](result as any);
 		}
 
-		bot.send(msg, text.trim());
+		await bot.send(msg, text.trim());
+
+		if (pronunciation) {
+			bot.send(msg, {
+				audio: { url: pronunciation },
+				mimetype: 'audio/mpeg',
+				fileName: 'pronunciation.mp3',
+			});
+		}
 		return;
 	}
 }
