@@ -5,7 +5,8 @@ interface Msg {
 	timestamp: number;
 	username: string;
 	text: string;
-	status: proto.WebMessageInfo.Status;
+	type: string;
+	raw: proto.IWebMessageInfo;
 }
 
 interface Command {

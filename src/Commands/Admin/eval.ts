@@ -32,7 +32,7 @@ export default class implements Command {
 				`🎞️ *RAM:* ${initialRam}/${currentRam}MB\n` +
 				`*${title}:*\n\n ` + '```\n' + evaled + '```';
 
-			bot.send(msg.chat, text);
+			bot.send(msg.chat, text, msg.raw);
 		}
 	};
 }

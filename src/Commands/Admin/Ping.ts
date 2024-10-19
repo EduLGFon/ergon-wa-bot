@@ -8,6 +8,6 @@ export default class implements Command {
 	public run = (bot: BotClient, msg: Msg) => {
 		const ping = Date.now() - msg.timestamp;
 
-		bot.send(msg.chat, `Ping: *${ping}ms*`);
+		bot.send(msg.chat, `Ping: *${ping}ms*`, msg.raw);
 	};
 }

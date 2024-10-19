@@ -1,17 +1,24 @@
-import makeWASocket, { AnyMessageContent, BaileysEventMap, useMultiFileAuthState } from '@whiskeysockets/baileys';
+import makeWASocket, {
+	AnyMessageContent,
+	BaileysEventMap,
+	proto,
+	useMultiFileAuthState,
+} from '@whiskeysockets/baileys';
 import { readdirSync } from 'fs'; // DENO point
 
 export default class BotClient {
 	authFile: string;
 	sock!: ReturnType<typeof makeWASocket>;
-	commands: Map<string, Command>;
+	cmds: Map<string, Command>;
 	events: Map<string, Function>;
+	aliases: Map<string, string>;
 
 	constructor(authFile: string) {
 		this.authFile = authFile; // arquivo de autenticação
 		this.sock;
 		this.events = new Map<string, Function>();
-		this.commands = new Map<string, Command>();
+		this.cmds = new Map<string, Command>();
+		this.aliases = new Map<string, string>();
 	}
 
 	async connect() {
@@ -28,8 +35,12 @@ export default class BotClient {
 		// Carrega os eventos
 	}
 
-	async send(id: string, content: string | AnyMessageContent) {
-		return await this.sock.sendMessage(id!, typeof content === 'string' ? { text: content } : content);
+	async send(chatId: string, content: string | AnyMessageContent, reply?: proto.IWebMessageInfo) {
+		return await this.sock.sendMessage(
+			chatId!,
+			typeof content === 'string' ? { text: content } : content,
+			reply ? { quoted: reply! } : {},
+		);
 	}
 
 	async fileHandler(path: string, handler: Function) {
@@ -62,7 +73,10 @@ export default class BotClient {
 		}, properties.access);
 		// Compara as permissões do comando
 
-		this.commands.set(properties.name!, properties);
+		this.cmds.set(properties.name!, properties);
+
+		properties.aliases
+			?.forEach((a) => this.aliases.set(a, properties.name!));
 		// Salva o comando no Map
 	}
 
