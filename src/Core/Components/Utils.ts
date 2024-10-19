@@ -14,15 +14,12 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	// msg type
 	const type = getMsgType(message!);
 
-	let userID = key.participant || (key.fromMe ? bot.sock.user?.id : key.remoteJid);
+	const userID = key.participant || (key.fromMe ? bot.sock.user?.id : key.remoteJid);
 
-	let group = key.remoteJid && await bot.getGroup(key.remoteJid);
+	const group = key.remoteJid && await bot.getGroup(key.remoteJid);
 
-	let user: User = bot.users.get(userID);
-	if (!user) {
-		user = await new User(userID!, pushName!).checkData();
-		bot.users.add(user.id, user);
-	}
+	const user: User = bot.users.add(userID!, {}, [pushName!]);
+	await user.checkData();
 
 	return {
 		msg: {

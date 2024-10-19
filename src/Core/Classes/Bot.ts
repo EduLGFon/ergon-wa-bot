@@ -197,7 +197,7 @@ export default class Bot {
 			// It allows to modify events in run time
 			this.events.get(name)!(this, ...args, name)
 				.catch((e: any) => console.error(`Events#${name}: ${e.stack}`));
-			// eventFunction(this, ...args);
+			// eventFunction(this, ...args, name);
 		});
 	}
 }

@@ -26,7 +26,6 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	const callCmd = args.shift()!.toLowerCase()!;
 	// search command by name or by aliases
 	const cmd = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!);
-	// get locales function
 
 	if (!cmd) return;
 	// block only devs cmds for normal people
@@ -35,6 +34,7 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	user.addCmd();
 
 	const ctx: CmdContext = {
+		// get locales function
 		t: i18next.getFixedT(user.lang),
 		sendUsage,
 		callCmd,

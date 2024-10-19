@@ -9,7 +9,7 @@ export default class Collection<K, V> extends Map {
 	}
 
 	// Add: adds a value to the collection
-	add(key: K, value: V, extra?: V[]): V {
+	add(key: K, value: V | {}, extra?: any[]): V {
 		if (!key) throw new Error('Missing object key');
 
 		const existing = this.get(key);
@@ -17,8 +17,8 @@ export default class Collection<K, V> extends Map {
 
 		if (this.base) {
 			value = (value instanceof this.base || value?.constructor?.name === this.base.name)
-			? value
-			: new this.base(value, extra);
+				? value
+				: new this.base(key, ...extra!);
 		}
 
 		this.set(key, value);
@@ -30,7 +30,7 @@ export default class Collection<K, V> extends Map {
 			}
 		}
 
-		return value;
+		return value as V;
 	}
 
 	// Update: updates a item in the collection
