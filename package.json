@@ -19,7 +19,7 @@
 		"clean": "rm -r settings/log/* settings/temp/*"
 	},
 	"dependencies": {
-		"@google/generative-ai": "^0.14.1",
+		"@google/generative-ai": "^0.16.0",
 		"@prisma/client": "^5.17.0",
 		"baileys": "^6.7.5",
 		"chalk": "^5.3.0",
@@ -37,7 +37,7 @@
 	"devDependencies": {
 		"@types/express": "^4.17.21",
 		"@types/luxon": "^3.4.2",
-		"@types/node": "^20.14.12",
+		"@types/node": "^20.14.13",
 		"prisma": "^5.17.0",
 		"typescript": "^5.5.4"
 	}
