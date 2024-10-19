@@ -1,11 +1,10 @@
 {
-	"PREFIX": "!",
-	"LANG": "en",
+	"PREFIX": ".",
+	"LANG": "PT",
 	"TIMEZONE": "America/Sao_Paulo",
 	"DEVS": [
 		"devs ID",
-		"id = number without special",
-		"characters + '@s.whatsapp.net'"
+		"id = number without special characters"
 	],
 	"LINK": "dsc.gg/wallebot",
 	"PACK": [

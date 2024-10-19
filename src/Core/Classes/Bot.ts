@@ -23,8 +23,8 @@ import User from './User.js';
 export default class Bot {
 	sock!: WASocket;
 	wait: Collection<string, Function>;
-	groups: Collection<string, Group>;
 	users: Collection<string, User>;
+	groups: Collection<string, Group>;
 	events: Collection<string, Function>;
 	cmds: Collection<string, Cmd>;
 	aliases: Collection<string, string>;
@@ -82,9 +82,11 @@ export default class Bot {
 
 	async send(id: str | Msg, body: str | AnyMessageContent, reply?: proto.IWebMessageInfo) {
 		// Intermediate function to send msgs easier
-		const chat = typeof id === 'string' ? id : id.chat;
-		const text = typeof body === 'object' ? body : { text: body };
 		const quote = reply ? { quoted: reply } : typeof id === 'string' ? {} : { quoted: id?.raw };
+		const text = typeof body === 'object' ? body : { text: body };
+		let chat = typeof id === 'string' ? id : id.chat;
+
+		if (!chat.includes('@')) chat += '@s.whatsapp.net';
 
 		const msg = await this.sock.sendMessage(chat, text, quote);
 
@@ -92,7 +94,38 @@ export default class Bot {
 	}
 
 	async react(m: Msg, emoji: str) { // reacts on a msg
-		return await this.send(m.chat, { react: { text: emoji, key: m.raw.key } });
+		const { chat, key } = m;
+
+		return await this.send(chat, { react: { text: emoji, key } });
+	}
+
+	async edit(m: Msg, text: str) {
+		const { chat, key } = m;
+
+		return await this.sock.sendMessage(chat, { edit: key, text });
+	}
+
+	async getGroup(id: str): Promise<Group> {
+		let group = this.groups.get(id);
+
+		if (group) return group;
+		else {
+			// fetch group
+			group = await this.sock.groupMetadata(id);
+			const groupData = new Group(group);
+
+			this.groups.set(groupData.id, await groupData.checkData());
+			return groupData;
+		}
+	}
+
+	async downloadMedia(msg: Msg) {
+		const media = await downloadMediaMessage(msg.raw, 'buffer', {}, {
+			logger: this.logger,
+			reuploadRequest: this.sock.updateMediaMessage,
+		})! as Buffer;
+
+		return media || await this.sock.updateMediaMessage(msg.raw);
 	}
 
 	async folderHandler(path: str, handler: Function) {
@@ -153,28 +186,5 @@ export default class Bot {
 				.catch((e: any) => console.error(`Events#${name}: ${e.stack}`));
 			// eventFunction(this, ...args);
 		});
-	}
-
-	async getGroup(id: str): Promise<Group> {
-		let group = this.groups.get(id);
-
-		if (group) return group;
-		else {
-			// fetch group
-			group = await this.sock.groupMetadata(id);
-			const groupData = new Group(group);
-
-			this.groups.set(groupData.id, await groupData.checkData());
-			return groupData;
-		}
-	}
-
-	async downloadMedia(msg: Msg) {
-		const media = await downloadMediaMessage(msg.raw, 'buffer', {}, {
-			logger: this.logger,
-			reuploadRequest: this.sock.updateMediaMessage,
-		})! as Buffer;
-
-		return media || await this.sock.updateMediaMessage(msg.raw);
 	}
 }

@@ -1,10 +1,8 @@
 import { GroupMetadata, proto } from 'baileys';
-import Table from '../Classes/PgTable.ts';
 import Group from '../Classes/Group.ts';
 import User from '../Classes/User.ts';
 import { TFunction } from 'i18next';
 import Bot from '../Classes/Bot.ts';
-import postgres from 'postgres';
 import { pino } from 'pino';
 
 type Lang = 'py' | 'lua' | 'deno' | 'node' | 'eval' | 'cpp';
@@ -24,7 +22,7 @@ type MsgTypes =
 	| 'location';
 
 interface Msg {
-	id: str;
+	key: proto.IMessageKey;
 	chat: str;
 	edited: bool;
 	text: str;
@@ -61,21 +59,6 @@ interface CmdContext {
 
 interface GroupMsg {
 	author: str;
+	group: str;
 	count: num;
-}
-
-interface pg<T extends Record<string, postgres.PostgresType> = {}> extends
-	postgres.Sql<
-		Record<string, postgres.PostgresType> extends T ? {}
-			: {
-				[type in keyof T]: T[type] extends {
-					serialize: (value: infer R) => any;
-					parse: (raw: any) => infer R;
-				} ? R
-					: never;
-			}
-	> {
-	users: Table<User>;
-	groups: Table<Group>;
-	msgs: Table<GroupMsg>;
 }

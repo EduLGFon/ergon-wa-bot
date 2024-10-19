@@ -1,7 +1,7 @@
 import type { CmdContext, Lang } from '../Typings/types.js';
 import { delay } from '../Components/Utils.js';
 import { execSync } from 'node:child_process';
-import pg from '../Components/PostgreSQL.js';
+import prisma from '../Components/Prisma.js';
 import { inspect } from 'node:util';
 import fs from 'node:fs';
 
@@ -47,7 +47,7 @@ export async function runCode({ lang, code, ctx, file }: runParams) {
 		if (lang === 'eval') {
 			const { args, bot, msg, user, group, cmd, callCmd, t, sendUsage } = ctx!;
 			delay; // i may need it, so TS won't remove from build if it's here
-			pg;
+			prisma;
 			file = import.meta.url;
 
 			let output = code!.includes('await')

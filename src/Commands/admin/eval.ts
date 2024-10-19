@@ -1,4 +1,4 @@
-import type { CmdContext, Lang } from '../../Core/Typings/types.ts';
+import type { CmdContext, Lang } from '../../Core/Typings/types.d.ts';
 import { langs, runCode } from '../../Core/Plugins/RunCode.js';
 import { clearTemp } from '../../Core/Components/Utils.js';
 import Command from '../../Core/Classes/Command.js';
@@ -19,7 +19,7 @@ export default class extends Command {
 		const output = await runCode({ lang, code: ctx.args.join(' '), ctx });
 
 		const dur = Duration
-			.fromMillis(Date.now() - startTime)
+			.fromMillis(Date.now() - startTime || 1)
 			.rescale()
 			.toHuman({ unitDisplay: 'narrow' });
 		const RAM = process.memoryUsage().rss.bytes();

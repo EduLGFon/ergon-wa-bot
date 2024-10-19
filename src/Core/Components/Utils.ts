@@ -10,22 +10,31 @@ import Bot from '../Classes/Bot.js';
 export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	const { message, key, pushName } = raw;
 
-	const type = getMsgType(message!);
 	// msg type
-	const userID = key.participant || key?.remoteJid!;
+	const type = getMsgType(message!);
 
-	let group: Group; // group metadata
-	if (key.participant && key.remoteJid) group = await bot.getGroup(key.remoteJid);
+	let userID = key.fromMe ? bot.sock.user?.id : key.remoteJid;
+
+	let group: Group;
+
+	if (key.participant) {
+		userID = key.participant;
+
+		if (key.remoteJid) {
+			group = await bot.getGroup(key.remoteJid);
+		}
+	}
 
 	let user = bot.users.get(userID);
+
 	if (!user) {
-		user = await new User(userID, pushName!).checkData();
+		user = await new User(userID!, pushName!).checkData();
 		bot.users.set(userID, user);
 	}
 
 	return {
 		msg: {
-			id: key.id!, // msg id
+			key,
 			chat: key?.remoteJid!, // msg chat id
 			edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
 			text: getMsgText(message!),

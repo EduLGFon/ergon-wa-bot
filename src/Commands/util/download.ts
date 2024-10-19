@@ -46,11 +46,12 @@ export default class extends Command {
 			};
 		}
 
-		ytdlArgs.push(
-			`-o ${path}`,
-			`-u "${process.env.SOCIAL_USERNAME}"`,
-			`-p "${process.env.SOCIAL_PASSWORD}"`,
-		);
+		ytdlArgs.push(`-o ${path}`);
+
+		if (!args[1].includes('tiktok.com')) ytdlArgs.push(
+`-u "${process.env.SOCIAL_USERNAME}"`,
+                        `-p "${process.env.SOCIAL_PASSWORD}"`,
+		)
 
 		try {
 			await bot.send(msg, t(`download.${isVideo}`));

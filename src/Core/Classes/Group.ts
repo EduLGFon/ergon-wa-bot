@@ -1,6 +1,5 @@
 import { GroupMetadata, GroupParticipant } from 'baileys';
-import pg from '../Components/PostgreSQL.js';
-import { GroupMsg } from '../Typings/types.js';
+import prisma from '../Components/Prisma.js';
 
 export default class Group {
 	id: str;
@@ -39,22 +38,20 @@ export default class Group {
 	}
 
 	async addMsg(author: str) {
-		const id = `${author}|${this.id}`;
-		let userCounter = await pg.msgs.find({ id }) as GroupMsg;
-
-		if (!userCounter) {
-			userCounter = await pg.msgs.create({
-				id,
-				data: {
-					count: 1,
+		await prisma.msgs.upsert({
+			where: {
+				author_group: {
+					author,
+					group: this.id,
 				},
-			}) as GroupMsg;
-		}
-
-		await pg.msgs.update({
-			id,
-			data: {
-				count: userCounter.count + 1,
+			},
+			create: {
+				author,
+				group: this.id,
+				count: 1,
+			},
+			update: {
+				count: { increment: 1 },
 			},
 		});
 		return;
@@ -62,21 +59,26 @@ export default class Group {
 
 	async getMsgs(author?: str) {
 		if (author) {
-			return await pg.msgs.find({
-				id: `${author}|${this.id}`,
+			return await prisma.msgs.findUnique({
+				where: {
+					author_group: {
+						author,
+						group: this.id,
+					},
+				},
 			});
 		}
 
-		return (await pg.msgs.getAll()).filter((m) => m.author.includes(this.id));
+		const msgs = await prisma.msgs.findMany({
+			where: {
+				group: this.id,
+			},
+		});
+
+		return msgs;
 	}
 
 	async checkData() {
-		let data = await pg.groups.find({ id: this.id });
-
-		if (!data) {
-			data = await pg.groups.create({ id: this.id });
-		}
-
 		return this;
 	}
 }

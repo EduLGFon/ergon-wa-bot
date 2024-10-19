@@ -7,12 +7,14 @@
 		"node": ">=18"
 	},
 	"scripts": {
-		"postinstall": "rm package-lock.json && npm run build",
+		"postinstall": "rm package-lock.json & npm run prisma && npm run build",
 		"build": "rm -r build/ & tsc",
 		"start": "rm log/* temp/* & node build/Main.js",
+		"prisma": "npx prisma generate",
 		"tsnd": "ts-node --esm src/Main.ts"
 	},
 	"dependencies": {
+		"@prisma/client": "^5.5.2",
 		"baileys": "github:WhiskeySockets/Baileys",
 		"chalk": "^5.3.0",
 		"dotenv": "^16.3.1",
@@ -37,6 +39,7 @@
 		"@jimp/types": "^0.22.8",
 		"@types/luxon": "^3.3.2",
 		"@types/node": "^20.8.6",
+		"prisma": "^5.5.2",
 		"typescript": "^5.2.2"
 	}
 }

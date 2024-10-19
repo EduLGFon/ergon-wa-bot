@@ -14,7 +14,7 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	if (group) await group.addMsg(user.id);
 
 	// run 'waitFor' events
-	if (bot.wait.has(e)) bot.wait.get(e)(bot, msg, usar, group);
+	if (bot.wait.has(e)) bot.wait.get(e)(bot, msg, user, group);
 
 	if (!msg.text.startsWith(user.prefix)) return;
 
@@ -40,12 +40,12 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 
 	const ctx: CmdContext = {
 		t: i18next.getFixedT(user.lang),
-		bot: bot,
 		sendUsage,
 		callCmd,
 		group,
 		args,
 		user,
+		bot,
 		cmd,
 		msg,
 	};

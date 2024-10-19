@@ -1,5 +1,5 @@
 import type { CmdContext } from '../../Core/Typings/types.js';
-import pg from '../../Core/Components/PostgreSQL.js';
+import prisma from '../../Core/Components/Prisma.js';
 import Command from '../../Core/Classes/Command.js';
 
 export default class extends Command {
@@ -16,12 +16,12 @@ export default class extends Command {
 
 		// Calculate DB Ping
 		startTime = Date.now();
-		await pg.users.find({ id: user.id });
+		await prisma.users.findUnique({ where: { id: user.id } });
 		const DBPing = Date.now() - startTime;
 
 		bot.send(
 			msg,
-			`*[🐧] - Ping:*\n[📞] WhatsApp: *${WAPing}ms*\n[🐘] PostgreSQL: *${DBPing}ms*`,
+			`*[🐧] - Ping:*\n[📞] WA API: *${WAPing}ms*\n[🐘] PostgreSQL: *${DBPing}ms*`,
 		);
 		return;
 	}
