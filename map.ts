@@ -33,6 +33,9 @@ import {
 	isValidPositiveIntenger,
 	msgMeta,
 } from './util/functions.js'
+import proto from './util/proto.js'
+import locale from './util/locale.js'
+
 export {
 	cacheAllGroups,
 	cleanTemp,
@@ -45,5 +48,7 @@ export {
 	getQuoted,
 	isEmpty,
 	isValidPositiveIntenger,
+	locale,
 	msgMeta,
+	proto,
 }

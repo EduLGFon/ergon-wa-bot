@@ -1,3 +1,4 @@
+import { Cmd, Collection, getCtx, Group, Logger, Msg, msgMeta, User } from '../map.js'
 import {
 	type AnyMessageContent,
 	type BaileysEventMap,
@@ -10,10 +11,12 @@ import {
 	useMultiFileAuthState,
 	type WASocket,
 } from 'baileys'
-// import { getCtx, msgMeta } from '../Components/Utils.js';
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { Cmd, Collection, getCtx, Group, Logger, Msg, msgMeta, User } from '../map.js'
+import pino from 'pino'
+
+const logger: Logger = pino.default()
+logger.level = 'silent'
 
 export default class Baileys {
 	sock!: WASocket
@@ -26,8 +29,7 @@ export default class Baileys {
 	aliases: Collection<string, string>
 	events: Collection<string, Function>
 
-	constructor(public auth: str, public logger: Logger) {
-		this.logger = logger
+	constructor(public auth: str) {
 		this.auth = auth // auth folder
 
 		// wait: arbitrary functions that can be called on events
@@ -47,7 +49,7 @@ export default class Baileys {
 	async connect() {
 		// Fetch latest WA version
 		const { version } = await fetchLatestBaileysVersion()
-		console.log('WEBSOCKET', `Connecting to WA v${version.join('.')}`, 'green')
+		print('WEBSOCKET', `Connecting to WA v${version.join('.')}`, 'green')
 
 		// Use saved session
 		const { state, saveCreds } = await useMultiFileAuthState(this.auth)
@@ -56,10 +58,10 @@ export default class Baileys {
 			auth: {
 				creds: state.creds,
 				// cache makes the store send/receive msgs faster
-				keys: makeCacheableSignalKeyStore(state.keys, this.logger),
+				keys: makeCacheableSignalKeyStore(state.keys, logger),
 			},
 			browser: Browsers.macOS('Desktop'),
-			logger: this.logger,
+			logger,
 			markOnlineOnConnect: false,
 			// mobile: true,
 			printQRInTerminal: true,
@@ -133,7 +135,7 @@ export default class Baileys {
 
 	async downloadMedia(msg: Msg) {
 		const media = await downloadMediaMessage(msg.raw, 'buffer', {}, {
-			logger: this.logger,
+			logger,
 			reuploadRequest: this.sock.updateMediaMessage,
 		})! as Buffer
 
@@ -156,7 +158,7 @@ export default class Baileys {
 			}
 		}
 
-		console.log(
+		print(
 			'HANDLER',
 			`${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`,
 			'magentaBright',
