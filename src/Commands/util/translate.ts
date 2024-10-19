@@ -1,6 +1,6 @@
-import { CmdContext } from '@Typings/index';
+import { CmdContext } from '../../Components/Typings/index';
+import Command from '../../Components/Classes/Command';
 import translate from 'google-translate';
-import Command from '@Classes/Command';
 
 export default class extends Command {
 	constructor() {
@@ -10,18 +10,20 @@ export default class extends Command {
 		});
 	}
 
-	async run({ bot, msg, args }: CmdContext) {
-		if (!args[1]) return bot.react(msg, '❌');
+	async run({ bot, msg, args, sendUsage }: CmdContext) {
+		if (!args[1]) return sendUsage();
 
-		const options = {
-			to: args.shift(),
-		};
-		const t = await translate(args.join(' '), options);
+		const toLang = args.shift();
+		try {
+			const t = await translate(args.join(' '), { to: toLang });
 
-		const text = '*[🌐] Google Translate*\n' +
-			`*${t.from.language.iso}  ➟  ${options.to}*\n` +
-			'```\n' + t.text + '```';
-
-		return await bot.send(msg, text);
+			const text = '*[🌐] - Google Translate*\n' +
+				`*${t?.from.language.iso}  ➟  ${toLang}*\n` +
+				'```' + t?.text + '```';
+			await bot.send(msg, text);
+			return true;
+		} catch (_e) {
+			return sendUsage();
+		}
 	}
 }

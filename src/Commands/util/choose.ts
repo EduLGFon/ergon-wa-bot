@@ -1,14 +1,19 @@
-import type { CmdContext } from '@Typings/index';
-import Command from '@Classes/Command';
+import type { CmdContext } from '../../Components/Typings/index';
+import Command from '../../Components/Classes/Command';
 
 export default class extends Command {
 	constructor() {
 		super({});
 	}
-	async run({ bot, msg, args }: CmdContext) {
-		const options = args.join(' ').split(',');
-		const randomOption = options[Math.floor(Math.random() * options.length)];
+	async run({ t, bot, msg, args, sendUsage }: CmdContext) {
+		if (!args[0] || !msg.text.includes(',')) return sendUsage();
 
-		return await bot.send(msg, '```' + randomOption + '```');
+		const options = args.join(' ').split(',');
+		if (!options[1]) return sendUsage();
+
+		const choosedOne = options[Math.floor(Math.random() * options.length)];
+
+		await bot.send(msg, t('choose', { choosedOne }));
+		return true;
 	}
 }

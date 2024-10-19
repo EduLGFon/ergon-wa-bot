@@ -1,5 +1,5 @@
-import { CmdContext } from '@Typings/index';
-import Command from '@Classes/Command';
+import { CmdContext } from '../../Components/Typings/index';
+import Command from '../../Components/Classes/Command';
 
 export default class extends Command {
 	constructor() {
@@ -7,10 +7,21 @@ export default class extends Command {
 			aliases: ['p'],
 		});
 	}
-	async run({ bot, msg }: CmdContext) {
-		const time = Date.now();
-		await bot.send(msg.chat, 'Pinging...');
+	async run({ bot, msg, prisma }: CmdContext) {
+		// Calculate WA Ping
+		let startTime = Date.now();
+		await bot.send(msg.chat, 'ping');
+		const WAPing = Date.now() - startTime;
 
-		return await bot.send(msg, `Ping: *${Date.now() - time}ms*`);
+		// Calculate DB Ping
+		startTime = Date.now();
+		await prisma.users.findUnique({ where: { id: msg.author } });
+		const DBPing = Date.now() - startTime;
+
+		await bot.send(
+			msg,
+			`*[🐧] - Ping:*\n[📞] WhatsApp: *${WAPing}ms*\n[🐘] PostgreSQL: *${DBPing}ms*`,
+		);
+		return true;
 	}
 }

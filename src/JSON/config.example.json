@@ -1,6 +1,6 @@
 {
 	"PREFIX": "!",
-	"LANG": "EN",
+	"LANG": "en",
 	"DEVS": [
 		"devs ID",
 		"id = number without special",

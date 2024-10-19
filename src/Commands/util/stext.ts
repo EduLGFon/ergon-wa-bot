@@ -1,7 +1,7 @@
-import { getStickerAuthor } from '@Core/Utils';
-import { CmdContext } from '@Typings/index';
+import { getStickerAuthor } from '../../Components/Core/Utils';
+import { CmdContext } from '../../Components/Typings/index';
+import Command from '../../Components/Classes/Command';
 import Sticker from 'wa-sticker-formatter';
-import Command from '@Classes/Command';
 import Jimp from 'jimp';
 
 export default class extends Command {
@@ -11,10 +11,10 @@ export default class extends Command {
 		});
 	}
 
-	async run({ msg, args, group, bot }: CmdContext): Promise<any> {
-		if (!args[0]) return;
+	async run({ msg, args, group, bot, sendUsage }: CmdContext): Promise<any> {
+		if (!args[0]) return sendUsage();
 
-		return await new Promise(async (res) => {
+		await new Promise(async (res) => {
 			const img = new Jimp(256, 256);
 			const font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
 
@@ -39,5 +39,6 @@ export default class extends Command {
 			await bot.send(msg.chat, await metadata.toMessage());
 			return res(true);
 		});
+		return true;
 	}
 }

@@ -1,8 +1,8 @@
+import { CmdContext, Msg } from '../../Components/Typings/index';
 import { extractMetadata, Sticker } from 'wa-sticker-formatter';
+import { getStickerAuthor } from '../../Components/Core/Utils';
 import { readFileSync, unlink, writeFileSync } from 'fs';
-import { CmdContext, Msg } from '@Typings/index';
-import { getStickerAuthor } from '@Core/Utils';
-import Command from '@Classes/Command';
+import Command from '../../Components/Classes/Command';
 import { execSync } from 'child_process';
 
 export default class extends Command {
@@ -13,15 +13,14 @@ export default class extends Command {
 		});
 	}
 
-	async run({ msg, bot, args, group }: CmdContext) {
-		let stickerTypes = ['rounded', 'full', 'crop', 'circle'];
-		let targetMsg: Msg;
+	async run({ msg, bot, args, group, sendUsage, t }: CmdContext) {
+		if (!msg.isMedia && !msg.quoted) return sendUsage();
 
-		if (msg.quoted && msg.quoted.isMedia) targetMsg = msg.quoted;
-		else targetMsg = msg;
+		let stickerTypes = ['rounded', 'full', 'crop', 'circle'];
+		let targetMsg = msg.quoted && msg.quoted.isMedia ? msg.quoted : msg;
 
 		let buffer = await bot.downloadMedia(targetMsg);
-		if (!buffer) return;
+		if (!buffer) return await bot.send(msg, t('sticker'));
 
 		if (args[0] === 'nobg') {
 			const name = Math.random();
@@ -38,7 +37,7 @@ export default class extends Command {
 				stickerTypes = ['full', 'rounded'];
 				break;
 			case 'sticker':
-				await bot.send(msg, await this.sendMetadata(buffer));
+				await bot.send(msg, { image: buffer, gifPlayback: true });
 		}
 
 		for (const type of stickerTypes) {
@@ -50,23 +49,6 @@ export default class extends Command {
 
 			await bot.send(msg.chat, await metadata.toMessage());
 		}
-		return;
+		return true;
 	}
-
-	sendMetadata = async (sticker: Buffer) => {
-		const {
-			'sticker-pack-publisher': publisher = '',
-			'sticker-pack-name': packName = '',
-			emojis = '[]',
-			'sticker-pack-id': packId = '',
-		} = await extractMetadata(sticker);
-
-		const caption = `*꒷︶꒷꒦ Sticker Info ꒷꒦︶꒷*\n\n` +
-			`*Publisher:* ${publisher}\n` +
-			`*Pack:* ${packName}\n` +
-			`*Emojis:* ${emojis}\n` +
-			`*ID:* ${packId}`;
-
-		return { caption, image: sticker };
-	};
 }

@@ -1,9 +1,9 @@
-import type { CmdContext, Msg, MsgTypes } from '@Typings/index';
-import { isMedia, msgTypes } from '@Plugins/MsgTypes';
+import type { CmdContext, Msg, MsgTypes } from '../../Components/Typings/index';
+import { isMedia, msgTypes } from '../../Components/Plugins/MsgTypes';
+import { AUTHOR, LINK, PACK } from '../../JSON/config.json';
 import { GroupMetadata, type proto } from 'baileys';
-import { AUTHOR, LINK, PACK } from '@config';
-import User from '@Classes/User';
-import Bot from '@Classes/Bot';
+import User from '../../Components/Classes/User';
+import Bot from '../../Components/Classes/Bot';
 import prisma from './Prisma';
 
 export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {

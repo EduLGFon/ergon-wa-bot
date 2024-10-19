@@ -1,9 +1,10 @@
 import { DefaultArgs } from '@prisma/client/runtime/library';
 import { GroupMetadata, proto } from 'baileys';
 import { PrismaClient } from '@prisma/client';
-import User from '@Classes/User';
-import Bot from '@Classes/Bot';
+import User from 'src/Classes/User';
+import Bot from 'src/Classes/Bot';
 import { pino } from 'pino';
+import { TFunction } from 'i18next';
 
 type MsgTypes =
 	| 'text'
@@ -50,6 +51,8 @@ interface CmdContext {
 	args: string[];
 	cmd: Cmd;
 	callCmd: string;
+	t: TFunction<'translation', undefined>;
+	sendUsage(): Promise<void>;
 }
 
 type Logger = pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;

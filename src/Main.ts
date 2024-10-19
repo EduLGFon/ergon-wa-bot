@@ -1,5 +1,5 @@
 import MAIN_LOGGER from 'baileys/lib/Utils/logger';
-import Bot from '@Classes/Bot';
+import Bot from './Components/Classes/Bot';
 
 const logger = MAIN_LOGGER.child({});
 logger.level = 'info';
