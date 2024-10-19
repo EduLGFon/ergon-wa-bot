@@ -12,6 +12,7 @@ interface String {
 	t(lang: str): str
 	filterForRegex(): str
 	toMs(): [num, str[]]
+	bold(): str
 }
 
 interface Number {

@@ -28,6 +28,23 @@ export default () => {
 				return '```\n' + this + '```'
 			},
 		},
+		bold: { // make text bold
+			value: function (this: str) {
+				const chars = this.split('')
+				let result = ''
+
+				for (let i = 0; i < chars.length; i++) {
+					if (chars[i] === ' ') {
+						if (chars[i - 1] !== ' ' && i > 0) result += '*'
+						result += ' '
+						continue
+					} else if (chars[i - 1] === ' ') result += '*'
+					result += chars[i]
+				}
+
+				return result
+			},
+		},
 		filterForRegex: { // remove some chars that conflict with regex chars
 			value: function () {
 				return this.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
