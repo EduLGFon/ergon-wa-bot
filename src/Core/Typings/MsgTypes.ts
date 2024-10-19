@@ -2,36 +2,40 @@ import type { MsgTypes } from './types.js';
 
 const textMsgs = {
 	'conversation': 'text',
-	'extendedTextMessage': 'text',
 	'editedMessage': 'text',
-};
-
-const mediaMsgs = {
-	'imageMessage': 'image',
-	'stickerMessage': 'sticker',
-	'videoMessage': 'video',
-	'contactMessage': 'contact',
-	'documentMessage': 'document',
-	'audioMessage': 'audio',
+	'extendedTextMessage': 'text',
 };
 
 const visualMsgs = {
+	'ptvMessage': 'video',
+	'videoMessage': 'video',
 	'imageMessage': 'image',
 	'stickerMessage': 'sticker',
-	'videoMessage': 'video',
 };
 
-const coolMsgTypes = {
+const mediaMsgs = {
+	...visualMsgs,
+	'audioMessage': 'audio',
+	'contactMessage': 'contact',
+	'documentMessage': 'document',
+};
+
+
+const coolMsgTypes = { // Theses will be counted by group msgs counter
 	...textMsgs,
 	...mediaMsgs,
 	'locationMessage': 'location',
+	'liveLocationMessage': 'location'
 };
 
 const msgTypes = { // all msg types
 	...coolMsgTypes,
+	'call': 'call', // contains only callKey
+	'callLogMesssage': 'callLog', // when a call ends
 	'reactionMessage': 'reaction',
 	'pinInChatMessage': 'pin',
-	'protocolMessage': 'protocol', // Delete msgs
+	'eventMessage': 'event', // group events
+	'protocolMessage': 'protocol', // delete msgs
 
 	// API Bots
 	'buttonsMessage': 'button',
@@ -40,9 +44,9 @@ const msgTypes = { // all msg types
 	'templateButtonReplyMessage': 'buttonReply',
 
 	// Polls
+	'pollCreationMessage': 'poll',
 	'pollCreationMessageV3': 'poll',
 	'pollUpdateMessage': 'pollUpdate',
-	
 }
 
 const isMedia = (type: MsgTypes) => Object.values(visualMsgs).includes(type);

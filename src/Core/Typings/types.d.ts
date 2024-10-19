@@ -16,12 +16,21 @@ type MsgTypes =
 	| 'image'
 	| 'sticker'
 	| 'video'
+	| 'audio'
 	| 'contact'
 	| 'document'
-	| 'audio'
-	| 'protocol'
+	| 'location'
+	| 'call'
+	| 'callLog'
 	| 'reaction'
-	| 'location';
+	| 'pin'
+	| 'event'
+	| 'protocol'
+	| 'button'
+	| 'template'
+	| 'buttonReply'
+	| 'poll'
+	| 'pollUpdate';
 
 interface Msg {
 	key: proto.IMessageKey;
