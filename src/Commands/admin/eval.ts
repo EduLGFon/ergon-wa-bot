@@ -12,10 +12,11 @@ export default class extends Command {
 	}
 
 	async run(ctx: CmdContext) {
+		const { args, bot, msg, prisma, user, group, cmd, callCmd } = ctx;
 		const startTime = Date.now();
 		const startRAM = this.getRAM(); // DENO
 
-		const code = ctx.args.join(' ');
+		const code = args.join(' ');
 		let output, reaction = '✅'; // Reaction emoji
 
 		try {
@@ -35,12 +36,12 @@ export default class extends Command {
 			const duration = (Date.now() - startTime).toLocaleString('pt'); // db
 
 			const text = `*[👨‍💻] - Eval*\n` +
-				`*[⏰]: ${duration}ms*\n` +
-				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
+				`[📊]: ${duration}ms - ` +
+				`${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)\n` +
 				'```\n' + output.trim() + '```';
 
-			const msg = await ctx.bot.send(ctx.msg, text);
-			return await ctx.bot.react(msg, reaction);
+			const sentMsg = await bot.send(msg, text);
+			return await bot.react(sentMsg.msg, reaction);
 		}
 	}
 

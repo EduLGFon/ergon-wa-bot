@@ -10,18 +10,18 @@ export default class extends Command {
 		});
 	}
 
-	async run(ctx: CmdContext) {
-		if (!ctx.args[1]) return ctx.bot.react(ctx.msg, '❌');
+	async run({ bot, msg, args }: CmdContext) {
+		if (!args[1]) return bot.react(msg, '❌');
 
 		const options = {
-			to: ctx.args.shift(),
+			to: args.shift(),
 		};
-		const t = await translate(ctx.args.join(' '), options);
+		const t = await translate(args.join(' '), options);
 
-		const msg = '*[🌐] Google Translate*\n' +
+		const text = '*[🌐] Google Translate*\n' +
 			`*${t.from.language.iso}  ➟  ${options.to}*\n` +
 			'```\n' + t.text + '```';
 
-		return await ctx.bot.send(ctx.msg, msg);
+		return await bot.send(msg, text);
 	}
 }

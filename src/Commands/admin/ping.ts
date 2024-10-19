@@ -7,10 +7,10 @@ export default class extends Command {
 			aliases: ['p'],
 		});
 	}
-	async run(ctx: CmdContext) {
+	async run({ bot, msg }: CmdContext) {
 		const time = Date.now();
-		await ctx.bot.send(ctx.msg.chat, 'Pinging...');
+		await bot.send(msg.chat, 'Pinging...');
 
-		return await ctx.bot.send(ctx.msg, `Ping: *${Date.now() - time}ms*`);
+		return await bot.send(msg, `Ping: *${Date.now() - time}ms*`);
 	}
 }

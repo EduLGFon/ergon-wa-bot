@@ -1,8 +1,9 @@
 import { extractMetadata, Sticker } from 'wa-sticker-formatter';
 import { author, link, pack } from '../../config.json';
-import { CmdContext } from '../../Typings';
+import { CmdContext, Msg } from '../../Typings';
 import Command from '../../Core/Command';
 import Jimp from 'jimp';
+import Bot from '../../Core/Bot';
 
 export default class extends Command {
 	constructor() {
@@ -12,40 +13,40 @@ export default class extends Command {
 		});
 	}
 
-	async run(ctx: CmdContext) {
+	async run({ msg, bot, args, group }: CmdContext) {
 		let sticker: string | Buffer;
 		let textSticker = false;
 		let mediaTypes = ['imageMessage', 'videoMessage', 'stickerMessage'];
 
-		switch (ctx.msg.type) {
+		switch (msg.type) {
 			case 'imageMessage':
 			case 'videoMessage':
-				sticker = await ctx.bot.downloadMedia(ctx.msg);
+				sticker = await bot.downloadMedia(msg);
 				break;
 			case 'conversation':
 			case 'extendedTextMessage':
-				if (!ctx.args[0] && !ctx.msg.quoted) return;
+				if (!args[0] && !msg.quoted) return;
 
 				// if the quoted msg has media
-				if (ctx.msg.quoted && mediaTypes.includes(ctx.msg.quoted.type!)) {
-					sticker = await ctx.bot.downloadMedia(ctx.msg.quoted);
+				if (msg.quoted && mediaTypes.includes(msg.quoted.type!)) {
+					sticker = await bot.downloadMedia(msg.quoted);
 
-					if (ctx.msg.quoted.type === 'stickerMessage') {
-						await this.sendMetadata(ctx, sticker);
+					if (msg.quoted.type === 'stickerMessage') {
+						await this.sendMetadata(bot, msg, sticker);
 					}
 					break;
 				}
 
 				textSticker = true;
-				sticker = await this.createSticker(ctx.args);
+				sticker = await this.createSticker(args);
 				break;
 		}
 
 		const types = ['rounded', 'full', 'crop', 'circle'];
 		const fixedAuthor = author.join('')
-			.replace('{username}', ctx.msg.username)
+			.replace('{username}', msg.author)
 			.replace('{link}', link)
-			.replace('{group}', ctx.msg.group?.subject || 'Not a group');
+			.replace('{group}', group?.subject || 'Not a group');
 
 		for (let type of types) {
 			const metadata = new Sticker(sticker!, {
@@ -57,7 +58,7 @@ export default class extends Command {
 				quality: 1,
 			});
 
-			await ctx.bot.send(ctx.msg, await metadata.toMessage());
+			await bot.send(msg.chat, await metadata.toMessage());
 			if (textSticker) return;
 		}
 	}
@@ -86,7 +87,7 @@ export default class extends Command {
 		});
 	};
 
-	sendMetadata = async (ctx: CmdContext, sticker: Buffer) => {
+	sendMetadata = async (bot: Bot, msg: Msg, sticker: Buffer) => {
 		const stkMeta = await extractMetadata(sticker);
 		const caption = `*꒷︶꒷꒦ Sticker Info ꒷꒦︶꒷*\n\n` +
 			`*Publisher:* ${stkMeta['sticker-pack-publisher'] || ''}\n` +
@@ -94,6 +95,6 @@ export default class extends Command {
 			`*Emojis:* ${stkMeta.emojis || '[]'}\n` +
 			`*ID:* ${stkMeta['sticker-pack-id'] || ''}`;
 
-		await ctx.bot.send(ctx.msg, { caption, image: sticker });
+		await bot.send(msg, { caption, image: sticker });
 	};
 }

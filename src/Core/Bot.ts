@@ -10,10 +10,11 @@ import makeWASocket, {
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import { Cmd, Logger, Msg, User } from '../Typings';
+import { Cmd, Logger, Msg } from '../Typings';
+import { getCtx } from './Utils';
 import { readdirSync } from 'fs'; // DENO point
 import { resolve } from 'path';
-import { convertMsgData } from './Utils';
+import User from './User';
 
 export default class Bot {
 	sock!: ReturnType<typeof makeWASocket>;
@@ -83,7 +84,7 @@ export default class Bot {
 
 		const msg = await this.sock.sendMessage(chat, text, quote);
 
-		return await convertMsgData(msg!, this);
+		return await getCtx(msg!, this);
 	}
 
 	async react(m: Msg, emoji: string) { // reacts on a msg

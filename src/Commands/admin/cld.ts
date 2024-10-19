@@ -10,7 +10,7 @@ export default class extends Command {
 		});
 	}
 
-	async run(ctx: CmdContext) {
+	async run({ args, bot, msg }: CmdContext) {
 		const startTime = Date.now();
 		const startRAM = this.getRAM(); // DENO
 
@@ -18,7 +18,7 @@ export default class extends Command {
 			output = '';
 
 		try {
-			output = execSync(ctx.args.join(' ')).toString();
+			output = execSync(args.join(' ')).toString();
 		} catch (e: any) {
 			reaction = '❌'; // Reaction emoji
 			output = String(e?.stack || e); // process error
@@ -33,8 +33,8 @@ export default class extends Command {
 				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
 				'```\n' + output.trim() + '```';
 
-			const msg = await ctx.bot.send(ctx.msg, text);
-			return await ctx.bot.react(msg, reaction);
+			const sentMsg = await bot.send(msg, text);
+			return await bot.react(sentMsg.msg, reaction);
 		}
 	}
 

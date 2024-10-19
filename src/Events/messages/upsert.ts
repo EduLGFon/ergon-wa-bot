@@ -1,5 +1,6 @@
-import { convertMsgData } from '../../Core/Utils';
-import { devs, prefix } from '../../config.json';
+import { CmdContext } from '../../Typings';
+import { getCtx } from '../../Core/Utils';
+import { devs } from '../../config.json';
 import type bot from '../../Core/Bot';
 import { type proto } from 'baileys';
 import { appendFile } from 'fs';
@@ -9,33 +10,44 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	if (!raw.messages[0].message) return;
 
 	// get msg obj
-	const msg = await convertMsgData(raw.messages[0], this);
+	const { msg, group, user, prisma } = await getCtx(raw.messages[0], this);
 
 	// message log
 	appendFile(
 		'log/messages.log',
-		`\n${msg.username}: ${msg.text} (${msg.type})\n${inspect(msg, { depth: null })}`,
+		`\n${msg.author}: ${msg.text} (${msg.type})\n${inspect(msg, { depth: null })}`,
 		() => {},
 	);
 
 	// run 'waitFor' events
 	if (this.wait.has(e)) this.wait.get(e)!.bind(this)(msg);
 
-	if (!msg.text.startsWith(prefix)) return;
+	if (!msg.text.startsWith(user.prefix)) return;
 
-	const args: string[] = msg.text.replace(prefix, '').trim().split(' ');
+	const args: string[] = msg.text.replace(user.prefix, '').trim().split(' ');
 	const callCmd = args.shift()!.toLowerCase()!;
 	// search command by name or by aliases
 	const cmd = this.cmds.get(callCmd) || this.cmds.get(this.aliases.get(callCmd)!);
 
 	if (!cmd) return;
 	// block only devs cmds for normal people
-	if (cmd.access?.onlyDevs && !devs.includes(msg.author)) return this.react(msg, '🚫');
+	if (cmd.access?.onlyDevs && !devs.includes(user.id)) return this.react(msg, '🚫');
+
+	const ctx: CmdContext = {
+		prisma,
+		args,
+		bot: this,
+		callCmd,
+		cmd,
+		group,
+		msg,
+		user,
+	};
 
 	// react if the cmd takes more than 2 seconds to run
 	const t = setTimeout(() => this.react(msg, '⏳'), 2_000);
 	try {
-		await cmd.run!({ msg, args, cmd, callCmd, bot: this });
+		await cmd.run!(ctx);
 
 		this.react(msg, '✅');
 	} catch (e: any) {
