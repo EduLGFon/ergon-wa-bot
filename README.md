@@ -151,3 +151,6 @@ npm run tsnd # You need TS-NODE
 ---
 
 ### I Hope you like the project :)
+
+### `-1 -` 🗒️ Note:
+This project was made to run on Linux, if you want to run it on Windows, you may need to apply some patches or use WSL
