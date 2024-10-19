@@ -1,9 +1,6 @@
 import settings from '../settings/settings.json' with { type: 'json' }
 import { api, Baileys, gemini } from '../map.js'
-import express, { json } from 'express'
-import { use } from 'i18next'
-import { type } from 'os'
-import { send } from 'process'
+import express from 'express'
 const app = express()
 
 export function server(bot: Baileys) {
