@@ -9,7 +9,7 @@
 	"scripts": {
 		"postinstall": "rm package-lock.json & npm run prisma && npm run build",
 		"build": "rm -r build/ & tsc",
-		"start": "rm log/* temp/* & node build/Main.js",
+		"start": "rm log/* temp/* & node --no-warnings --expose-gc build/Main.js",
 		"prisma": "npx prisma generate",
 		"tsnd": "ts-node --esm src/Main.ts"
 	},
