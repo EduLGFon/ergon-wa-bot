@@ -9,16 +9,46 @@
 		}
 	},
 
-	"db": {
-		"userDefault": {
-			"prefix": ".",
-			"language": "pt",
-			"cacheLimit": 500
-		},
-		"groupDefault": {
-			"msgsCacheLimit": 200
-		}
+
+"db": {
+	"userDefault": {
+		"prefix": ".",
+		"language": "pt",
+		"cacheLimit": 500
 	},
+	"groupDefault": {
+		"msgsCacheLimit": 200
+	}
+},
+
+"runner": {
+	"port": 3077,
+	"py": {
+		"cmd": ["python3"],
+		"ext": "py"
+	},
+	"lua": {
+		"cmd": ["luajit"],
+		"ext": "lua"
+	},
+	"node": {
+		"cmd": ["node"],
+		"ext": "js'"
+	},
+	"deno": {
+		"cmd": ["deno run -A"],
+		"ext": "ts"
+	},
+	"bun": {
+		"cmd": ["bun run"],
+		"ext": "ts"
+	},
+	"cpp": {
+		"cmd": ["g++ -o settings/temp/main ", "./settings/temp/main #"],
+		"ext": "cpp"
+	}
+},
+
 
 	"sticker": {
 		"packName": ["pack"],
