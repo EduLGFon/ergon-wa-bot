@@ -1,4 +1,4 @@
-import translationBackend from 'i18next-node-fs-backend';
+import translationBackend from 'i18next-fs-backend';
 import { readdirSync } from 'fs';
 import i18next from 'i18next';
 

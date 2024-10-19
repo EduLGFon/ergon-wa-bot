@@ -11,7 +11,7 @@
 		"baileys": "https://github.com/WhiskeySockets/Baileys",
 		"google-translate": "github:iamtraction/google-translate",
 		"i18next": "^23.5.1",
-		"i18next-node-fs-backend": "^2.1.3",
+		"i18next-fs-backend": "^2.2.0",
 		"jimp": "^0.22.10",
 		"libphonenumber-js": "^1.10.37",
 		"link-preview-js": "^3.0.4",
@@ -25,9 +25,8 @@
 		"@jimp/gif": "^0.22.10",
 		"@jimp/png": "^0.22.10",
 		"@jimp/types": "^0.22.8",
-		"@types/i18next-node-fs-backend": "^2.1.2",
 		"@types/luxon": "^3.3.2",
-		"@types/node": "^20.4.5",
+		"@types/node": "^20.8.6",
 		"prisma": "^5.2.0",
 		"typescript": "^5.2.2"
 	}

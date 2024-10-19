@@ -8,7 +8,7 @@ import { execSync } from 'child_process';
 export default class extends Command {
 	constructor() {
 		super({
-			aliases: ['s', 'makesticker'],
+			aliases: ['s', 'sexo', 'makesticker'],
 			cooldown: 0,
 		});
 	}
