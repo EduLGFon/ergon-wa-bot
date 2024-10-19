@@ -204,10 +204,10 @@ async function cleanTemp() {
 	return
 }
 
-async function runCode(data: { lang?: str, code?: str, file?: str}) {
+async function runCode(data: { lang?: str; code?: str; file?: str }) {
 	const req = await fetch(`http://localhost:${runner.port}/run`, {
 		method: 'POST',
-		body: JSON.stringify(data)
+		body: JSON.stringify(data),
 	})
 
 	return await req.text()
@@ -219,7 +219,6 @@ export {
 	delay,
 	findKey,
 	genStickerMeta,
-	runCode,
 	getCtx,
 	getMsgText,
 	getMsgType,
@@ -227,4 +226,5 @@ export {
 	isEmpty,
 	isValidPositiveIntenger,
 	msgMeta,
+	runCode,
 }

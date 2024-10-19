@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { Sticker } from 'wa-sticker-formatter'
-import { Cmd, CmdCtx, cleanTemp, genStickerMeta, runCode } from '../../map.js'
+import { cleanTemp, Cmd, CmdCtx, genStickerMeta, runCode } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
