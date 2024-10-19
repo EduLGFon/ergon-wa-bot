@@ -2,6 +2,7 @@
 src/config.json
 *.env
 auth/
+prisma/migrations
 baileys_store_multi.json
 
 # Yarn

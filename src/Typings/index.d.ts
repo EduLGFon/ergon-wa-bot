@@ -1,23 +1,21 @@
+import { DefaultArgs } from '@prisma/client/runtime/library';
+import { PrismaClient } from '@prisma/client';
 import { GroupMetadata } from 'baileys';
 import { proto } from 'baileys';
-import { pino } from 'pino';
+import User from '../Core/User';
 import Bot from '../Core/Bot';
+import { pino } from 'pino';
 
 type MsgTypes = 'conversation' | 'extendedTextMessage' | 'videoMessage' | 'imageMessage';
 
 interface Msg {
 	id: string;
-	author: string;
 	chat: string;
-	username: string;
-	group: GroupMetadata;
+	author: string;
 	text: string;
 	type: string;
 	raw: proto.IWebMessageInfo;
 	quoted: Msg;
-}
-
-interface User {
 }
 
 interface Cmd {
@@ -34,11 +32,15 @@ interface Cmd {
 }
 
 interface CmdContext {
+	prisma: Prisma;
 	msg: Msg;
-	args: string[];
-	cmd: Map<string, Cmd>;
-	callCmd: string;
+	user: User;
+	group: GroupMetadata;
 	bot: Bot;
+	args: string[];
+	cmd: Cmd;
+	callCmd: string;
 }
 
 type Logger = pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;
+type Prisma = PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>;
