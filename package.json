@@ -11,6 +11,7 @@
 		"build": "rm -r build/ & tsc",
 		"start": "rm log/* temp/* & node build/Main.js",
 		"prisma": "npx prisma generate",
+		"prismaInit": "npx prisma db push",
 		"tsnd": "ts-node --esm src/Main.ts"
 	},
 	"dependencies": {

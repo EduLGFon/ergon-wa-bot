@@ -7,9 +7,10 @@ export default class extends Command {
     }
 
     async run ({ t, bot, msg, args, user, group }: CmdContext) {
-        const msgsQnt = Number(args[0]);
+        bot.send(msg.chat, "Tá pronto n vlw");
+        /* const msgsQnt = Number(args[0]);
         group?.getLastMsgs(msgsQnt).forEach(groupMsg => {
             bot.send(msg.chat, { delete: groupMsg.key });
-        });
+        }); */
     }
 }
