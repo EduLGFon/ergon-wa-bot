@@ -21,6 +21,7 @@ module.exports = {
 			instances: 'max',
 			exec_mode: 'cluster',
 			log_file: 'settings/log/runner.log',
+			merge_logs: true
 		},
 	],
 }
