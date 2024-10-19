@@ -61,7 +61,7 @@ import {
 } from './util/functions.js'
 import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
-import { gemini, runCode, imgRemover } from './util/api.js'
+import { gemini, imgRemover, runCode } from './util/api.js'
 
 export {
 	cacheAllGroups,
@@ -74,12 +74,12 @@ export {
 	getMsgText,
 	getMsgType,
 	getQuoted,
+	imgRemover,
 	isEmpty,
 	isValidPositiveIntenger,
 	languages,
 	locale,
 	msgMeta,
-	imgRemover,
 	proto,
 	runCode,
 }

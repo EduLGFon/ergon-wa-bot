@@ -1,5 +1,5 @@
-import { delay } from 'baileys'
 import { Cmd, CmdCtx, isValidPositiveIntenger } from '../../map.js'
+import { delay } from 'baileys'
 
 export default class extends Cmd {
 	constructor() {

@@ -1,14 +1,14 @@
 import settings from '../settings/settings.json' with { type: 'json' }
 import { execSync } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
-import fs from 'node:fs'
 import express from 'express'
+import fs from 'node:fs'
 
 const languages = Object.keys(settings.runner)
 const app = express()
 
 app
-	.use(express.json({limit: '50mb'}))
+	.use(express.json({ limit: '50mb' }))
 	.get('/languages', (req, res) => {
 		res.send(languages)
 	})
@@ -31,7 +31,6 @@ app
 
 	// 	const path = `settings/temp/${Math.random}.png`
 	// 	writeFile(path, url)
-
 
 	// 	if (blob) return res.send({ blob, url, path })
 	// 	res.send('missing data')

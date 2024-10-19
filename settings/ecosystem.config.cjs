@@ -16,12 +16,12 @@ module.exports = {
 			name: 'runner',
 			script: 'build/plugin/runner.js',
 			node_args,
-			interpreter: 'bun',
-			interpreter_args: 'run',
+			// interpreter: 'deno',
+			// interpreter_args: 'run',
 			instances: 4,
 			exec_mode: 'cluster',
 			log_file: 'settings/log/runner.log',
-			merge_logs: true
+			merge_logs: true,
 		},
 	],
 }

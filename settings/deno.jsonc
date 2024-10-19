@@ -5,7 +5,7 @@
 		"useTabs": true,
 		"semiColons": false,
 		"lineWidth": 100,
-		"exclude": ["build/", "settings/auth"]
+		"exclude": ["../build", "auth/"]
 	},
 	"lint": { // DENO Lint rules
 		"rules": {

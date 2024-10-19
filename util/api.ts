@@ -3,7 +3,7 @@ import { runner } from '../map.js'
 // import { api } from '../map.js'
 // import OpenAI from 'openai'
 
-export { gemini, runCode, imgRemover }
+export { gemini, imgRemover, runCode }
 
 async function runCode(data: { lang?: str; code?: str; file?: str }) {
 	const req = await fetch(`http://localhost:${runner.port}/run`, {
@@ -23,7 +23,7 @@ async function imgRemover(img: str, quality: number) {
 		headers: {
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({ img, quality}),
+		body: JSON.stringify({ img, quality }),
 	})
 
 	return await req.json()

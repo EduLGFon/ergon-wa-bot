@@ -27,48 +27,44 @@
 
 ### `1 -` 🛠️ Install runtimes and tools:
 
-- [🦕 DENO 🦕](https://deno.com/)
-
-> 🪧 » _Recommended version: 1.44 or higher_
-
-- [🧁 BUN 🧁](https://deno.com/)
-
-> 🪧 » _Recommended version: 1.1.17 or higher_
-
-- [💩 NodeJS 💩](https://nodejs.org/pt-br/)
+- [NodeJS 💩](https://nodejs.org/pt-br/) (For WALL-E)
 
 > 🪧 » _Recommended version: 20 or higher_
 
-- [🐍 Python 🐍](https://www.python.org/)
+- [Python 🐍](https://www.python.org/) (For plugin)
 
 > 🪧 » _Recommended version: 3.10 or higher_
 
-- [🐘 PostgreSQL 🐘](https://www.postgresql.org/download/)
+- [PostgreSQL 🐘](https://www.postgresql.org/download/) (For database)
 
 > 🪧 » _Recommended version: 14 or higher_
 
-- [☝️🤓 GIT ☝️🤓](https://git-scm.com/downloads)
+**WALL-E also support these languages, but you DON'T need to install it if you won't use:**
 
-> ⚠️ » _Only required to clone this repo_
+- [BUN 🧁](https://bun.sh) (Can be used to run the runner)
 
-**OPTIONAL TOOLS REQUIRED ONLY TO RUN CODE:**
+> 🪧 » _Recommended version: 1.1.18 or higher_
 
-- [🌙 LUAJIT 🌙](https://luajit.org/)
+- [DENO 🦕](https://deno.com/)
+
+> 🪧 » _Recommended version: 1.44 or higher_
+
+- [LUAJIT 🌙](https://luajit.org/)
 
 > 🪧 » _Recommended version: 2.1 or higher_
 
-- [🔥 G++ 🔥]()
+- [G++ 🔥]()
 
 > 🪧 » _Recommended version: 11.4 or higher_
 
 ### `2 -` 📁 Download or clone the repository:
 
 ```bash
-# Click on "Code" > "Download ZIP"
+# Click on "Code" > "Download ZIP" > Extract
 
 # or
 # Clone this repo
-git clone https://github.com/Sunf3r/WALL-E # You need git to do this
+git clone https://github.com/Sunf3r/WALL-E # You need to have git installed to do this
 ```
 
 ### `3 -` 🌿 Preparing the environment:
@@ -80,7 +76,7 @@ You can configure the bot however you want in the following files:
 ```json
 {
 	"bot": {
-		"link": "", // support channel link
+		"link": "dsc.gg/wallebot", // support channel link
 		"region": {
 			"timezone": "America/Sao_Paulo",
 			"logLanguage": "pt"
@@ -140,19 +136,20 @@ npm run update
 # and rebuild the bot
 ```
 
-> ⚠️ » _None of these scripts will update `Python`, `LuaJIT`, `PostgreSQL`, `G++` or `GIT`. You still need to do it by yourself_
-
+> ⚠️ » _None of these scripts will update `Python`, `LuaJIT`, `PostgreSQL`, `G++` or `GIT`. You still
+> need to do it by yourself_
 
 ### `4 -` 🔐 Log in:
 
-Just scan the QR Code that will appear on terminal and you're ready to go!
----
+## Just scan the QR Code that will appear on terminal and you're ready to go!
 
-### `-1. ` 🗒️ Notes:
+# `-1.` 🗒️ Notes:
 
-- Experiencing bugs? Open a issue with your problem or make a pull request with the solution. I will try to fix it as soon as possible.
+- Experiencing bugs? Open a issue with your problem or make a pull request with the solution. I will
+  try to fix it as soon as possible.
 
-- This bot was made to run on Linux, but you can run it on Windows just changing script or using WSL.
+- This bot was made to run on Linux, but you can run it on Windows just changing script or using
+  WSL.
 
 - If you need help, feel free to ask me on Discord.
 
