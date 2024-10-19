@@ -1,9 +1,9 @@
 import { clearTemp, getStickerAuthor } from '../../Core/Components/Utils.js';
+import { runOtherLang } from '../../Core/Plugins/RunOtherLangs.js';
 import type { CmdContext } from '../../Core/Typings/index.d.ts';
 import { readFileSync, writeFileSync } from 'node:fs';
 import Command from '../../Core/Classes/Command.js';
 import { Sticker } from 'wa-sticker-formatter';
-import { execSync } from 'node:child_process';
 
 export default class extends Command {
 	constructor() {
@@ -26,9 +26,10 @@ export default class extends Command {
 			const name = Math.random();
 
 			writeFileSync(`temp/${name}.webp`, buffer);
-			execSync(
-				`python3 src/Core/Plugins/removeBg.py temp/${name}.webp temp/${name}.png`,
-			);
+			await runOtherLang({
+				file: 'src/Core/Plugins/removeBg.py',
+				code: `temp/${name}.webp temp/${name}.png`,
+			});
 			buffer = readFileSync(`temp/${name}.png`) || buffer;
 
 			clearTemp();

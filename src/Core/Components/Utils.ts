@@ -1,5 +1,5 @@
-import config from '../JSON/config.json' assert { type: 'json' };
 import type { CmdContext, Msg, MsgTypes } from '../Typings/index.d.ts';
+import config from '../JSON/config.json' assert { type: 'json' };
 import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
 import { GroupMetadata, type proto } from 'baileys';
 import { readdirSync, unlink } from 'node:fs';
@@ -62,10 +62,10 @@ export function getQuoted(raw: proto.IWebMessageInfo) {
 export async function cacheAllGroups(bot: Bot) {
 	const groupList = await bot.sock.groupFetchAllParticipating();
 
-	let groups = Object.keys(groupList)
+	let groups = Object.keys(groupList);
 
 	groups.forEach((g) => bot.groups.set(g, groupList[g]));
-	console.log('CACHE', `${groups.length} groups cached.`, 'blue')
+	console.log('CACHE', `${groups.length} groups cached.`, 'blue');
 	return;
 }
 

@@ -35,13 +35,13 @@ export default () => {
 		},
 		align: {
 			value: function (limit: number) {
-				const ratio = (limit - this.length) / 2
+				const ratio = (limit - this.length) / 2;
 				const start = ' '.repeat(Math.ceil(ratio));
 				const end = ' '.repeat(Math.floor(ratio));
 
 				return (start + this + end).slice(0, limit);
-			}
-		}
+			},
+		},
 	});
 
 	/*      console.error        */
@@ -65,11 +65,11 @@ export default () => {
 
 		const str = `[${title.align(12)}| ${now()} | ${getRAM()}] - ${msg}`;
 
-		console.info(chalk.bold[color as 'red'](str)); 
+		console.info(chalk.bold[color as 'red'](str));
 		// it prints: [ TITLE | 18:04 | 69MB ] - msg (colored)
 		return;
 	};
 
-	console.log('PROTOTYPES', 'All set.', 'yellow');
+	console.log('PROTOTYPES', 'All set.', 'yellowBright');
 	return;
 };
