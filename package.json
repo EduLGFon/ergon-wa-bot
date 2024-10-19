@@ -7,7 +7,7 @@
 	},
 	"scripts": {
 		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm start",
-		"update": "npm update --save && deno upgrade && bun upgrade && npm run postinstall",
+		"update": "npm update --save; deno upgrade & bun upgrade & npm run postinstall",
 		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
@@ -20,7 +20,7 @@
 	},
 	"dependencies": {
 		"@google/generative-ai": "^0.14.1",
-		"@prisma/client": "^5.16.1",
+		"@prisma/client": "^5.16.2",
 		"baileys": "^6.7.5",
 		"chalk": "^5.3.0",
 		"express": "^4.19.2",
@@ -38,8 +38,8 @@
 	"devDependencies": {
 		"@types/express": "^4.17.21",
 		"@types/luxon": "^3.4.2",
-		"@types/node": "^20.14.9",
-		"prisma": "^5.16.1",
+		"@types/node": "^20.14.10",
+		"prisma": "^5.16.2",
 		"typescript": "^5.5.3"
 	}
 }
