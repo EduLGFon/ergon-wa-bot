@@ -9,9 +9,18 @@ import {
 	textTypes,
 	visualTypes,
 } from './settings/types/msgs.js'
-import type { CmdCtx, GroupMsg, Lang, Logger, Msg, MsgTypes } from './settings/types/types.js'
+import type {
+	aiPrompt,
+	CmdCtx,
+	GroupMsg,
+	Lang,
+	Logger,
+	Msg,
+	MsgTypes,
+} from './settings/types/types.js'
 
 export {
+	aiPrompt,
 	allMsgTypes,
 	CmdCtx,
 	coolTypes,

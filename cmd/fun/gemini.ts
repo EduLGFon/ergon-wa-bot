@@ -1,4 +1,4 @@
-import { api, Cmd, CmdCtx, gemini, Msg } from '../../map.js'
+import { api, Cmd, CmdCtx, gemini } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
@@ -18,23 +18,18 @@ Template:
 > *Short response:*\n{brief_response}
 > *Detailed response:*\n{detailed_response}
 Prompt: `
-		let model = api.aiModel.gemini
+		let model = api.aiModel.geminiPro
 		let buffer, mime, stream: Promise<CmdCtx> | CmdCtx
-
-		if (args[0] === 'pro') {
-			args.shift()
-			model = api.aiModel.geminiPro
-		}
-
-		if (args[0] === 'pure') {
-			args.shift()
-			preprompt = ''
-		}
 
 		if (msg.isMedia || msg?.quoted?.isMedia) {
 			const target = msg.isMedia ? msg : msg.quoted
 			buffer = await bot.downloadMedia(target)
 			mime = target.mime
+		}
+
+		if (args[0] === 'pure') {
+			args.shift()
+			preprompt = ''
 		}
 
 		await gemini({
@@ -43,6 +38,7 @@ Prompt: `
 			model,
 			buffer,
 			mime,
+			user,
 			callback,
 		})
 
@@ -50,10 +46,10 @@ Prompt: `
 			const response =
 				`${promptTokens} tokens to *${model}* (${responseTokens} tokens with ${reason})\n\n${text}`
 
-			if (!stream) stream = bot.send(msg, response).then(m => stream = m)
+			if (!stream) stream = bot.send(msg, response).then((m) => stream = m)
 			// @ts-ignore
 			else if (stream.msg) bot.editMsg(stream.msg, response)
-			return;
+			return
 		}
 
 		bot.react(msg, '✅')

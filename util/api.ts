@@ -6,12 +6,7 @@ import {
 	HarmCategory,
 	Part,
 } from '@google/generative-ai'
-import { runner } from '../map.js'
-import { inspect, log } from 'node:util'
-import { env } from 'node:process'
-import { encode } from 'node:punycode'
-import { stringify } from 'node:querystring'
-import { text, json } from 'node:stream/consumers'
+import { aiPrompt, runner } from '../map.js'
 // import { api } from '../map.js'
 // import OpenAI from 'openai'
 
@@ -41,7 +36,9 @@ async function imgRemover(img: str, quality: number) {
 	return await req.json()
 }
 
-async function gemini({ preprompt, content, model, buffer, mime, callback }: aiPrompt): Promise<aiResponse> {
+async function gemini(
+	{ preprompt, content, model, buffer, mime, user, callback }: aiPrompt,
+): Promise<aiResponse> {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
 
@@ -79,7 +76,8 @@ async function gemini({ preprompt, content, model, buffer, mime, callback }: aiP
 	}
 
 	try {
-		result = await gemini.generateContentStream(prompt)
+		if (!user._chat) user._chat = gemini.startChat()
+		result = await user._chat.sendMessageStream(prompt)
 
 		for await (const chunk of result.stream) {
 			text += chunk.text()
@@ -88,14 +86,10 @@ async function gemini({ preprompt, content, model, buffer, mime, callback }: aiP
 
 			callback(data)
 		}
-		console.log(inspect(result, { depth: null }))
-
-		// text = response.text()
 	} catch (e: any) {
 		text = `Error: ${e.message.encode()}`
 	}
-	
-	
+
 	function generateResponse(chunk: EnhancedGenerateContentResponse) {
 		return {
 			model,
@@ -105,7 +99,7 @@ async function gemini({ preprompt, content, model, buffer, mime, callback }: aiP
 			responseTokens: chunk.usageMetadata?.candidatesTokenCount || 0,
 		} as aiResponse
 	}
-	
+
 	const response = await result!.response
 	return generateResponse(response)
 }

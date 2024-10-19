@@ -22,12 +22,3 @@ interface aiResponse {
 	promptTokens: number
 	responseTokens: number
 }
-
-interface aiPrompt {
-	preprompt: str
-	content: str
-	model: str
-	buffer?: Buffer
-	mime?: str
-	callback(data: aiResponse): Promise<void>
-}

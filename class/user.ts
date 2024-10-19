@@ -1,3 +1,4 @@
+import { ChatSession } from '@google/generative-ai'
 import { db, prisma } from '../map.js'
 
 export default class User {
@@ -5,6 +6,7 @@ export default class User {
 	_userLanguage: str
 	_userPrefix: str
 	_cmdsCount: num
+	_chat?: ChatSession
 	lastCmd: {
 		time: num
 		cmdReply?: str
