@@ -4,7 +4,7 @@ export default class Collection<K, V> extends Map {
 
 	constructor(limit?: num, base?: any) {
 		super()
-		this.limit = limit === 0 ? 0 : limit || 100
+		this.limit = limit === 0 ? 0 : limit || 100 // items limit
 		this.base = base
 	}
 

@@ -1,25 +1,25 @@
 import { GroupMetadata, GroupParticipant, proto } from 'baileys'
-import { Collection, Msg, prisma } from '../map.js'
+import { Collection, db, Msg, prisma } from '../map.js'
 
 export default class Group {
 	id: str
 	owner?: str
 	name: str
-	// group name modification date
 	// nameTimestamp?: num;
+	// group name modification date
 	// creation?: num;
 	desc?: str
-	// is set when the group only allows admins to change group settings
 	restrict?: bool
-	// is set when the group only allows admins to write msgs
+	// is set when the group only allows admins to change group settings
 	announce?: bool
-	// number of group members/participants
+	// is set when the group only allows admins to write msgs
 	members: GroupParticipant[]
 	size: num
+	// number of group members/participants
 	// ephemeral?: num;
-	invite?: str
-	/** the person who added you */
+	invite?: str // invite link
 	author?: str
+	// the person who added you
 
 	cachedMsgs: Collection<string, proto.IMessageKey>
 
@@ -37,15 +37,10 @@ export default class Group {
 		// this.ephemeral = g.ephemeralDuration;
 		this.invite = g.inviteCode
 		this.author = g.author
-		this.cachedMsgs = new Collection(Group.getMsgsCacheLimit())
+		this.cachedMsgs = new Collection(db.groupDefault.msgsCacheLimit)
 	}
 
-	static getMsgsCacheLimit() {
-		// Change here, change in all places.
-		return 200
-	}
-
-	async countMsg(author: str) {
+	async countMsg(author: str) { // +1 to group member msgs count
 		await prisma.msgs.upsert({
 			where: {
 				author_group: {
@@ -53,12 +48,12 @@ export default class Group {
 					group: this.id,
 				},
 			},
-			create: {
+			create: { // create user counter
 				author,
 				group: this.id,
 				count: 1,
 			},
-			update: {
+			update: { // or add 1  to count
 				count: { increment: 1 },
 			},
 		})
@@ -90,7 +85,7 @@ export default class Group {
 		const msgs = this.cachedMsgs
 			.filter((m: proto.IMessageKey) => m.id) // Checks if the key really exists
 			.reverse() // latest msgs first
-			.slice(0, limit || Group.getMsgsCacheLimit()) // limits the number of msgs
+			.slice(0, limit || db.groupDefault.msgsCacheLimit) // limits msgs amount
 
 		return msgs
 	}

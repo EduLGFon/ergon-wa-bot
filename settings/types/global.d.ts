@@ -2,6 +2,7 @@ type str = string
 type num = number
 type bool = boolean
 
+// you can find these functions on `util/proto.ts`
 function print(...args): void
 
 interface String {

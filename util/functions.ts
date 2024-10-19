@@ -1,18 +1,12 @@
-import {
-	Baileys,
-	bot,
-	Group,
-	sticker,
-	User,
-} from '../map.js'
 import { existsSync, mkdirSync, readdirSync, unlink } from 'node:fs'
+import { Baileys, bot, Group, sticker, User } from '../map.js'
 
 // Delay: make the code wait for some time
-async function delay(time: num) {
+async function delay(time: num) { // resolve promise at timeout
 	return await new Promise((r) => setTimeout(() => r(true), time))
 }
 
-// cacheAllGroups: 'cache all groups'
+// cacheAllGroups: cache all groups the bot is on
 async function cacheAllGroups(bot: Baileys) {
 	const groupList = await bot.sock.groupFetchAllParticipating()
 
@@ -34,15 +28,15 @@ function genStickerMeta(user: User, group?: Group) {
 		pack: sticker.packName.join('\n'),
 
 		author: sticker.author.join('\n')
-			.replace('{username}', user.name)
-			.replace('{link}', bot.link)
+			.replace('{username}', user.name) // replace placeholders with
+			.replace('{link}', bot.link) // useful infos
 			.replace('{group}', group?.name || 'Not a group'),
 	}
 }
 
 // findKey: Search for a key inside an object
 function findKey(obj: any, key: str): any {
-	// if the obj has this key, return it
+	// if the obj has this key, then return it
 	if (obj?.hasOwnProperty(key)) return obj[key]
 
 	// search the key on all objs inside the main obj
@@ -50,17 +44,16 @@ function findKey(obj: any, key: str): any {
 		// without this, the msg type could be the quoted msg type.
 		if (property === 'quotedMessage' && key !== 'quotedMessage') continue
 
+		const value = obj[property]
 		// if the property is a obj, call findKey() recursively
-		if (typeof obj[property] === 'object') {
-			const result = findKey(obj[property], key)
+		if (typeof value === 'object') {
+			const result = findKey(value, key)
 
 			if (result !== undefined) return result
 		}
 
 		// If it's a method, check if it is the searched value
-		if (typeof obj[property] === 'function' && property === key) {
-			return obj[property]
-		}
+		if (typeof value === 'function' && property === key) return value
 	}
 
 	return
@@ -88,9 +81,9 @@ function isValidPositiveIntenger(value: num): bool {
 
 // cleanTemp: Clean temp folder
 async function cleanTemp() {
-	if (!existsSync('settings/temp/')) mkdirSync('settings/temp')
+	if (!existsSync('settings/temp')) mkdirSync('settings/temp')
 
-	const files = readdirSync('settings//temp')
+	const files = readdirSync('settings/temp')
 
 	files.forEach((f) => unlink(`settings/temp/${f}`, () => {}))
 

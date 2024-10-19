@@ -2,7 +2,8 @@ from rembg import remove
 from PIL import Image
 import sys
 
-
+# This plugin removes background from images
+# You can use it on main thread with RunCode function on runner.ts
 def remove_bg(input_path, outputpath):
     original_img = Image.open(input_path)
     no_bg_img = remove(original_img)

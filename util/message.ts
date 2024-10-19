@@ -12,7 +12,7 @@ import {
 } from '../map.js'
 import type { AnyMessageContent, proto } from 'baileys'
 
-// message abstraction layer/command context
+// getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 	const { message, key, pushName } = raw
 
@@ -32,7 +32,7 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 	}
 
 	const user: User = bot.users.add(userID!, {}, [pushName!])
-	await user.checkData()
+	await user.checkData() // cache user and check it's data on db
 
 	let msg: Msg = {
 		key,
@@ -40,19 +40,21 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 		type,
 		text: getMsgText(message!),
 		edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
-		isBot: Boolean(key.fromMe && !key.participant),
-		isMedia: isMedia(type),
-		mime: findKey(message, 'mimetype'),
+		isBot: Boolean(key.fromMe && !key.participant), // if it's baileys client (it only works on groups)
+		isMedia: isMedia(type), // is video, photo or audio msg
+		mime: findKey(message, 'mimetype'), // media mimetype like image/png
 		quoted: getQuoted(raw)!, // quoted msg
 		raw, // raw msg obj
 	}
-	
-	const input = getInput(msg, bot, user.prefix)
-	msg.text = input.msg.text
+
+	const input = getInput(msg, bot, user.prefix) // ignores non-prefixed msgs
+	msg.text = input.msg.text // it may change msg.text by msg.quoted.text
+	// so when someone asks something
+	// you can type `.g` and search it
 
 	return {
 		msg,
-		args: input.args,
+		args: input.args, // cmd args
 		cmd: input.cmd,
 		user,
 		group: group!,
@@ -61,22 +63,26 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 
 // getInput: get cmd, args and ignore non-prefixed msgs
 function getInput(msg: Msg, bot: Baileys, prefix: str) {
-	if (!msg.text.startsWith(prefix)) return {msg, args: []}
+	if (!msg.text.startsWith(prefix)) return { msg, args: [] } // does not returns cmd bc it does not exist
 
 	let args: str[] = msg.text.replace(prefix, '').trim().split(' ')
-	const callCmd = args.shift()?.toLowerCase()
-	const cmd: Cmd | undefined = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!)
+	const callCmd = args.shift()!.toLowerCase() // cmd name on msg | .help => 'help' === callCmd
+	const cmd = bot.cmds.find((c) => c.name === callCmd || c.alias.includes(callCmd))
 	// search command by name or by aliases
 
-	const first = args[0]?.toLowerCase()
+	const first = args[0]?.toLowerCase() // first arg
 	let text = msg?.quoted?.text
 
-	if ((!first || (cmd?.subCmds?.includes(first) && !args[1]) ) && text) {
+	if ((!first || (cmd?.subCmds?.includes(first) && !args[1])) && text) {
 		const regex = /\.( |)[a-z]*( |)/gi
-		
+		// change msg.text by msg.quoted.text, so
+		// someone: *stupid question*
+		// you (smart guy): .g (mentioning that stupid msg)
+		// gemini: the useless response that guy want
+
 		if (text.match(regex)) text = text.replace(regex, '')
 		if (cmd?.subCmds?.includes(first)) text = `${first} ${text}`
-		
+
 		args = text.split(' ')
 		msg.text = text
 	}
@@ -84,7 +90,7 @@ function getInput(msg: Msg, bot: Baileys, prefix: str) {
 	return {
 		msg,
 		args,
-		cmd
+		cmd,
 	}
 }
 
@@ -105,7 +111,7 @@ function getQuoted(raw: proto.IWebMessageInfo) {
 		//@ts-ignore
 		text: getMsgText(quotedRaw),
 		mime: findKey(quotedRaw, 'mimetype'),
-		raw: { message: quotedRaw }, // raw quote obj
+		raw: { message: quotedRaw }, // raw quote msg obj
 	} as Msg
 }
 
@@ -127,8 +133,8 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 		if (res) return String(newType).trim() as MsgTypes
 	}
 
-	print('Unknown msg tyṕe:', m)
-	return Object.keys(m!)[0] as MsgTypes
+	print('Unknown msg tyṕe:', m) // i will categorize it later
+	return Object.keys(m!)[0] as MsgTypes // return raw type
 }
 
 // msgMeta: get some meta data from a msg
@@ -150,20 +156,14 @@ function msgMeta(
 	return { key, text, chat, quote }
 }
 
+// checkPermissions: check cmd permissions like block random guys from using eval
 function checkPermissions(cmd: Cmd, user: User, group?: Group) {
-    const devs = process.env.DEVS!
-    if (cmd.access.onlyDevs && !devs.includes(user.id)) return 'block'
-    if (!cmd.access.groups && group) return 'x'
-    if (!cmd.access.dm && !group) return 'x'
+	const devs = process.env.DEVS!
+	if (cmd.access.onlyDevs && !devs.includes(user.id)) return 'block'
+	if (!cmd.access.groups && group) return 'x'
+	if (!cmd.access.dm && !group) return 'x'
 
-    return true
+	return true
 }
 
-export {
-	getCtx,
-	getMsgText,
-	getMsgType,
-	getQuoted,
-    checkPermissions,
-	msgMeta,
-}
+export { checkPermissions, getCtx, getMsgText, getMsgType, getQuoted, msgMeta }

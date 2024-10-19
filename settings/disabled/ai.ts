@@ -4,7 +4,7 @@ import { models } from '../../util/api.js'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['gpt', 'gemini', 'g'],
+			alias: ['gpt', 'gemini', 'g'],
 			cooldown: 4,
 		})
 	}

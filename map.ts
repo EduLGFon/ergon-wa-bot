@@ -1,3 +1,7 @@
+// This file is an import map
+// It imports all functions and then exports them
+// to all other files
+
 // Types
 import {
 	allMsgTypes,
@@ -57,10 +61,10 @@ export { Baileys, Cmd, Collection, Group, prisma, server, User }
 
 // Functions
 import {
+	checkPermissions,
 	getCtx,
 	getMsgText,
 	getMsgType,
-    checkPermissions,
 	getQuoted,
 	msgMeta,
 } from './util/message.js'
@@ -79,10 +83,10 @@ import { gemini, imgRemover, runCode } from './util/api.js'
 
 export {
 	cacheAllGroups,
+	checkPermissions,
 	cleanTemp,
 	delay,
 	findKey,
-    checkPermissions,
 	gemini,
 	genStickerMeta,
 	getCtx,

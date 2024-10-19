@@ -4,7 +4,7 @@ import { getFixedT } from 'i18next'
 import { bot } from '../map.js'
 import chalk from 'chalk'
 
-// get the now date time formatted
+// get 'now' date time formatted
 const now = () =>
 	DateTime.now()
 		.setZone(bot.region.timezone)
@@ -22,22 +22,23 @@ export default () => {
 				return this.slice(0, 1).toUpperCase() + this.slice(1)
 			},
 		},
-		encode: {
+		encode: { // encode strings
 			value: function () {
 				return '```\n' + this + '```'
 			},
 		},
-		filterForRegex: {
+		filterForRegex: { // remove some chars that conflict with regex chars
 			value: function () {
 				return this.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 			},
 		},
-		t: {
+		t: { // get locale
 			value: function (lang: str) {
+				// 'help.menu'.t('en') => 'help menu'
 				return getFixedT(lang)(this)
 			},
 		},
-		align: {
+		align: { // align a word between spaces
 			value: function (limit: number, endPosition?: boolean) {
 				const ratio = (limit - this.length) / 2
 				const start = ' '.repeat(Math.ceil(ratio))
@@ -47,8 +48,8 @@ export default () => {
 				else return (start + this + end).slice(0, limit)
 			},
 		},
-		toMs: {
-			value: function () {
+		toMs: { // convert a str on ms
+			value: function () { // '10s' => 1_000 * 10
 				const match: str[] = this.match(/(\d+)(d|h|m|s|w)/gi)
 				if (!match[0]) return 0
 
@@ -75,7 +76,7 @@ export default () => {
 
 	/* Number Prototypes */
 	Object.defineProperties(Number.prototype, {
-		bytes: {
+		bytes: { // convert bytes to human readable nums
 			value: function (onlyNumbers?: bool) {
 				const types = ['B', 'KB', 'MB', 'GB']
 				let type = 0
@@ -106,7 +107,7 @@ export default () => {
 
 	/*      console.log        */
 	// The same console.log but styled differently
-	global.print = console.log = (...args) => {
+	global.print = console.log = (...args) => { // print() === console.log()
 		if (typeof args[0] !== 'string' || !args[2]) {
 			if (typeof args[0] === 'object') return console.info(inspect(args[0], { depth: null }))
 			console.info(...args)

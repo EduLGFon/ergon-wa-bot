@@ -5,7 +5,7 @@ import axios from 'axios'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['rmbg'],
+			alias: ['rmbg'],
 		})
 	}
 

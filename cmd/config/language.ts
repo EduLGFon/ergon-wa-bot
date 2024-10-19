@@ -3,7 +3,7 @@ import { Cmd, CmdCtx, languages } from '../../map.js'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['lang', 'idioma'],
+			alias: ['lang', 'idioma'],
 		})
 	}
 

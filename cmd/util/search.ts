@@ -5,7 +5,7 @@ import * as g from 'google-sr'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['se', 'google'],
+			alias: ['se', 'google'],
 			cooldown: 5,
 		})
 	}
@@ -16,7 +16,7 @@ export default class extends Cmd {
 		const query = await g.search({
 			query: args.join(' ').trim(),
 			safeMode: false,
-			filterResults: [
+			filterResults: [ // filter google results for these options
 				g.ResultTypes.DictionaryResult,
 				g.ResultTypes.TranslateResult,
 				g.ResultTypes.CurrencyResult,
@@ -25,7 +25,7 @@ export default class extends Cmd {
 			],
 			requestConfig: {
 				params: {
-					hl: user.lang,
+					hl: user.lang, // search content on user's language
 					lr: `lang_${user.lang}`.toLowerCase(),
 					cr: 'countryBR',
 				},
@@ -40,23 +40,22 @@ export default class extends Cmd {
 
 		const responseFunctions = {
 			SEARCH(r: g.SearchResultNode) {
-				const { title, link, description } = r
+				const { title, link, description } = r // websites
 
 				text += `*${title}:*\n> ${description} (${link})`
 			},
 			async DICTIONARY(r: g.DictionaryResultNode) {
-				const { word, phonetic, audio } = r
+				const { word, phonetic, audio } = r // dictionary result
 
-				if (audio) pronunciation = audio
+				if (audio) pronunciation = audio // word pronunciation
 
 				const moreInfo = await googleThis.search(word, {
-					parse_ads: false,
+					parse_ads: false, // searches for more info
 					safe: false,
 					additional_params: { hl: user.lang },
 				})
 
-				const { title, type, description, metadata } = moreInfo
-					?.knowledge_panel
+				const { title, type, description, metadata } = moreInfo?.knowledge_panel
 
 				text += `*${title || word}* (${type || phonetic})`
 				// e.g.: *Donald Trump* (45th U.S. President)
@@ -73,7 +72,7 @@ export default class extends Cmd {
 
 				text += `*${formula}*`
 
-				query.length = 1
+				query.length = 1 // only one result is enough
 			},
 			TIME(r: g.TimeResultNode) {
 				const { location, time, timeInWords, type } = r
@@ -89,6 +88,7 @@ export default class extends Cmd {
 				text += `*${res.text}* `
 
 				if (res.pronunciation) text += `(${res.pronunciation})`
+				// word pronunciation if available
 
 				query.length = 1
 			},
@@ -102,7 +102,7 @@ export default class extends Cmd {
 
 		await bot.send(msg, text.trim())
 
-		if (pronunciation) {
+		if (pronunciation) { // then send word pronunciation
 			bot.send(msg, {
 				audio: { url: pronunciation },
 				mimetype: 'audio/mpeg',

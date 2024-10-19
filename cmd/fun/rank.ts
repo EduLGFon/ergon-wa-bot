@@ -3,7 +3,7 @@ import { Cmd, CmdCtx, GroupMsg, prisma, User } from '../../map.js'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['r'],
+			alias: ['r'],
 			access: {
 				dm: false,
 				groups: true,
@@ -24,7 +24,7 @@ export default class extends Cmd {
 
 			let user: User = bot.users.get(author)
 
-			if (!user) {
+			if (!user) { // find user on db if it's not on cache
 				user = await prisma.users.findUnique({
 					where: { id: author },
 				}) as User

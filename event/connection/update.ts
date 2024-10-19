@@ -1,6 +1,7 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
 import { Baileys, cacheAllGroups } from '../../map.js'
 
+// connection update event
 export default async function (bot: Baileys, update: Partial<ConnectionState>) {
 	const { connection, lastDisconnect } = update
 
@@ -17,7 +18,7 @@ export default async function (bot: Baileys, update: Partial<ConnectionState>) {
 
 		case 'close':
 			const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !==
-				DisconnectReason.loggedOut
+				DisconnectReason.loggedOut // disconnect status code
 
 			console.error(`Connection closed by: ${lastDisconnect?.error}`)
 			print(

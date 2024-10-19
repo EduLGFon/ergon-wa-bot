@@ -15,9 +15,7 @@ export { gemini, imgRemover, runCode }
 async function runCode(data: { lang?: str; code?: str; file?: str }) {
 	const req = await fetch(`http://localhost:${runner.port}/run`, {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
+		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(data),
 	})
 
@@ -27,9 +25,7 @@ async function runCode(data: { lang?: str; code?: str; file?: str }) {
 async function imgRemover(img: str, quality: number) {
 	const req = await fetch(`http://localhost:${runner.port}/remover`, {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
+		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ img, quality }),
 	})
 
@@ -43,7 +39,7 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 	// The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
 	const gemini = genAI.getGenerativeModel({
 		model,
-		safetySettings: [{
+		safetySettings: [{ // won't block any potential dangerous content
 			category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
 			threshold: HarmBlockThreshold.BLOCK_NONE,
 		}, {
@@ -58,9 +54,9 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 		}],
 	})
 
-	if (buffer) {
+	if (buffer) { // include media buffer with text prompt
 		const media = {
-			inlineData: {
+			inlineData: { // convert media buffer to base64
 				data: Buffer.from(buffer).toString('base64'),
 				mimeType: mime!,
 			},
@@ -75,7 +71,7 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 	let data: EnhancedGenerateContentResponse
 
 	try {
-		if (!callback) {
+		if (!callback) { // only return text when it's done
 			result = await gemini.generateContent(instruction + prompt)
 
 			text = result.response.text()
@@ -84,43 +80,53 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 		}
 		user = user!
 
+		// it's your conversation history
 		user.geminiCtx = [{ role: 'user', parts: [{ text: instruction }] }, ...user.geminiCtx]
 
+		/* Gemini dynamic chats:
+		A new chat will be created every time gemini() is called
+		it's useful to change model and keep 'AI memory' (history context)
+
+		it also allows to use dynamic initial instructions, so Gemini language
+		can be switched as bot user language.
+		*/
 		const chat = gemini.startChat({ history: user.geminiCtx })
 		result = await chat.sendMessageStream(prompt)
 
-		user.geminiCtx = await chat.getHistory()
-		user.geminiCtx.shift()
+		user.geminiCtx = await chat.getHistory() // save history
+		user.geminiCtx.shift() // remove initial instruction from history
 
+		// edit msg every 1s with new generated words
 		interval = setInterval(() => callback(generateResponse(data)), 1_000)
 
 		for await (const chunk of result.stream) {
-			data = chunk
+			data = chunk // save new generated text
 			text += chunk.text()
 		}
 
 		data = await result.response
-		text = data.text()
+		text = data.text() // get final text
 	} catch (e: any) {
 		text = e.message.encode()
-		print(text)
+		console.error(e)
 	} finally {
 		clearInterval(interval)
-		// @ts-ignore
+		// @ts-ignore last time editing msg
 		if (callback) callback(generateResponse(data))
 	}
 
 	function generateResponse(chunk?: EnhancedGenerateContentResponse) {
 		return {
-			model,
+			model, // AI Model
 			reason: chunk?.candidates![0]?.finishReason || 'no reason',
 			text: text.replaceAll('**', '*').replaceAll('##', '>'),
-			inputSize: chunk?.usageMetadata?.promptTokenCount || 0,
-			tokens: chunk?.usageMetadata?.candidatesTokenCount || 0,
+			inputSize: chunk?.usageMetadata?.promptTokenCount || 0, // input tokens count
+			tokens: chunk?.usageMetadata?.candidatesTokenCount || 0, // output tokens count
 		} as aiResponse
 	}
 }
 
+// GPT is not supported anymore
 // async function gpt({ content, model }: aiPrompt) {
 // 	print(model)
 // 	print(content)

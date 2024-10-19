@@ -3,10 +3,12 @@ import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
 import { Duration } from 'luxon'
 
+// messages upsert event
 export default async function (bot: Baileys, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
 	// raw.messages = []
 	if (!raw.messages[0]) return
 
+	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m.message) continue
 
@@ -16,23 +18,23 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		if (group && coolValues.includes(msg.type)) {
 			group.cacheMsg(msg)
 			if (!msg.isBot) group.countMsg(user.id)
-		}
+		} // count msgs with cool values for group msgs rank cmd
 
-		// run 'waitFor' events
+		// run functions waiting for msgs (waitFor)
 		if (bot.wait.has(e)) bot.wait.get(e)(bot, msg, user, group)
-			
+
 		if (!cmd) continue
 		// Check cmd permissions
 		const auth = checkPermissions(cmd, user, group)
 		if (auth !== true) {
 			bot.react(msg, auth)
-			continue
+			continue // you got censored OOOOMAGAAAA
 		}
 
 		const ctx: CmdCtx = {
 			// get locales function
 			t: getFixedT(user.lang),
-			sendUsage,
+			sendUsage, // sends cmd help menu
 			group,
 			args,
 			user,
@@ -42,8 +44,8 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		}
 
 		const cooldown = user.lastCmd.time + cmd.cooldown * 1_000 - Date.now()
-		if (cooldown > 699) {
-			const time = Duration
+		if (cooldown > 699) { // i don't need to be so strict with cooldownds
+			const time = Duration // bc it's a small bot
 				.fromMillis(cooldown)
 				.rescale()
 				.shiftTo('seconds')
@@ -56,7 +58,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 			continue
 		}
 
-		user.addCmd()
+		user.addCmd() // 1+ on user personal cmds count
 
 		try {
 			// start typing (expires after about 10 seconds.)
@@ -69,6 +71,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 			bot.react(msg, 'x')
 		}
 
+		// sendUsage: sends cmd help menu
 		async function sendUsage() {
 			args[0] = cmd.name
 

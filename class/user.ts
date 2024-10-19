@@ -6,7 +6,7 @@ export default class User {
 	_userLanguage: str
 	_userPrefix: str
 	_cmdsCount: num
-	geminiCtx: Content[]
+	geminiCtx: Content[] // gemini conversation history
 	lastCmd: {
 		time: num
 		cmdReply?: str
@@ -23,10 +23,12 @@ export default class User {
 		this._cmdsCount = 0
 	}
 
+	// get name: get user name on cache
 	public get name() {
 		return this._username
 	}
 
+	// set name: update user name on cache and db
 	public set name(value: str) {
 		this._username = value
 		;(async () =>
@@ -36,10 +38,12 @@ export default class User {
 			}))()
 	}
 
+	// get lang: get user language on cache
 	public get lang() {
 		return this._userLanguage
 	}
 
+	// set lang: update user language on cache and db
 	public set lang(value: str) {
 		this._userLanguage = value
 		;(async () =>
@@ -49,10 +53,12 @@ export default class User {
 			}))()
 	}
 
+	// get prefix: get prefix prefix on cache
 	get prefix() {
 		return this._userPrefix
 	}
 
+	// set prefix: update user prefix on cache and db
 	set prefix(value: str) {
 		this._userPrefix = value
 		;(async () =>
@@ -62,10 +68,12 @@ export default class User {
 			}))()
 	}
 
+	// get cmds: get user cmds count
 	get cmds() {
 		return this._cmdsCount
 	}
 
+	// addCmd: +1 on user cmds count on cache and db
 	async addCmd() {
 		this.lastCmd = { time: Date.now() }
 		this._cmdsCount++
@@ -78,16 +86,17 @@ export default class User {
 		})
 	}
 
+	// checkData: sync user data on cache/db
 	async checkData() {
 		let data = await prisma.users.findUnique({
-			where: { id: this.id },
+			where: { id: this.id }, // fetch it
 		})
 
 		if (!data) {
 			data = await prisma.users.create({
-				data: {
+				data: { // create a new user
 					id: this.id,
-					name: this._username,
+					name: this._username, // default values
 					lang: this._userLanguage,
 					prefix: this._userPrefix,
 					cmds: 0,
@@ -98,12 +107,13 @@ export default class User {
 		if (this._username && data.name !== this._username) {
 			data = await prisma.users.update({
 				where: { id: this.id },
-				data: {
+				data: { // update user name for rank
 					name: this._username,
 				},
 			})
 		}
 
+		// update cache
 		this._username = data.name
 		this._userLanguage = data.lang
 		this._userPrefix = data.prefix

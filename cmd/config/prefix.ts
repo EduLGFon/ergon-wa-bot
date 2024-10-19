@@ -3,7 +3,7 @@ import { Cmd, CmdCtx } from '../../map.js'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['prefixo'],
+			alias: ['prefixo'],
 		})
 	}
 

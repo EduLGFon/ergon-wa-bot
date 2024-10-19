@@ -5,7 +5,7 @@ import { Sticker } from 'wa-sticker-formatter'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['s', 'sexo', 'makesticker'],
+			alias: ['s', 'sexo', 'makesticker'],
 			cooldown: 0,
 		})
 	}
@@ -14,44 +14,46 @@ export default class extends Cmd {
 		if (!isVisual(msg.type) && !isVisual(msg.quoted?.type)) return sendUsage()
 
 		let target = isVisual(msg.type) ? msg : msg.quoted
+		// choose between msg media or quoted msg media
 		let buffer = await bot.downloadMedia(target)
 
 		if (!buffer) return bot.send(msg, t('sticker.nobuffer'))
-
 		await bot.react(msg, 'loading')
+
 		let stickerTypes = ['rounded', 'full', 'crop', 'circle']
-		let quality = 20
+		let quality = 20 // media quality after compression
 
 		switch (target.type) {
 			case 'video':
-				stickerTypes = ['full', 'rounded']
-				quality = 5
+				stickerTypes = ['full', 'rounded'] // crop videos requires a stronger machine
+				quality = 10 // videos needs to be more compressed
+				// but compress a video too much can cause some glitches on video
 				break
 			case 'sticker':
 				await bot.send(msg, { image: buffer, gifPlayback: true })
+				// sends sticker image
 			case 'image':
-				if (args[0] === 'rmbg') {
+				if (args[0] === 'rmbg') { // remove image background
 					const name = Math.random()
+					writeFileSync(`temp/${name}.webp`, buffer) // create temp file
 
-					writeFileSync(`temp/${name}.webp`, buffer)
-
-					await runCode({
-						file: 'plugin/removeBg.py',
-						code: `settings/temp/${name}.webp settings/temp/${name}.png`,
+					await runCode({ // execute python background remover plugin on
+						file: 'plugin/removeBg.py', // a separate thread
+						code: `settings/temp/${name}.webp settings/temp/${name}.png`, // cli args
 					})
-					buffer = readFileSync(`settings/temp/${name}.png`) || buffer
+					buffer = readFileSync(`settings/temp/${name}.png`) || buffer // read returned file
 
-					cleanTemp()
+					cleanTemp() // clean temp folder
 				}
 		}
 
 		for (const type of stickerTypes) {
-			const metadata = new Sticker(buffer!, {
-				...genStickerMeta(user, group),
+			const metadata = new Sticker(buffer!, { // create sticker metadata
+				...genStickerMeta(user, group), // sticker author and pack
 				type,
 				quality,
 			})
-
+			// send several crop types of the same sticker
 			await bot.send(msg.chat, await metadata.toMessage())
 		}
 

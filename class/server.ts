@@ -5,8 +5,8 @@ const app = express()
 
 export function server(bot: Baileys) {
 	app
-		.use(express.json())
-		.post('/reminder', async (req, res) => {
+		.use(express.json()) // use content-type: json
+		.post('/reminder', async (req, res) => { // method: post
 			const r: Reminder = req.body
 
 			if (!r.id || !r.author || !r.chat || !r.msg || !r.remindAt) {
@@ -31,7 +31,7 @@ async function sendReminders(bot: Baileys, r: Reminder) {
 		if (!aiMsg || !aiMsg.text || !aiMsg.text.includes(r.msg)) text = '`' + r.msg + '`'
 		else text = aiMsg.text
 
-		await bot.sock.sendMessage(r.chat, { text })
+		await bot.sock.sendMessage(r.chat, { text }) // send remind msg
 		return 200
 	} catch (e: any) {
 		return e.message

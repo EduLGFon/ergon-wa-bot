@@ -9,7 +9,7 @@
 	},
 	"lint": { // DENO Lint rules
 		"rules": {
-			"exclude": ["no-explicit-any"]
+			"exclude": ["no-explicit-any"] // does not throws at any any
 		}
 	},
 	"unstable": ["byonm"] // DENO unstable features

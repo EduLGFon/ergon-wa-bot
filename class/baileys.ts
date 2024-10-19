@@ -26,7 +26,7 @@ export default class Baileys {
 	users: Collection<string, User>
 	groups: Collection<string, Group>
 	wait: Collection<string, Function>
-	aliases: Collection<string, string>
+	alias: Collection<string, string>
 	events: Collection<string, Function>
 
 	constructor(public auth: str) {
@@ -43,7 +43,7 @@ export default class Baileys {
 		// Cmds collection
 		this.cmds = new Collection(0, Cmd)
 		// Cmd aliases map
-		this.aliases = new Collection(0)
+		this.alias = new Collection(0)
 	}
 
 	async connect() {
@@ -60,25 +60,22 @@ export default class Baileys {
 				// cache makes the store send/receive msgs faster
 				keys: makeCacheableSignalKeyStore(state.keys, logger),
 			},
-			browser: Browsers.macOS('Desktop'),
 			logger,
-			markOnlineOnConnect: false,
-			// mobile: true,
-			printQRInTerminal: true,
+			version,
 			syncFullHistory: false,
+			printQRInTerminal: true,
+			markOnlineOnConnect: false,
+			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
 			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast'),
-			version,
 		})
-
-		// if (process.argv.includes('--mobile')) await RequestCode(this.sock);
 
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
 
-		// Load commands*
+		// Load commands
 		this.folderHandler(`./build/cmd`, this.loadCmds)
-		// * folderHandler() will read a folder and call the function
+		// folderHandler() will read a folder and call callback
 		// for each file
 
 		// Load events
@@ -87,15 +84,13 @@ export default class Baileys {
 	}
 
 	// Send: Intermediate function to send msgs easier
-	async send(
-		id: str | Msg,
-		body: str | AnyMessageContent,
-		reply?: proto.IWebMessageInfo,
-	) {
+	async send(id: str | Msg, body: str | AnyMessageContent, reply?: proto.IWebMessageInfo) {
 		let { text, chat, quote } = msgMeta(id, body, reply)
+		// get msg metadata
 
 		const msg = await this.sock.sendMessage(chat, text, quote)
 
+		// convert raw msg on cmd context
 		return await getCtx(msg!, this)
 	}
 
@@ -103,7 +98,7 @@ export default class Baileys {
 	async react(m: Msg, emoji: str) {
 		const { chat, key } = m
 
-		// @ts-ignore
+		// @ts-ignore find emojis by name | 'ok' => '✅'
 		const reaction = emojis[emoji] || emoji
 		return await this.send(chat, { react: { text: reaction, key } })
 	}
@@ -116,21 +111,23 @@ export default class Baileys {
 
 	async deleteMsg(msgOrKey: Msg | proto.IMessageKey) {
 		const { chat, key } = msgMeta(msgOrKey, '')
+		// get msg metadata
 
 		return await this.send(chat, { delete: key })
 	}
 
 	// get a group cache or fetch it
 	async getGroup(id: str): Promise<Group> {
-		let group = this.groups.get(id)
+		let group = this.groups.get(id) // cache
 
 		if (group) return group
 		else {
-			// fetch group
+			// fetch group metadata
 			group = await this.sock.groupMetadata(id)
-			const groupData = new Group(group)
+			const groupData = new Group(group) // Group class includes useful properties
 
 			this.groups.add(groupData.id, await groupData.checkData())
+			// check group data on db
 			return groupData
 		}
 	}
@@ -146,7 +143,7 @@ export default class Baileys {
 
 	async folderHandler(path: str, handler: Function) {
 		path = resolve(path)
-		let counter = 0
+		let count = 0
 
 		for (const category of readdirSync(path)) {
 			// For each category folder
@@ -154,15 +151,15 @@ export default class Baileys {
 				// for each file of each category
 				const imported = await import(`file://${path}/${category}/${file}`)
 
-				// call function to this file
+				// call callback function to this file
 				handler.bind(this)(file, category, imported.default)
-				counter++
+				count++
 			}
 		}
 
 		print(
 			'HANDLER',
-			`${counter} ${path.includes('event') ? 'events' : 'cmds'} loaded`,
+			`${count} ${path.includes('event') ? 'events' : 'cmds'} loaded`,
 			'magentaBright',
 		)
 		return
@@ -170,19 +167,19 @@ export default class Baileys {
 
 	async loadCmds(file: str, _category: str, imported: any) { // DENO point
 		const cmd: Cmd = new imported()
-		cmd.name = file.slice(0, -3)
+		cmd.name = file.slice(0, -3) // remove .ts
 
 		this.cmds.set(cmd.name!, cmd)
 		// Set cmd
 
-		cmd.aliases.forEach((a) => this.aliases.set(a, cmd.name!))
+		cmd.alias.forEach((a) => this.alias.set(a, cmd.name!))
 		// Set cmd aliases
 	}
 
 	async loadEvents(file: str, category: str, imported: any) {
 		const event = imported
 		const name = `${category}.${file.slice(0, -3)}`
-		// folder/file names are the same of lib events
+		// folder+file names are the same of lib events
 		this.events.set(name, event)
 
 		// Listen to the event here

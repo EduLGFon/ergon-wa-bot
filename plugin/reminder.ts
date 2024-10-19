@@ -1,6 +1,12 @@
 import settings from '../settings/settings.json' with { type: 'json' }
 import { prisma } from '../map.js'
 
+/** Reminder
+ * This plugin will check evert 5s if there is a pending reminder
+ * and when its time gets over, sends reminder request to main thread
+ * so the bot will remind the user on another process
+ */
+
 console.log('Reminder ready!')
 setInterval(async () => {
 	let reminders = await prisma.reminders.findMany({ orderBy: { remindAt: 'asc' } })

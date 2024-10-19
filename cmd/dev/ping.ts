@@ -3,7 +3,7 @@ import { Cmd, CmdCtx, prisma } from '../../map.js'
 export default class extends Cmd {
 	constructor() {
 		super({
-			aliases: ['p'],
+			alias: ['p'],
 		})
 	}
 	async run({ t, bot, user, msg }: CmdCtx) {
