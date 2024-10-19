@@ -1,10 +1,10 @@
 import { DefaultArgs } from '@prisma/client/runtime/library';
 import { GroupMetadata, proto } from 'baileys';
 import { PrismaClient } from '@prisma/client';
-import User from 'src/Classes/User';
-import Bot from 'src/Classes/Bot';
-import { pino } from 'pino';
+import User from '../Classes/User';
 import { TFunction } from 'i18next';
+import Bot from '../Classes/Bot';
+import { pino } from 'pino';
 
 type MsgTypes =
 	| 'text'
@@ -21,7 +21,6 @@ type MsgTypes =
 interface Msg {
 	id: string;
 	chat: string;
-	author: string;
 	text: string;
 	type: MsgTypes;
 	isMedia: boolean;

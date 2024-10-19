@@ -61,7 +61,7 @@ export default class Bot {
 			printQRInTerminal: true,
 			syncFullHistory: true,
 			// ignore status updates
-			shouldIgnoreJid: (jid: string) => jid.includes('broadcast'),
+			shouldIgnoreJid: (jid: string) => jid?.includes('broadcast'),
 			version,
 		});
 

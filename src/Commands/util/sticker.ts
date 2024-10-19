@@ -13,7 +13,7 @@ export default class extends Command {
 		});
 	}
 
-	async run({ msg, bot, args, group, sendUsage, t }: CmdContext) {
+	async run({ msg, bot, args, user, group, sendUsage, t }: CmdContext) {
 		if (!msg.isMedia && !msg.quoted) return sendUsage();
 
 		let stickerTypes = ['rounded', 'full', 'crop', 'circle'];
@@ -44,7 +44,7 @@ export default class extends Command {
 
 		for (const type of stickerTypes) {
 			const metadata = new Sticker(buffer!, {
-				...getStickerAuthor(msg, group),
+				...getStickerAuthor(user, group),
 				type,
 				quality: 60,
 			});

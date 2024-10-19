@@ -11,7 +11,7 @@ export default class extends Command {
 		});
 	}
 
-	async run({ msg, args, group, bot, sendUsage }: CmdContext): Promise<any> {
+	async run({ msg, args, user, group, bot, sendUsage }: CmdContext): Promise<any> {
 		if (!args[0]) return sendUsage();
 
 		await new Promise(async (res) => {
@@ -32,7 +32,7 @@ export default class extends Command {
 			);
 
 			const metadata = new Sticker(await img.getBufferAsync(Jimp.MIME_PNG), {
-				...getStickerAuthor(msg, group),
+				...getStickerAuthor(user, group),
 				quality: 50,
 			});
 

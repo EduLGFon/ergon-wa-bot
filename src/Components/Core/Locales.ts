@@ -4,7 +4,7 @@ import i18next from 'i18next';
 
 export default function () {
 	try {
-		const preload = readdirSync('src/Locales/')
+		const preload = readdirSync('src/Components/Locales/')
 			.map((l) => l.split('.')[0]);
 
 		i18next
@@ -12,7 +12,7 @@ export default function () {
 			.init({
 				preload,
 				fallbackLng: 'en',
-				backend: { loadPath: 'src/Locales/{{lng}}.json' },
+				backend: { loadPath: 'src/Components/Locales/{{lng}}.json' },
 				interpolation: { escapeValue: false },
 				returnEmptyString: false,
 				returnObjects: true,

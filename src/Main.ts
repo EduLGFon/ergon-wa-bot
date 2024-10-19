@@ -1,7 +1,7 @@
-import MAIN_LOGGER from 'baileys/lib/Utils/logger';
-import loadLocales from './Components/Core/Locales';
-import Bot from './Components/Classes/Bot';
 import loadPrototypes from './Components/Plugins/Prototypes';
+import loadLocales from './Components/Core/Locales';
+import MAIN_LOGGER from 'baileys/lib/Utils/logger';
+import Bot from './Components/Classes/Bot';
 
 const logger = MAIN_LOGGER.child({});
 logger.level = 'info';
