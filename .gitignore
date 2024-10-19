@@ -9,6 +9,7 @@ auth_info_baileys/
 
 # Builds
 Build/
+node_modules/
 
 # Logs / Lokefiles
 *lock.json
