@@ -33,9 +33,6 @@ export default class extends Command {
 
 			const metadata = new Sticker(await img.getBufferAsync(Jimp.MIME_PNG), {
 				...getStickerAuthor(msg, group),
-				type: '',
-				categories: ['🎉'],
-				id: '12345',
 				quality: 50,
 			});
 

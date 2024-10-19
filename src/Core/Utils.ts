@@ -1,6 +1,7 @@
 import type { CmdContext, Msg, MsgTypes } from '../Typings';
 import { AUTHOR, LINK, PACK } from '../config.json';
 import { GroupMetadata, type proto } from 'baileys';
+import { isMedia, msgTypes } from './MsgTypes';
 import prisma from './Prisma';
 import User from './User';
 import Bot from './Bot';
@@ -8,7 +9,7 @@ import Bot from './Bot';
 export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	const { message, key, pushName } = raw;
 
-	const type = Object.keys(message!)[0] as MsgTypes;
+	const type = getMsgType(message!);
 	// msg type
 	const userID = key.participant || key?.remoteJid!;
 
@@ -28,9 +29,9 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 			id: key.id!, // msg id
 			chat: key?.remoteJid!, // msg chat id
 			author: pushName!, // msg author name
-			text: getMsgText(message!, type).trim(),
-			type, // msg type
-			isMedia: ['imageMessage', 'videoMessage', 'stickerMessage'].includes(type),
+			text: getMsgText(message!),
+			type,
+			isMedia: isMedia(type),
 			quoted: getQuoted(raw), // quoted msg
 			raw, // raw msg obj
 		},
@@ -41,25 +42,20 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 }
 
 export function getQuoted(raw: proto.IWebMessageInfo) {
-	const type = Object.keys(raw.message!)[0] as MsgTypes; // msg type
-	const m = raw.message;
+	const m = raw.message!;
 
-	//@ts-ignore quotedMsg is missing on lib types
-	const quotedRaw = m![type]?.contextInfo?.quotedMessage ||
-		m?.extendedTextMessage?.contextInfo?.quotedMessage;
+	//@ts-ignore 'quotedMessage' is missing on lib types
+	const quotedRaw = findKey(m, 'quotedMessage');
 
 	if (!quotedRaw) return;
 
-	const quotedType = Object.keys(quotedRaw!)[0] as MsgTypes; // quoted msg type
-
-	// the real quoted message
-	const msg = quotedRaw[quotedType] as proto.Message.IImageMessage;
+	const type = getMsgType(quotedRaw); // quoted message type
 
 	return {
-		type: quotedType, // msg type
-		isMedia: ['imageMessage', 'videoMessage', 'stickerMessage'].includes(quotedType),
+		type, // msg type
+		isMedia: isMedia(type),
 		//@ts-ignore
-		text: String(quotedRaw?.conversation || msg?.text || msg?.caption || '')?.trim(),
+		text: getMsgText(quotedRaw),
 		raw: { message: quotedRaw }, // raw quote obj
 	} as Partial<Msg>;
 }
@@ -70,12 +66,23 @@ export async function cacheAllGroups(bot: Bot) {
 	Object.keys(groupList).forEach((g) => bot.groups.set(g, groupList[g]));
 }
 
-export function getMsgText(m: proto.IMessage, type: MsgTypes) {
-	return String(
-		//@ts-ignore
-		m?.conversation || m[type]?.text || m[type]?.caption || m?.extendedTextMessage?.text ||
-			'',
-	);
+function getMsgText(m: proto.IMessage) {
+	for (const key of ['conversation', 'text', 'caption']) {
+		const res = findKey(m, key);
+		if (res) return String(res).trim();
+	}
+
+	return '';
+}
+
+function getMsgType(m: proto.IMessage): MsgTypes {
+	for (const [rawType, newType] of Object.entries(msgTypes)) {
+		const res = findKey(m, rawType);
+
+		if (res) return String(newType).trim() as MsgTypes;
+	}
+
+	return Object.keys(m!)[0] as MsgTypes;
 }
 
 export function getStickerAuthor(msg: Msg, group: GroupMetadata) {
@@ -87,4 +94,27 @@ export function getStickerAuthor(msg: Msg, group: GroupMetadata) {
 			.replace('{link}', LINK)
 			.replace('{group}', group?.subject || 'Not a group'),
 	};
+}
+
+export function findKey(obj: any, key: string): any {
+	// if the obj has this key, return it
+	if (obj.hasOwnProperty(key)) return obj[key];
+
+	// search the key on all objs inside the main obj
+	for (const property of Object.getOwnPropertyNames(obj)) {
+		// without this, the msg type could be the quoted msg type.
+		if (property === 'quotedMessage' && key !== 'quotedMessage') continue;
+
+		// if the property is a obj, call findKey() recursively
+		if (typeof obj[property] === 'object') {
+			const result = findKey(obj[property], key);
+
+			if (result !== undefined) return result;
+		}
+
+		// If it's a method, check if it is the searched value
+		if (typeof obj[property] === 'function' && property === key) return obj[property];
+	}
+
+	return;
 }

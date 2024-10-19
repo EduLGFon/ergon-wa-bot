@@ -41,7 +41,7 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 	};
 
 	// react if the cmd takes more than 2 seconds to run
-	const t = setTimeout(() => this.react(msg, '⏳'), 2_000);
+	const t = setTimeout(() => this.react(msg, '⏳'), 1_000);
 	try {
 		await cmd.run!(ctx);
 

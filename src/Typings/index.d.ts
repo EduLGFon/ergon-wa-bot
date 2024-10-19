@@ -7,11 +7,16 @@ import Bot from '../Core/Bot';
 import { pino } from 'pino';
 
 type MsgTypes =
-	| 'stickerMessage'
-	| 'conversation'
-	| 'extendedTextMessage'
-	| 'videoMessage'
-	| 'imageMessage';
+	| 'text'
+	| 'image'
+	| 'sticker'
+	| 'video'
+	| 'contact'
+	| 'document'
+	| 'audio'
+	| 'protocol'
+	| 'reaction'
+	| 'location';
 
 interface Msg {
 	id: string;
