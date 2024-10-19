@@ -31,8 +31,6 @@ function runCode(lang: 'py', code: str = '', file: str) {
 	const cli: str[] = []
 	let data
 
-	console.log('file:', file)
-
 	try {
 		if (file) {
 			lang = file.split('.')[1] as 'py'
@@ -50,8 +48,6 @@ function runCode(lang: 'py', code: str = '', file: str) {
 		return data.cmd!
 			.map((c, i) => {
 				cli[i] = `${c} ${file} ${code}` // collect CLIs
-
-				console.log(cli)
 
 				return execSync(cli[i])
 			})
