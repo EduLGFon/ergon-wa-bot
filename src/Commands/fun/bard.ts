@@ -1,5 +1,5 @@
-import { runOtherLang } from '../../Core/Plugins/RunOtherLangs.js';
 import { CmdContext } from '../../Core/Typings/types.js';
+import { runCode } from '../../Core/Plugins/RunCode.js';
 import Command from '../../Core/Classes/Command.js';
 
 export default class extends Command {
@@ -12,7 +12,7 @@ export default class extends Command {
 	async run({ args, bot, msg, sendUsage }: CmdContext) {
 		if (!args[0]) return sendUsage();
 
-		let res = await runOtherLang({
+		let res = await runCode({
 			file: 'src/Core/Plugins/Bard.py',
 			code: `"${process.env.BARD_TOKEN1}" "${process.env.BARD_TOKEN2}" ` +
 				`"${process.env.BARD_TOKEN3}" "${args.join(' ')}"`,

@@ -1,4 +1,4 @@
-import type { CmdContext, Lang } from '../Typings/types.d.ts';
+import type { CmdContext, Lang } from '../Typings/types.js';
 import { delay } from '../Components/Utils.js';
 import { execSync } from 'node:child_process';
 import { inspect } from 'node:util';
@@ -39,7 +39,7 @@ interface runParams {
 	ctx?: CmdContext;
 	file?: string;
 }
-export async function runOtherLang({ lang, code, ctx, file }: runParams) {
+export async function runCode({ lang, code, ctx, file }: runParams) {
 	let data, cli: str[] = [];
 
 	try {

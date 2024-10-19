@@ -13,5 +13,5 @@
 		"allowJs": true,
 		"skipLibCheck": true /* Skip type checking all .d.ts files. */
 	},
-	"exclude": ["Test/"]
+	"exclude": ["Test/", "build/"]
 }

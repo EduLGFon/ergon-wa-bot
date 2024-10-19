@@ -8,14 +8,7 @@ const now = () =>
 		.setLocale(config.LANG)
 		.toFormat('T');
 
-const getRAM = (backAsNumber?: bool) => {
-	const ram = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
-
-	if (backAsNumber) return Number(ram);
-	else return ram + 'MB';
-};
-
-export { getRAM, now };
+export { now };
 
 export default () => {
 	/* String Prototypes */
@@ -49,6 +42,29 @@ export default () => {
 		},
 	});
 
+	/* Number Prototypes */
+
+	Object.defineProperties(Number.prototype, {
+		bytes: {
+			value: function (onlyNumbers?: bool) {
+				const types = ['B', 'KB', 'MB', 'GB'];
+				let type = 0;
+				let number = this;
+
+				while (number / 1024 >= 1) {
+					type++;
+					number = number / 1024;
+				}
+
+				number = number.toFixed(1);
+
+				if (number.slice(-2) === '.0') number = number.slice(0, -2);
+
+				return onlyNumbers ? Number(number) : number + types[type];
+			},
+		},
+	});
+
 	/*      console.error        */
 	// easier way to print error messages
 	console.error = (error: { stack: str }) => {
@@ -69,7 +85,7 @@ export default () => {
 		const [title, msg, color] = [...args];
 
 		const str = `[${title.align(12)}| ${now()} | ${
-			(getRAM() as str).align(11, 'end')
+			(process.memoryUsage().rss.bytes() as str).align(11, 'end')
 		}] - ${msg}`;
 
 		// console.log(str);

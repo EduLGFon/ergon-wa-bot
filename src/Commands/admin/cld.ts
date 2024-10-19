@@ -1,6 +1,7 @@
 import type { CmdContext } from '../../Core/Typings/types.js';
 import Command from '../../Core/Classes/Command.js';
 import { execSync } from 'node:child_process';
+import { Duration } from 'luxon';
 
 export default class extends Command {
 	constructor() {
@@ -10,37 +11,28 @@ export default class extends Command {
 		});
 	}
 
-	async run({ args, bot, user, msg }: CmdContext) {
+	async run({ args, bot, msg }: CmdContext) {
 		const startTime = Date.now();
-		const startRAM = this.getRAM(); // DENO
 
-		let reaction = '✅', // Reaction emoji
-			output = '';
+		let output = '';
 
 		try {
 			output = execSync(args.join(' ')).toString();
 		} catch (e: any) {
-			reaction = '❌'; // Reaction emoji
 			output = String(e?.stack || e); // process error
 		} finally {
-			// difference between initial RAM and final RAM
-			const endRAM = this.getRAM();
-			const RAMRange = Number((endRAM - startRAM).toFixed(2));
-			const duration = (Date.now() - startTime).toLocaleString(user.lang);
+			const dur = Duration
+				.fromMillis(Date.now() - startTime)
+				.rescale()
+				.toHuman({ unitDisplay: 'narrow' });
 
-			const text = `*[👨‍💻] - Child Process*\n` +
-				`*[⏰]: ${duration}ms*\n` +
-				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
-				output.trim().encode();
+			const RAM = process.memoryUsage().rss.bytes();
 
-			const reply = await bot.send(msg, text);
-			bot.react(reply.msg, reaction);
+			const text = `*[👨‍💻] - Child Process* ${dur} - ${RAM}\n` +
+				output.trim();
+
+			bot.send(msg, text);
 			return;
 		}
 	}
-
-	getRAM = () => {
-		const RAMUsage = process.memoryUsage().rss / 1024 / 1024;
-		return Number(RAMUsage.toFixed(2));
-	};
 }

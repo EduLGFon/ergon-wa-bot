@@ -104,6 +104,7 @@ export default class extends Command {
 				audio: { url: pronunciation },
 				mimetype: 'audio/mpeg',
 				fileName: 'pronunciation.mp3',
+				ptt: true,
 			});
 		}
 		return;

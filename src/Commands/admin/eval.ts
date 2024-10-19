@@ -1,8 +1,8 @@
-import { langs, runOtherLang } from '../../Core/Plugins/RunOtherLangs.js';
 import type { CmdContext, Lang } from '../../Core/Typings/types.ts';
-import { getRAM } from '../../Core/Components/Prototypes.js';
+import { langs, runCode } from '../../Core/Plugins/RunCode.js';
 import { clearTemp } from '../../Core/Components/Utils.js';
 import Command from '../../Core/Classes/Command.js';
+import { Duration } from 'luxon';
 
 export default class extends Command {
 	constructor() {
@@ -16,12 +16,15 @@ export default class extends Command {
 		const lang = (langs.includes(ctx.args[0] as 'py') ? ctx.args.shift() : 'eval') as Lang;
 		const startTime = Date.now();
 
-		let output = await runOtherLang({ lang, code: ctx.args.join(' '), ctx });
+		const output = await runCode({ lang, code: ctx.args.join(' '), ctx });
 
-		const duration = (Date.now() - startTime).toLocaleString('pt');
+		const dur = Duration
+			.fromMillis(Date.now() - startTime)
+			.rescale()
+			.toHuman({ unitDisplay: 'narrow' });
+		const RAM = process.memoryUsage().rss.bytes();
 
-		const text = `*[👨‍💻] - ${lang.toUpperCase()}* ` +
-			`${duration}ms - ${getRAM()}` + '\n\n' +
+		const text = `*[👨‍💻] - ${lang.toUpperCase()}* ${dur} - ${RAM}\n` +
 			output.trim();
 
 		clearTemp();
