@@ -148,9 +148,12 @@ npm run update
 Just scan the QR Code that will appear on terminal and your're ready to go!
 ---
 
+### `-1. ` 🗒️ Notes:
+
+- Experiencing bugs? Open a issue with your problem or make a pull request with the solution. I will try to fix it as soon as possible.
+
+- This bot was made to run on Linux, but you can run it on Windows just changing script or using WSL.
+
+- If you need help, feel free to ask me on Discord.
+
 ### I Hope you like the project :)
-
-### `-1 -` 🗒️ Note:
-
-This project was made to run on Linux, if you want to run it on Windows, you may need to apply some
-patches or use WSL
