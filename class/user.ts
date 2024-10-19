@@ -1,4 +1,4 @@
-import { prisma, userDefaults } from '../map.js'
+import { prisma, db } from '../map.js'
 
 export default class User {
 	_username: str
@@ -15,8 +15,8 @@ export default class User {
 		this.lastCmd = { time: 0 }
 
 		this._username = username
-		this._userLanguage = userDefaults.language
-		this._userPrefix = userDefaults.prefix
+		this._userLanguage = db.userDefault.language
+		this._userPrefix = db.userDefault.prefix
 		this._cmdsCount = 0
 	}
 

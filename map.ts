@@ -5,10 +5,9 @@ import { allMsgTypes, isMedia } from './settings/types/msgs.js'
 export { allMsgTypes, CmdCtx, GroupMsg, isMedia, Lang, Logger, Msg, MsgTypes }
 
 // Config files
-import { groupDefaults, userDefaults } from './settings/db.json'
-import { bot, sticker } from './settings/settings.json'
+import { bot, sticker, db } from './settings/settings.json'
 
-export { bot, groupDefaults, sticker, userDefaults }
+export { bot, db, sticker }
 
 // Classes
 import Collection from './class/collection.js'

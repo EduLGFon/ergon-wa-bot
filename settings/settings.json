@@ -5,6 +5,17 @@
 		"link": ""
 	},
 
+	"db": {
+		"userDefault": {
+			"prefix": ".",
+			"language": "pt",
+			"cacheLimit": 500
+		},
+		"groupDefault": {
+			"msgsCacheLimit": 200
+		}
+	},
+
 	"sticker": {
 		"packName": [""],
 		"author": [""]
