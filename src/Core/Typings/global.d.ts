@@ -5,7 +5,7 @@ type bool = boolean;
 interface String {
 	encode(): str;
 	toPascalCase(): str;
-	align(limit: num, position: 'start' | 'end'): str;
+	align(limit: num, endPosition?: boolean): str;
 	filterForRegex(): str;
 }
 

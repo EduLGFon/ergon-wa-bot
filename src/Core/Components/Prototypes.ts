@@ -32,13 +32,13 @@ export default () => {
 			},
 		},
 		align: {
-			value: function (limit: number, position: 'start' | 'end' = 'start') {
+			value: function (limit: number, endPosition?: boolean) {
 				const ratio = (limit - this.length) / 2;
 				const start = ' '.repeat(Math.ceil(ratio));
 				const end = ' '.repeat(Math.floor(ratio));
 
-				if (position === 'start') return (start + this + end).slice(0, limit);
-				else return (end + this + start).slice(0, limit);
+				if (endPosition) return (end + this + start).slice(0, limit);
+				else return (start + this + end).slice(0, limit);
 			},
 		},
 	});
@@ -57,9 +57,9 @@ export default () => {
 					number = number / 1024;
 				}
 
-				number = number.toFixed(1);
+				number = number.toFixed();
 
-				if (number.slice(-2) === '.0') number = number.slice(0, -2);
+				// if (number.slice(-2) === '.0') number = number.slice(0, -2);
 
 				return onlyNumbers ? Number(number) : number + types[type];
 			},
@@ -83,10 +83,10 @@ export default () => {
 			return;
 		}
 
-		const [title, msg, color] = [...args];
+		const [title, msg, color]: string[] = [...args];
 
 		const str = `[${title.align(12)}| ${now()} | ${
-			(process.memoryUsage().rss.bytes() as str).align(10, 'end')
+			(process.memoryUsage().rss.bytes() as str).align(5, true)
 		}] - ${msg}`;
 
 		// console.log(str);
