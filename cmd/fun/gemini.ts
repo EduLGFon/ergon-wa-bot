@@ -55,21 +55,17 @@ export default class extends Cmd {
 			// Gemini will call this function every .5s to send or edit response updates
 			const response = ` - *${model}* (${tokens}):\n${text}`
 
-			if (finish) { // if it's the last chunk (final response)
-				await stream // wait msg is sent
-				stream = stream as CmdCtx
-				bot.editMsg(stream.msg, response) // edit it
-				return
-				/** I did it bc
-				 * sometimes Gemini API may generate all chunks
-				 * faster than WhatsApp can send msgs. It could cause
-				 * some content loss on this cmd. So, when it's finish
-				 * bot will wait until msg is sent
-				 */
-			}
-
 			if (!stream) stream = bot.send(msg, response).then((m) => stream = m)
-			// @ts-ignore send msg and only try to edit when it was really sent
+			// if it's the last chunk (final response)
+			else if (finish) return bot.editMsg((await stream).msg, response)
+			// wait msg is sent and edit it
+			/** I did it bc
+			 * sometimes Gemini API may generate all chunks
+			 * faster than WhatsApp can send msgs. It could cause
+			 * some content loss on this cmd. So, when it's finish
+			 * bot will wait until msg is sent
+			 */
+			// @ts-ignore only try to edit when it was really sent
 			else if (stream.msg) bot.editMsg(stream.msg, response)
 			return
 		}

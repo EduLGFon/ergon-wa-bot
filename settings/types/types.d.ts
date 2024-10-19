@@ -61,7 +61,7 @@ interface aiPrompt {
 	buffer?: Buffer
 	mime?: str
 	user?: User
-	callback?(data: aiResponse): Promise<void>
+	callback?(data: aiResponse): Promise<any>
 }
 
 export { aiPrompt, CmdCtx, GroupMsg, Lang, Logger, Msg, MsgTypes }
