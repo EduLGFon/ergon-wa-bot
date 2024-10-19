@@ -1,4 +1,5 @@
 import { Baileys, Cmd, Group, User } from '../../map.ts'
+import { ChatSession } from '@google/generative-ai'
 import { TFunction } from 'i18next'
 import { proto } from 'baileys'
 
@@ -55,12 +56,13 @@ interface GroupMsg {
 }
 
 interface aiPrompt {
+	instruction: str
 	prompt: str | [str, Part]
 	model: str
 	buffer?: Buffer
 	mime?: str
-	user: User
-	callback(data: aiResponse): Promise<void>
+	chat?: ChatSession
+	callback?(data: aiResponse): Promise<void>
 }
 
 export { aiPrompt, CmdCtx, GroupMsg, Lang, Logger, Msg, MsgTypes }

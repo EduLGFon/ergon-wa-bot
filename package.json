@@ -28,7 +28,7 @@
 		"google-translate": "github:iamtraction/google-translate",
 		"googlethis": "^1.8.0",
 		"i18next": "^23.12.2",
-		"i18next-fs-backend": "^2.3.1",
+		"i18next-fs-backend": "^2.3.2",
 		"luxon": "^3.4.4",
 		"pino": "^9.3.2",
 		"qrcode-terminal": "^0.12.0",

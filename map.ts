@@ -39,9 +39,10 @@ export {
 
 // Config files
 import settings from './settings/settings.json' with { type: 'json' }
+import emojis from './util/emojis.js'
 const { bot, db, runner, sticker, api } = settings
 
-export { api, bot, db, runner, sticker }
+export { api, bot, db, emojis, runner, sticker }
 
 // Classes
 import Collection from './class/collection.js'

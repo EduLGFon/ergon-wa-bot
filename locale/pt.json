@@ -90,6 +90,15 @@
 		"noAmount": "\"clean 0\"? Tá achando que aqui é o seu quarto que você não limpa nada?",
 		"deleted": "Vou apagar as últimas {{msgsSize}} mensagens e depois vou voltar a dormir bem aqui na minha rede"
 	},
+	"remind": {
+		"usage": "<duração> <mensagem>",
+		"desc": "Agende lembretes",
+		"examples": [
+			"10m 15s Desligar o reator nuclear",
+			"1h 42m Comprar pão",
+			"15s Gozar"
+		]
+	},
 	"reveal": {
 		"usage": "(mídia de visualização única) [forever/f: revela para sempre]",
 		"desc": "Só mais uma vez! Revele uma mídia de visualização única",

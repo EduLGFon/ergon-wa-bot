@@ -1,6 +1,6 @@
-import { DateTime } from 'luxon'
+import { DateTime, Duration } from 'luxon'
+import { getFixedT } from 'i18next'
 import { bot } from '../map.js'
-import i18next from 'i18next'
 import chalk from 'chalk'
 
 // get the now date time formatted
@@ -33,7 +33,7 @@ export default () => {
 		},
 		t: {
 			value: function (lang: str) {
-				return i18next.getFixedT(lang)(this)
+				return getFixedT(lang)(this)
 			},
 		},
 		align: {
@@ -44,6 +44,31 @@ export default () => {
 
 				if (endPosition) return (end + this + start).slice(0, limit)
 				else return (start + this + end).slice(0, limit)
+			},
+		},
+		toMs: {
+			value: function () {
+				const match: str[] = this.match(/(\d+)(d|h|m|s|w)/gi)
+				if (!match[0]) return 0
+
+				const ms = match
+					.map((m) => {
+						const quantity = parseInt(m, 10)
+						const unit = m.replace(String(quantity), '')
+
+						print(quantity, unit)
+						const duration = Duration.fromObject({
+							days: unit === 'd' ? quantity : undefined, // Convert 'd' to 'days'
+							hours: unit === 'h' ? quantity : undefined,
+							minutes: unit === 'm' ? quantity : undefined,
+							seconds: unit === 's' ? quantity : undefined,
+							weeks: unit === 'w' ? quantity : undefined,
+						})
+						return duration.as('milliseconds')
+					})
+					.reduce((prev, crt) => prev + crt)
+
+				return [ms, match]
 			},
 		},
 	})

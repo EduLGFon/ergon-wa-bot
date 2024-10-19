@@ -18,4 +18,4 @@ setInterval(async () => {
 			.then(() => prisma.reminders.delete({ where: { id: r.id } }))
 			.catch((e) => console.log(r, e.message))
 	}
-}, 1_000 * 60)
+}, 1_000 * 5)

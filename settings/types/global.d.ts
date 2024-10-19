@@ -10,6 +10,7 @@ interface String {
 	align(limit: num, endPosition?: boolean): str
 	t(lang: str): str
 	filterForRegex(): str
+	toMs(): [num, str[]]
 }
 
 interface Number {

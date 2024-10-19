@@ -1,5 +1,6 @@
 import {
 	EnhancedGenerateContentResponse,
+	GenerateContentResult,
 	GenerateContentStreamResult,
 	GoogleGenerativeAI,
 	HarmBlockThreshold,
@@ -35,7 +36,7 @@ async function imgRemover(img: str, quality: number) {
 	return await req.json()
 }
 
-async function gemini({ prompt, model, buffer, mime, user, callback }: aiPrompt) {
+async function gemini({ instruction, prompt, model, buffer, mime, chat, callback }: aiPrompt) {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
 
@@ -57,14 +58,6 @@ async function gemini({ prompt, model, buffer, mime, user, callback }: aiPrompt)
 		}],
 	})
 
-	let result: GenerateContentStreamResult
-	const language = `langs.${user.lang}`.t('en')
-	const instruction =
-		`Create a short, concise answer and, only if necessary, a long, detailed one. Always answer in ${language} and use bold for all important words and keywords.`
-	let data: EnhancedGenerateContentResponse
-	let text = ''
-	let interval
-
 	if (buffer) {
 		const media = {
 			inlineData: {
@@ -76,18 +69,27 @@ async function gemini({ prompt, model, buffer, mime, user, callback }: aiPrompt)
 		prompt = [prompt as str, media]
 	}
 
+	let interval
+	let text = ''
+	let result: GenerateContentStreamResult | GenerateContentResult
+	let data: EnhancedGenerateContentResponse
+
 	try {
-		if (!user._chat) {
-			user._chat = gemini.startChat({
-				history: [
-					{
-						role: 'user',
-						parts: [{ text: instruction }],
-					},
-				],
+		if (!callback) {
+			result = await gemini.generateContent(instruction + prompt)
+
+			text = result.response.text()
+
+			return generateResponse(result.response)
+		}
+
+		if (!chat) {
+			chat = gemini.startChat({
+				history: [{ role: 'user', parts: [{ text: instruction }] }],
 			})
 		}
-		result = await user._chat.sendMessageStream(prompt)
+
+		result = await chat.sendMessageStream(prompt)
 
 		interval = setInterval(() => {
 			if (data) callback(generateResponse(data))
@@ -116,7 +118,7 @@ async function gemini({ prompt, model, buffer, mime, user, callback }: aiPrompt)
 			tokens: chunk.usageMetadata?.candidatesTokenCount || 0,
 		} as aiResponse
 	}
-	return clearInterval(interval)
+	clearInterval(interval)
 }
 
 // async function gpt({ content, model }: aiPrompt) {

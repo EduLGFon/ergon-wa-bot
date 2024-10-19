@@ -20,7 +20,7 @@ export default class extends Cmd {
 		const lang: Lang = langs.includes(args[0]) ? args.shift() : 'eval'
 		const code = args.join(' ')
 		let output, startTime: num
-		bot.react(msg, '⌛')
+		bot.react(msg, 'loading')
 
 		if (lang === 'eval') {
 			const { user, group, cmd, callCmd, t, sendUsage } = ctx
@@ -56,7 +56,7 @@ export default class extends Cmd {
 		cleanTemp()
 
 		bot.send(msg, text)
-		bot.react(msg, '✅')
+		bot.react(msg, 'ok')
 		return
 	}
 }
