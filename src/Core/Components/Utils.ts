@@ -1,13 +1,14 @@
 import type { CmdContext, Msg, MsgTypes } from '../Typings/types.js';
+import { existsSync, mkdirSync, readdirSync, unlink } from 'node:fs';
 import config from '../JSON/config.json' assert { type: 'json' };
 import { isMedia, msgTypes } from '../Typings/MsgTypes.js';
-import { readdirSync, unlink, existsSync, mkdir, mkdirSync } from 'node:fs';
+import type { AnyMessageContent, proto } from 'baileys';
 import Group from '../Classes/Group.js';
 import User from '../Classes/User.js';
-import { type proto } from 'baileys';
 import Bot from '../Classes/Bot.js';
 
-export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
+// message abstraction layer/command context
+async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	const { message, key, pushName } = raw;
 
 	// msg type
@@ -29,7 +30,7 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 
 	if (!user) {
 		user = await new User(userID!, pushName!).checkData();
-		bot.users.set(user.id, user);
+		bot.users.add(user.id, user);
 	}
 
 	return {
@@ -49,11 +50,13 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 	} as CmdContext;
 }
 
-export async function delay(time: num) {
+// Delay: make the code wait for some time
+async function delay(time: num) {
 	return await new Promise((r) => setTimeout(() => r(true), time));
 }
 
-export async function cacheAllGroups(bot: Bot) {
+// cacheAllGroups: 'cache all groups'
+async function cacheAllGroups(bot: Bot) {
 	const groupList = await bot.sock.groupFetchAllParticipating();
 
 	let groups = Object.keys(groupList);
@@ -61,28 +64,15 @@ export async function cacheAllGroups(bot: Bot) {
 	groups.forEach(async (g) => {
 		const group = new Group(groupList[g]);
 
-		bot.groups.set(group.id, await group.checkData());
+		bot.groups.add(group.id, await group.checkData());
 	});
 
 	console.log('CACHE', `${groups.length} groups cached.`, 'blue');
 	return;
 }
 
-export function isEmpty(value: unknown): boolean { // check if a array/obj is empty
-	if (!value) return true;
-
-	if (Array.isArray(value)) {
-		return value.length === 0 ||
-			value.some((item) => item === undefined || isEmpty(item));
-	} else if (typeof value === 'object') {
-		return Object.keys(value!).length === 0;
-		//|| Object.values(value!).some((item) => item === undefined || isEmpty(item));
-	}
-
-	return true;
-}
-
-export function getQuoted(raw: proto.IWebMessageInfo) {
+// getQuoted: get the quoted msg of a raw msg
+function getQuoted(raw: proto.IWebMessageInfo) {
 	const m = raw.message!;
 
 	//@ts-ignore 'quotedMessage' is missing on lib types
@@ -101,6 +91,7 @@ export function getQuoted(raw: proto.IWebMessageInfo) {
 	} as Partial<Msg>;
 }
 
+// getMsgText: "get msg text"
 function getMsgText(m: proto.IMessage) {
 	for (const key of ['conversation', 'text', 'caption']) {
 		const res = findKey(m, key);
@@ -110,6 +101,7 @@ function getMsgText(m: proto.IMessage) {
 	return '';
 }
 
+// getMsgType: Get the type of a raw message
 function getMsgType(m: proto.IMessage): MsgTypes {
 	for (const [rawType, newType] of Object.entries(msgTypes)) {
 		const res = findKey(m, rawType);
@@ -119,8 +111,8 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 
 	return Object.keys(m!)[0] as MsgTypes;
 }
-
-export function getStickerAuthor(user: User, group?: Group) {
+// genStickerMeta: Generate the author/pack for a sticker
+function genStickerMeta(user: User, group?: Group) {
 	return {
 		pack: config.PACK.join('\n'),
 
@@ -131,7 +123,8 @@ export function getStickerAuthor(user: User, group?: Group) {
 	};
 }
 
-export function findKey(obj: any, key: str): any {
+// findKey: Search for a key inside an object
+function findKey(obj: any, key: str): any {
 	// if the obj has this key, return it
 	if (obj.hasOwnProperty(key)) return obj[key];
 
@@ -154,11 +147,67 @@ export function findKey(obj: any, key: str): any {
 	return;
 }
 
-export async function clearTemp() {
-	// clear temp folder
-	if (!existsSync("./temp/")) mkdirSync("./temp/");
-	const files = readdirSync('./temp/');
+// Validate whether a variable actually has a useful value
+function isEmpty(value: unknown): bool { // check if a array/obj is empty
+	if (!value) return true;
+
+	if (Array.isArray(value)) {
+		return value.length === 0 ||
+			value.some((item) => item === undefined || isEmpty(item));
+	} else if (typeof value === 'object') {
+		return Object.keys(value!).length === 0;
+		//|| Object.values(value!).some((item) => item === undefined || isEmpty(item));
+	}
+
+	return true;
+}
+
+// isValidPositiveIntenger: validate a number
+function isValidPositiveIntenger(value: num): bool {
+	return !Number.isNaN(value) && value > 0 && Number.isInteger(value);
+}
+
+// getMsgMeta: get some meta data from a msg
+function getMsgMeta(
+	msg: str | Msg | proto.IMessageKey,
+	body: str | AnyMessageContent,
+	reply?: proto.IWebMessageInfo,
+) {
+	// @ts-ignore
+	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid;
+	const text = typeof body === 'string' ? { text: body } : body;
+	// @ts-ignore
+	const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw };
+	// @ts-ignore
+	const key = msg?.key ? msg.key : msg;
+
+	if (!chat.includes('@')) chat += '@s.whatsapp.net';
+
+	return { key, text, chat, quote };
+}
+
+// cleanTemp: Clean temp folder
+async function cleanTemp() {
+	if (!existsSync('./temp/')) mkdirSync('./temp');
+
+	const files = readdirSync('./temp');
 
 	files.forEach((f) => unlink(`./temp/${f}`, () => {}));
+
 	return;
 }
+
+export {
+	cacheAllGroups,
+	cleanTemp,
+	delay,
+	findKey,
+	genStickerMeta,
+	getCtx,
+	getMsgMeta,
+	getMsgText,
+	getMsgType,
+	getQuoted,
+	isEmpty,
+	isValidPositiveIntenger,
+};

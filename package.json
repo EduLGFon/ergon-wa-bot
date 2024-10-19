@@ -1,10 +1,9 @@
 {
-	"name": "walledev",
 	"module": "./build/Main.js",
 	"type": "module",
 	"exports": "./build/Main.js",
 	"engines": {
-		"node": ">=18"
+		"node": ">=20"
 	},
 	"scripts": {
 		"postinstall": "rm package-lock.json & npm run prisma && npm run build",
