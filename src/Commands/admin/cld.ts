@@ -8,6 +8,7 @@ export default class extends Cmd {
 		super({
 			aliases: ['exec', 'run', 'execute'],
 			access: { onlyDevs: true },
+			cooldown: 0,
 		});
 	}
 

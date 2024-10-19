@@ -9,6 +9,7 @@ export default class extends Cmd {
 		super({
 			aliases: ['e'],
 			access: { onlyDevs: true },
+			cooldown: 0,
 		});
 	}
 
@@ -17,11 +18,10 @@ export default class extends Cmd {
 
 		// Language to be runned
 		const lang = (langs.includes(args[0] as 'py') ? args.shift() : 'eval') as Lang;
-		const startTime = Date.now();
+		bot.react(msg, '⌛');
 
-		await bot.react(msg, '⌛');
+		const startTime = Date.now();
 		const output = await runCode({ lang, code: args.join(' '), ctx });
-		bot.react(msg, '✅');
 
 		const dur = Duration
 			.fromMillis(Date.now() - startTime || 1)
@@ -35,6 +35,7 @@ export default class extends Cmd {
 		cleanTemp();
 
 		bot.send(msg, text);
+		bot.react(msg, '✅');
 		return;
 	}
 }

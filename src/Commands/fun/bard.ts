@@ -6,6 +6,7 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['b'],
+			cooldown: 15,
 		});
 	}
 

@@ -13,7 +13,7 @@ export default abstract class Cmd {
 	constructor(c: Partial<Cmd>) {
 		this.name = '';
 		this.aliases = c.aliases || [];
-		this.cooldown = c.cooldown || 3;
+		this.cooldown = c.cooldown === 0 ? 0 : c.cooldown || 3; // Ignore some cmds cooldown
 		this.access = Object.assign({
 			dm: true,
 			groups: true,
