@@ -27,7 +27,7 @@ const langInfo = {
 		ext: 'js',
 	},
 	cpp: {
-		cmd: ['g++ -o temp/main -finput-charset=UTF-8 ', './temp/main # '],
+		cmd: ['g++ -o temp/main ', './temp/main # '],
 		ext: 'cpp',
 	},
 };
