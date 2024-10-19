@@ -1,0 +1,11 @@
+{
+	"apps": [
+		{
+			"name": "walle",
+			"script": "build/Main.js",
+			"node_args": "--expose-gc",
+			"out_file": "log/output.log",
+			"error_file": "log/error.log"
+		}
+	]
+}

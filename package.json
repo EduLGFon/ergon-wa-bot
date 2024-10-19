@@ -1,13 +1,12 @@
 {
 	"scripts": {
-		"star": "node Build/Main.js",
+		"star": "rm -f log/ && pm2 start pm2.json",
 		"cum": "tsc --watch",
 		"tsnd": "ts-node --esm --files src/Main.ts",
 		"test": "ts-node --esm --files Test.ts"
 	},
 	"dependencies": {
 		"baileys": "https://github.com/WhiskeySockets/Baileys",
-		"ffmpeg": "^0.0.4",
 		"jimp": "^0.16.13",
 		"libphonenumber-js": "^1.10.37",
 		"link-preview-js": "^3.0.4",
@@ -18,6 +17,8 @@
 	},
 	"devDependencies": {
 		"@hapi/boom": "^10.0.1",
+		"@jimp/gif": "^0.22.10",
+		"@jimp/png": "^0.22.10",
 		"@jimp/types": "^0.22.8",
 		"@types/node": "^20.4.5",
 		"typescript": "^5.1.6"

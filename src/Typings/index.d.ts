@@ -10,7 +10,7 @@ interface Msg {
 	text: string;
 	type: string;
 	raw: proto.IWebMessageInfo;
-	quoted: Partial<Msg>;
+	quoted: Msg;
 }
 
 type MsgTypes = 'conversation' | 'extendedTextMessage' | 'videoMessage' | 'imageMessage';
