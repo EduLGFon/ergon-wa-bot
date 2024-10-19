@@ -18,7 +18,7 @@ module.exports = {
 			node_args,
 			interpreter: 'bun',
 			interpreter_args: 'run',
-			instances: 'max',
+			instances: 4,
 			exec_mode: 'cluster',
 			log_file: 'settings/log/runner.log',
 			merge_logs: true
