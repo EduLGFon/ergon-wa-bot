@@ -123,7 +123,7 @@ SOCIAL_PASSWORD="social media password of the bot to download media"
 
 > 💡 » _Rename "`.env.example`" to "`.env`"_
 
-### `3 -` 🧰 Install dependencies and Starting 🚀:
+### `3 -` 🧰 Installing dependencies and starting 🚀:
 
 > 💡 » _Open the folder in terminal_
 
