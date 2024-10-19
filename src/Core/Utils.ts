@@ -42,7 +42,8 @@ export function getQuoted(raw: proto.IWebMessageInfo) {
 	const m = raw.message;
 
 	//@ts-ignore quotedMsg is missing on lib types
-	const quotedRaw = m![type]?.contextInfo?.quotedMessage || m?.extendedTextMessage?.quotedMessage;
+	const quotedRaw = m![type]?.contextInfo?.quotedMessage ||
+		m?.extendedTextMessage?.contextInfo?.quotedMessage;
 
 	if (!quotedRaw) return;
 

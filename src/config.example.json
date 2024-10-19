@@ -1,14 +1,18 @@
 {
-	"prefix": ".", // command prefix
-	"devs": [], // devs ID
-	// id = number without special characters + '@s.whatsapp.net'
-	"link": "dsc.gg/wallebot",
-	"pack": [
+	"PREFIX": "!",
+	"LANG": "EN",
+	"DEVS": [
+		"devs ID",
+		"id = number without special",
+		"characters + '@s.whatsapp.net'"
+	],
+	"LINK": "dsc.gg/wallebot",
+	"PACK": [
 		"your",
 		"sticker pack",
 		"here"
 	],
-	"author": [
+	"AUTHOR": [
 		"your",
 		"author pack",
 		"here"
