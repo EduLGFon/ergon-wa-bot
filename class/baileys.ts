@@ -6,14 +6,16 @@ import {
 	downloadMediaMessage,
 	fetchLatestBaileysVersion,
 	makeCacheableSignalKeyStore,
+	makeInMemoryStore,
 	makeWASocket,
-	type proto,
+	proto,
 	useMultiFileAuthState,
+	WAMessageKey,
 	type WASocket,
 } from 'baileys'
-import { readdirSync } from 'node:fs'
-import { resolve } from 'node:path'
 import pino from 'pino'
+import { resolve } from 'node:path'
+import { readdirSync } from 'node:fs'
 
 const logger: Logger = pino.default()
 logger.level = 'silent'
@@ -23,27 +25,39 @@ export default class Baileys {
 
 	// Collections (Stored data)
 	cmds: Collection<str, Cmd>
+	// msgs: Collection<WAMessageKey, proto.IMessage>
+	store: ReturnType<typeof makeInMemoryStore>
+	wait: Collection<str, Func>
 	alias: Collection<str, str>
 	users: Collection<str, User>
-	groups: Collection<str, Group>
-	wait: Collection<str, Func>
 	events: Collection<str, Func>
+	groups: Collection<str, Group>
 
 	constructor(public auth: str) {
 		this.auth = auth // auth folder
 
+		/** msgs: (bot sent msgs on store)
+		 * why only bot msgs? Sometimes Baileys fails
+		 * sending a msg, and if it has no msg store,
+		 * the msg will never be sent. Other users will
+		 * see "Waiting for this message" for eternity.
+		 * So, this Collection stores the msg until
+		 * it is sent again
+		 */
+		// this.msgs = new Collection(10) it's commented bc i'm using baileys store rn
+		this.store = makeInMemoryStore({ logger })
 		// wait: arbitrary functions that can be called on events
 		this.wait = new Collection(0)
-		// Users collection
-		this.users = new Collection(100, User)
-		// Groups collection
-		this.groups = new Collection(500, Group)
+		// Cmd aliases map
+		this.alias = new Collection(0)
 		// Events collection (0 means no limit)
 		this.events = new Collection(0)
 		// Cmds collection
 		this.cmds = new Collection(0, Cmd)
-		// Cmd aliases map
-		this.alias = new Collection(0)
+		// Users collection
+		this.users = new Collection(100, User)
+		// Groups collection
+		this.groups = new Collection(500, Group)
 	}
 
 	async connect() {
@@ -68,7 +82,9 @@ export default class Baileys {
 			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
 			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast'),
+			getMessage: this.getMsg, // get stored msgs to resent failed ones
 		})
+		this.store?.bind(this.sock.ev)
 
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
@@ -130,6 +146,17 @@ export default class Baileys {
 			// check group data on db
 			return groupData
 		}
+	}
+
+	// getMsgs: get bot sent msgs to prevent msg failure
+	async getMsg(key: WAMessageKey): Promise<proto.IMessage | undefined> {
+		if (this.store) {
+			const msg = await this.store.loadMessage(key.remoteJid!, key.id!)
+			return msg?.message || undefined
+		}
+
+		// only if store is present
+		return proto.Message.fromObject({})
 	}
 
 	async downloadMedia(msg: Msg) {
