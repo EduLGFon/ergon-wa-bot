@@ -27,9 +27,8 @@ export {
 }
 
 // Config files
-import { bot, db, sticker } from './settings/settings.json'
-
-export { bot, db, sticker }
+import { bot, db, runner, sticker } from './settings/settings.json'
+export { bot, db, runner, sticker }
 
 // Classes
 import Collection from './class/collection.js'
@@ -47,6 +46,7 @@ import {
 	delay,
 	findKey,
 	genStickerMeta,
+	runCode,
 	getCtx,
 	getMsgText,
 	getMsgType,
@@ -56,7 +56,7 @@ import {
 	msgMeta,
 } from './util/functions.js'
 import proto from './util/proto.js'
-import locale from './util/locale.js'
+import locale, { languages } from './util/locale.js'
 
 export {
 	cacheAllGroups,
@@ -65,12 +65,14 @@ export {
 	findKey,
 	genStickerMeta,
 	getCtx,
+	runCode,
 	getMsgText,
 	getMsgType,
 	getQuoted,
 	isEmpty,
 	isValidPositiveIntenger,
 	locale,
+	languages,
 	msgMeta,
 	proto,
 }

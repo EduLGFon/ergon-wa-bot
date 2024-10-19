@@ -7,6 +7,7 @@ import {
 	isMedia,
 	Msg,
 	MsgTypes,
+	runner,
 	sticker,
 	User,
 } from '../map.js'
@@ -194,13 +195,22 @@ function msgMeta(
 
 // cleanTemp: Clean temp folder
 async function cleanTemp() {
-	if (!existsSync('./temp/')) mkdirSync('./temp')
+	if (!existsSync('settings/temp/')) mkdirSync('settings/temp')
 
-	const files = readdirSync('./temp')
+	const files = readdirSync('settings//temp')
 
-	files.forEach((f) => unlink(`./temp/${f}`, () => {}))
+	files.forEach((f) => unlink(`settings/temp/${f}`, () => {}))
 
 	return
+}
+
+async function runCode(data: { lang?: str, code?: str, file?: str}) {
+	const req = await fetch(`http://localhost:${runner.port}/run`, {
+		method: 'POST',
+		body: JSON.stringify(data)
+	})
+
+	return await req.text()
 }
 
 export {
@@ -209,6 +219,7 @@ export {
 	delay,
 	findKey,
 	genStickerMeta,
+	runCode,
 	getCtx,
 	getMsgText,
 	getMsgType,
