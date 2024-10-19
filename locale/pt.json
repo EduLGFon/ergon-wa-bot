@@ -1,7 +1,14 @@
 {
+	"langs": {
+		"pt": "Português",
+		"en": "Inglês",
+		"es": "Espanhol",
+		"fr": "Frances",
+		"pl": "Polonês"
+	},
 	"usage": {
 		"title": "*[❗] - Como usar?*",
-		"args": "*[💡] - Tipos de parâmetros:*\n<obrigatório>\n[opcional]\n{mensagem mencionada/respondida}",
+		"args": "*[💡] - Tipos de parâmetros:*\n<obrigatório>\n[opcional]\n(mensagem mencionada)",
 		"examples": "*[💯] - Exemplos:*"
 	},
 	"help": {
@@ -19,13 +26,13 @@
 		"usage": "<código do idioma>",
 		"desc": "Altere o idioma do bot",
 		"examples": [
-			"de",
+			"pt",
 			"en",
 			"es",
 			"fr",
-			"pt"
+			"pl"
 		],
-		"changed": "[🌎] - Idioma alterado com sucesso para *{{lng}}*"
+		"changed": "[🌎] - Idioma alterado para *{{lng}}*"
 	},
 	"prefix": {
 		"usage": "<prefixo com até 3 dígitos>",
@@ -51,7 +58,7 @@
 		"result": "*[🏆] - Opção escolhida:* {{chosen}}"
 	},
 	"gemini": {
-		"usage": "<prompt> [{imagem/áudio/vídeo}]",
+		"usage": "<prompt> [(imagem/áudio/vídeo)]",
 		"desc": "Converse com a IA do Google",
 		"examples": [
 			"Resuma o texto dessa imagem",
@@ -65,11 +72,11 @@
 		"examples": [""]
 	},
 	"sticker": {
-		"usage": "<{imagem/gif}> [rmbg (remover o fundo da imagem)]",
+		"usage": "<(imagem/gif)> [rmbg: remove o fundo de uma imagem]",
 		"desc": "Crie stickers sem fundo!!!!",
 		"examples": [
 			"rmbg <imagem anexada>",
-			"{imagem mencionada}"
+			"(imagem mencionada)"
 		],
 		"nobuffer": "[⚠️] - Mídia incompatível ou não encontrada"
 	},
@@ -84,12 +91,12 @@
 		"deleted": "Vou apagar as últimas {{msgsSize}} mensagens e depois vou voltar a dormir bem aqui na minha rede"
 	},
 	"reveal": {
-		"usage": "{mídia de visualização única} [y]",
+		"usage": "(mídia de visualização única) [forever/f: revela para sempre]",
 		"desc": "Só mais uma vez! Revele uma mídia de visualização única",
 		"examples": [
-			"{imagem de visualização única} y",
-			"{vídeo de visualização única}",
-			"{audio de visualização única} y"
+			"(imagem de visualização única) forever",
+			"(vídeo de visualização única)",
+			"(audio de visualização única) f"
 		]
 	},
 	"search": {
