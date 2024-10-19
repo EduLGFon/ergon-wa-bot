@@ -1,4 +1,4 @@
-import { Baileys, Cmd, CmdCtx, coolValues, getArgs, getCtx } from '../../map.js'
+import { Baileys, checkPermissions, CmdCtx, coolValues, getCtx } from '../../map.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
 import { Duration } from 'luxon'
@@ -11,7 +11,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		if (!m.message) continue
 
 		// get abstract msg obj
-		const { msg, group, user } = await getCtx(m, bot)
+		const { msg, args, cmd, group, user } = await getCtx(m, bot)
 
 		if (group && coolValues.includes(msg.type)) {
 			group.cacheMsg(msg)
@@ -20,18 +20,12 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 
 		// run 'waitFor' events
 		if (bot.wait.has(e)) bot.wait.get(e)(bot, msg, user, group)
-
-		if (!msg.text.startsWith(user.prefix)) continue
-
-		const args: str[] = msg.text.replace(user.prefix, '').trim().split(' ')
-		const callCmd = args.shift()!.toLowerCase()!
-		// search command by name or by aliases
-		const cmd: Cmd = bot.cmds.get(callCmd) || bot.cmds.get(bot.aliases.get(callCmd)!)
-
+			
 		if (!cmd) continue
-		// block only devs cmds for normal people
-		if (cmd.access.onlyDevs && !process.env.DEVS!.includes(user.id)) {
-			bot.react(msg, 'block')
+		// Check cmd permissions
+		const auth = checkPermissions(cmd, user, group)
+		if (auth !== true) {
+			bot.react(msg, auth)
 			continue
 		}
 
@@ -39,9 +33,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 			// get locales function
 			t: getFixedT(user.lang),
 			sendUsage,
-			callCmd,
 			group,
-			input: getArgs(args, msg, cmd),
 			args,
 			user,
 			bot,

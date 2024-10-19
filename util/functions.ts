@@ -1,59 +1,11 @@
 import {
-	allMsgTypes,
 	Baileys,
 	bot,
-	Cmd,
-	CmdCtx,
 	Group,
-	isMedia,
-	Msg,
-	MsgTypes,
 	sticker,
 	User,
 } from '../map.js'
 import { existsSync, mkdirSync, readdirSync, unlink } from 'node:fs'
-import type { AnyMessageContent, proto } from 'baileys'
-
-// message abstraction layer/command context
-async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
-	const { message, key, pushName } = raw
-
-	// msg type
-	const type = getMsgType(message!)
-
-	let userID = key.fromMe ? bot.sock.user?.id : key.remoteJid
-
-	let group: Group
-
-	if (key.participant) {
-		userID = key.participant
-
-		if (key.remoteJid) {
-			group = await bot.getGroup(key.remoteJid)
-		}
-	}
-
-	const user: User = bot.users.add(userID!, {}, [pushName!])
-	await user.checkData()
-
-	return {
-		msg: {
-			key,
-			chat: key?.remoteJid!, // msg chat id
-			type,
-			text: getMsgText(message!),
-			edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
-			isBot: key.fromMe && !key.participant,
-			isMedia: isMedia(type),
-			mime: findKey(message, 'mimetype'),
-			quoted: getQuoted(raw), // quoted msg
-			raw, // raw msg obj
-		},
-		user,
-		group: group!,
-		bot,
-	} as CmdCtx
-}
 
 // Delay: make the code wait for some time
 async function delay(time: num) {
@@ -76,48 +28,6 @@ async function cacheAllGroups(bot: Baileys) {
 	return
 }
 
-// getQuoted: get the quoted msg of a raw msg
-function getQuoted(raw: proto.IWebMessageInfo) {
-	const m = raw.message!
-
-	//@ts-ignore 'quotedMessage' is missing on lib types
-	const quotedRaw: Partial<proto.IMessage> = findKey(m, 'quotedMessage')
-
-	if (!quotedRaw) return
-
-	const type = getMsgType(quotedRaw) // quoted message type
-
-	return {
-		type, // msg type
-		isMedia: isMedia(type),
-		//@ts-ignore
-		text: getMsgText(quotedRaw),
-		mime: findKey(quotedRaw, 'mimetype'),
-		raw: { message: quotedRaw }, // raw quote obj
-	} as Partial<Msg>
-}
-
-// getMsgText: "get msg text"
-function getMsgText(m: proto.IMessage) {
-	for (const key of ['conversation', 'text', 'caption']) {
-		const res = findKey(m, key)
-		if (res) return String(res).trim()
-	}
-
-	return ''
-}
-
-// getMsgType: Get the type of a raw message
-function getMsgType(m: proto.IMessage): MsgTypes {
-	for (const [rawType, newType] of Object.entries(allMsgTypes)) {
-		const res = findKey(m, rawType)
-
-		if (res) return String(newType).trim() as MsgTypes
-	}
-
-	print('Unknown msg tyṕe:', m)
-	return Object.keys(m!)[0] as MsgTypes
-}
 // genStickerMeta: Generate the author/pack for a sticker
 function genStickerMeta(user: User, group?: Group) {
 	return {
@@ -176,25 +86,6 @@ function isValidPositiveIntenger(value: num): bool {
 	return !Number.isNaN(value) && value > 0 && Number.isInteger(value)
 }
 
-// msgMeta: get some meta data from a msg
-function msgMeta(
-	msg: str | Msg | proto.IMessageKey,
-	body: str | AnyMessageContent,
-	reply?: proto.IWebMessageInfo,
-) {
-	// @ts-ignore
-	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
-	const text = typeof body === 'string' ? { text: body } : body
-	// @ts-ignore
-	const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
-	// @ts-ignore
-	const key = msg?.key ? msg.key : msg
-
-	if (!chat.includes('@')) chat += '@s.whatsapp.net'
-
-	return { key, text, chat, quote }
-}
-
 // cleanTemp: Clean temp folder
 async function cleanTemp() {
 	if (!existsSync('settings/temp/')) mkdirSync('settings/temp')
@@ -206,37 +97,12 @@ async function cleanTemp() {
 	return
 }
 
-function getArgs(args: str[], msg: Msg, cmd: Cmd) {
-	if ((!args[0] || (cmd.subCmds.includes(args[0].toLowerCase()) && !args[1]) ) && msg?.quoted?.text) {
-		let text = msg.quoted.text
-		const regex = /\.( |)[a-z]*( |)/gi
-
-		if (cmd.subCmds.includes(args[0].toLowerCase())) text = args[0] + text
-
-		if (text.match(regex)) text = text.replace(regex, '')
-
-		args = text.split(' ')
-		msg.text = text
-	}
-
-	return {
-		args,
-		msg,
-	}
-}
-
 export {
 	cacheAllGroups,
 	cleanTemp,
 	delay,
 	findKey,
 	genStickerMeta,
-	getArgs,
-	getCtx,
-	getMsgText,
-	getMsgType,
-	getQuoted,
 	isEmpty,
 	isValidPositiveIntenger,
-	msgMeta,
 }
