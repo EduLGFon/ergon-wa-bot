@@ -91,13 +91,14 @@ You can configure the bot however you want in the following files:
 	},
 
 	"db": {
-		"userDefault": {
+		"user": {
 			"prefix": ".", // default prefix to new users
 			"language": "pt", // default language to new users
-			"cacheLimit": 500 // max users in memory
+			"cacheLimit": 500, // max users in memory
+			"msgsLimit": 200 // max msgs in memory (per user)
 		},
-		"groupDefault": {
-			"msgsCacheLimit": 200 // max msgs in memory (for each group)
+		"group": {
+			"msgsLimit": 200 // max msgs in memory (per group)
 		}
 	}
 }

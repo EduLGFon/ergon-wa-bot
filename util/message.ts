@@ -21,15 +21,10 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 
 	let userID = key.fromMe ? bot.sock.user?.id : key.remoteJid
 
+	if (key.participant) userID = key.participant
+
 	let group: Group
-
-	if (key.participant) {
-		userID = key.participant
-
-		if (key.remoteJid) {
-			group = await bot.getGroup(key.remoteJid)
-		}
-	}
+	if (key.remoteJid?.includes('@g.us')) group = await bot.getGroup(key.remoteJid)
 
 	userID = userID!.split('@')[0].split(':')[0]
 	const user: User = await bot.cache.users.add(userID!, {}, [pushName!])
@@ -40,7 +35,7 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 		type,
 		text: getMsgText(message!),
 		edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
-		isBot: Boolean(key.fromMe && !key.participant), // if it's baileys client (it only works on groups)
+		isBot: Boolean(key.fromMe && !Object.keys(key).includes('participant')), // if it's baileys client,
 		isMedia: isMedia(type), // is video, photo or audio msg
 		mime: findKey(message, 'mimetype'), // media mimetype like image/png
 		quoted: getQuoted(raw)!, // quoted msg

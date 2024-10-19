@@ -1,5 +1,4 @@
-import { Cmd, CmdCtx, isValidPositiveIntenger } from '../../map.js'
-import { delay } from 'baileys'
+import { Cmd, CmdCtx, delay, isValidPositiveIntenger } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
@@ -10,22 +9,28 @@ export default class extends Cmd {
 
 	async run({ bot, msg, args, group, sendUsage, t }: CmdCtx) {
 		group = group!
+		let disclaimerMsg
 		const amount = Number(args[0]) // amount of msgs to be deleted for everyone-
 
 		if (amount === 0) return bot.send(msg, t('clean.noAmount'))
 
 		if (!isValidPositiveIntenger(amount)) return sendUsage()
 
-		if (group.cachedMsgs.size < amount) bot.send(msg, t('clean.deleted'))
+		if (group.msgs.size < amount) {
+			disclaimerMsg = await bot.send(msg, t('clean.deleted', { msgsSize: group.msgs.size }))
+		}
 		// the bot can only delete up to 200 cached msgs
 
-		for (const m of group.getCachedMsgs(amount)) {
-			await bot.deleteMsg(m) // delete msg for everyone
-			group.cachedMsgs.remove(m.id!) // remove it from cache
+		const msgs = group.getMsgs(amount)
+		for (const [k, v] of msgs) {
+			await bot.deleteMsg(v.key) // delete msg for everyone
+			group.msgs.delete(Number(k)) // delete it from cache
 
-			await delay(300) // wait .3s before deleting another msg
+			await delay(500)
 		}
 
+		await bot.deleteMsg(msg)
+		if (disclaimerMsg) bot.deleteMsg(disclaimerMsg.msg)
 		return
 	}
 }

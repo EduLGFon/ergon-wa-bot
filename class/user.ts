@@ -1,5 +1,5 @@
+import { Collection, db, Msg, prisma } from '../map.js'
 import { Content } from '@google/generative-ai'
-import { db, prisma } from '../map.js'
 
 export default class User {
 	_username: str
@@ -11,6 +11,7 @@ export default class User {
 		time: num
 		cmdReply?: str
 	}
+	msgs: Collection<Msg, Msg>
 
 	constructor(public id: str, data: Partial<User>, username?: str) {
 		this.id = id.split('@')[0].split(':')[0]
@@ -19,8 +20,10 @@ export default class User {
 
 		this._username = username || data._username || ''
 		this._cmdsCount = data._cmdsCount || 0
-		this._userPrefix = data._userPrefix || db.userDefault.prefix
-		this._userLanguage = data._userLanguage || db.userDefault.language
+		this._userPrefix = data._userPrefix || db.user.prefix
+		this._userLanguage = data._userLanguage || db.user.language
+
+		this.msgs = new Collection(db.user.msgsLimit)
 	}
 
 	// get name: get user name on cache

@@ -16,7 +16,7 @@ export default class Collection<K, V> extends Map {
 
 		if (!value) {
 			value = key
-			key = this.size as K
+			key = (this.size || 0) as K
 		}
 
 		const existing = this.get(key)
@@ -148,7 +148,7 @@ export default class Collection<K, V> extends Map {
 		const json = {}
 
 		// @ts-ignore json obj does not have a type
-		for (const item of this.values()) json[item[this.primaryKey]] = item
+		for (const [k, v] of this.entries()) json[k] = v
 
 		return json
 	}

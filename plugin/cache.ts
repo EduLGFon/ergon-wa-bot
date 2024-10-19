@@ -8,7 +8,7 @@
 import { readFile, writeFile } from 'fs/promises'
 import { Baileys, Cmd, Collection, Group, User } from '../map.js'
 
-const cachedData = ['users', 'groups', 'cmds']
+const cachedData = ['users', 'groups']
 
 export default class CacheManager {
 	// Collections (Stored data)
@@ -37,7 +37,7 @@ export default class CacheManager {
 
 	start() {
 		this.resume()
-		setInterval(() => this.save(), 10_000)
+		setInterval(() => this.save(), 60_000)
 	}
 
 	async save() {

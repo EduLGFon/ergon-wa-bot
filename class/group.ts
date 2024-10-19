@@ -1,4 +1,4 @@
-import { GroupMetadata, GroupParticipant, proto } from 'baileys'
+import { GroupMetadata, GroupParticipant } from 'baileys'
 import { Collection, db, Msg, prisma } from '../map.js'
 
 export default class Group {
@@ -21,7 +21,7 @@ export default class Group {
 	author?: str
 	// author: the person who added you
 
-	cachedMsgs: Collection<str, proto.IMessageKey>
+	msgs: Collection<Msg, Msg>
 
 	constructor(id: str, g: GroupMetadata | Group) {
 		this.id = id
@@ -40,7 +40,7 @@ export default class Group {
 		// @ts-ignore
 		this.invite = g.inviteCode || g.invite
 		this.author = g.author
-		this.cachedMsgs = new Collection(db.groupDefault.msgsCacheLimit)
+		this.msgs = new Collection(db.group.msgsLimit)
 	}
 
 	async countMsg(author: str) { // +1 to group member msgs count
@@ -84,17 +84,8 @@ export default class Group {
 		return msgs
 	}
 
-	getCachedMsgs(limit?: number): proto.IMessageKey[] {
-		const msgs = this.cachedMsgs
-			.filter((m: proto.IMessageKey) => m.id) // Checks if the key really exists
-			.reverse() // latest msgs first
-			.slice(0, limit || db.groupDefault.msgsCacheLimit) // limits msgs amount
-
-		return msgs
-	}
-
-	cacheMsg(msg: Msg) {
-		return this.cachedMsgs.add(msg.key.id!, msg.key)
+	getMsgs(limit?: number) {
+		return this.msgs.entries()
 	}
 
 	async checkData() {

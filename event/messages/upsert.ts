@@ -5,19 +5,22 @@ import { getFixedT } from 'i18next'
 // messages upsert event
 export default async function (bot: Baileys, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
 	// raw.messages = []
-	if (!raw.messages[0]) return
 
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
-		if (!m.message) continue
+		if (!m?.message) continue
 
 		// get abstract msg obj
-		const { msg, args, cmd, group, user } = await getCtx(m, bot)
+		const context = await getCtx(m, bot)
+		const { msg, args, cmd, group, user } = context
 
-		if (group && coolValues.includes(msg.type)) {
-			group.cacheMsg(msg)
-			if (!msg.isBot) group.countMsg(user.id)
-		} // count msgs with cool values for group msgs rank cmd
+		if (coolValues.includes(msg.type)) {
+			if (group) {
+				group.msgs.add(msg)
+				if (!msg.isBot) group.countMsg(user.id)
+				// count msgs with cool values for group msgs rank cmd
+			} else user.msgs.add(msg)
+		}
 
 		// run functions waiting for msgs (waitFor)
 		if (bot.cache.wait.has(e)) {

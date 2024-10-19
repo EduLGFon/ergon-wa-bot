@@ -9,13 +9,14 @@
 	},
 
 	"db": {
-		"userDefault": {
+		"user": {
 			"prefix": ".",
 			"language": "pt",
-			"cacheLimit": 500
+			"cacheLimit": 500,
+			"msgsLimit": 200
 		},
-		"groupDefault": {
-			"msgsCacheLimit": 200
+		"group": {
+			"msgsLimit": 200
 		}
 	},
 
