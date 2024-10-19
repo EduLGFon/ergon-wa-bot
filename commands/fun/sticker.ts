@@ -1,6 +1,6 @@
+import { cleanTemp, Cmd, CmdCtx, genStickerMeta, isVisual, runCode } from '../../map.js'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { Sticker } from 'wa-sticker-formatter'
-import { cleanTemp, Cmd, CmdCtx, genStickerMeta, runCode } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
@@ -11,21 +11,21 @@ export default class extends Cmd {
 	}
 
 	async run({ msg, bot, args, user, group, sendUsage, t }: CmdCtx) {
-		if (!msg.isMedia && !msg.quoted) return sendUsage()
+		if (!isVisual(msg.type) && !isVisual(msg.quoted.type)) return sendUsage()
 
-		let targetMsg = msg.isMedia ? msg : msg.quoted
-		let buffer = await bot.downloadMedia(targetMsg)
+		let target = isVisual(msg.type) ? msg : msg.quoted
+		let buffer = await bot.downloadMedia(target)
 
 		if (!buffer) return bot.send(msg, t('sticker.nobuffer'))
 
 		await bot.react(msg, '⌛')
 		let stickerTypes = ['rounded', 'full', 'crop', 'circle']
-		let quality = 15
+		let quality = 20
 
-		switch (targetMsg.type) {
+		switch (target.type) {
 			case 'video':
 				stickerTypes = ['full', 'rounded']
-				quality = 1
+				quality = 5
 				break
 			case 'sticker':
 				await bot.send(msg, { image: buffer, gifPlayback: true })

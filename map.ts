@@ -4,6 +4,7 @@ import {
 	coolTypes,
 	coolValues,
 	isMedia,
+	isVisual,
 	mediaTypes,
 	textTypes,
 	visualTypes,
@@ -17,6 +18,7 @@ export {
 	coolValues,
 	GroupMsg,
 	isMedia,
+	isVisual,
 	Lang,
 	Logger,
 	mediaTypes,
@@ -28,7 +30,7 @@ export {
 
 // Config files
 import settings from './settings/settings.json' with { type: 'json' }
-const { bot, db, runner, sticker } = settings;
+const { bot, db, runner, sticker } = settings
 
 export { bot, db, runner, sticker }
 
