@@ -1,0 +1,16 @@
+# Settings
+*.env
+auth_info_baileys/
+
+# Yarn
+.pnp.*
+.yarn*
+
+# Builds
+build/
+
+# Logs / Lokefiles
+*lock.json
+*.lock
+*.log
+logs/
