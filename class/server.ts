@@ -20,18 +20,19 @@ export function server(bot: Baileys) {
 
 async function sendReminders(bot: Baileys, r: Reminder) {
 	try {
-		let text = ''
+		let text = `@${r.author}\n`
 		const aiMsg = await gemini({
 			instruction:
-				'Create a humorous message to notify a user of a reminder in the following template. Always respond in Portuguese.\ntemplate: "humorous message \n `reminder`"\nreminder: ',
+				'Create only one humorous message to notify a user of a reminder in the following template. Always respond in Portuguese and on template.\ntemplate: "humorous message \n `reminder`"\nreminder: ',
 			prompt: r.msg,
 			model: api.aiModel.gemini,
 		})
 
-		if (!aiMsg || !aiMsg.text || !aiMsg.text.includes(r.msg)) text = '`' + r.msg + '`'
-		else text = aiMsg.text
+		if (!aiMsg || !aiMsg.text || !aiMsg.text.includes(r.msg)) text += '`' + r.msg + '`'
+		else text += aiMsg.text
 
-		await bot.sock.sendMessage(r.chat, { text }) // send remind msg
+		// send remind msg
+		await bot.sock.sendMessage(r.chat, { text, mentions: [r.author + '@s.whatsapp.net'] })
 		return 200
 	} catch (e: any) {
 		return e.message
