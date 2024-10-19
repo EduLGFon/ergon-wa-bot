@@ -58,12 +58,14 @@ export default () => {
 		},
 		align: { // align a word between spaces
 			value: function (limit: num, char: str = ' ', endPosition?: bool) {
-				const ratio = (limit - this.length) / 2
+				let ratio = (limit - this.length) / 2
+				if (ratio < 1) ratio = 1
+
 				const start = char.repeat(Math.ceil(ratio))
 				const end = char.repeat(Math.floor(ratio))
 
-				if (endPosition) return (end + this + start).slice(0, limit)
-				else return (start + this + end).slice(0, limit)
+				if (endPosition) return (end + this + start)
+				else return (start + this + end)
 			},
 		},
 		toMs: { // convert a str on ms
