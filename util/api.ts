@@ -86,7 +86,7 @@ async function gemini({ preprompt, content, model, buffer, mime }: aiPrompt) {
 
 	return {
 		model,
-		response: response.replaceAll('**', '*'),
+		response: response.replaceAll('**', '*').replaceAll('##', '>'),
 		tokens: [tokens[0].totalTokens, tokens[1].totalTokens, tokens[2].totalTokens],
 	}
 }
