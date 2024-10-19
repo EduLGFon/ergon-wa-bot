@@ -33,7 +33,7 @@ function runCode(lang: 'py', code = '', file: str) {
 		} else {
 			data = settings.runner[lang]
 
-			file = `settings/temp/exec.${data.ext}` // file path
+			file = `${settings.runner.tempFolder}/exec.${data.ext}` // file path
 			fs.writeFileSync(file, code) // write file
 			code = ''
 			// don't write code in CLI to prevent issues

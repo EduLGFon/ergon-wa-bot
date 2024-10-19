@@ -40,7 +40,7 @@ export default () => {
 			},
 		},
 		align: { // align a word between spaces
-			value: function (limit: number, endPosition?: boolean) {
+			value: function (limit: number, endPosition?: bool) {
 				const ratio = (limit - this.length) / 2
 				const start = ' '.repeat(Math.ceil(ratio))
 				const end = ' '.repeat(Math.floor(ratio))
@@ -97,7 +97,7 @@ export default () => {
 			},
 		},
 		duration: { // convert ms time in short duration str
-			value: function (ms?: boolean) { // 1000 => 1s
+			value: function (ms?: bool) { // 1000 => 1s
 				const units: Unit[] = ['y', 'd', 'h', 'm', 's']
 				if (ms) units.push('ms')
 

@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, unlink } from 'node:fs'
-import { Baileys, bot, Group, sticker, User } from '../map.js'
+import { Baileys, bot, Group, runner, sticker, User } from '../map.js'
+import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
 
 // Delay: make the code wait for some time
 async function delay(time: num) { // resolve promise at timeout
@@ -79,13 +79,37 @@ function isValidPositiveIntenger(value: num): bool {
 	return !Number.isNaN(value) && value > 0 && Number.isInteger(value)
 }
 
+// genRandomName: Generate random names useful for temporary file names
+function genRandomName(length: num = 20, prefix = '', suffix = ''): str {
+	const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+	let result = ''
+
+	for (let i = 0; i < length; i++) {
+		const randomIndex = Math.floor(Math.random() * characters.length)
+		result += characters.charAt(randomIndex) // gen random chars
+	}
+
+	return prefix + result + suffix // concatenate random str and preffix/suffix
+}
+
+// makeTempFile: Write a temporary file
+async function makeTempFile(content: Buffer | str, preffix?: str, suffix?: str) {
+	const fileName = genRandomName(20, preffix, suffix) // generate random name
+
+	await writeFile(`${runner.tempFolder}/${fileName}`, content) // create file
+
+	return fileName
+}
+
 // cleanTemp: Clean temp folder
 async function cleanTemp() {
-	if (!existsSync('settings/temp')) mkdirSync('settings/temp')
+	await mkdir(runner.tempFolder).catch(() => {})
+	// create temp folder if it does not exists
 
-	const files = readdirSync('settings/temp')
+	const files = await readdir(runner.tempFolder) // read folder
 
-	files.forEach((f) => unlink(`settings/temp/${f}`, () => {}))
+	files.forEach((f) => unlink(`${runner.tempFolder}/${f}`))
+	// delete all files on it
 
 	return
 }
@@ -95,7 +119,9 @@ export {
 	cleanTemp,
 	delay,
 	findKey,
+	genRandomName,
 	genStickerMeta,
 	isEmpty,
 	isValidPositiveIntenger,
+	makeTempFile,
 }

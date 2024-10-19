@@ -1,6 +1,15 @@
-import { cleanTemp, Cmd, CmdCtx, genStickerMeta, isVisual, runCode } from '../../map.js'
-import { readFileSync, writeFileSync } from 'node:fs'
+import {
+	cleanTemp,
+	Cmd,
+	CmdCtx,
+	genStickerMeta,
+	isVisual,
+	makeTempFile,
+	runCode,
+	runner,
+} from '../../map.js'
 import { Sticker } from 'wa-sticker-formatter'
+import { readFile } from 'node:fs/promises'
 
 export default class extends Cmd {
 	constructor() {
@@ -34,14 +43,16 @@ export default class extends Cmd {
 				// sends sticker image
 			case 'image':
 				if (args[0] === 'rmbg') { // remove image background
-					const name = Math.random()
-					writeFileSync(`temp/${name}.webp`, buffer) // create temp file
+					const name = await makeTempFile(buffer, 'sticker_', '.webp')
+					// create temporary file
 
 					await runCode({ // execute python background remover plugin on
 						file: 'plugin/removeBg.py', // a separate thread
-						code: `settings/temp/${name}.webp settings/temp/${name}.png`, // cli args
+						code: `${runner.tempFolder}/${name}.webp ${runner.tempFolder}/${name}.png`,
+						// cli args
 					})
-					buffer = readFileSync(`settings/temp/${name}.png`) || buffer // read returned file
+					buffer = await readFile(`${runner.tempFolder}/${name}.png`) || buffer
+					// read new file
 
 					cleanTemp() // clean temp folder
 				}

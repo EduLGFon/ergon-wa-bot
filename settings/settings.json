@@ -77,6 +77,7 @@
 		"cpp": {
 			"cmd": ["g++ -o settings/temp/main ", "./settings/temp/main #"],
 			"ext": "cpp"
-		}
+		},
+		"tempFolder": "settings/temp"
 	}
 }

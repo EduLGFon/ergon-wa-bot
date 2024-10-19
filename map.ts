@@ -1,6 +1,8 @@
-// This file is an import map
-// It imports all functions and then exports them
-// to all other files
+/** Import map:
+ * This file is an import map
+ * It imports all functions and then exports them
+ * to all other files
+ */
 
 // Types
 import {
@@ -73,9 +75,11 @@ import {
 	cleanTemp,
 	delay,
 	findKey,
+	genRandomName,
 	genStickerMeta,
 	isEmpty,
 	isValidPositiveIntenger,
+	makeTempFile,
 } from './util/functions.js'
 import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
@@ -88,6 +92,7 @@ export {
 	delay,
 	findKey,
 	gemini,
+	genRandomName,
 	genStickerMeta,
 	getCtx,
 	getMsgText,
@@ -98,6 +103,7 @@ export {
 	isValidPositiveIntenger,
 	languages,
 	locale,
+	makeTempFile,
 	msgMeta,
 	proto,
 	runCode,
