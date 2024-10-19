@@ -8,7 +8,7 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 
 	const msg = await convertMsgData(raw.messages[0], this);
 
-	if (this.wait.has(e)) this.wait.get(e)!.bind(this, msg);
+	if (this.wait.has(e)) this.wait.get(e)!.bind(this)(msg);
 
 	if (!msg.text.startsWith(prefix)) return;
 
