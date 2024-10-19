@@ -12,7 +12,7 @@ export default class extends Command {
 	}
 
 	async run(ctx: CmdContext) {
-		const { args, bot, msg, prisma, user, group, cmd, callCmd } = ctx;
+		const { args, bot, msg, prisma, user, group, cmd, callCmd, t, sendUsage } = ctx;
 		const startTime = Date.now();
 		const startRAM = this.getRAM(); // DENO
 

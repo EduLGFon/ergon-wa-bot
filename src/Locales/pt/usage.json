@@ -6,5 +6,6 @@
     "choose": "<opção 1>, <opção 2>, [opção 3], [...]",
     "stext": "<texto/frase/palavra>",
     "sticker": "<imagem/gif anexado> ou (imagem/gif)",
-    "translate": "<código do idioma: en/pt/fr> <texto/frase/palavra>"
+    "translate": "<código do idioma: en/pt/fr> <texto/frase/palavra>",
+    "prefix": "<prefixo com até 3 dígitos>"
 }

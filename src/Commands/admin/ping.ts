@@ -7,10 +7,10 @@ export default class extends Command {
 			aliases: ['p'],
 		});
 	}
-	async run({ bot, msg, prisma }: CmdContext) {
+	async run({ t, bot, msg, prisma }: CmdContext) {
 		// Calculate WA Ping
 		let startTime = Date.now();
-		await bot.send(msg.chat, 'ping');
+		await bot.send(msg.chat, t('ping'));
 		const WAPing = Date.now() - startTime;
 
 		// Calculate DB Ping

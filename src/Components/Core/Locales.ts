@@ -9,12 +9,12 @@ export default function () {
 			.init({
 				ns: ['cmd', 'event', 'usage'],
 				preload: readdirSync('src/Locales/'),
-				defaultNS: 'cmds',
 				fallbackLng: 'en',
 				backend: { loadPath: 'src/Locales/{{lng}}/{{ns}}.json' },
 				interpolation: { escapeValue: false },
 				returnEmptyString: false,
 				returnObjects: true,
+				defaultNS: 'cmd',
 			});
 	} catch (e) {
 		console.error(e);

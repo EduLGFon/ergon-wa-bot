@@ -1,5 +1,12 @@
 {
     "ping": "Calculando o tempo de resposta...",
     "choose": "*[🏆] - Opção escolhida:* ```{{choosedOne}}```",
-    "sticker": "[⚠️] - Imagem incompatível ou não encontrada"
+    "sticker": "[⚠️] - Imagem incompatível ou não encontrada",
+    "prefix": "[✔️] - O seu novo prefixo é: *{{prefix}}*",
+    "help": {
+        "title": "*[📚] - Menu de ajuda*",
+        "desc": "Utilize *{{prefix}}* para alterar o seu prefixo",
+        "lang": "[🌎] Utilize *{{lang}}* para mudar de idioma"
+    },
+    "language": "[🌎] - Idioma alterado com sucesso para {{lng}}"
 }
