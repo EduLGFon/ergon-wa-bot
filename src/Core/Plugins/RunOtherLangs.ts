@@ -60,6 +60,8 @@ export async function runOtherLang({ lang, code, ctx, file }: runParams) {
 
 		file = `temp/exec.${data.ext}`;
 		writeFileSync(file, code!);
+   code = '';
+   // don't write code in CLI to prevent issues
 	}
 
 	return data.cmd!
