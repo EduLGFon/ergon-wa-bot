@@ -2,6 +2,7 @@
 src/config.json
 *.env
 auth_info_baileys/
+baileys_store_multi.json
 
 # Yarn
 .pnp.*
@@ -12,6 +13,7 @@ Build/
 node_modules/
 
 # Logs / Lokefiles
+Test/
 *lock.json
 *.lock
 *.log

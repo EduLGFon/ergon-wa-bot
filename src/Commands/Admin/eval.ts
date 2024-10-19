@@ -1,3 +1,5 @@
+import { devs, prefix } from '../../config.json';
+import * as utils from '../../Core/Utils';
 import BotClient from '../../Client';
 import { inspect } from 'util';
 
@@ -9,7 +11,9 @@ export default class implements Command {
 		onlyDevs: true,
 	};
 
-	public run = async (bot: BotClient, msg: Msg, args: string[]) => {
+	run = async (bot: BotClient, msg: Msg, args: string[]) => {
+		const { getQuoted, convertMsgData } = utils;
+
 		const startTime = Date.now(),
 			initialRam = (process.memoryUsage().rss / 1024 / 1024).toFixed(2); // DENO
 
@@ -22,7 +26,7 @@ export default class implements Command {
 			else evaled = await eval(code);
 
 			title = '🎉 Retorno'; // Título da msg
-			evaled = !evaled ? '- Sem retorno.' : inspect(evaled); // Retorno do eval
+			evaled = !evaled ? '- Sem retorno.' : inspect(evaled, { depth: null }); // Retorno do eval
 		} catch (error) {
 			title = '❌ Falha'; // Título da msg
 			evaled = error; // Retorno do eval
@@ -34,7 +38,7 @@ export default class implements Command {
 				`🎞️ *RAM:* ${initialRam}/${currentRam}MB\n` +
 				`*${title}:*\n\n ` + '```\n' + evaled + '```';
 
-			bot.send(msg.chat, text, msg.raw);
+			return await bot.send(msg.chat, text, msg.raw);
 		}
 	};
 }
