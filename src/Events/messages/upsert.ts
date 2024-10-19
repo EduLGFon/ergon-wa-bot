@@ -9,7 +9,7 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 	if (!raw.messages[0].message) return;
 
 	// get abstract msg obj
-	const { msg, group, user, prisma } = await getCtx(raw.messages[0], bot);
+	const { msg, group, user } = await getCtx(raw.messages[0], bot);
 
 	if (group) await group.addMsg(user.id);
 
@@ -43,7 +43,6 @@ export default async function (bot: Bot, raw: { messages: proto.IWebMessageInfo[
 		bot: bot,
 		sendUsage,
 		callCmd,
-		prisma,
 		group,
 		args,
 		user,

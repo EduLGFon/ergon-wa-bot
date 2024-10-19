@@ -1,7 +1,12 @@
 import config from '../JSON/config.json' assert { type: 'json' };
 import { DateTime } from 'luxon';
+import dotenv from 'dotenv';
 import chalk from 'chalk';
 
+// Setup environment variables
+dotenv.config();
+
+// get the now date time formatted
 const now = () =>
 	DateTime.now()
 		.setZone(config.TIMEZONE)
