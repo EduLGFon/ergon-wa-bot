@@ -8,13 +8,14 @@ export default class extends Command {
         });
     }
 
-    async run ({ t, bot, msg, args, user, group }: CmdContext) {
-        console.log("clear 1")
-        bot.send(msg.chat, "Tá pronto n vlw");
-        /* const msgsQnt = Number(args[0]);
-        group?.getLastMsgs(msgsQnt).forEach(groupMsg => {
-            bot.send(msg.chat, { delete: groupMsg.key });
-        }); */
+    async run ({ t, bot, msg, args, group }: CmdContext) {
+        const qnt = Number(args[0]) > 20 ? 20 : Number(args[0]);
+        const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+        group?.getCachedMsgs(qnt).forEach(async groupMsg => {
+            await bot.send(msg.chat, { delete: groupMsg.key });
+            sleep(200);
+        });
 
         return;
     }

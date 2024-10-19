@@ -23,7 +23,7 @@ export default class Group {
 	invite?: str;
 	/** the person who added you */
 	author?: str;
-	lastMsgs: Collection<string, Message>;
+	cachedMsgs: Collection<string, Message>;
 
 	constructor(g: GroupMetadata) {
 		this.id = g.id;
@@ -39,7 +39,7 @@ export default class Group {
 		this.ephemeral = g.ephemeralDuration;
 		this.invite = g.inviteCode;
 		this.author = g.author;
-		this.lastMsgs = new Collection({}, 100);
+		this.cachedMsgs = new Collection({}, 100);
 	}
 
 	async addMsg(author: str) {
@@ -83,15 +83,18 @@ export default class Group {
 		return msgs;
 	}
 
-	getLastMsgs (limit?: number) {
-		const arrayMsgs: Message[] = [];
-		this.lastMsgs.forEach(m => arrayMsgs.push(m));
+	getCachedMsgs (limit?: number): Message[] {
+		const arrayMsgs = this.cachedMsgs.reduce(
+			(array: Message[], msg: Message) => array.push(msg), []
+		).reverse();
+		
 		if (limit) arrayMsgs.length = limit;
+	
 		return arrayMsgs;
 	}
 
 	cacheMsg (msg: Msg) {
-		return this.lastMsgs.set(msg.key.id as string, new Message(msg));
+		return this.cachedMsgs.set(msg.key.id as string, new Message(msg));
 	}
 
 	async checkData() {
