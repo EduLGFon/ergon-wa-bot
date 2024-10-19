@@ -94,7 +94,7 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 	}
 
 	try {
-		if (!callback) { // only return text when it's done
+		if (!callback || !user) { // only return text when it's done
 			if (typeof prompt === 'string') prompt = instruction + prompt
 			else prompt[1] = instruction + prompt // if it has media
 
@@ -103,7 +103,6 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 
 			return generateResponse(result.response)
 		}
-		user = user! // user is not possibly undefined anymore at this point
 
 		// it's your conversation history
 		user.geminiCtx = [{ role: 'user', parts: [{ text: instruction }] }, ...user.geminiCtx]
@@ -151,6 +150,7 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 			finish, // if it's the last chunk
 		} as aiResponse
 	}
+	return
 }
 
 // GPT is not supported anymore

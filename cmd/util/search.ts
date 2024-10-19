@@ -1,6 +1,18 @@
-import { Cmd, CmdCtx } from '../../map.js'
+import { Cmd, CmdCtx, isEmpty } from '../../map.js'
 import googleThis from 'googlethis'
-import * as g from 'google-sr'
+import {
+	CurrencyResult,
+	CurrencyResultNode,
+	DictionaryResult,
+	DictionaryResultNode,
+	OrganicResult,
+	OrganicResultNode,
+	search,
+	TimeResult,
+	TimeResultNode,
+	TranslateResult,
+	TranslateResultNode,
+} from 'google-sr'
 
 export default class extends Cmd {
 	constructor() {
@@ -13,15 +25,14 @@ export default class extends Cmd {
 	async run({ args, bot, msg, user, sendUsage, t }: CmdCtx) {
 		if (!args[0]) return sendUsage()
 
-		const query = await g.search({
+		const query = await search({
 			query: args.join(' ').trim(),
-			safeMode: false,
-			filterResults: [ // filter google results for these options
-				g.ResultTypes.DictionaryResult,
-				g.ResultTypes.TranslateResult,
-				g.ResultTypes.CurrencyResult,
-				g.ResultTypes.SearchResult,
-				g.ResultTypes.TimeResult,
+			resultTypes: [
+				TimeResult,
+				OrganicResult,
+				CurrencyResult,
+				TranslateResult,
+				DictionaryResult,
 			],
 			requestConfig: {
 				params: {
@@ -38,18 +49,70 @@ export default class extends Cmd {
 		let pronunciation = ''
 		query.length = 3 // limit to 3 results
 
+		const info = await googleThis.search(args.join(' ').trim()!, {
+			parse_ads: false, // searches for more info
+			safe: false,
+			additional_params: { hl: user.lang },
+		})
+		/** BIG DISCLAIMER
+		 * i know this code is terrible. I'll fix it later
+		 * I just don't have any time rn and need it to work properly
+		 * I'll make object literals later
+		 */
+		// print(info)
+		const {
+			did_you_mean: dym,
+			unit_converter: unit,
+			people_also_ask: ask,
+			knowledge_panel: panel,
+			weather: w,
+			featured_snippet: snippet,
+		} = info
+
+		if (dym) text += `> ${dym}*\n`
+
+		if (!isEmpty(panel)) {
+			text += `${panel.title || ''}\n> ${panel.description}\n`
+
+			for (const m of panel.metadata) {
+				text += `*${m.title}:* ${m.value}\n`
+			}
+
+			for (const r of panel.ratings) {
+				text += `*${r.name}*: ${r.rating}`
+			}
+		}
+
+		if (!isEmpty(snippet)) {
+			text += `*${snippet.title}*\n> ${
+				snippet.description?.replace('\n', '\n> ')
+			}\n- ${snippet.url}\n`
+		}
+
+		if (!isEmpty(w)) {
+			text +=
+				`*${location} - ${w.temperature}*\n⏰: ${w.forecast}\n🌧️: ${w.precipitation}\n💦: ${w.humidity}\n🌬️: ${w.wind}`
+		}
+
+		if (!isEmpty(unit)) {
+			text +=
+				`${unit.input.name} (${unit.input.value}) => ${unit.output.name} (${unit.output.value})\n`
+		}
+
+		if (ask[0]) text += `\n*People also ask:*\n- ` + ask.join('\n- ')
+
 		const responseFunctions = {
-			SEARCH(r: g.SearchResultNode) {
+			async ORGANIC(r: OrganicResultNode) {
 				const { title, link, description } = r // websites
 
 				text += `*${title}:*\n> ${description} (${link})`
 			},
-			async DICTIONARY(r: g.DictionaryResultNode) {
-				const { word, phonetic, audio } = r // dictionary result
+			async DICTIONARY(r: DictionaryResultNode) {
+				const { word, phonetic, audio, definitions } = r // dictionary result
 
 				if (audio) pronunciation = audio // word pronunciation
 
-				const moreInfo = await googleThis.search(word, {
+				const moreInfo = await googleThis.search(word!, {
 					parse_ads: false, // searches for more info
 					safe: false,
 					additional_params: { hl: user.lang },
@@ -67,27 +130,25 @@ export default class extends Cmd {
 					text += `\n*> ${key}*: ${value}`
 				}
 			},
-			CURRENCY(r: g.CurrencyResultNode) {
-				const { formula } = r
+			CURRENCY(r: CurrencyResultNode) {
+				const { from, to, type } = r
 
-				text += `*${formula}*`
+				text += `*${from} => ${to} (${type})*`
 
 				query.length = 1 // only one result is enough
 			},
-			TIME(r: g.TimeResultNode) {
-				const { location, time, timeInWords, type } = r
+			TIME(r: TimeResultNode) {
+				const { location, time, timeInWords } = r
 
-				text += `*${time}* - ${timeInWords.split('\n')[0]} (${location})`
+				text += `*${time}* - ${timeInWords!.split('\n')[0]} (${location})`
 
 				query.length = 1
 			},
-			TRANSLATE(r: g.TranslateResultNode) {
-				const { source: src, translation: res } = r
+			TRANSLATE(r: TranslateResultNode) {
+				text += `${r.sourceLanguage}  ➟  ${r.translationLanguage}\n`
+				text += `*${r.translationText}* `
 
-				text += `${src.language}  ➟  ${res.language}\n`
-				text += `*${res.text}* `
-
-				if (res.pronunciation) text += `(${res.pronunciation})`
+				if (r.translationPronunciation) text += `(${r.translationPronunciation})`
 				// word pronunciation if available
 
 				query.length = 1
@@ -97,7 +158,7 @@ export default class extends Cmd {
 		for (const result of query) {
 			text += '\n\n'
 
-			await responseFunctions[result.type as 'SEARCH'](result as any)
+			await responseFunctions[result.type as 'TIME'](result as any)
 		}
 
 		await bot.send(msg, text.trim())

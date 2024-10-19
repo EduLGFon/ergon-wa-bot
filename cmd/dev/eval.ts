@@ -1,4 +1,4 @@
-import { cleanTemp, Cmd, CmdCtx, delay, Lang, prisma, runCode, runner } from '../../map.js'
+import { cleanTemp, Cmd, CmdCtx, delay, isEmpty, Lang, prisma, runCode, runner } from '../../map.js'
 import { inspect } from 'node:util'
 import baileys from 'baileys'
 
@@ -27,6 +27,7 @@ export default class extends Cmd {
 			prisma
 			delay // i may need it, so TS won't remove from build if it's here
 			baileys
+			isEmpty
 
 			try {
 				/** Dynamic async eval: put code on async function if it includes 'await'
