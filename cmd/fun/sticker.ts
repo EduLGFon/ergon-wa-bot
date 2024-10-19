@@ -43,15 +43,15 @@ export default class extends Cmd {
 				// sends sticker image
 			case 'image':
 				if (args[0] === 'rmbg') { // remove image background
-					const name = await makeTempFile(buffer, 'sticker_', '.webp')
+					const file = await makeTempFile(buffer, 'sticker_', '.webp')
 					// create temporary file
 
 					await runCode({ // execute python background remover plugin on
 						file: 'plugin/removeBg.py', // a separate thread
-						code: `${runner.tempFolder}/${name}.webp ${runner.tempFolder}/${name}.png`,
+						code: `${file}.webp ${file}.png`,
 						// cli args
 					})
-					buffer = await readFile(`${runner.tempFolder}/${name}.png`) || buffer
+					buffer = await readFile(`${file}.png`) || buffer
 					// read new file
 
 					cleanTemp() // clean temp folder

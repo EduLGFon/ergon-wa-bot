@@ -11,7 +11,7 @@
 import $ from 'dax'
 
 const controller = new AbortController()
-const node_args = ['--expose-gc', '--no-warnings', '--env-file=settings/.env']
+const node_args = ['--expose-gc', '--no-warnings', '--env-file=settings/.env'].join(' ')
 const receipes = { // integrated scripts
 	out: { cmd: 'npm outdated' },
 	up: { cmd: 'npm run update' },
@@ -92,7 +92,7 @@ async function watch() {
 
 	const watcher = Deno.watchFs(`${Deno.cwd()}/`)
 	for await (const event of watcher) {
-    // call deno format
+		// call deno format
 		if (event.kind === 'modify') spawn('deno fmt ./ --config=settings/deno.jsonc')
 	}
 }

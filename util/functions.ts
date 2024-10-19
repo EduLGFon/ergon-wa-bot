@@ -95,10 +95,11 @@ function genRandomName(length: num = 20, prefix = '', suffix = ''): str {
 // makeTempFile: Write a temporary file
 async function makeTempFile(content: Buffer | str, preffix?: str, suffix?: str) {
 	const fileName = genRandomName(20, preffix, suffix) // generate random name
+	const path = `${runner.tempFolder}/${fileName}`
 
-	await writeFile(`${runner.tempFolder}/${fileName}`, content) // create file
+	await writeFile(path, content) // create file
 
-	return fileName
+	return path
 }
 
 // cleanTemp: Clean temp folder
