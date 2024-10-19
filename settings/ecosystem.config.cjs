@@ -1,4 +1,3 @@
-// const DENO_PATH = '~/.deno/bin/deno'
 const node_args = [
 	'--expose-gc',
 	// '--no-warnings',
