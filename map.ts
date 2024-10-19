@@ -58,11 +58,10 @@ import {
 	isEmpty,
 	isValidPositiveIntenger,
 	msgMeta,
-	runCode,
 } from './util/functions.js'
 import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
-import { gemini } from './util/api.js'
+import { gemini, runCode } from './util/api.js'
 
 export {
 	cacheAllGroups,

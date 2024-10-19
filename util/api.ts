@@ -1,6 +1,16 @@
 import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory, Part } from '@google/generative-ai'
+import { runner } from '../map.js'
 // import { api } from '../map.js'
 // import OpenAI from 'openai'
+
+async function runCode(data: { lang?: str; code?: str; file?: str }) {
+	const req = await fetch(`http://localhost:${runner.port}/run`, {
+		method: 'POST',
+		body: JSON.stringify(data),
+	})
+
+	return await req.text()
+}
 
 interface aiPrompt {
 	content: str
@@ -8,7 +18,7 @@ interface aiPrompt {
 	buffer?: Buffer
 	mime?: str
 }
-export async function gemini({ content, model, buffer, mime }: aiPrompt) {
+async function gemini({ content, model, buffer, mime }: aiPrompt) {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
 
@@ -61,6 +71,8 @@ export async function gemini({ content, model, buffer, mime }: aiPrompt) {
 		tokens: [tokens[0].totalTokens, tokens[1].totalTokens],
 	}
 }
+
+export { gemini, runCode }
 
 // async function gpt({ content, model }: aiPrompt) {
 // 	print(model)

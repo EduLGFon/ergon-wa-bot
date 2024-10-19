@@ -7,7 +7,6 @@ import {
 	isMedia,
 	Msg,
 	MsgTypes,
-	runner,
 	sticker,
 	User,
 } from '../map.js'
@@ -206,15 +205,6 @@ async function cleanTemp() {
 	return
 }
 
-async function runCode(data: { lang?: str; code?: str; file?: str }) {
-	const req = await fetch(`http://localhost:${runner.port}/run`, {
-		method: 'POST',
-		body: JSON.stringify(data),
-	})
-
-	return await req.text()
-}
-
 export {
 	cacheAllGroups,
 	cleanTemp,
@@ -228,5 +218,4 @@ export {
 	isEmpty,
 	isValidPositiveIntenger,
 	msgMeta,
-	runCode,
 }
