@@ -192,9 +192,6 @@ export default class Bot {
 		// folder/file names are the same of lib events
 		this.events.set(name, event);
 
-		this.sock.ev.on('group-participants.update', (data) => {
-			console.log('teste', data);
-		});
 		// Listen to the event here
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// It allows to modify events in run time
