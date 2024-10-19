@@ -1,0 +1,10 @@
+{
+	"userDefaults": {
+		"prefix": ".",
+		"language": "pt",
+		"cacheLimit": 500
+	},
+	"groupDefaults": {
+		"msgsCacheLimit": 200
+	}
+}

@@ -1,4 +1,4 @@
-# ⭐  WALL-E 🤖  ⭐
+# ⭐ WALL-E 🤖 ⭐
 
 ### ✨ WALL-E is a WhatsApp chat bot with some cool features. ✨
 

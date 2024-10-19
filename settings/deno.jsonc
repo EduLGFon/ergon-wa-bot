@@ -1,0 +1,15 @@
+{
+	"fmt": { // DENO Formatter settings
+		"indentWidth": 4,
+		"singleQuote": true,
+		"useTabs": true,
+		"semiColons": false,
+		"lineWidth": 100
+	},
+	"lint": { // DENO Lint rules
+		"rules": {
+			"exclude": ["no-explicit-any"]
+		}
+	},
+	"unstable": ["byonm"] // DENO unstable features
+}

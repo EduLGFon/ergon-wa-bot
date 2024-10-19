@@ -1,21 +1,13 @@
 # Settings
-baileys_store_multi.json
-**/config.json
 *.env
-auth*
-
-# Yarn
-.pnp.*
-.yarn*
+**/auth*
+test/
 
 # Builds
 node_modules/
-build/
-Test/
 
-# Logs / Lokefiles
-*lock.json
-**/*.log
+# Logs / Lock
+logs
+temp
+*lock*
 *.lock*
-temp/*
-logs/*
