@@ -1,32 +1,31 @@
-import type { MsgTypes } from './types.js';
+import type { MsgTypes } from './types.js'
 
 const textTypes = {
 	'conversation': 'text',
 	'editedMessage': 'text',
 	'extendedTextMessage': 'text',
-};
+}
 
 const visualTypes = {
 	'ptvMessage': 'video',
 	'videoMessage': 'video',
 	'imageMessage': 'image',
 	'stickerMessage': 'sticker',
-};
+}
 
 const mediaTypes = {
 	...visualTypes,
 	'audioMessage': 'audio',
 	'contactMessage': 'contact',
 	'documentMessage': 'document',
-};
-
+}
 
 const coolTypes = { // Theses will be counted by group msgs counter
 	...textTypes,
 	...mediaTypes,
 	'locationMessage': 'location',
-	'liveLocationMessage': 'location'
-};
+	'liveLocationMessage': 'location',
+}
 
 const allMsgTypes = { // all msg types
 	...coolTypes,
@@ -49,7 +48,7 @@ const allMsgTypes = { // all msg types
 	'pollUpdateMessage': 'pollUpdate',
 }
 
-const visualValues = Object.values(visualTypes);
-const isMedia = (type: MsgTypes) => visualValues.includes(type);
+const visualValues = Object.values(visualTypes)
+const isMedia = (type: MsgTypes) => visualValues.includes(type)
 
-export { coolTypes, isMedia, mediaTypes, allMsgTypes, textTypes, visualTypes };
+export { allMsgTypes, coolTypes, isMedia, mediaTypes, textTypes, visualTypes }

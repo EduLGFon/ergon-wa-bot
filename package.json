@@ -16,7 +16,6 @@
 	"dependencies": {
 		"@prisma/client": "^5.5.2",
 		"baileys": "^6.7.5",
-		"dotenv": "^16.3.1",
 		"google-translate": "github:iamtraction/google-translate",
 		"i18next": "^23.5.1",
 		"i18next-fs-backend": "^2.2.0",
@@ -24,7 +23,7 @@
 		"wa-sticker-formatter": "^4.4.4"
 	},
 	"devDependencies": {
-		"@types/node": "^20.8.6",
+		"@types/node": "^20.14.9",
 		"prisma": "^5.5.2",
 		"typescript": "^5.2.2"
 	}

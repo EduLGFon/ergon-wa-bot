@@ -1,4 +1,12 @@
 {
-	"botOwners": [""],
-	"botNumber": ""
+	"bot": {
+		"owners": [""],
+		"number": "",
+		"link": ""
+	},
+
+	"sticker": {
+		"packName": [""],
+		"author": [""]
+	}
 }
