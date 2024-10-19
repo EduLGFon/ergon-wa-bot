@@ -9,6 +9,7 @@
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r build/ & tsc",
 		"clean": "rm -r settings/log/* settings/temp/*",
+		"start": "pm2 start settings/ecosystem.config.cjs --attach",
 		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
 		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"fmt": "deno fmt ./ --config=settings/deno.jsonc",

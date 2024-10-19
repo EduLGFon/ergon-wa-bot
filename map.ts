@@ -27,7 +27,9 @@ export {
 }
 
 // Config files
-import { bot, db, runner, sticker } from './settings/settings.json'
+import settings from './settings/settings.json' with { type: 'json' }
+const { bot, db, runner, sticker } = settings;
+
 export { bot, db, runner, sticker }
 
 // Classes
