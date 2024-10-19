@@ -1,8 +1,8 @@
-import type { CmdContext, Lang } from '../../Core/Typings/index';
-import { langs, run } from '../../Core/Plugins/RunOtherLangs';
-import { getRAM } from '../../Core/Components/Prototypes';
-import { clearTemp } from '../../Core/Components/Utils';
-import Command from '../../Core/Classes/Command';
+import type { CmdContext, Lang } from '../../Core/Typings/index.d.ts';
+import { langs, run } from '../../Core/Plugins/RunOtherLangs.js';
+import { getRAM } from '../../Core/Components/Prototypes.js';
+import { clearTemp } from '../../Core/Components/Utils.js';
+import Command from '../../Core/Classes/Command.js';
 
 export default class extends Command {
 	constructor() {

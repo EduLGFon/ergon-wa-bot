@@ -1,4 +1,4 @@
-import makeWASocket, {
+import { makeWASocket,
 	type AnyMessageContent,
 	type BaileysEventMap,
 	Browsers,
@@ -7,19 +7,20 @@ import makeWASocket, {
 	makeCacheableSignalKeyStore,
 	type proto,
 	useMultiFileAuthState,
+	type WASocket,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import { Cmd, Logger, Msg } from '../Typings/index';
-import Collection from '../Plugins/Collection';
-import { getCtx } from '../Components/Utils';
-import { readdirSync } from 'fs'; // DENO point
-import Command from './Command';
-import { resolve } from 'path';
-import Group from './Group';
-import User from './User';
+import type { Cmd, Logger, Msg } from '../Typings/index.d.ts';
+import Collection from '../Plugins/Collection.js';
+import { getCtx } from '../Components/Utils.js';
+import { readdirSync } from 'node:fs'; // DENO point
+import { resolve } from 'node:path';
+import Command from './Command.js';
+import Group from './Group.js';
+import User from './User.js';
 
 export default class Bot {
-	sock!: ReturnType<typeof makeWASocket>;
+	sock!: WASocket;
 	wait: Collection<string, Function>;
 	groups: Collection<string, Group>;
 	users: Collection<string, User>;
@@ -42,7 +43,7 @@ export default class Bot {
 
 	async connect() {
 		const { version } = await fetchLatestBaileysVersion();
-		console.log('[WEBSOCKET', `Connecting to WA v${version.join('.')}`, 'green');
+		console.log('WEBSOCKET', `Connecting to WA v${version.join('.')}`, 'green');
 		// Fetch latest WA version
 
 		const { state, saveCreds } = await useMultiFileAuthState(this.auth);
@@ -71,10 +72,10 @@ export default class Bot {
 		// save login creds
 
 		// Loading commands
-		this.folderHandler(`../../Commands`, this.loadCommands);
+		this.folderHandler(`./build/Commands`, this.loadCommands);
 		// folderHandler() reads a folder and call the function
 		// for each file
-		this.folderHandler(`../../Events`, this.loadEvents);
+		this.folderHandler(`./build/Events`, this.loadEvents);
 		// Loading Events
 	}
 
@@ -94,27 +95,27 @@ export default class Bot {
 	}
 
 	async folderHandler(path: str, handler: Function) {
-		path = resolve(__dirname, path);
+		path = resolve(path);
 		let counter = 0;
 
 		for (const category of readdirSync(path)) {
 			// For each category folder
 			for (const file of readdirSync(`${path}/${category}`)) {
 				// for each file of each category
-				const imported = await import(`file:${path}/${category}/${file}`);
+				const imported = await import(`file://${path}/${category}/${file}`);				
 
 				// call function to this file
-				handler.bind(this)(file, category, imported);
+				handler.bind(this)(file, category, imported.default);
 				counter++;
 			}
 		}
 
-		console.log('[HANDLER', `${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`, 'yellow')
+		console.log('HANDLER', `${counter} ${path.includes('Commands') ? 'commands' : 'events'} loaded`, 'magenta')
 		return;
 	}
 
 	async loadCommands(file: str, _category: str, imported: any) { // DENO point
-		const cmd: Cmd = new imported.default.default();
+		const cmd: Cmd = new imported()
 		cmd.name = file.slice(0, -3);
 
 		const properties = Object.assign({
@@ -135,7 +136,7 @@ export default class Bot {
 	}
 
 	async loadEvents(file: str, category: str, imported: any) {
-		const event = imported.default.default;
+		const event = imported
 		const name = `${category}.${file.slice(0, -3)}`;
 		// folder/file names are the same of lib events
 		this.events.set(name, event);

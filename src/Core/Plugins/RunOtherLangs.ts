@@ -1,6 +1,6 @@
-import { execSync } from 'child_process';
-import { writeFileSync } from 'fs';
-import { Lang } from '../Typings';
+import type { Lang } from '../Typings/index.d.ts';
+import { execSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 import { inspect } from 'util';
 
 export const langs: Lang[] = ['py', 'lua', 'deno', 'node', 'eval', 'cpp'];

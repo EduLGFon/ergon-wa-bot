@@ -1,6 +1,6 @@
-import type { CmdContext } from '../../Core/Typings/index';
-import Command from '../../Core/Classes/Command';
-import { execSync } from 'child_process';
+import type { CmdContext } from '../../Core/Typings/index.d.ts';
+import Command from '../../Core/Classes/Command.js';
+import { execSync } from 'node:child_process';
 
 export default class extends Command {
 	constructor() {

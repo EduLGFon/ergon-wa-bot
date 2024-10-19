@@ -1,9 +1,9 @@
-import loadPrototypes from './Core/Components/Prototypes';
-import loadLocales from './Core/Components/Locales';
-import MAIN_LOGGER from 'baileys/lib/Utils/logger';
-import Bot from './Core/Classes/Bot';
+import loadPrototypes from './Core/Components/Prototypes.js';
+import loadLocales from './Core/Components/Locales.js';
+import MAIN_LOGGER from 'baileys/lib/Utils/logger.js';
+import Bot from './Core/Classes/Bot.js';
 
-const logger = MAIN_LOGGER.child({});
+const logger = MAIN_LOGGER.default.child({});
 logger.level = 'warn';
 
 loadPrototypes();
@@ -14,6 +14,6 @@ const bot = new Bot('auth', logger);
 bot.connect();
 
 process // "anti-crash" to handle lib instabilities
-	.on('unhandledRejection', (e: any) => console.error('[ANTI-CRASH', `Unhandled Rej: ${e?.stack}`))
-	.on('uncaughtException', (e) => console.error('[ANTI-CRASH', `Uncaught Excep.: ${e?.stack}`))
-	.on('uncaughtExceptionMonitor', (e) => console.error('[ANTI-CRASH', `Uncaught Excep.M.: ${e?.stack}`));
+	.on('unhandledRejection', (e: any) => console.error(`Unhandled Rej: ${e?.stack}`))
+	.on('uncaughtException', (e) => console.error(`Uncaught Excep.: ${e?.stack}`))
+	.on('uncaughtExceptionMonitor', (e) => console.error(`Uncaught Excep.M.: ${e?.stack}`));

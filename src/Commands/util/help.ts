@@ -1,5 +1,5 @@
-import type { Cmd, CmdContext } from '../../Core/Typings/index';
-import Command from '../../Core/Classes/Command';
+import type { Cmd, CmdContext } from '../../Core/Typings/index.d.ts';
+import Command from '../../Core/Classes/Command.js';
 
 export default class extends Command {
 	constructor() {
