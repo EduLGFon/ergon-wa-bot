@@ -1,10 +1,6 @@
 import { Baileys, Cmd, Group, User } from '../../map.ts'
 import { TFunction } from 'i18next'
 import { proto } from 'baileys'
-import { pino } from 'pino'
-
-type Lang = 'py' | 'lua' | 'deno' | 'node' | 'cpp'
-export type Logger = P.pino.Logger<never>
 
 type MsgTypes =
 	| 'text'
@@ -34,6 +30,7 @@ interface Msg {
 	text: str
 	type: MsgTypes
 	isMedia: bool
+	mime: str
 	isBot: bool
 	quoted: Msg
 	raw: proto.IWebMessageInfo

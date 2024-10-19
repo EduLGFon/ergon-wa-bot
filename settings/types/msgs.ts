@@ -16,13 +16,13 @@ const visualTypes = {
 const mediaTypes = {
 	...visualTypes,
 	'audioMessage': 'audio',
-	'contactMessage': 'contact',
 	'documentMessage': 'document',
 }
 
 const coolTypes = { // Theses will be counted by group msgs counter
 	...textTypes,
 	...mediaTypes,
+	'contactMessage': 'contact',
 	'locationMessage': 'location',
 	'liveLocationMessage': 'location',
 }
@@ -50,6 +50,9 @@ const allMsgTypes = { // all msg types
 
 const visualValues = Object.values(visualTypes)
 const coolValues = Object.values(coolTypes)
-const isMedia = (type: MsgTypes) => visualValues.includes(type)
+const mediaValues = Object.values(mediaTypes)
 
-export { allMsgTypes, coolTypes, coolValues, isMedia, mediaTypes, textTypes, visualTypes }
+const isMedia = (type: MsgTypes) => mediaValues.includes(type)
+const isVisual = (type: MsgTypes) => visualValues.includes(type)
+
+export { allMsgTypes, coolTypes, coolValues, isMedia, isVisual, mediaTypes, textTypes, visualTypes }

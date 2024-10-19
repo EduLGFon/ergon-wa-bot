@@ -7,12 +7,12 @@ const node_args = [
 module.exports = {
 	apps: [
 		{
-			name: 'wa_main',
+			name: 'walle',
 			script: 'build/main.js',
 			node_args,
 			// exec_mode: 'cluster',
 			// instances: 2,
-			out_file: 'settings/log/wa_main.log',
+			out_file: 'settings/log/walle.log',
 			error_file: 'settings/log/wa_error.log',
 		},
 		{

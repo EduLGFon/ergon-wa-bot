@@ -9,7 +9,6 @@
 		}
 	},
 
-
 	"db": {
 		"userDefault": {
 			"prefix": ".",
@@ -20,7 +19,6 @@
 			"msgsCacheLimit": 200
 		}
 	},
-
 
 	"runner": {
 		"port": 3077,
@@ -50,7 +48,6 @@
 		}
 	},
 
-	
 	"sticker": {
 		"packName": ["pack"],
 		"author": ["wall-e"]
