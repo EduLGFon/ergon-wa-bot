@@ -2,7 +2,7 @@ import translationBackend from 'i18next-fs-backend'
 import { readdirSync } from 'node:fs'
 import i18next from 'i18next'
 
-export const languages = readdirSync('src/Core/Locales/')
+export const languages = readdirSync('locale/')
 	.map((l) => l.split('.')[0])
 
 export default async function () {
@@ -12,7 +12,7 @@ export default async function () {
 			.init({
 				preload: languages,
 				fallbackLng: 'en',
-				backend: { loadPath: 'src/Core/Locales/{{lng}}.json' },
+				backend: { loadPath: 'locale/{{lng}}.json' },
 				interpolation: { escapeValue: false },
 				returnEmptyString: false,
 				returnObjects: true,

@@ -1,0 +1,71 @@
+{
+	"usage": {
+		"title": "*[❗] – Wie benutzt man es?*",
+		"args": "*[💡] – Arten von Parametern:*\n<erforderlich>\n[Optional]",
+		"examples": "*[💯] – Beispiele:*"
+	},
+	"choose": {
+		"usage": "<Option 1>, <Option 2>, [Option 3], [...]",
+		"desc": "Wählen Sie dies oder das zufällig aus oder nicht ...",
+		"examples": [
+			"Pizza, Kuchen, Pudding, Apfel",
+			"Ich sollte das tun, ich sollte das nicht tun",
+			"Keks, Keks"
+		],
+		"result": "*[🏆] – Option gewählt:* {{chosen}}"
+	},
+	"download": {
+		"usage": "<Audio/Video> <URL>",
+		"desc": "Laden Sie ein Video oder Audio von verschiedenen Plattformen herunter",
+		"examples": [
+			"Audio https://music.youtube.com/watch?v=4QLvEIXlF6Q",
+			"bis https://youtu.be/4QLvEIXlF6Q",
+			"Video https://youtu.be/4QLvEIXlF6Q"
+		],
+		"true": "*[⌛] – Das Video wird heruntergeladen... Bitte warten Sie einen Moment.*",
+		"false": "*[⌛] – Audio wird heruntergeladen... Bitte warten Sie einen Moment.*"
+	},
+	"help": {
+		"usage": "[Name eines Befehls]",
+		"desc": "Zeigen Sie diese Liste an oder geben Sie einen Befehl detailliert an",
+		"examples": ["übersetzen", "Aufkleber"],
+		"title": "*[📖] – Hilfemenü*",
+		"prefix": "[⚙️] Präfix ändern: *{{prefix}}*",
+		"lang": "[🌎] Sprache ändern: *{{lang}}*"
+	},
+	"language": {
+		"usage": "<Sprachcode>",
+		"desc": "Ändern Sie die Bot-Sprache",
+		"examples": ["PT", "de"],
+		"changed": "[🌎] – Sprache erfolgreich in *{{lng}}* geändert"
+	},
+	"prefix": {
+		"usage": "<Präfix mit bis zu 3 Ziffern>",
+		"desc": "Befehlspräfix ändern",
+		"examples": [".", "!"],
+		"changed": "[✔️] – Ihr neues Präfix ist: *{{prefix}}*"
+	},
+	"ping": {
+		"desc": "Berechnet die Bot-Verzögerung",
+		"pinging": "Reaktionszeit berechnen..."
+	},
+	"sticker": {
+		"usage": "<Bild/GIF angehängt> [nobg: Hintergrund entfernen]",
+		"desc": "Erstellen Sie einen Aufkleber mit Bild/GIF und entfernen Sie sogar den Hintergrund",
+		"examples": ["nobg <Bild angehängt>", "<gif angehängt>"],
+		"nobuffer": "[⚠️] – Bild inkompatibel oder nicht gefunden"
+	},
+	"stext": {
+		"usage": "<Text/Satz/Wort>",
+		"desc": "Erstellen Sie einen Textaufkleber",
+		"examples": [
+			"Du kannst deine Vergangenheit nicht ändern, aber du kannst deine Zukunft ruinieren",
+			"Für diejenigen, die aufgeben, ist kein Hindernis zu groß"
+		]
+	},
+	"translate": {
+		"usage": "<Sprachcode: en/pt/fr...> <Text/Satz/Wort>",
+		"desc": "Google Übersetzer",
+		"examples": ["fr Muschi", "es Krieg ist Liebe"]
+	}
+}
