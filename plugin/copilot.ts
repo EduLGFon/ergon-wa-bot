@@ -29,6 +29,7 @@ const cmds = { // like a CLI
 		console.log('Start:', ...args)
 
 		args.forEach((a) => {
+			if (!receipes[a]) return console.log('not found:', a)
 			//@ts-ignore shut up TypeScript
 			receipes[a].controller = spawn(receipes[a].cmd)
 		})
@@ -37,13 +38,20 @@ const cmds = { // like a CLI
 		console.log('Killing:', ...args)
 
 		//@ts-ignore shut up TypeScript
-		args.forEach((a) => receipes[a].controller.abort())
+		args.forEach((a) => {
+			if (!receipes[a]) return console.log('not found:', a)
+
+			receipes[a].controller.abort()
+		})
 	},
 	r(args: string[]) { // restart a script
 		console.log('Restarting:', ...args)
 
 		args.forEach((a) => {
 			const recipe = receipes[a as 'tsc']
+
+			if (!recipe) return console.log('not found:', a)
+
 			recipe.controller.abort() // kill it
 			recipe.controller = spawn(recipe.cmd) // spawn it
 		})
@@ -60,7 +68,7 @@ watch() // Watch project files
 async function ask() {
 	const input = await $.prompt('$ ')
 
-	const args = input.split(' ')
+	const args = input.trim().split(' ')
 	const cmd = args.shift()! as 's'
 
 	const func = cmds[cmd]
@@ -71,19 +79,28 @@ async function ask() {
 }
 
 // spawn: spawn child processes
-function spawn(cmd: string) {
-	const args = cmd.split(' ')
-	cmd = args.shift()! as string
+function spawn(cmd: string | string[]) {
+	if (Array.isArray(cmd)) {
+		for (const c of cmd) return run(c)
+	} else return run(cmd)
 
-	if (!cmd) cmd = 'echo'
+	function run(c: string) {
+		const args = c.split(' ')
+		c = args.shift()! as string
 
-	const control = new AbortController()
-	const _child = new Deno.Command(cmd, {
-		args,
-		signal: control.signal,
-	}).spawn()
+		if (!c) c = 'echo'
 
-	return control
+		try {
+			const control = new AbortController()
+			const _child = new Deno.Command(c, {
+				args,
+				signal: control.signal,
+			}).spawn()
+			return control
+		} catch (e) {
+			return
+		}
+	}
 }
 
 // Watch: watch files and format them
@@ -91,8 +108,13 @@ async function watch() {
 	console.log('Watching!')
 
 	const watcher = Deno.watchFs(`${Deno.cwd()}/`)
+	let lastFmt = 0
+
 	for await (const event of watcher) {
 		// call deno format
-		if (event.kind === 'modify') spawn('deno fmt ./ --config=settings/deno.jsonc')
+		if (event.kind === 'modify' && Date.now() - 500 > lastFmt) {
+			spawn('npm run fmt')
+			lastFmt = Date.now()
+		}
 	}
 }
