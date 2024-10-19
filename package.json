@@ -28,7 +28,7 @@
 		"google-translate": "github:iamtraction/google-translate",
 		"googlethis": "^1.8.0",
 		"humanize-duration": "^3.32.1",
-		"i18next": "^23.12.7",
+		"i18next": "^23.13.0",
 		"i18next-fs-backend": "^2.3.2",
 		"luxon": "^3.5.0",
 		"pino": "^9.3.2",
@@ -39,7 +39,7 @@
 		"@types/express": "^4.17.21",
 		"@types/humanize-duration": "^3.27.4",
 		"@types/luxon": "^3.4.2",
-		"@types/node": "^20.14.15",
+		"@types/node": "^20.15.0",
 		"prisma": "^5.18.0",
 		"typescript": "^5.5.4"
 	}
