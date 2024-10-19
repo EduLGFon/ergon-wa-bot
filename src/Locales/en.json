@@ -1,0 +1,75 @@
+{
+    "usage": {
+        "title": "*[❗] - How to use?*",
+        "args": "*[💡] - Types of parameters:*\n<required>\n[optional]",
+        "examples": "*[💯] - Examples:*"
+    },
+    "choose": {
+        "usage": "<option 1>, <option 2>, [option 3], [...]",
+        "desc": "Choose this or that at random, or not...",
+        "examples": [
+            "Pizza, cake, pudding, apple",
+            "I should do this, I shouldn't do this",
+            "Biscuit, biscuit"
+        ],
+        "result": "*[🏆] - Option chosen:* {{chosen}}"
+    },
+    "help": {
+        "usage": "[name of a command]",
+        "desc": "Display this list or detail a command",
+        "examples": [
+            "translate",
+            "sticker"
+        ],
+        "title": "*[📖] - Help menu*",
+        "prefix": "[⚙️] Change prefix: *{{prefix}}*",
+        "lang": "[🌎] Change language: *{{lang}}*"
+    },
+    "language": {
+        "usage": "<language code>",
+        "desc": "Change the bot language",
+        "examples": [
+            "PT",
+            "en"
+        ],
+        "changed": "[🌎] - Language successfully changed to *{{lng}}*"
+    },
+    "prefix": {
+        "usage": "<prefix with up to 3 digits>",
+        "desc": "Change command prefix",
+        "examples": [
+            ".",
+            "!"
+        ],
+        "changed": "[✔️] - Your new prefix is: *{{prefix}}*"
+    },
+    "ping": {
+        "desc": "Calculates bot delay",
+        "pinging": "Calculating response time..."
+    },
+    "sticker": {
+        "usage": "<image/gif attached> [nobg: remove background]",
+        "desc": "Create a sticker with image/gif and remove the background",
+        "examples": [
+            "nobg <image attached>",
+            "<gif attached>"
+        ],
+        "nobuffer": "[⚠️] - Image incompatible or not found"
+    },
+    "stext": {
+        "usage": "<text/sentence/word>",
+        "desc": "Create a text sticker",
+        "examples": [
+            "You can't change your past, but you can ruin your future",
+            "No obstacle is too big for those who give up"
+        ]
+    },
+    "translate": {
+        "usage": "<language code: en/pt/fr...> <text/sentence/word>",
+        "desc": "Google translator",
+        "examples": [
+            "fr Pussy",
+            "es War is love"
+        ]
+    }
+}
