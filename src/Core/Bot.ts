@@ -10,7 +10,7 @@ import makeWASocket, {
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import { Cmd, Msg } from '../Typings';
+import { Cmd, Msg, User } from '../Typings';
 import type { pino } from 'pino';
 import { readdirSync } from 'fs'; // DENO point
 import { resolve } from 'path';
@@ -20,10 +20,11 @@ export default class Bot {
 	logger: pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;
 	sock!: ReturnType<typeof makeWASocket>;
 	wait: Map<string, Function>;
-	groups: Map<string, GroupMetadata>;
 	cmds: Map<string, Cmd>;
-	events: Map<string, Function>;
 	aliases: Map<string, string>;
+	users: Map<string, User>;
+	events: Map<string, Function>;
+	groups: Map<string, GroupMetadata>;
 
 	constructor(auth: string, logger: any) {
 		this.logger = logger;
@@ -31,6 +32,7 @@ export default class Bot {
 		this.sock;
 		this.wait = new Map<string, Function>();
 		// funções arbitrárias q serão chamadas em alguns eventos
+		this.users = new Map<string, User>(); // Map de usuários
 		this.groups = new Map<string, GroupMetadata>(); // Map de grupos
 		this.events = new Map<string, Function>(); // Map de eventos
 		this.cmds = new Map<string, Cmd>(); // Map de comandos
