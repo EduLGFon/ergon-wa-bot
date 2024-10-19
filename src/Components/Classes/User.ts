@@ -1,5 +1,5 @@
 import { LANG, PREFIX } from '../../JSON/config.json';
-import prisma from '../../Components/Core/Prisma';
+import prisma from '../Core/Prisma';
 
 export default class User {
 	name: string;

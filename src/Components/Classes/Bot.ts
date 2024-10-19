@@ -9,9 +9,9 @@ import makeWASocket, {
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
-import { Cmd, Logger, Msg } from '../../Components/Typings/index';
-import Collection from '../../Components/Plugins/Collection';
-import { getCtx } from '../../Components/Core/Utils';
+import { Cmd, Logger, Msg } from '../Typings/index';
+import Collection from '../Plugins/Collection';
+import { getCtx } from '../Core/Utils';
 import { readdirSync } from 'fs'; // DENO point
 import Command from './Command';
 import { resolve } from 'path';
