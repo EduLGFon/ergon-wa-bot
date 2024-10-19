@@ -62,7 +62,11 @@ export function getQuoted(raw: proto.IWebMessageInfo) {
 export async function cacheAllGroups(bot: Bot) {
 	const groupList = await bot.sock.groupFetchAllParticipating();
 
-	Object.keys(groupList).forEach((g) => bot.groups.set(g, groupList[g]));
+	let groups = Object.keys(groupList)
+
+	groups.forEach((g) => bot.groups.set(g, groupList[g]));
+	console.log('[CACHE', `${groups.length} groups cached.`, 'green')
+	return;
 }
 
 function getMsgText(m: proto.IMessage) {
@@ -123,4 +127,5 @@ export async function clearTemp() {
 	const files = readdirSync('./temp/');
 
 	files.forEach((f) => unlink(`./temp/${f}`, () => {}));
+	return;
 }

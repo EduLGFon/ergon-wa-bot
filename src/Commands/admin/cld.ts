@@ -33,9 +33,9 @@ export default class extends Command {
 				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
 				output.trim().encode();
 
-			const sentMsg = await bot.send(msg, text);
-
-			return bot.react(sentMsg.msg, reaction);
+			const reply = await bot.send(msg, text);
+			bot.react(reply.msg, reaction);
+			return;
 		}
 	}
 

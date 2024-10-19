@@ -30,12 +30,14 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 		args[0] = cmd.name;
 
 		this.cmds.get('help').run(ctx);
-		return this.react(msg, '🤔');
+		this.react(msg, '🤔');
+		return;
 	};
 
 	const ctx: CmdContext = {
-		sendUsage,
+		t: i18next.getFixedT(user.lang),
 		bot: this,
+		sendUsage,
 		callCmd,
 		prisma,
 		group,
@@ -43,17 +45,18 @@ export default async function (this: bot, raw: { messages: proto.IWebMessageInfo
 		user,
 		cmd,
 		msg,
-		t: i18next.getFixedT(user.lang),
 	};
 
 	try {
 		// start typing (expires after about 10 seconds.)
 		this.sock.sendPresenceUpdate('composing', msg.chat);
 
-		return cmd.run!(ctx);
+		cmd.run!(ctx);
 	} catch (e: any) {
 		this.send(msg, `[⚠️] ${e?.stack || e}`);
 
-		return this.react(msg, '❌');
+		this.react(msg, '❌');
 	}
+
+	return;
 }

@@ -8,9 +8,9 @@ export default async function (this: bot, update: Partial<ConnectionState>) {
 
 	switch (connection) {
 		case 'open':
-			await cacheAllGroups(this);
+			cacheAllGroups(this);
 			// don't show online mark when the bot is running
-			await this.sock.sendPresenceUpdate('unavailable');
+			this.sock.sendPresenceUpdate('unavailable');
 
 			return console.log('[WEBSOCKET', 'Connection stabilized');
 
@@ -26,5 +26,6 @@ export default async function (this: bot, update: Partial<ConnectionState>) {
 
 			// reconnect if it's not a logout
 			if (shouldReconnect) this.connect();
+			return;
 	}
 }

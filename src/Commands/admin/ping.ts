@@ -18,9 +18,10 @@ export default class extends Command {
 		await prisma.users.findUnique({ where: { id: user.id } });
 		const DBPing = Date.now() - startTime;
 
-		return bot.send(
+		bot.send(
 			msg,
 			`*[🐧] - Ping:*\n[📞] WhatsApp: *${WAPing}ms*\n[🐘] PostgreSQL: *${DBPing}ms*`,
 		);
+		return;
 	}
 }

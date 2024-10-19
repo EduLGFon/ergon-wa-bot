@@ -1,5 +1,4 @@
 import makeWASocket, { PHONENUMBER_MCC } from 'baileys';
-//@ts-ignore
 import parsePhoneNumber from 'libphonenumber-js';
 import readline from 'readline';
 
@@ -30,7 +29,7 @@ export default async function (sock: ReturnType<typeof makeWASocket>) {
 		askForOTP();
 
 		async function askForOTP() {
-			let code = await question('Registration code method: "sms"/"voice" ');
+			let code = await question('Choose a registration method: "sms"/"voice" ');
 			code = code.replace(/["']/g, '').trim().toLowerCase();
 
 			if (code !== 'sms' && code !== 'voice') return askForOTP();
@@ -39,26 +38,32 @@ export default async function (sock: ReturnType<typeof makeWASocket>) {
 
 			try {
 				await sock.requestRegistrationCode(r);
-				await enterCode();
+				enterCode();
 			} catch (error) {
-				console.error('Error:\n', error);
+				console.error('[API', error);
 				askForOTP();
 			}
+
+			return;
 		}
 
-		async function enterCode() {
+		async function enterCode(): Promise<void> {
 			try {
 				const code = await question('Insert your registration code:\n');
 				const response = await sock.register(
 					code.replace(/["']/g, '').trim().toLowerCase(),
 				);
-				console.log('Registred');
+				console.log('[API', 'Successfully registered');
 				console.log(response);
 				rl.close();
 			} catch (error) {
-				console.error('Error.\n', error);
-				await askForOTP();
+				console.error('[API', 'Failed to register: ' + error);
+				
+				askForOTP();
 			}
+
+			return;
 		}
+		return;
 	}
 }

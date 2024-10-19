@@ -1,5 +1,6 @@
 import type { CmdContext, Lang } from '../../Core/Typings/index';
 import { langs, run } from '../../Core/Plugins/RunOtherLangs';
+import { getRAM } from '../../Core/Components/Prototypes';
 import { clearTemp } from '../../Core/Components/Utils';
 import Command from '../../Core/Classes/Command';
 
@@ -20,7 +21,7 @@ export default class extends Command {
 		let output, reaction = '✅'; // Reaction emoji
 
 		const startTime = Date.now();
-		const startRAM = this.getRAM(); // DENO
+		const startRAM = getRAM(true) as number
 
 		try {
 			output = await run.bind(this)(lang, args.join(' '));
@@ -30,8 +31,8 @@ export default class extends Command {
 		} finally {
 			// difference between initial RAM and final RAM
 			const duration = (Date.now() - startTime).toLocaleString('pt');
-			const endRAM = this.getRAM();
-			const RAMRange = Number((endRAM - startRAM).toFixed(2));
+			const endRAM = getRAM(true) as number;
+			const RAMRange = endRAM - startRAM;
 
 			const text = `*[👨‍💻] - ${lang.toUpperCase()}*\n` +
 				`[📊]: ${duration}ms - ` +
@@ -40,13 +41,9 @@ export default class extends Command {
 
 			clearTemp();
 
-			const sentMsg = await bot.send(msg, text);
-			return bot.react(sentMsg.msg, reaction);
+			const reply = await bot.send(msg, text);
+			bot.react(reply.msg, reaction);
+			return;
 		}
 	}
-
-	getRAM = () => {
-		const RAMUsage = process.memoryUsage().rss / 1024 / 1024;
-		return Number(RAMUsage.toFixed(2));
-	};
 }
