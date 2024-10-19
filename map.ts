@@ -5,14 +5,14 @@ import { allMsgTypes, isMedia } from './settings/types/msgs.js'
 export { allMsgTypes, CmdCtx, GroupMsg, isMedia, Lang, Logger, Msg, MsgTypes }
 
 // Config files
-import { bot, sticker, db } from './settings/settings.json'
+import { bot, db, sticker } from './settings/settings.json'
 
 export { bot, db, sticker }
 
 // Classes
 import Collection from './class/collection.js'
 import Baileys from './class/baileys.js'
-import prisma from './class/prisma.js'
+import prisma from './util/prisma.js'
 import Group from './class/group.js'
 import User from './class/user.js'
 import Cmd from './class/cmd.js'

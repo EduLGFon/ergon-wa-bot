@@ -1,4 +1,4 @@
-import { prisma, db } from '../map.js'
+import { db, prisma } from '../map.js'
 
 export default class User {
 	_username: str
