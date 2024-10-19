@@ -4,8 +4,9 @@
  */
 
 export default {
-	block: '⛔',
 	loading: '⌛',
+	block: '⛔',
+	think: '💭',
 	ok: '✅',
 	x: '❌',
 }

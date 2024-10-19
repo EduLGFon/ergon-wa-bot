@@ -1,3 +1,5 @@
+import { FileMetadataResponse, FileState, GoogleAIFileManager } from '@google/generative-ai/server'
+import { aiPrompt, delay, makeTempFile, runner } from '../map.js'
 import {
 	EnhancedGenerateContentResponse,
 	GenerateContentResult,
@@ -6,8 +8,6 @@ import {
 	HarmBlockThreshold,
 	HarmCategory,
 } from '@google/generative-ai'
-import { aiPrompt, runner } from '../map.js'
-// import { api } from '../map.js'
 // import OpenAI from 'openai'
 
 export { gemini, imgRemover, runCode }
@@ -35,6 +35,13 @@ async function imgRemover(img: str, quality: number) {
 async function gemini({ instruction, prompt, model, buffer, mime, user, callback }: aiPrompt) {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
+	const fileManager = new GoogleAIFileManager(process.env.GEMINI_KEY!)
+
+	let interval // callback interval
+	let text = '' // AI response text
+	let file: FileMetadataResponse // Prompt file
+	let result: GenerateContentStreamResult | GenerateContentResult // AI Result
+	let data: EnhancedGenerateContentResponse // request data
 
 	// The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
 	const gemini = genAI.getGenerativeModel({
@@ -55,49 +62,68 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 	})
 
 	if (buffer) { // include media buffer with text prompt
+		// Writing buffer as a temporary file
+		const fileName = await makeTempFile(buffer, 'gemini_')
+
+		/** Uploading file to Google File API (it's free)
+		 * File API lets you store up to 20GB of files per project
+		 * Limit: 2GB for each one
+		 * Expiration: 48h
+		 * Media cannot be downloaded from the API, only uploaded
+		 */
+		const upload = await fileManager.uploadFile(fileName, { mimeType: mime! })
+
+		file = await fileManager.getFile(upload.file.name) // fetch its info
+		while (file.state === FileState.PROCESSING) { // media still processing
+			// Sleep until it gets done
+			await delay(3_000)
+			// Fetch the file from the API again
+			file = await fileManager.getFile(upload.file.name)
+		}
+		// media upload failed
+		if (file.state === FileState.FAILED) throw new Error('Media processing failed.')
+
 		const media = {
-			inlineData: { // convert media buffer to base64
-				data: Buffer.from(buffer).toString('base64'),
-				mimeType: mime!,
+			fileData: {
+				mimeType: upload.file.mimeType,
+				fileUri: upload.file.uri,
 			},
 		}
 
-		prompt = [prompt as str, media]
+		prompt = [media, prompt as str]
 	}
-
-	let interval
-	let text = ''
-	let result: GenerateContentStreamResult | GenerateContentResult
-	let data: EnhancedGenerateContentResponse
 
 	try {
 		if (!callback) { // only return text when it's done
-			result = await gemini.generateContent(instruction + prompt)
+			if (typeof prompt === 'string') prompt = instruction + prompt
+			else prompt[1] = instruction + prompt // if it has media
 
+			result = await gemini.generateContent(prompt)
 			text = result.response.text()
 
 			return generateResponse(result.response)
 		}
-		user = user!
+		user = user! // user is not possibly undefined anymore at this point
 
 		// it's your conversation history
 		user.geminiCtx = [{ role: 'user', parts: [{ text: instruction }] }, ...user.geminiCtx]
 
-		/* Gemini dynamic chats:
-		A new chat will be created every time gemini() is called
-		it's useful to change model and keep 'AI memory' (history context)
-
-		it also allows to use dynamic initial instructions, so Gemini language
-		can be switched as bot user language.
-		*/
+		/** Gemini dynamic chats:
+		 * A new chat will be created every time gemini() is called
+		 * it's useful to change model and keep 'AI memory' (history context)
+		 * it also allows to use dynamic initial instructions, so Gemini language
+		 * can be switched as bot user language.
+		 */
 		const chat = gemini.startChat({ history: user.geminiCtx })
 		result = await chat.sendMessageStream(prompt)
 
 		user.geminiCtx = await chat.getHistory() // save history
 		user.geminiCtx.shift() // remove initial instruction from history
 
-		// edit msg every 1s with new generated words
-		interval = setInterval(() => callback(generateResponse(data)), 1_000)
+		// edit msg every .5s with new generated words
+		interval = setInterval(() => {
+			if (data) callback(generateResponse(data))
+		}, 500)
 
 		for await (const chunk of result.stream) {
 			data = chunk // save new generated text
@@ -106,22 +132,22 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 
 		data = await result.response
 		text = data.text() // get final text
-	} catch (e: any) {
-		text = e.message.encode()
-		console.error(e)
-	} finally {
-		clearInterval(interval)
+		clearInterval(interval) // stop interval
 		// @ts-ignore last time editing msg
-		if (callback) callback(generateResponse(data))
+		callback(generateResponse(data, true))
+	} catch (e: any) {
+		clearInterval(interval) // stop interval
+		throw new Error(e.message) // throw it again so
+		// error will be handled by function that calls gemini()
 	}
 
-	function generateResponse(chunk?: EnhancedGenerateContentResponse) {
+	function generateResponse(chunk?: EnhancedGenerateContentResponse, finish?: bool) {
 		return {
 			model, // AI Model
-			reason: chunk?.candidates![0]?.finishReason || 'no reason',
 			text: text.replaceAll('**', '*').replaceAll('##', '>'),
-			inputSize: chunk?.usageMetadata?.promptTokenCount || 0, // input tokens count
-			tokens: chunk?.usageMetadata?.candidatesTokenCount || 0, // output tokens count
+			tokens: chunk?.usageMetadata?.promptTokenCount || 0,
+			// input + context tokens count
+			finish, // if it's the last chunk
 		} as aiResponse
 	}
 }

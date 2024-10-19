@@ -56,7 +56,7 @@ interface GroupMsg {
 
 interface aiPrompt {
 	instruction: str
-	prompt: str | [str, Part]
+	prompt: str | [Part, str]
 	model: str
 	buffer?: Buffer
 	mime?: str

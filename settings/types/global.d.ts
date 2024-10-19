@@ -8,15 +8,15 @@ function print(...args): void
 interface String {
 	encode(): str
 	toPascalCase(): str
-	align(limit: num, endPosition?: boolean): str
+	align(limit: num, endPosition?: bool): str
 	t(lang: str): str
 	filterForRegex(): str
 	toMs(): [num, str[]]
 }
 
 interface Number {
-	bytes(onlyNumbers?: bool): string | number
-	duration(ms?: boolean): str
+	bytes(onlyNumbers?: bool): str | num
+	duration(ms?: bool): str
 }
 
 interface Reminder {
@@ -29,8 +29,7 @@ interface Reminder {
 
 interface aiResponse {
 	model: str
-	reason: str
 	text: str
-	inputSize: number
-	tokens: number
+	tokens: num
+	finish?: bool
 }

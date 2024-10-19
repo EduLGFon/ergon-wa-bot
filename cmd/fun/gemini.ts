@@ -11,19 +11,21 @@ export default class extends Cmd {
 
 	async run({ bot, msg, args, user, sendUsage }: CmdCtx) {
 		if (!args[0]) return sendUsage()
-
 		let model = api.aiModel.gemini // gemini flash model
-		if (args[0] === this.subCmds[0]) { // use gemini pro model
-			if (!args[1]) return sendUsage() // if there is no prompt
-			model = api.aiModel.geminiPro
-		}
 
 		if (args[0] === this.subCmds[1]) {
 			user.geminiCtx = [] // reset user ctx/conversation history
 			if (!args[1]) return bot.react(msg, 'ok')
+			args.shift() // remove 'reset' from prompt
 		}
 
-		await bot.react(msg, 'loading')
+		if (args[0] === this.subCmds[0]) { // use gemini pro model
+			if (!args[1]) return sendUsage() // if there is no prompt
+			model = api.aiModel.geminiPro
+			args.shift() // remove 'pro' from prompt
+		}
+
+		await bot.react(msg, 'think')
 		let buffer, mime, stream: Promise<CmdCtx> | CmdCtx
 		const language = `langs.${user.lang}`.t('en')
 		const instruction = // dynamic initial instruction
@@ -31,6 +33,7 @@ export default class extends Cmd {
 
 		if (msg.isMedia || msg?.quoted?.isMedia) {
 			const target = msg.isMedia ? msg : msg.quoted // include msg or quoted msg media
+
 			buffer = await bot.downloadMedia(target)
 			mime = target.mime // media mimetype like image/png
 		}
@@ -43,11 +46,27 @@ export default class extends Cmd {
 			mime,
 			user,
 			callback,
+		}).catch((e) => {
+			bot.react(msg, 'x')
+			bot.send(msg, e.message.encode())
 		})
 
-		async function callback({ text, reason, inputSize, tokens }: aiResponse) {
+		async function callback({ text, tokens, finish }: aiResponse) {
 			// Gemini will call this function every .5s to send or edit response updates
-			const response = `> ${inputSize} > *${model}* > ${tokens} (${reason})\n${text}`
+			const response = ` - *${model}* (${tokens}):\n${text}`
+
+			if (finish) { // if it's the last chunk (final response)
+				await stream // wait msg is sent
+				stream = stream as CmdCtx
+				bot.editMsg(stream.msg, response) // edit it
+				return
+				/** I did it bc
+				 * sometimes Gemini API may generate all chunks
+				 * faster than WhatsApp can send msgs. It could cause
+				 * some content loss on this cmd. So, when it's finish
+				 * bot will wait until msg is sent
+				 */
+			}
 
 			if (!stream) stream = bot.send(msg, response).then((m) => stream = m)
 			// @ts-ignore send msg and only try to edit when it was really sent
