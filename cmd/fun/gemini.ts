@@ -14,6 +14,9 @@ export default class extends Cmd {
 
 		let model = api.aiModel.gemini
 		let buffer, mime, stream: Promise<CmdCtx> | CmdCtx
+		const language = `langs.${user.lang}`.t('en')
+		const instruction =
+			`Create a short, concise answer and, only if necessary, a long, detailed one. Always answer in ${language} and use bold for all important words and keywords.`
 
 		if (msg.isMedia || msg?.quoted?.isMedia) {
 			const target = msg.isMedia ? msg : msg.quoted
@@ -22,11 +25,12 @@ export default class extends Cmd {
 		}
 
 		await gemini({
+			instruction,
 			prompt: args.join(' '),
 			model,
 			buffer,
 			mime,
-			user,
+			chat: user._chat,
 			callback,
 		})
 
