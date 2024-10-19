@@ -199,7 +199,7 @@ function fmtLog(title: str, msg: str, color: str) {
 
 	if (brightColors.includes(color)) color += 'Bright'
 
-	const str = `[ ${now('TT.SSS')} | ${memory.align(5)} |${title.align(9)}] - ${msg}`
+	const str = `[ ${now('TT.SSS')} |${memory.align(5)}|${title.align(9)}] - ${msg}`
 	// [ 18:04:99.069 | 69MB | TITLE ] - msg (colored)
 
 	return chalk.bold[color as 'red'](str)

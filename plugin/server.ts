@@ -11,13 +11,13 @@ function start(bot: Baileys, resolve: Function) {
 	app
 		.use(express.json()) // use content-type: json
 		.get('/ping', async (_req, res) => {
-			res.status(200)
+			res.sendStatus(200)
 		})
 		.post('/reminder', async (req, res) => { // method: post
 			const r: Reminder = req.body
 
 			if (!r.id || !r.author || !r.chat || !r.msg || !r.remindAt) {
-				res.status(404)
+				res.sendStatus(404)
 			} else res.send(sendReminders(bot, r))
 			return
 		})

@@ -45,7 +45,7 @@ async function measurePing(func: Func, ...args: any) {
 		setTimeout(() => res({ ping, status }), 2_000)
 
 		const startTime = Date.now()
-		const data = await func(...args).catch(() => {})
+		const data = await func(...args).catch(() => { })
 		ping = Date.now() - startTime
 
 		if (data?.status === 200 || data?.chat || data?.id) status = '..On..'
