@@ -57,10 +57,10 @@ export default () => {
 			},
 		},
 		align: { // align a word between spaces
-			value: function (limit: number, endPosition?: bool) {
+			value: function (limit: number, char: str = ' ', endPosition?: bool) {
 				const ratio = (limit - this.length) / 2
-				const start = ' '.repeat(Math.ceil(ratio))
-				const end = ' '.repeat(Math.floor(ratio))
+				const start = char.repeat(Math.ceil(ratio))
+				const end = char.repeat(Math.floor(ratio))
 
 				if (endPosition) return (end + this + start).slice(0, limit)
 				else return (start + this + end).slice(0, limit)
@@ -163,7 +163,7 @@ export default () => {
 		const [title, msg, color]: string[] = [...args]
 
 		const str = `[${title.align(12)}| ${now()} | ${
-			(process.memoryUsage().rss.bytes() as str).align(6, true)
+			(process.memoryUsage().rss.bytes() as str).align(6, ' ', true)
 		}] - ${msg}`
 
 		// console.log(str);

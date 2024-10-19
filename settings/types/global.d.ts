@@ -8,7 +8,7 @@ declare function print(...args: any[]): void
 interface String {
 	encode(): str
 	toPascalCase(): str
-	align(limit: num, endPosition?: bool): str
+	align(limit: num, char?: str, endPosition?: bool): str
 	t(lang: str): str
 	filterForRegex(): str
 	toMs(): [num, str[]]

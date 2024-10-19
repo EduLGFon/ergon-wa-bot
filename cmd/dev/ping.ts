@@ -7,7 +7,7 @@ export default class extends Cmd {
 		})
 	}
 	async run({ bot, user, msg }: CmdCtx) {
-		let text = `*[🐧] - Ping:*\n`
+		let text = `*Ping* 🏓\n`
 
 		// Calculate WA Ping
 		const whatsapp = await measurePing(bot.react.bind(bot), msg, 'loading')
@@ -21,11 +21,11 @@ export default class extends Cmd {
 
 		// Calculate Runner ping
 		const runner = await measurePing(fetch, 'http://localhost:3077/ping')
-		text += createStr('👟', 'Runner API', runner)
+		text += createStr('👟', 'Runner', runner)
 
 		// Calculate main server ping
 		const main = await measurePing(fetch, 'http://localhost:3001/ping')
-		text += createStr('✨', 'Main server', main)
+		text += createStr('✨', 'Main', main)
 
 		// Calculate reminder ping
 		const reminder = await measurePing(fetch, 'http://localhost:7361/ping')
@@ -37,8 +37,8 @@ export default class extends Cmd {
 	}
 }
 function createStr(emoji: str, name: str, data: { status: str; ping: num }) {
-	return `[${emoji}]` + name.align(13).bold() + '|' + data.status.align(10).bold() + '|' +
-		`${data.ping}ms`.align(6).bold() + '\n'
+	return `[${emoji}]` + name.align(10).bold() + '|' + data.status.align(10).bold() + '|' +
+		`${data.ping}ms`.align(8).bold() + '\n'
 }
 async function measurePing(func: Function, ...args: any) {
 	let status = 'Offline'
