@@ -74,8 +74,6 @@ export default class extends Command {
 function attachMedia(obj: msgMedia, data: Buffer, path: string) {
 	const stat = statSync(path);
 
-	console.log(stat.size / 1024 / 1024);
-
 	if (obj.audio) {
 		if (stat.size / 1024 / 1024 < 10) return obj.audio = data;
 
