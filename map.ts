@@ -30,9 +30,9 @@ export {
 
 // Config files
 import settings from './settings/settings.json' with { type: 'json' }
-const { bot, db, runner, sticker } = settings
+const { bot, db, runner, sticker, api } = settings
 
-export { bot, db, runner, sticker }
+export { api, bot, db, runner, sticker }
 
 // Classes
 import Collection from './class/collection.js'
@@ -44,6 +44,7 @@ import Cmd from './class/cmd.js'
 
 export { Baileys, Cmd, Collection, Group, prisma, User }
 
+// Functions
 import {
 	cacheAllGroups,
 	cleanTemp,
@@ -61,12 +62,14 @@ import {
 } from './util/functions.js'
 import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
+import { gemini } from './util/api.js'
 
 export {
 	cacheAllGroups,
 	cleanTemp,
 	delay,
 	findKey,
+	gemini,
 	genStickerMeta,
 	getCtx,
 	getMsgText,

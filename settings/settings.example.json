@@ -1,12 +1,16 @@
 {
 	"bot": {
 		"owners": [""],
-		"number": "",
 		"link": "",
 		"region": {
 			"timezone": "America/Sao_Paulo",
 			"logLanguage": "pt"
 		}
+	},
+
+	"sticker": {
+		"packName": ["pack"],
+		"author": ["wall-e"]
 	},
 
 	"db": {
@@ -17,6 +21,14 @@
 		},
 		"groupDefault": {
 			"msgsCacheLimit": 200
+		}
+	},
+
+	"api": {
+		"aiModel": {
+			"gpt": "gpt-3.5-turbo",
+			"gemini": "gemini-1.5-flash",
+			"geminiPro": "gemini-1.5-pro"
 		}
 	},
 
@@ -46,10 +58,5 @@
 			"cmd": ["g++ -o settings/temp/main ", "./settings/temp/main #"],
 			"ext": "cpp"
 		}
-	},
-
-	"sticker": {
-		"packName": ["pack"],
-		"author": ["wall-e"]
 	}
 }
