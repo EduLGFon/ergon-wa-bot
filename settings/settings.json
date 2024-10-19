@@ -1,16 +1,10 @@
 {
 	"bot": {
-		"owners": [""],
-		"link": "",
+		"link": "dsc.gg/wallebot",
 		"region": {
 			"timezone": "America/Sao_Paulo",
 			"logLanguage": "pt"
 		}
-	},
-
-	"sticker": {
-		"packName": ["pack"],
-		"author": ["wall-e"]
 	},
 
 	"db": {
@@ -32,6 +26,27 @@
 		}
 	},
 
+	"sticker": {
+		"packName": [
+			"꒷︶꒷꒦ Sticker ꒷꒦︶꒷",
+			"╰───────────╮\n",
+			"╭︰꒰👑꒱・Author:",
+			"│︰꒰🤖꒱・Bot:",
+			"│︰꒰❤️꒱・Owner:",
+			"│︰꒰❓꒱・Support:",
+			"╰︰꒰⛄꒱・Group:"
+		],
+		"author": [
+			"꒷︶꒷꒦ Metadata ꒷꒦︶꒷",
+			"╭────────────╯\n",
+			"︰{username}",
+			"︰Wall-E ⚡",
+			"︰Sunf3r",
+			"︰{link}",
+			"︰{group}"
+		]
+	},
+
 	"runner": {
 		"port": 3077,
 		"py": {
@@ -44,7 +59,7 @@
 		},
 		"node": {
 			"cmd": ["node"],
-			"ext": "js'"
+			"ext": "js"
 		},
 		"deno": {
 			"cmd": ["deno run -A"],

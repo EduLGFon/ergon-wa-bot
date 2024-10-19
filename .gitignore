@@ -1,5 +1,4 @@
 # Settings
-settings.json
 **/auth*
 *.env
 test/
