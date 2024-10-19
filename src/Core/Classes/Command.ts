@@ -1,21 +1,19 @@
-import type { Cmd, CmdContext } from '../Typings/types.js';
+import type { CmdContext } from '../Typings/types.js';
 
-export default abstract class Command implements Cmd {
-	name?: str;
-	aliases?: str[];
-	cooldown?: num;
-	react?: bool;
-	access?: {
-		dm?: bool;
-		groups?: bool;
-		onlyDevs?: bool;
-	};
+export default abstract class Cmd {
+	name: str;
+	aliases: str[];
+	cooldown: num;
+	access: Partial<{
+		dm: bool;
+		groups: bool;
+		onlyDevs: bool;
+	}>;
 
-	constructor(c: Cmd) {
+	constructor(c: Partial<Cmd>) {
 		this.name = '';
 		this.aliases = c.aliases || [];
 		this.cooldown = c.cooldown || 3;
-		this.react = true;
 		this.access = Object.assign({
 			dm: true,
 			groups: true,

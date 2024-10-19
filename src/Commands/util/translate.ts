@@ -1,8 +1,8 @@
 import type { CmdContext } from '../../Core/Typings/types.js';
-import Command from '../../Core/Classes/Command.js';
+import Cmd from '../../Core/Classes/Command.js';
 import translate from 'google-translate';
 
-export default class extends Command {
+export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['t'],

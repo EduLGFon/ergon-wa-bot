@@ -1,5 +1,6 @@
 import { GroupMetadata, proto } from 'baileys';
 import Group from '../Classes/Group.ts';
+import Cmd from '../Classes/Command.ts';
 import User from '../Classes/User.ts';
 import { TFunction } from 'i18next';
 import Bot from '../Classes/Bot.ts';
@@ -31,19 +32,6 @@ interface Msg {
 	isBot: bool;
 	quoted: Msg;
 	raw: proto.IWebMessageInfo;
-}
-
-interface Cmd {
-	name?: str;
-	aliases?: str[];
-	cooldown?: num;
-	access?: {
-		dm?: bool;
-		groups?: bool;
-		onlyDevs?: bool;
-	};
-	react?: bool;
-	run?: Function;
 }
 
 interface CmdContext {

@@ -1,8 +1,8 @@
 import type { CmdContext } from '../../Core/Typings/types.js';
 import prisma from '../../Core/Components/Prisma.js';
-import Command from '../../Core/Classes/Command.js';
+import Cmd from '../../Core/Classes/Command.js';
 
-export default class extends Command {
+export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['p'],

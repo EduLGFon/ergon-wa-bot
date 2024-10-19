@@ -1,7 +1,7 @@
-import type { Cmd, CmdContext } from '../../Core/Typings/types.js';
-import Command from '../../Core/Classes/Command.js';
+import type { CmdContext } from '../../Core/Typings/types.js';
+import Cmd from '../../Core/Classes/Command.js';
 
-export default class extends Command {
+export default class extends Cmd {
 	constructor() {
 		super({
 			aliases: ['ajuda', 'menu', '?'],
@@ -10,7 +10,7 @@ export default class extends Command {
 
 	async run({ t, bot, args, msg, user }: CmdContext) {
 		const cmdsList = bot.cmds
-			.filter((c: Cmd) => !c.access!.onlyDevs)
+			.filter((c: Cmd) => !c.access.onlyDevs)
 			.map((c: Cmd) => `➥ *${user.prefix}${c.name}*: ${t(`${c.name}.desc`)}\n`)
 			.join('');
 
