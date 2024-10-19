@@ -1,1 +1,103 @@
-{"langs":{"pt":"Portuguese","en":"English","es":"Spanish","fr":"French","pl":"Polish"},"usage":{"title":"*[❗] - How to use?*","args":"*[💡] - Types of parameters:*\n<required>\n[optional]\n(mentioned message)","examples":"*[💯] - Examples:*"},"help":{"usage":"[name of a command]","desc":"See more information about a command","examples":["gemini","sticker"],"title":"*[📖] - Help menu*","prefix":"[⚙️] Change prefix: *{{prefix}}*","lang":"[🌎] Change language: *{{lang}}*"},"language":{"usage":"<language code>","desc":"Change the bot language","examples":["PT","en","is","fr","pl"],"changed":"[🌎] - Language changed to *{{lng}}*"},"prefix":{"usage":"<prefix with up to 3 digits>","desc":"Change command prefix","examples":[".","!"],"changed":"[✔️] - Your new prefix is: *{{prefix}}*"},"ping":{"desc":"See the bot's response time","pinging":"Calculating response time..."},"choose":{"usage":"<option 1>, <option 2>, [option 3], [...]","desc":"In doubt about what to do? Choose this or that","examples":["Pizza, cake, pudding, apple","I should do this, I shouldn't do this","Go for a walk, play video games"],"result":"*[🏆] - Option chosen:* {{chosen}}"},"gemini":{"usage":"<prompt> [(image/audio/video)]","desc":"Chat with Google AI","examples":["Summarize the text in this image","What is the population of New York?","Be a teenager and explain quantum physics with slang"]},"rank":{"usage":"","desc":"See the ranking of members who talked the most in the group","examples":[""]},"sticker":{"usage":"<(image/gif)> [rmbg: remove the background of an image]","desc":"Create stickers without background!!!!","examples":["rmbg <image attached>","(image mentioned)"],"nobuffer":"[⚠️] - Incompatible or not found media"},"clean":{"usage":"<number of messages (max 200)>","desc":"Hide your crimes by deleting the latest group messages","examples":["10","200"],"noAmount":"\"clean 0\"? Do you think this is your room and you don't clean anything?","deleted":"I'm going to delete the last {{msgsSize}} messages and then I'm going to go back to sleep right here in my hammock"},"remind":{"usage":"<duration> <message>","desc":"Schedule reminders","examples":["10m 15s Shut down the nuclear reactor","1h 42m Buy bread","15s Cum"]},"reveal":{"usage":"(single view media) [forever/f: reveal forever]","desc":"Just one more time! Reveal unique viewing media","examples":["(single view image) forever","(single view video)","(single view audio) f"]},"search":{"usage":"<question>","desc":"Google it!","examples":["10 dollars in euros","What time is it in London?"]},"translate":{"usage":"<language code: en/pt/fr...> <text>","desc":"Google translator","examples":["fr Pussy","es War is love"]},"download":{"usage":"<audio/video> <url>","desc":"Download videos and audios","examples":["audio https://music.youtube.com/watch?v=4QLvEIXlF6Q","to https://youtu.be/4QLvEIXlF6Q","video https://youtu.be/4QLvEIXlF6Q"],"true":"*[⌛] - Downloading the video... Please wait a moment.*","false":"*[⌛] - Downloading audio... Please wait a moment.*"}}
+{
+	"langs": {
+		"pt": "Portuguese",
+		"en": "English",
+		"es": "Spanish",
+		"fr": "French",
+		"pl": "Polish"
+	},
+	"usage": {
+		"title": "*[❗] - How to use?*",
+		"args": "*[💡] - Types of parameters:*\n<required>\n[optional]\n(mentioned message)",
+		"examples": "*[💯] - Examples:*"
+	},
+	"help": {
+		"usage": "[name of a command]",
+		"desc": "See more information about a command",
+		"examples": ["gemini", "sticker"],
+		"title": "*[📖] - Help menu*",
+		"prefix": "[⚙️] Change prefix: *{{prefix}}*",
+		"lang": "[🌎] Change language: *{{lang}}*"
+	},
+	"language": {
+		"usage": "<language code>",
+		"desc": "Change the bot language",
+		"examples": ["PT", "en", "is", "fr", "pl"],
+		"changed": "[🌎] - Language changed to *{{lng}}*"
+	},
+	"prefix": {
+		"usage": "<prefix with up to 3 digits>",
+		"desc": "Change command prefix",
+		"examples": [".", "!"],
+		"changed": "[✔️] - Your new prefix is: *{{prefix}}*"
+	},
+	"ping": { "desc": "See the bot's response time", "pinging": "Calculating response time..." },
+	"choose": {
+		"usage": "<option 1>, <option 2>, [option 3], [...]",
+		"desc": "In doubt about what to do? Choose this or that",
+		"examples": [
+			"Pizza, cake, pudding, apple",
+			"I should do this, I shouldn't do this",
+			"Go for a walk, play video games"
+		],
+		"result": "*[🏆] - Option chosen:* {{chosen}}"
+	},
+	"gemini": {
+		"usage": "<prompt> [(image/audio/video)]",
+		"desc": "Chat with Google AI",
+		"examples": [
+			"Summarize the text in this image",
+			"What is the population of New York?",
+			"Be a teenager and explain quantum physics with slang"
+		]
+	},
+	"rank": {
+		"usage": "",
+		"desc": "See the ranking of members who talked the most in the group",
+		"examples": [""]
+	},
+	"sticker": {
+		"usage": "<(image/gif)> [rmbg: remove the background of an image]",
+		"desc": "Create stickers without background!!!!",
+		"examples": ["rmbg <image attached>", "(image mentioned)"],
+		"nobuffer": "[⚠️] - Incompatible or not found media"
+	},
+	"clean": {
+		"usage": "<number of messages (max 200)>",
+		"desc": "Hide your crimes by deleting the latest group messages",
+		"examples": ["10", "200"],
+		"noAmount": "\"clean 0\"? Do you think this is your room and you don't clean anything?",
+		"deleted": "I'm going to delete the last {{msgsSize}} messages and then I'm going to go back to sleep right here in my hammock"
+	},
+	"remind": {
+		"usage": "<duration> <message>",
+		"desc": "Schedule reminders",
+		"examples": ["10m 15s Shut down the nuclear reactor", "1h 42m Buy bread", "15s Cum"]
+	},
+	"reveal": {
+		"usage": "(single view media) [forever/f: reveal forever]",
+		"desc": "Just one more time! Reveal unique viewing media",
+		"examples": ["(single view image) forever", "(single view video)", "(single view audio) f"]
+	},
+	"search": {
+		"usage": "<question>",
+		"desc": "Google it!",
+		"examples": ["10 dollars in euros", "What time is it in London?"]
+	},
+	"translate": {
+		"usage": "<language code: en/pt/fr...> <text>",
+		"desc": "Google translator",
+		"examples": ["fr Pussy", "es War is love"]
+	},
+	"download": {
+		"usage": "<audio/video> <url>",
+		"desc": "Download videos and audios",
+		"examples": [
+			"audio https://music.youtube.com/watch?v=4QLvEIXlF6Q",
+			"to https://youtu.be/4QLvEIXlF6Q",
+			"video https://youtu.be/4QLvEIXlF6Q"
+		],
+		"true": "*[⌛] - Downloading the video... Please wait a moment.*",
+		"false": "*[⌛] - Downloading audio... Please wait a moment.*"
+	}
+}

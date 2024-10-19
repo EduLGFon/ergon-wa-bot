@@ -58,12 +58,13 @@
 		"result": "*[🏆] - Opção escolhida:* {{chosen}}"
 	},
 	"gemini": {
-		"usage": "<prompt> [(imagem/áudio/vídeo)]",
+		"usage": "[pro: Gemini Pro]/[reset: Reseta a janela de contexto] <prompt> [(imagem/áudio/vídeo)]",
 		"desc": "Converse com a IA do Google",
 		"examples": [
-			"Resuma o texto dessa imagem",
+			"(imagem) Resuma o texto dessa imagem",
 			"Qual é a população de Nova Iorque?",
-			"Seja um adolescente e explique física quântica com gírias"
+			"reset Quem sou eu?",
+			"pro Explique física quântica como se você fosse um adolescente"
 		]
 	},
 	"rank": {
