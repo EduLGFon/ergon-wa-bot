@@ -45,13 +45,14 @@ export { api, bot, db, runner, sticker }
 
 // Classes
 import Collection from './class/collection.js'
+import { server } from './class/server.js'
 import Baileys from './class/baileys.js'
 import prisma from './util/prisma.js'
 import Group from './class/group.js'
 import User from './class/user.js'
 import Cmd from './class/cmd.js'
 
-export { Baileys, Cmd, Collection, Group, prisma, User }
+export { Baileys, Cmd, Collection, Group, prisma, server, User }
 
 // Functions
 import {

@@ -1,5 +1,6 @@
 {
 	"bot": {
+		"port": 3001,
 		"link": "dsc.gg/wallebot",
 		"region": {
 			"timezone": "America/Sao_Paulo",

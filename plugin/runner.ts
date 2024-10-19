@@ -1,6 +1,5 @@
 import settings from '../settings/settings.json' with { type: 'json' }
 import { execSync } from 'node:child_process'
-import { writeFile } from 'node:fs/promises'
 import express from 'express'
 import fs from 'node:fs'
 
@@ -35,7 +34,10 @@ app
 	// 	if (blob) return res.send({ blob, url, path })
 	// 	res.send('missing data')
 	// })
-	.listen(settings.runner.port, () => console.log(`ready! Port: ${settings.runner.port}`))
+	.listen(
+		settings.runner.port,
+		() => console.log(`Runner ready on port ${settings.runner.port}!`),
+	)
 
 function runCode(lang: 'py', code = '', file: str) {
 	const cli: str[] = []

@@ -16,7 +16,7 @@ import { resolve } from 'node:path'
 import pino from 'pino'
 
 const logger: Logger = pino.default()
-logger.level = 'silent'
+logger.level = 'info'
 
 export default class Baileys {
 	sock!: WASocket

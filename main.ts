@@ -1,4 +1,4 @@
-import { Baileys, locale, proto } from './map.js'
+import { Baileys, locale, proto, server } from './map.js'
 
 proto()
 locale()
@@ -6,6 +6,7 @@ const bot = new Baileys('settings/auth')
 // auth/ contains auth info to login without scan QR Code again
 
 bot.connect()
+server(bot)
 
 process // "anti-crash" to handle lib instabilities
 	.on(
