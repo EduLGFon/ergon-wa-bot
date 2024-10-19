@@ -7,13 +7,13 @@
 	},
 	"scripts": {
 		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm start",
-		"update": "npm update --save; deno upgrade & bun upgrade & npm run postinstall",
+		"update": "git pull origin master && npm update --save; deno upgrade & bun upgrade & npm run postinstall; npm run restart",
 		"prisma:push": "npx prisma db push --schema=settings/schema.prisma",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"prisma:gen": "npx prisma generate --schema=settings/schema.prisma",
 		"build": "rm -r build/ & tsc",
 		"start": "pm2 start settings/ecosystem.config.cjs --attach",
-		"restart": "npm run build && pm2 restart walle --attach",
+		"restart": "pm2 restart walle --attach",
 		"fmt": "deno fmt ./ --config=settings/deno.jsonc",
 		"tsnd": "ts-node --esm main.ts",
 		"clean": "rm -r settings/log/* settings/temp/*"
