@@ -30,7 +30,7 @@ export default class extends Cmd {
 			model,
 			buffer,
 			mime,
-			chat: user._chat,
+			user,
 			callback,
 		})
 

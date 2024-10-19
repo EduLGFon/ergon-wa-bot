@@ -36,7 +36,7 @@ async function imgRemover(img: str, quality: number) {
 	return await req.json()
 }
 
-async function gemini({ instruction, prompt, model, buffer, mime, chat, callback }: aiPrompt) {
+async function gemini({ instruction, prompt, model, buffer, mime, user, callback }: aiPrompt) {
 	// Access your API key as an environment variable
 	const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY!)
 
@@ -82,14 +82,15 @@ async function gemini({ instruction, prompt, model, buffer, mime, chat, callback
 
 			return generateResponse(result.response)
 		}
+		user = user!
 
-		if (!chat) {
-			chat = gemini.startChat({
+		if (!user._chat) {
+			user._chat = gemini.startChat({
 				history: [{ role: 'user', parts: [{ text: instruction }] }],
 			})
 		}
 
-		result = await chat.sendMessageStream(prompt)
+		result = await user._chat.sendMessageStream(prompt)
 
 		interval = setInterval(() => {
 			if (data) callback(generateResponse(data))

@@ -61,7 +61,7 @@ interface aiPrompt {
 	model: str
 	buffer?: Buffer
 	mime?: str
-	chat?: ChatSession
+	user?: User
 	callback?(data: aiResponse): Promise<void>
 }
 
