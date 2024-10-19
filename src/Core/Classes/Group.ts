@@ -39,7 +39,7 @@ export default class Group {
 		this.ephemeral = g.ephemeralDuration;
 		this.invite = g.inviteCode;
 		this.author = g.author;
-		this.lastMsgs = new Collection({}, 10);
+		this.lastMsgs = new Collection({}, 100);
 	}
 
 	async addMsg(author: str) {
