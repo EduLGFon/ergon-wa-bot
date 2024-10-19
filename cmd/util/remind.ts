@@ -9,12 +9,12 @@ export default class extends Cmd {
 	}
 
 	async run({ bot, user, msg, args, sendUsage }: CmdCtx) {
-		if (args[0] === this.subCmds[0]) {
-			const list = await prisma.reminders.findMany({ where: { author: user.id } })
+		if (args[0] === this.subCmds[0]) { // list
+			const list = await prisma.reminders.findMany({ where: { author: user.id } }) // all user reminders
 
 			const pendingReminders = list
-				.filter((i) => !i.isDone)
-				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt))
+				.filter((i) => !i.isDone) // active reminders
+				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt)) // order by duration ASC
 				.map((l, i) => {
 					let duration = (Number(l.remindAt) - Date.now()).duration()
 
@@ -23,7 +23,7 @@ export default class extends Cmd {
 				.join('\n')
 
 			const doneReminders = list
-				.filter((i) => i.isDone)
+				.filter((i) => i.isDone) // completed reminders
 				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt))
 				.map((l, i) => `${i + 1}. \`${l.msg}\``)
 				.join('\n')
@@ -42,7 +42,7 @@ export default class extends Cmd {
 		// '1s' => 1000ms
 
 		// sendUsage if time is invalid or less then 1m
-		if (!matchMs[0] || matchMs[0] < 59_999) return sendUsage()
+		if (!matchMs[0] || matchMs[0] <= 59_999 || matchMs[0] >= 31536000000) return sendUsage()
 
 		const time = Date.now() + matchMs[0] // remind at this moment
 
@@ -53,7 +53,7 @@ export default class extends Cmd {
 			data: { // create remind
 				author: user.id,
 				chat: msg.chat,
-				msg: args.join(' ').trim().slice(0, 512), // remove unnecessary spaces from str
+				msg: args.join(' ').trim().slice(0, 128), // remove unnecessary spaces from str
 				remindAt: String(time),
 			},
 		})
