@@ -1,4 +1,7 @@
 {
+	"events": {
+		"cooldown": "[🕓] - Tá com pressa? Você foi taxado em *{{time}}*, espera um pouquinho aí"
+	},
 	"langs": {
 		"pt": "Português",
 		"en": "Inglês",
@@ -90,6 +93,15 @@
 		],
 		"noAmount": "\"clean 0\"? Tá achando que aqui é o seu quarto que você não limpa nada?",
 		"deleted": "Vou apagar as últimas {{msgsSize}} mensagens e depois vou voltar a dormir bem aqui na minha rede"
+	},
+	"everyone": {
+		"usage": "[conteúdo da mensagem]",
+		"desc": "Mencione todos os usuários de um grupo em uma única mensagem",
+		"examples": [
+			"",
+			"Notícia urgente!",
+			"Vamos ao cinema hoje?"
+		]
 	},
 	"remind": {
 		"usage": "<duração> <mensagem>",

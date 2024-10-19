@@ -1,4 +1,7 @@
 {
+	"events": {
+		"cooldown": "[🕓] - ¿Tienes prisa? Te cobraron impuestos en *{{time}}*, espera un minuto"
+	},
 	"langs": {
 		"pt": "portugués",
 		"en": "Inglés",
@@ -14,7 +17,7 @@
 	"help": {
 		"usage": "[nombre de un comando]",
 		"desc": "Ver más información sobre un comando",
-		"examples": ["Geminis", "pegatina"],
+		"examples": ["Géminis", "etiqueta engomada"],
 		"title": "*[📖] - Menú de ayuda*",
 		"prefix": "[⚙️] Cambiar prefijo: *{{prefix}}*",
 		"lang": "[🌎] Cambiar idioma: *{{lang}}*"
@@ -27,7 +30,7 @@
 	},
 	"prefix": {
 		"usage": "<prefijo de hasta 3 dígitos>",
-		"desc": "Cambiar prefijo de comando",
+		"desc": "Cambiar el prefijo del comando",
 		"examples": [".", "!"],
 		"changed": "[✔️] - Tu nuevo prefijo es: *{{prefix}}*"
 	},
@@ -61,7 +64,7 @@
 		"examples": [""]
 	},
 	"sticker": {
-		"usage": "<(imagen/gif)> [rmbg: eliminar el fondo de una imagen]",
+		"usage": "<(imagen/gif)> [rmbg: elimina el fondo de una imagen]",
 		"desc": "Crea stickers sin fondo!!!!",
 		"examples": ["rmbg <imagen adjunta>", "(imagen mencionada)"],
 		"nobuffer": "[⚠️] - Medios incompatibles o no encontrados"
@@ -73,14 +76,19 @@
 		"noAmount": "¿\"limpio 0\"? ¿Crees que esta es tu habitación y no limpias nada?",
 		"deleted": "Voy a borrar los últimos {{msgsSize}} mensajes y luego me voy a volver a dormir aquí mismo en mi hamaca."
 	},
+	"everyone": {
+		"usage": "[contenido del mensaje]",
+		"desc": "Mencionar a todos los usuarios de un grupo en un solo mensaje",
+		"examples": ["", "¡Noticias urgentes!", "¿Vamos al cine hoy?"]
+	},
 	"remind": {
 		"usage": "<duración> <mensaje>",
 		"desc": "Programar recordatorios",
 		"examples": ["10m 15s Apagar el reactor nuclear", "1h 42m Comprar pan", "15s semen"]
 	},
 	"reveal": {
-		"usage": "(medios de vista única) [forever/f: revelar para siempre]",
-		"desc": "¡Solo una vez mas! Revele medios de visualización únicos",
+		"usage": "(medios de vista única) [para siempre/f: revelar para siempre]",
+		"desc": "¡Solo una vez más! Revele medios de visualización únicos",
 		"examples": [
 			"(imagen de vista única) para siempre",
 			"(vídeo de vista única)",
@@ -89,12 +97,12 @@
 	},
 	"search": {
 		"usage": "<pregunta>",
-		"desc": "¡Buscalo en Google!",
+		"desc": "Googlealo!",
 		"examples": ["10 dolares en euros", "¿Qué hora es en Londres?"]
 	},
 	"translate": {
 		"usage": "<código de idioma: en/pt/fr...> <texto>",
-		"desc": "traductor de Google",
+		"desc": "Google Translate",
 		"examples": ["fr coño", "es La guerra es amor"]
 	},
 	"download": {

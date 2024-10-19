@@ -1,14 +1,17 @@
 {
+	"events": {
+		"cooldown": "[🕓] - Spieszysz się? Twój podatek został naliczony w *{{time}}*, poczekaj chwilę"
+	},
 	"langs": {
 		"pt": "portugalski",
-		"en": "język angielski",
+		"en": "angielski",
 		"es": "hiszpański",
-		"fr": "Francuski",
+		"fr": "francuski",
 		"pl": "Polski"
 	},
 	"usage": {
 		"title": "*[❗] - Jak z niego korzystać?*",
-		"args": "*[💡] - Rodzaje parametrów:*\n<wymagane>\n[opcjonalny]\n(wspomniana wiadomość)",
+		"args": "*[💡] - Rodzaje parametrów:*\n<wymagane>\n[fakultatywny]\n(wspomniana wiadomość)",
 		"examples": "*[💯] - Przykłady:*"
 	},
 	"help": {
@@ -58,7 +61,7 @@
 		"examples": [""]
 	},
 	"sticker": {
-		"usage": "<(image/gif)> [rmbg: usuń tło obrazka]",
+		"usage": "<(image/gif)> [rmbg: usuwa tło obrazka]",
 		"desc": "Twórz naklejki bez tła!!!!",
 		"examples": ["rmbg <obraz w załączeniu>", "(wspomniany obraz)"],
 		"nobuffer": "[⚠️] - Niekompatybilne lub nie znalezione multimedia"
@@ -69,6 +72,11 @@
 		"examples": ["10", "200"],
 		"noAmount": "„czyste 0”? Myślisz, że to twój pokój i niczego nie sprzątasz?",
 		"deleted": "Usunę ostatnie {{msgsSize}} wiadomości, a potem pójdę spać tutaj, w hamaku"
+	},
+	"everyone": {
+		"usage": "[treść wiadomości]",
+		"desc": "Wspomnij o wszystkich użytkownikach w grupie w jednej wiadomości",
+		"examples": ["", "Pilna wiadomość!", "Pójdziemy dzisiaj do kina?"]
 	},
 	"remind": {
 		"usage": "<czas trwania> <wiadomość>",
@@ -91,7 +99,7 @@
 	},
 	"translate": {
 		"usage": "<kod języka: en/pt/fr...> <tekst>",
-		"desc": "tłumacz Google",
+		"desc": "Tłumacz Google",
 		"examples": ["fr Cipka", "es Wojna to miłość"]
 	},
 	"download": {

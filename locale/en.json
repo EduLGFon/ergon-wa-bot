@@ -1,4 +1,7 @@
 {
+	"events": {
+		"cooldown": "[🕓] - Are you in a hurry? You were taxed in *{{time}}*, wait a minute"
+	},
 	"langs": {
 		"pt": "Portuguese",
 		"en": "English",
@@ -27,7 +30,7 @@
 	},
 	"prefix": {
 		"usage": "<prefix with up to 3 digits>",
-		"desc": "Change command prefix",
+		"desc": "Change the command prefix",
 		"examples": [".", "!"],
 		"changed": "[✔️] - Your new prefix is: *{{prefix}}*"
 	},
@@ -58,7 +61,7 @@
 		"examples": [""]
 	},
 	"sticker": {
-		"usage": "<(image/gif)> [rmbg: remove the background of an image]",
+		"usage": "<(image/gif)> [rmbg: removes the background of an image]",
 		"desc": "Create stickers without background!!!!",
 		"examples": ["rmbg <image attached>", "(image mentioned)"],
 		"nobuffer": "[⚠️] - Incompatible or not found media"
@@ -69,6 +72,11 @@
 		"examples": ["10", "200"],
 		"noAmount": "\"clean 0\"? Do you think this is your room and you don't clean anything?",
 		"deleted": "I'm going to delete the last {{msgsSize}} messages and then I'm going to go back to sleep right here in my hammock"
+	},
+	"everyone": {
+		"usage": "[message content]",
+		"desc": "Mention all users in a group in a single message",
+		"examples": ["", "Urgent news!", "Shall we go to the cinema today?"]
 	},
 	"remind": {
 		"usage": "<duration> <message>",
@@ -87,7 +95,7 @@
 	},
 	"translate": {
 		"usage": "<language code: en/pt/fr...> <text>",
-		"desc": "Google translator",
+		"desc": "Google Translate",
 		"examples": ["fr Pussy", "es War is love"]
 	},
 	"download": {

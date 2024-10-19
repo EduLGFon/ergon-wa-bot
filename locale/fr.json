@@ -1,6 +1,9 @@
 {
+	"events": {
+		"cooldown": "[🕓] - Vous êtes pressé ? Vous avez été taxé en *{{time}}*, attendez une minute"
+	},
 	"langs": {
-		"pt": "Portugais",
+		"pt": "portugais",
 		"en": "Anglais",
 		"es": "Espagnol",
 		"fr": "Français",
@@ -22,7 +25,7 @@
 	"language": {
 		"usage": "<code langue>",
 		"desc": "Changer la langue du bot",
-		"examples": ["TP", "fr", "est", "fr", "PL"],
+		"examples": ["TP", "fr", "est", "fr", "svp"],
 		"changed": "[🌎] – La langue a été modifiée en *{{lng}}*"
 	},
 	"prefix": {
@@ -61,7 +64,7 @@
 		"examples": [""]
 	},
 	"sticker": {
-		"usage": "<(image/gif)> [rmbg : supprimer l'arrière-plan d'une image]",
+		"usage": "<(image/gif)> [rmbg : supprime l'arrière-plan d'une image]",
 		"desc": "Créez des autocollants sans fond !!!!",
 		"examples": ["rmbg <image jointe>", "(image mentionnée)"],
 		"nobuffer": "[⚠️] - Médias incompatibles ou introuvables"
@@ -69,9 +72,14 @@
 	"clean": {
 		"usage": "<nombre de messages (max 200)>",
 		"desc": "Cachez vos crimes en supprimant les derniers messages de groupe",
-		"examples": ["dix", "200"],
+		"examples": ["10", "200"],
 		"noAmount": "\"nettoyer 0\" ? Pensez-vous que c'est votre chambre et que vous ne nettoyez rien ?",
 		"deleted": "Je vais supprimer les {{msgsSize}} derniers messages et ensuite je vais me rendormir ici même dans mon hamac"
+	},
+	"everyone": {
+		"usage": "[contenu du message]",
+		"desc": "Mentionner tous les utilisateurs d'un groupe dans un seul message",
+		"examples": ["", "Des nouvelles urgentes !", "On va au cinéma aujourd'hui ?"]
 	},
 	"remind": {
 		"usage": "<durée> <message>",
@@ -84,7 +92,7 @@
 	},
 	"reveal": {
 		"usage": "(média à vue unique) [forever/f : révéler pour toujours]",
-		"desc": "Juste une fois de plus! Révéler des médias de visualisation uniques",
+		"desc": "Encore une fois ! Révéler des médias de visualisation uniques",
 		"examples": [
 			"(image à vue unique) pour toujours",
 			"(vidéo à vue unique)",
@@ -93,12 +101,12 @@
 	},
 	"search": {
 		"usage": "<question>",
-		"desc": "Recherche le sur Google!",
+		"desc": "Recherchez-le sur Google !",
 		"examples": ["10 dollars en euros", "Quelle heure est-il à Londres ?"]
 	},
 	"translate": {
 		"usage": "<code langue : en/pt/fr...> <texte>",
-		"desc": "traducteur Google",
+		"desc": "Google Traduction",
 		"examples": ["fr Chatte", "es La guerre c'est l'amour"]
 	},
 	"download": {
