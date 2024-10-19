@@ -1,5 +1,6 @@
-import { proto } from 'baileys';
 import { GroupMetadata } from 'baileys';
+import { proto } from 'baileys';
+import { pino } from 'pino';
 import Bot from '../Core/Bot';
 
 type MsgTypes = 'conversation' | 'extendedTextMessage' | 'videoMessage' | 'imageMessage';
@@ -35,5 +36,8 @@ interface CmdContext {
 	msg: Msg;
 	args: string[];
 	cmd: Map<string, Cmd>;
+	callCmd: string;
 	bot: Bot;
 }
+
+type Logger = pino.Logger<{ timestamp: () => string } & pino.ChildLoggerOptions>;

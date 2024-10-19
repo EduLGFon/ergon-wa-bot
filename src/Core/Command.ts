@@ -19,7 +19,7 @@ export default abstract class Command implements Cmd {
 			groups: true,
 			onlyDevs: false,
 		}, c.access);
-		// Compara as permissões do comando
+		// Compare command permissions
 	}
 
 	abstract run(ctx: CmdContext): Promise<any>;
