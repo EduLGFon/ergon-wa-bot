@@ -167,7 +167,10 @@ function checkPermissions(cmd: Cmd, user: User, group?: Group) {
 
 		const admins = group.members.map((m) => m.admin && m.id)
 		// all group admins ID
-		if (cmd.access.admin && !admins.includes(user.id)) return 'block'
+		const userId = user.id + '@s.whatsapp.net'
+		if (cmd.access.admin && (!admins.includes(userId) && !devs.includes(user.id))) {
+			return 'block' // Devs can use admin cmds for security reasons
+		}
 	} else if (!cmd.access.dm) return 'x'
 	// if there's no group and cmd can't run on DM
 
