@@ -12,15 +12,15 @@ export default class User {
 		cmdReply?: str
 	}
 
-	constructor(public id: str, username: str) {
+	constructor(public id: str, data: Partial<User>, username?: str) {
 		this.id = id.split('@')[0].split(':')[0]
-		this.lastCmd = { time: 0 }
-		this.geminiCtx = []
+		this.lastCmd = data.lastCmd || { time: 0 }
+		this.geminiCtx = data.geminiCtx || []
 
-		this._username = username
-		this._userLanguage = db.userDefault.language
-		this._userPrefix = db.userDefault.prefix
-		this._cmdsCount = 0
+		this._username = username || data._username || ''
+		this._cmdsCount = data._cmdsCount || 0
+		this._userPrefix = data._userPrefix || db.userDefault.prefix
+		this._userLanguage = data._userLanguage || db.userDefault.language
 	}
 
 	// get name: get user name on cache

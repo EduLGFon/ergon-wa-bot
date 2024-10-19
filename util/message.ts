@@ -31,8 +31,8 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 		}
 	}
 
-	const user: User = bot.users.add(userID!, {}, [pushName!])
-	await user.checkData() // cache user and check it's data on db
+	userID = userID!.split('@')[0].split(':')[0]
+	const user: User = await bot.users.add(userID!, {}, [pushName!])
 
 	let msg: Msg = {
 		key,

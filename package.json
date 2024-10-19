@@ -7,7 +7,7 @@
 	},
 	"scripts": {
 		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm start",
-		"update": "git pull origin master && npm update --save; deno upgrade & bun upgrade & npm run postinstall",
+		"update": "git pull origin master; npm update --save; deno upgrade; bun upgrade; npm run postinstall",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r build/ & npx tsc",
 		"start": "npx pm2 start settings/ecosystem.config.cjs --attach",
@@ -19,19 +19,19 @@
 		"translate": "npx @parvineyvazov/json-translator locale/pt.json  -m google -f pt -t en es fr pl"
 	},
 	"dependencies": {
-		"@google/generative-ai": "^0.16.0",
-		"@prisma/client": "^5.18.0",
+		"@google/generative-ai": "^0.17.1",
+		"@prisma/client": "^5.19.1",
 		"baileys": "^6.7.7",
 		"chalk": "^5.3.0",
 		"express": "^4.19.2",
-		"google-sr": "^3.3.1",
+		"google-sr": "^3.3.2",
 		"google-translate": "github:iamtraction/google-translate",
 		"googlethis": "^1.8.0",
 		"humanize-duration": "^3.32.1",
 		"i18next": "^23.14.0",
 		"i18next-fs-backend": "^2.3.2",
 		"luxon": "^3.5.0",
-		"pino": "^9.3.2",
+		"pino": "^9.4.0",
 		"qrcode-terminal": "^0.12.0",
 		"wa-sticker-formatter": "^4.4.4"
 	},
@@ -39,8 +39,8 @@
 		"@types/express": "^4.17.21",
 		"@types/humanize-duration": "^3.27.4",
 		"@types/luxon": "^3.4.2",
-		"@types/node": "^20.16.1",
-		"prisma": "^5.18.0",
+		"@types/node": "^20.16.5",
+		"prisma": "^5.19.1",
 		"typescript": "^5.5.4"
 	}
 }

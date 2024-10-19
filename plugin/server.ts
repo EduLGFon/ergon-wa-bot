@@ -4,6 +4,10 @@ import express from 'express'
 const app = express()
 
 export function server(bot: Baileys) {
+	return new Promise((res) => start(bot, res))
+}
+
+function start(bot: Baileys, resolve: Function) {
 	app
 		.use(express.json()) // use content-type: json
 		.get('/ping', async (_req, res) => res.sendStatus(200))
@@ -16,7 +20,10 @@ export function server(bot: Baileys) {
 
 			return res.send(sendReminders(bot, r))
 		})
-		.listen(settings.bot.port, () => print('SERVER', `Started on ${settings.bot.port}`, 'gray'))
+		.listen(settings.bot.port, () => {
+			print('SERVER', `Started on ${settings.bot.port}`, 'gray')
+			resolve(true)
+		})
 }
 
 async function sendReminders(bot: Baileys, r: Reminder) {

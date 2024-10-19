@@ -12,11 +12,13 @@ export default async function (bot: Baileys, event: Partial<ConnectionState>) {
 
 	switch (event.connection) {
 		case 'open': // bot started
-			cacheAllGroups(bot)
 			// don't show online mark when bot is running
 			bot.sock.sendPresenceUpdate('unavailable')
+			print('NET', 'Connection stabilized', 'green')
 
-			return print('NET', 'Connection stabilized', 'green')
+			await delay(15_000)
+			cacheAllGroups(bot)
+			return
 
 		case 'connecting':
 			return print('NET', 'Connecting...', 'gray')

@@ -93,12 +93,12 @@ export default class Baileys {
 		this.sock.ev.on('creds.update', saveCreds)
 
 		// Load commands
-		this.folderHandler(`./build/cmd`, this.loadCmds)
+		await this.folderHandler(`./build/cmd`, this.loadCmds)
 		// folderHandler() will read a folder and call callback
 		// for each file
 
 		// Load events
-		this.folderHandler(`./build/event`, this.loadEvents)
+		await this.folderHandler(`./build/event`, this.loadEvents)
 		return
 	}
 
@@ -147,11 +147,9 @@ export default class Baileys {
 		else {
 			// fetch group metadata
 			group = await this.sock.groupMetadata(id)
-			const groupData = new Group(group) // Group class includes useful properties
 
-			this.groups.add(groupData.id, await groupData.checkData())
-			// check group data on db
-			return groupData
+			group = await this.groups.add(group.id, group)
+			return group
 		}
 	}
 

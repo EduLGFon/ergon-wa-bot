@@ -23,13 +23,13 @@ export default class Group {
 
 	cachedMsgs: Collection<str, proto.IMessageKey>
 
-	constructor(g: GroupMetadata) {
-		this.id = g.id
+	constructor(id: str, g: GroupMetadata) {
+		this.id = id
 		this.name = g.subject
-		this.owner = g.owner
+		// this.owner = g.owner
 		// this.nameTimestamp = g.subjectTime;
 		// this.creation = g.creation;
-		this.desc = g.desc
+		// this.desc = g.desc
 		this.restrict = g.restrict
 		this.announce = g.announce
 		this.members = g.participants

@@ -81,12 +81,14 @@ import {
 	isValidPositiveIntenger,
 	makeTempFile,
 } from './util/functions.js'
+import CacheManager from './plugin/cache.js'
 import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
 import { gemini, imgRemover, runCode } from './util/api.js'
 
 export {
 	cacheAllGroups,
+	CacheManager,
 	checkPermissions,
 	cleanTemp,
 	delay,

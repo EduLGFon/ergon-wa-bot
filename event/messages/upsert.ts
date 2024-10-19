@@ -21,10 +21,13 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 
 		// run functions waiting for msgs (waitFor)
 		if (bot.wait.has(e)) {
-			bot.wait.forEach((f) =>
-				f(bot, msg, user, group)
-					.catch((e: Error) => console.error(e, 'BOT/waitFor'))
-			)
+			bot.wait.forEach((f: Function) => {
+				try {
+					f(bot, msg, user, group)
+				} catch (e) {
+					console.error(e, `EVENT/${e}/waitFor`)
+				}
+			})
 		}
 
 		if (!cmd) continue
