@@ -13,7 +13,6 @@ export default class extends Command {
 
 		const chosen = options[Math.floor(Math.random() * options.length)];
 
-		await bot.send(msg, t('choose.result', { chosen: chosen.encode() }));
-		return true;
+		return bot.send(msg, t('choose.result', { chosen: chosen.encode() }));
 	}
 }

@@ -10,7 +10,7 @@ export default class extends Command {
 		});
 	}
 
-	async run({ args, bot, msg }: CmdContext) {
+	async run({ args, bot, user, msg }: CmdContext) {
 		const startTime = Date.now();
 		const startRAM = this.getRAM(); // DENO
 
@@ -26,7 +26,7 @@ export default class extends Command {
 			// difference between initial RAM and final RAM
 			const endRAM = this.getRAM();
 			const RAMRange = Number((endRAM - startRAM).toFixed(2));
-			const duration = (Date.now() - startTime).toLocaleString('pt'); // db
+			const duration = (Date.now() - startTime).toLocaleString(user.lang);
 
 			const text = `*[👨‍💻] - Child Process*\n` +
 				`*[⏰]: ${duration}ms*\n` +

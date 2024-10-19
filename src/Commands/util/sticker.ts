@@ -20,7 +20,7 @@ export default class extends Command {
 		let targetMsg = msg.quoted && msg.quoted.isMedia ? msg.quoted : msg;
 
 		let buffer = await bot.downloadMedia(targetMsg);
-		if (!buffer) return await bot.send(msg, t('sticker.nobuffer'));
+		if (!buffer) return bot.send(msg, t('sticker.nobuffer'));
 
 		if (args[0] === 'nobg') {
 			const name = Math.random();
@@ -51,6 +51,7 @@ export default class extends Command {
 
 			await bot.send(msg.chat, await metadata.toMessage());
 		}
-		return true;
+
+		return;
 	}
 }

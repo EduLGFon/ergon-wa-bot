@@ -1,6 +1,6 @@
 import { CmdContext } from '../../Core/Typings/index';
-import { DEVS } from '../../Core/JSON/config.json';
 import { getCtx } from '../../Core/Components/Utils';
+import { DEVS } from '../../Core/JSON/config.json';
 import bot from '../../Core/Classes/Bot';
 import { type proto } from 'baileys';
 import i18next from 'i18next';

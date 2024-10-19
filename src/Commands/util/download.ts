@@ -29,7 +29,7 @@ export default class extends Command {
 
 		const isVideo = args[0] === 'video' || args[0] === 'v';
 
-		let path, msgBody: msgMedia, file = new Buffer('test'), ytdlArgs = [];
+		let path, msgBody: msgMedia, file: Buffer, ytdlArgs = [];
 
 		if (isVideo) {
 			ytdlArgs.push('--remux-video mp4');
@@ -53,23 +53,21 @@ export default class extends Command {
 		);
 
 		try {
-			await bot.send(msg, t(`download.${isVideo}`));
-			execSync(`ytdl ${ytdlArgs.join(' ')} ${args[1]}`);
+			bot.send(msg, t(`download.${isVideo}`));
+			execSync(`yt-dlp ${ytdlArgs.join(' ')} ${args[1]}`);
 
 			const file = readFileSync(path);
 
 			attachMedia(msgBody, file, path);
 			await bot.send(msg, msgBody as AnyMessageContent);
 
-			clearTemp();
+			return clearTemp();
 		} catch (e: any) {
 			// remove yt-dlp cli to prevent showing social password
 			const error = (e?.stack || e).replace(ytdlArgs.join(' '), 'yt-dlp');
 
-			await bot.send(msg, `YT-DLP Error: ${error}`);
+			return bot.send(msg, `YT-DLP Error: ${error}`);
 		}
-
-		return true;
 	}
 }
 

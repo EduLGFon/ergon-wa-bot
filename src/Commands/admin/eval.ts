@@ -41,8 +41,7 @@ export default class extends Command {
 			clearTemp();
 
 			const sentMsg = await bot.send(msg, text);
-			await bot.react(sentMsg.msg, reaction);
-			return true;
+			return bot.react(sentMsg.msg, reaction);
 		}
 	}
 

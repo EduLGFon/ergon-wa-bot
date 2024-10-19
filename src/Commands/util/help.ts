@@ -39,7 +39,6 @@ export default class extends Command {
 			}
 		}
 
-		await bot.send(msg, text);
-		return true;
+		return bot.send(msg, text);
 	}
 }
