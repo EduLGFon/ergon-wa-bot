@@ -145,7 +145,7 @@ npm run update
 
 ### `4 -` 🔐 Log in:
 
-Just scan the QR Code that will appear on terminal and your're ready to go!
+Just scan the QR Code that will appear on terminal and you're ready to go!
 ---
 
 ### `-1. ` 🗒️ Notes:
