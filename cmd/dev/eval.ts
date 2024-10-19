@@ -56,10 +56,9 @@ export default class extends Cmd {
 		const text = `\`$ ${lang} (${RAM} | ${duration})\`\n` +
 			output.trim().encode()
 
-		cleanTemp() // clean temp folder
-
 		bot.send(msg, text)
 		bot.react(msg, 'ok')
+		cleanTemp() // clean temp folder
 		return
 	}
 }

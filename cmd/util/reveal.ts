@@ -14,14 +14,14 @@ export default class extends Cmd {
 
 		let target = msg.isMedia ? msg : msg.quoted // get msg or msg quoted media
 		let buffer = await bot.downloadMedia(target)
-			.catch((e) => bot.send(msg, `Error: ${e.message.encode()}`))
+			.catch((e) => bot.send(msg, e.message.encode()))
 
-		if (!buffer) return bot.send(msg, t('sticker.nobuffer'))
+		if (!Buffer.isBuffer(buffer)) return bot.send(msg, t('sticker.nobuffer'))
 
 		await bot.react(msg, 'loading')
 		const msgObj = { // don't send media with view once if user says forever/f
 			viewOnce: !this.subCmds.includes(args[0]),
-			text: target.text,
+			caption: target.text ? '`' + target.text + '`' : '',
 		} as AnyMessageContent
 
 		// @ts-ignore send sticker as image

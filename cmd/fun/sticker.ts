@@ -26,7 +26,7 @@ export default class extends Cmd {
 		// choose between msg media or quoted msg media
 		let buffer = await bot.downloadMedia(target)
 
-		if (!buffer) return bot.send(msg, t('sticker.nobuffer'))
+		if (!Buffer.isBuffer(buffer)) return bot.send(msg, t('sticker.nobuffer'))
 		await bot.react(msg, 'loading')
 
 		let stickerTypes = ['rounded', 'full', 'crop', 'circle']
