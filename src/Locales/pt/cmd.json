@@ -1,12 +1,46 @@
 {
-    "ping": "Calculando o tempo de resposta...",
-    "choose": "*[🏆] - Opção escolhida:* ```{{choosedOne}}```",
-    "sticker": "[⚠️] - Imagem incompatível ou não encontrada",
-    "prefix": "[✔️] - O seu novo prefixo é: *{{prefix}}*",
-    "help": {
-        "title": "*[📚] - Menu de ajuda*",
-        "desc": "Utilize *{{prefix}}* para alterar o seu prefixo",
-        "lang": "[🌎] Utilize *{{lang}}* para mudar de idioma"
+    "usage": {
+        "title": "Como usar?",
+        "args": "*Tipos de argumentos:*\n<obrigatório>\n[opcional]\n(marcar uma mensagem)"
     },
-    "language": "[🌎] - Idioma alterado com sucesso para {{lng}}"
+    "choose": {
+        "usage": "<opção 1>, <opção 2>, [opção 3], [...]",
+        "desc": "Escolha isso ou aquilo aleatoriamente, ou não...",
+        "result": "*[🏆] - Opção escolhida:* {{choosedOne}}"
+    },
+    "help": {
+        "usage": "[nome de um comando]",
+        "desc": "Exibe esta lista ou detalha um comando",
+        "title": "*[📖] - Menu de ajuda*",
+        "prefix": "[⚙️] Alterar prefixo: *{{prefix}}*",
+        "lang": "[🌎] Alterar idioma: *{{lang}}*"
+    },
+    "language": {
+        "usage": "<código do idioma>",
+        "desc": "Altera o idioma do bot",
+        "changed": "[🌎] - Idioma alterado com sucesso para *{{lng}}*"
+    },
+    "prefix": {
+        "usage": "<prefixo com até 3 dígitos>",
+        "desc": "Altera o prefixo dos comandos",
+        "changed": "[✔️] - O seu novo prefixo é: *{{prefix}}*"
+    },
+    "ping": {
+        "usage": "",
+        "desc": "Calcula o delay do bot",
+        "pinging": "Calculando o tempo de resposta..."
+    },
+    "sticker": {
+        "usage": "<imagem/gif anexado> [nobg: remover o fundo]",
+        "desc": "Cria um sticker com imagem/gif e ainda remove o fundo",
+        "nobuffer": "[⚠️] - Imagem incompatível ou não encontrada"
+    },
+    "stext": {
+        "usage": "<texto/frase/palavra>",
+        "desc": "Cria um sticker de texto"
+    },
+    "translate": {
+        "usage": "<código do idioma: en/pt/fr...> <texto/frase/palavra>",
+        "desc": "Google Tradutor"
+    }
 }
