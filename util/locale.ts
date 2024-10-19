@@ -17,7 +17,7 @@ export default async function () {
 				returnEmptyString: false,
 				returnObjects: true,
 			})
-		console.log('i18next', `${languages.length} languages loaded.`, 'blue')
+		print('i18next', `${languages.length} languages loaded.`, 'blue')
 	} catch (e) {
 		console.error('i18next', e)
 	}

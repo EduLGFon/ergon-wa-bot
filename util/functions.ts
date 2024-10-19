@@ -70,7 +70,7 @@ async function cacheAllGroups(bot: Baileys) {
 		bot.groups.add(group.id, await group.checkData())
 	})
 
-	console.log('CACHE', `${groups.length} groups cached.`, 'blue')
+	print('CACHE', `${groups.length} groups cached.`, 'blue')
 	return
 }
 
@@ -112,7 +112,7 @@ function getMsgType(m: proto.IMessage): MsgTypes {
 		if (res) return String(newType).trim() as MsgTypes
 	}
 
-	console.log('Unknown msg tyṕe:', m)
+	print('Unknown msg tyṕe:', m)
 	return Object.keys(m!)[0] as MsgTypes
 }
 // genStickerMeta: Generate the author/pack for a sticker

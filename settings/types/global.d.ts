@@ -2,6 +2,8 @@ type str = string
 type num = number
 type bool = boolean
 
+function print(...args): void
+
 interface String {
 	encode(): str
 	toPascalCase(): str
