@@ -84,9 +84,10 @@ export default class Group {
 	}
 
 	getCachedMsgs (limit?: number): Message[] {
-		const arrayMsgs: Message[] = [];
+		let arrayMsgs: Message[] = [];
 		this.cachedMsgs.forEach(m => arrayMsgs.push(m));
-		
+		arrayMsgs.reverse();
+
 		if (limit) arrayMsgs.length = limit;
 	
 		return arrayMsgs;
