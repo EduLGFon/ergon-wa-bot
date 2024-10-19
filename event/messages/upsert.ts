@@ -1,7 +1,7 @@
 import { Baileys, Cmd, CmdCtx, coolValues, getCtx } from '../../map.js'
 import { type proto } from 'baileys'
+import { getFixedT } from 'i18next'
 import { Duration } from 'luxon'
-import i18next from 'i18next'
 
 export default async function (bot: Baileys, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
 	// raw.messages = []
@@ -31,13 +31,13 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		if (!cmd) continue
 		// block only devs cmds for normal people
 		if (cmd.access.onlyDevs && !process.env.DEVS!.includes(user.id)) {
-			bot.react(msg, '⛔')
+			bot.react(msg, 'block')
 			continue
 		}
 
 		const ctx: CmdCtx = {
 			// get locales function
-			t: i18next.getFixedT(user.lang),
+			t: getFixedT(user.lang),
 			sendUsage,
 			callCmd,
 			group,

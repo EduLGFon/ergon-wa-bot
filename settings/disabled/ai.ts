@@ -14,7 +14,7 @@ export default class extends Cmd {
 		const func = models[ai]
 
 		if (!func) return sendUsage()
-		await bot.react(msg, '⌛')
+		await bot.react(msg, 'loading')
 		let buffer, mime
 
 		if (msg.isMedia || msg?.quoted?.isMedia) {
@@ -31,6 +31,6 @@ export default class extends Cmd {
 		})
 
 		bot.send(msg, `*${model}*:\n\n${response}`)
-		bot.react(msg, '✅')
+		bot.react(msg, 'ok')
 	}
 }

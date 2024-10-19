@@ -9,7 +9,7 @@ export default class extends Cmd {
 	async run({ t, bot, user, msg }: CmdCtx) {
 		// Calculate WA Ping
 		let startTime = Date.now()
-		await bot.react(msg, '⌛')
+		await bot.react(msg, 'loading')
 		const WAPing = Date.now() - startTime
 
 		// Calculate DB Ping
@@ -21,7 +21,7 @@ export default class extends Cmd {
 			msg,
 			`*[🐧] - Ping:*\n[📞] WA API: *${WAPing}ms*\n[🐘] PostgreSQL: *${DBPing}ms*`,
 		)
-		bot.react(msg, '✅')
+		bot.react(msg, 'ok')
 		return
 	}
 }

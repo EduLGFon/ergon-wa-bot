@@ -18,7 +18,7 @@ export default class extends Cmd {
 
 		if (!buffer) return bot.send(msg, t('sticker.nobuffer'))
 
-		await bot.react(msg, '⌛')
+		await bot.react(msg, 'loading')
 		let stickerTypes = ['rounded', 'full', 'crop', 'circle']
 		let quality = 20
 
@@ -55,7 +55,7 @@ export default class extends Cmd {
 			await bot.send(msg.chat, await metadata.toMessage())
 		}
 
-		bot.react(msg, '✅')
+		bot.react(msg, 'ok')
 		return
 	}
 }

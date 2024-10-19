@@ -16,7 +16,7 @@ export default class extends Cmd {
 
 		if (!buffer) return bot.send(msg, t('sticker.nobuffer'))
 
-		await bot.react(msg, '⌛')
+		await bot.react(msg, 'loading')
 
 		const msgObj = {
 			viewOnce: args[0] === 'y' ? false : true,
@@ -27,7 +27,7 @@ export default class extends Cmd {
 
 		await bot.send(msg, msgObj)
 
-		bot.react(msg, '✅')
+		bot.react(msg, 'ok')
 		return
 	}
 }

@@ -4,7 +4,6 @@ import {
 	GenerateContentStreamResult,
 	GoogleGenerativeAI,
 	HarmBlockThreshold,
-	ChatSession,
 	HarmCategory,
 } from '@google/generative-ai'
 import { aiPrompt, runner } from '../map.js'

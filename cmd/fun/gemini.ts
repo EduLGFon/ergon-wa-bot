@@ -10,7 +10,7 @@ export default class extends Cmd {
 
 	async run({ bot, msg, args, user, sendUsage }: CmdCtx) {
 		if (!args[0]) return sendUsage()
-		await bot.react(msg, '⌛')
+		await bot.react(msg, 'loading')
 
 		let model = api.aiModel.gemini
 		let buffer, mime, stream: Promise<CmdCtx> | CmdCtx
@@ -43,7 +43,7 @@ export default class extends Cmd {
 			return
 		}
 
-		bot.react(msg, '✅')
+		bot.react(msg, 'ok')
 		return
 	}
 }

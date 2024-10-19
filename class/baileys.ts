@@ -1,4 +1,4 @@
-import { Cmd, Collection, getCtx, Group, Logger, Msg, msgMeta, User } from '../map.js'
+import { Cmd, Collection, emojis, getCtx, Group, Logger, Msg, msgMeta, User } from '../map.js'
 import {
 	type AnyMessageContent,
 	type BaileysEventMap,
@@ -16,7 +16,7 @@ import { resolve } from 'node:path'
 import pino from 'pino'
 
 const logger: Logger = pino.default()
-logger.level = 'info'
+logger.level = 'silent'
 
 export default class Baileys {
 	sock!: WASocket
@@ -103,7 +103,9 @@ export default class Baileys {
 	async react(m: Msg, emoji: str) {
 		const { chat, key } = m
 
-		return await this.send(chat, { react: { text: emoji, key } })
+		// @ts-ignore
+		const reaction = emojis[emoji] || emoji
+		return await this.send(chat, { react: { text: reaction, key } })
 	}
 
 	async editMsg(msg: Msg, text: str) {
