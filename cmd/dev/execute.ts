@@ -4,7 +4,7 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['run'],
-			access: { onlyDevs: true },
+			access: { restrict: true },
 			cooldown: 0,
 		})
 	}

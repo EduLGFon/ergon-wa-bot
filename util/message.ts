@@ -159,9 +159,17 @@ function msgMeta(
 // checkPermissions: check cmd permissions like block random guys from using eval
 function checkPermissions(cmd: Cmd, user: User, group?: Group) {
 	const devs = process.env.DEVS!
-	if (cmd.access.onlyDevs && !devs.includes(user.id)) return 'block'
-	if (!cmd.access.groups && group) return 'x'
-	if (!cmd.access.dm && !group) return 'x'
+	// if a normal user tries to run a only-for-devs cmd
+	if (cmd.access.restrict && !devs.includes(user.id)) return 'block'
+
+	if (group) { // if msg chat is a group
+		if (!cmd.access.groups) return 'x'
+
+		const admins = group.members.map((m) => m.admin && m.id)
+		// all group admins ID
+		if (cmd.access.admin && !admins.includes(user.id)) return 'block'
+	} else if (!cmd.access.dm) return 'x'
+	// if there's no group and cmd can't run on DM
 
 	return true
 }

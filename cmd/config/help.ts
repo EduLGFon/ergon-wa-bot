@@ -9,7 +9,7 @@ export default class extends Cmd {
 
 	async run({ t, bot, args, msg, user }: CmdCtx) {
 		const cmdsList = bot.cmds
-			.filter((c: Cmd) => !c.access.onlyDevs) // ignore admin cmds
+			.filter((c: Cmd) => !c.access.restrict) // ignore dev cmds
 			.map((c: Cmd) => `➥ *${user.prefix}${c.name}*: ${t(`${c.name}.desc`)}\n`)
 			.join('')
 

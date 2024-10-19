@@ -6,9 +6,10 @@ export default abstract class Cmd {
 	subCmds: str[]
 	cooldown: num
 	access: Partial<{
-		dm: bool
-		groups: bool
-		onlyDevs: bool
+		dm: bool // cmd can run on DM
+		groups: bool // cmd can run on groups
+		admin: bool // only admins can run the cmd
+		restrict: bool // only devs can run the cmd
 	}>
 
 	constructor(c: Partial<Cmd>) {
@@ -19,7 +20,8 @@ export default abstract class Cmd {
 		this.access = Object.assign({
 			dm: true,
 			groups: true,
-			onlyDevs: false,
+			admin: false,
+			restrict: false,
 		}, c.access) // Compare command permissions
 		// with this default setting
 	}

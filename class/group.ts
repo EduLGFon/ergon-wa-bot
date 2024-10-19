@@ -10,16 +10,16 @@ export default class Group {
 	// creation?: num;
 	desc?: str
 	restrict?: bool
-	// is set when the group only allows admins to change group settings
+	// restrict: is set when group only allows admins to change group settings
 	announce?: bool
-	// is set when the group only allows admins to write msgs
+	// announce: is set when group only allows admins to write msgs
 	members: GroupParticipant[]
 	size: num
-	// number of group members/participants
+	// size: group members size
 	// ephemeral?: num;
 	invite?: str // invite link
 	author?: str
-	// the person who added you
+	// author: the person who added you
 
 	cachedMsgs: Collection<string, proto.IMessageKey>
 
