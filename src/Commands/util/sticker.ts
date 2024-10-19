@@ -20,8 +20,7 @@ export default class extends Command {
 		if (msg.quoted && msg.quoted.isMedia) targetMsg = msg.quoted;
 		else targetMsg = msg;
 
-		let buffer = await bot.downloadMedia(targetMsg)
-			.catch(() => {});
+		let buffer = await bot.downloadMedia(targetMsg);
 		if (!buffer) return;
 
 		if (args[0] === 'nobg') {

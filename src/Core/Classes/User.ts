@@ -1,13 +1,14 @@
-import { LANG, PREFIX } from '../config.json';
-import prisma from './Prisma';
+import { LANG, PREFIX } from '../../config.json';
+import prisma from '../Prisma';
 
 export default class User {
+	name: string;
 	_userLanguage: string;
 	_userPrefix: string;
 
-	constructor(public id: string, userLanguage?: string, userPrefix?: string) {
+	constructor(public id: string, name: string, userLanguage?: string, userPrefix?: string) {
 		this.id = id;
-		this.id = id;
+		this.name = name;
 		this._userLanguage = userLanguage || LANG;
 		this._userPrefix = userPrefix || PREFIX;
 	}
@@ -68,5 +69,7 @@ export default class User {
 
 		this._userLanguage = data.lang;
 		this._userPrefix = data.prefix;
+
+		return this;
 	}
 }

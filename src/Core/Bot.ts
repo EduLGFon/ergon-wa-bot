@@ -4,38 +4,40 @@ import makeWASocket, {
 	Browsers,
 	downloadMediaMessage,
 	fetchLatestBaileysVersion,
-	GroupMetadata,
 	makeCacheableSignalKeyStore,
 	type proto,
 	useMultiFileAuthState,
 } from 'baileys';
 // import RequestCode from './RequestCode';
 import { Cmd, Logger, Msg } from '../Typings';
-import { getCtx } from './Utils';
 import { readdirSync } from 'fs'; // DENO point
+import Collection from './Collection';
+import Group from './Classes/Group';
+import User from './Classes/User';
+import { getCtx } from './Utils';
+import Command from './Command';
 import { resolve } from 'path';
-import User from './User';
 
 export default class Bot {
 	sock!: ReturnType<typeof makeWASocket>;
-	wait: Map<string, Function>;
-	cmds: Map<string, Cmd>;
-	aliases: Map<string, string>;
-	users: Map<string, User>;
-	events: Map<string, Function>;
-	groups: Map<string, GroupMetadata>;
+	wait: Collection; //<string, Function>;
+	groups: Collection; //<string, GroupMetadata>;
+	users: Collection; //<string, User>;
+	events: Collection; //<string, Function>;
+	cmds: Collection; //<string, Cmd>;
+	aliases: Collection; //<string, string>;
 
 	constructor(public auth: string, public logger: Logger) {
 		this.logger = logger;
 		this.auth = auth; // auth folder
 		this.sock;
-		this.wait = new Map<string, Function>();
+		this.wait = new Collection(Function);
 		// arbitrary functions that can be called on events
-		this.users = new Map<string, User>(); // Users map
-		this.groups = new Map<string, GroupMetadata>(); // Groups map
-		this.events = new Map<string, Function>(); // Events map
-		this.cmds = new Map<string, Cmd>(); // Cmds map
-		this.aliases = new Map<string, string>(); // Cmd aliases map
+		this.users = new Collection(User, 500); // Users collection
+		this.groups = new Collection(Group, 500); // Groups collection
+		this.events = new Collection(Function); // Events collection
+		this.cmds = new Collection(Command); // Cmds collection
+		this.aliases = new Collection(String); // Cmd aliases map
 	}
 
 	async connect() {

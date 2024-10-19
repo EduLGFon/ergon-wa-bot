@@ -2,8 +2,8 @@ import type { CmdContext, Msg, MsgTypes } from '../Typings';
 import { AUTHOR, LINK, PACK } from '../config.json';
 import { GroupMetadata, type proto } from 'baileys';
 import { isMedia, msgTypes } from './MsgTypes';
+import User from './Classes/User';
 import prisma from './Prisma';
-import User from './User';
 import Bot from './Bot';
 
 export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
@@ -18,8 +18,7 @@ export async function getCtx(raw: proto.IWebMessageInfo, bot: Bot) {
 
 	let user = bot.users.get(userID);
 	if (!user) {
-		user = new User(userID);
-		await user.checkData();
+		user = await new User(userID, pushName!).checkData();
 		bot.users.set(userID, user);
 	}
 
