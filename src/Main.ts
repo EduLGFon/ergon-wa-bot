@@ -1,11 +1,13 @@
 import MAIN_LOGGER from 'baileys/lib/Utils/logger';
-import Locales from './Components/Core/Locales';
+import loadLocales from './Components/Core/Locales';
 import Bot from './Components/Classes/Bot';
+import loadPrototypes from './Components/Plugins/Prototypes';
 
 const logger = MAIN_LOGGER.child({});
 logger.level = 'info';
 
-Locales();
+loadPrototypes();
+loadLocales();
 const bot = new Bot('auth', logger);
 // auth/ has auth info to login without scan QR Code again
 

@@ -10,16 +10,17 @@ export default class extends Command {
 		});
 	}
 
-	async run({ bot, msg, args, sendUsage }: CmdContext) {
+	async run({ bot, msg, args, sendUsage, t }: CmdContext) {
 		if (!args[1]) return sendUsage();
 
 		const toLang = args.shift();
 		try {
-			const t = await translate(args.join(' '), { to: toLang });
+			const translation = await translate(args.join(' '), { to: toLang });
 
-			const text = '*[🌐] - Google Translate*\n' +
-				`*${t?.from.language.iso}  ➟  ${toLang}*\n` +
-				'```' + t?.text + '```';
+			const text = `*[🌐] - ${t('translate.desc')}*\n` +
+				`*${translation?.from.language.iso}  ➟  ${toLang}*\n` +
+				translation?.text.encode();
+
 			await bot.send(msg, text);
 			return true;
 		} catch (_e) {

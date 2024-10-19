@@ -31,7 +31,7 @@ export default class extends Command {
 			const text = `*[👨‍💻] - Child Process*\n` +
 				`*[⏰]: ${duration}ms*\n` +
 				`*[🎞️]: ${endRAM}MB (${RAMRange < 0 ? RAMRange : `+${RAMRange}`}MB)*\n` +
-				'```\n' + output.trim() + '```';
+				output.trim().encode();
 
 			const sentMsg = await bot.send(msg, text);
 			await bot.react(sentMsg.msg, reaction);
