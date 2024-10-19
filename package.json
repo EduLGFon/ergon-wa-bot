@@ -23,7 +23,7 @@
 		"googlethis": "^1.8.0",
 		"i18next": "^23.5.1",
 		"i18next-fs-backend": "^2.2.0",
-		"jimp": "^0.22.10",
+		"jimp": "^0.16.1",
 		"libphonenumber-js": "^1.10.37",
 		"link-preview-js": "^3.0.4",
 		"luxon": "^3.4.3",
