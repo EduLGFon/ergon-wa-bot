@@ -19,9 +19,11 @@ import { resolve } from 'node:path';
 import Cmd from './Command.js';
 import Group from './Group.js';
 import User from './User.js';
+// import bc from '../Components/WorkerUtil.js';
 
 export default class Bot {
 	sock!: WASocket;
+	// bc!: bc;
 
 	// Collections (Stored data)
 	cmds: Collection<string, Cmd>;
@@ -34,7 +36,6 @@ export default class Bot {
 	constructor(public auth: str, public logger: Logger) {
 		this.logger = logger;
 		this.auth = auth; // auth folder
-		this.sock;
 
 		// wait: arbitrary functions that can be called on events
 		this.wait = new Collection(0);
@@ -191,6 +192,9 @@ export default class Bot {
 		// folder/file names are the same of lib events
 		this.events.set(name, event);
 
+		this.sock.ev.on('group-participants.update', (data) => {
+			console.log('teste', data);
+		});
 		// Listen to the event here
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// It allows to modify events in run time
