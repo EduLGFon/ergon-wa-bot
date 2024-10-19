@@ -54,6 +54,10 @@
 			"cmd": ["bun run"],
 			"ext": "ts"
 		},
+		"zsh": {
+			"cmd": ["zsh"],
+			"ext": "sh"
+		},
 		"cpp": {
 			"cmd": ["g++ -o settings/temp/main ", "./settings/temp/main #"],
 			"ext": "cpp"
