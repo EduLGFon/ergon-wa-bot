@@ -1,4 +1,15 @@
-import { Cmd, Collection, emojis, getCtx, Group, Logger, Msg, msgMeta, User } from '../map.js'
+import {
+	CacheManager,
+	Cmd,
+	Collection,
+	emojis,
+	getCtx,
+	Group,
+	Logger,
+	Msg,
+	msgMeta,
+	User,
+} from '../map.js'
 import baileys, {
 	type AnyMessageContent,
 	type BaileysEventMap,
@@ -22,41 +33,16 @@ logger.level = 'silent'
 export default class Baileys {
 	sock!: WASocket
 
-	// Collections (Stored data)
-	cmds: Collection<str, Cmd>
+	// Cache (Stored data)
+	cache: CacheManager
 	// msgs: Collection<WAMessageKey, proto.IMessage>
-	store: ReturnType<typeof makeInMemoryStore>
-	wait: Collection<str, Func>
-	alias: Collection<str, str>
-	users: Collection<str, User>
-	events: Collection<str, Func>
-	groups: Collection<str, Group>
+	// store: ReturnType<typeof makeInMemoryStore>
 
 	constructor(public auth: str) {
 		this.auth = auth // auth folder
 
-		/** msgs: (bot sent msgs on store)
-		 * why only bot msgs? Sometimes Baileys fails
-		 * sending a msg, and if it has no msg store,
-		 * the msg will never be sent. Other users will
-		 * see "Waiting for this message" for eternity.
-		 * So, this Collection stores the msg until
-		 * it is sent again
-		 */
-		// this.msgs = new Collection(10) it's commented bc i'm using baileys store rn
-		this.store = makeInMemoryStore({ logger })
-		// wait: arbitrary functions that can be called on events
-		this.wait = new Collection(0)
-		// Cmd aliases map
-		this.alias = new Collection(0)
-		// Events collection (0 means no limit)
-		this.events = new Collection(0)
-		// Cmds collection
-		this.cmds = new Collection(0, Cmd)
-		// Users collection
-		this.users = new Collection(100, User)
-		// Groups collection
-		this.groups = new Collection(500, Group)
+		// this.store = makeInMemoryStore({ logger })
+		this.cache = new CacheManager(this)
 	}
 
 	async connect() {
@@ -85,9 +71,9 @@ export default class Baileys {
 			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
 			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast'),
-			getMessage: this.getMsg, // get stored msgs to resent failed ones
+			// getMessage: this.getMsg, // get stored msgs to resent failed ones
 		})
-		this.store?.bind(this.sock.ev)
+		// this.store?.bind(this.sock.ev)
 
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
@@ -99,6 +85,8 @@ export default class Baileys {
 
 		// Load events
 		await this.folderHandler(`./build/event`, this.loadEvents)
+
+		this.cache.start()
 		return
 	}
 
@@ -141,28 +129,28 @@ export default class Baileys {
 
 	// get a group cache or fetch it
 	async getGroup(id: str): Promise<Group> {
-		let group = this.groups.get(id) // cache
+		let group = this.cache.groups.get(id) // cache
 
 		if (group) return group
 		else {
 			// fetch group metadata
 			group = await this.sock.groupMetadata(id)
 
-			group = await this.groups.add(group.id, group)
+			group = await this.cache.groups.add(group.id, group)
 			return group
 		}
 	}
 
 	// getMsgs: get bot sent msgs to prevent msg failure
-	async getMsg(key: WAMessageKey): Promise<baileys.proto.IMessage | undefined> {
-		if (this.store) {
-			const msg = await this.store.loadMessage(key.remoteJid!, key.id!)
-			return msg?.message || undefined
-		}
+	// async getMsg(key: WAMessageKey): Promise<baileys.proto.IMessage | undefined> {
+	// 	if (this.store) {
+	// 		const msg = await this.store.loadMessage(key.remoteJid!, key.id!)
+	// 		return msg?.message || undefined
+	// 	}
 
-		// only if store is present
-		return baileys.proto.Message.fromObject({})
-	}
+	// 	// only if store is present
+	// 	return baileys.proto.Message.fromObject({})
+	// }
 
 	async downloadMedia(msg: Msg) {
 		const media = await downloadMediaMessage(msg.raw, 'buffer', {}, {
@@ -201,23 +189,20 @@ export default class Baileys {
 		const cmd: Cmd = new imported()
 		cmd.name = file.slice(0, -3) // remove .ts
 
-		this.cmds.set(cmd.name!, cmd)
+		this.cache.cmds.add(cmd.name!, cmd)
 		// Set cmd
-
-		cmd.alias.forEach((a) => this.alias.set(a, cmd.name!))
-		// Set cmd aliases
 	}
 
 	async loadEvents(file: str, category: str, imported: any) {
 		const event = imported
 		const name = `${category}.${file.slice(0, -3)}`
 		// folder+file names are the same of lib events
-		this.events.set(name, event)
+		this.cache.events.set(name, event)
 
 		// Listen to the event here
 		this.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// It allows to modify events in run time
-			this.events.get(name)!(this, ...args, name)
+			this.cache.events.get(name)!(this, ...args, name)
 				.catch((e: Error) => console.error(e, `EVENT/${name}:`))
 			// eventFunction(this, ...args, name);
 		})

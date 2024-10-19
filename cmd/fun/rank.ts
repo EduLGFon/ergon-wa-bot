@@ -21,7 +21,7 @@ export default class extends Cmd {
 		for (const i in msgs) {
 			const { author, count } = msgs[i]
 
-			let user: User = bot.users.get(author)
+			let user: User = bot.cache.users.get(author)
 
 			if (!user) { // find user on db if it's not on cache
 				user = await prisma.users.findUnique({

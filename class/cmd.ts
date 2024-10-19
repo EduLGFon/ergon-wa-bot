@@ -13,7 +13,7 @@ export default abstract class Cmd {
 	}>
 
 	constructor(c: Partial<Cmd>) {
-		this.name = ''
+		this.name = c.name || ''
 		this.alias = c.alias || []
 		this.cooldown = c.cooldown === 0 ? 0 : c.cooldown || 3 // Ignore some cmds cooldown
 		this.subCmds = c.subCmds || []

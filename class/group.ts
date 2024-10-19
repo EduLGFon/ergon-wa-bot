@@ -23,19 +23,22 @@ export default class Group {
 
 	cachedMsgs: Collection<str, proto.IMessageKey>
 
-	constructor(id: str, g: GroupMetadata) {
+	constructor(id: str, g: GroupMetadata | Group) {
 		this.id = id
-		this.name = g.subject
+		// @ts-ignore Shut up TypeScript
+		this.name = g.subject || g.name
 		// this.owner = g.owner
 		// this.nameTimestamp = g.subjectTime;
 		// this.creation = g.creation;
 		// this.desc = g.desc
 		this.restrict = g.restrict
 		this.announce = g.announce
-		this.members = g.participants
+		// @ts-ignore
+		this.members = g.participants || g.members
 		this.size = g.size || this.members.length
 		// this.ephemeral = g.ephemeralDuration;
-		this.invite = g.inviteCode
+		// @ts-ignore
+		this.invite = g.inviteCode || g.invite
 		this.author = g.author
 		this.cachedMsgs = new Collection(db.groupDefault.msgsCacheLimit)
 	}

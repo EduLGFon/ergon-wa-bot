@@ -16,8 +16,18 @@ export default async function (bot: Baileys, event: Partial<ConnectionState>) {
 			bot.sock.sendPresenceUpdate('unavailable')
 			print('NET', 'Connection stabilized', 'green')
 
-			await delay(15_000)
-			cacheAllGroups(bot)
+			let timeout = bot.cache.timeouts.get('cacheAllGroups')
+			clearInterval(timeout)
+
+			timeout = setTimeout(() => cacheAllGroups(bot), 15_000)
+			bot.cache.timeouts.set('cacheAllGroups', timeout)
+			/** Why did I do that?
+			 * Cuz connection could reconnect several times and this event
+			 * will be triggered several times too. So, all groups will
+			 * be cached several times... You know what I'm doing here.
+			 * Just avoiding rate-overlimit by stopping old timeouts and keeping
+			 * only one of them.
+			 */
 			return
 
 		case 'connecting':

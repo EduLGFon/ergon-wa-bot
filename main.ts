@@ -1,4 +1,4 @@
-import { Baileys, CacheManager, locale, proto, server } from './map.js'
+import { Baileys, locale, proto, server } from './map.js'
 
 proto() // load prototypes
 locale() // load locales
@@ -9,7 +9,6 @@ start()
 async function start() {
 	await bot.connect()
 	await server(bot) // start express server
-	new CacheManager(bot)
 }
 
 process // "anti-crash" to handle lib instabilities

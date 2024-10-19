@@ -32,7 +32,7 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 	}
 
 	userID = userID!.split('@')[0].split(':')[0]
-	const user: User = await bot.users.add(userID!, {}, [pushName!])
+	const user: User = await bot.cache.users.add(userID!, {}, [pushName!])
 
 	let msg: Msg = {
 		key,
@@ -67,7 +67,8 @@ function getInput(msg: Msg, bot: Baileys, prefix: str) {
 
 	let args: str[] = msg.text.replace(prefix, '').trim().split(' ')
 	const callCmd = args.shift()!.toLowerCase() // cmd name on msg | .help => 'help' === callCmd
-	const cmd = bot.cmds.find((c) => c.name === callCmd || c.alias.includes(callCmd))
+	const cmd = bot.cache.cmds
+		.find((c) => c.name === callCmd || c.alias.includes(callCmd))
 	// search command by name or by aliases
 
 	const first = args[0]?.toLowerCase() // first arg

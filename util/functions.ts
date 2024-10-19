@@ -13,7 +13,7 @@ async function cacheAllGroups(bot: Baileys) {
 	let groups = Object.keys(groupList)
 
 	groups.forEach(async (g) => {
-		bot.groups.add(g, groupList[g])
+		bot.cache.groups.add(g, groupList[g])
 	})
 
 	print('CACHE', `${groups.length} groups cached`, 'blue')

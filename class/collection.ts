@@ -1,9 +1,11 @@
 export default class Collection<K, V> extends Map {
+	primaryKey: str
 	limit: num
 	base?: any
 
-	constructor(limit?: num, base?: any) {
+	constructor(limit?: num, base?: any, PK = 'id') {
 		super()
+		this.primaryKey = PK
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
 		this.base = base
 	}
@@ -18,7 +20,10 @@ export default class Collection<K, V> extends Map {
 		}
 
 		const existing = this.get(key)
-		if (existing) return existing
+		if (existing) {
+			if (!value) return existing
+			value = Object.assign(value, existing)
+		}
 
 		if (this.base) {
 			value = (value instanceof this.base ||
@@ -26,8 +31,10 @@ export default class Collection<K, V> extends Map {
 				? value
 				: new this.base(key, value)
 
-			// @ts-ignore check item data automaticaly
-			value = await value?.checkData() || value
+			try {
+				// @ts-ignore check item data automaticaly
+				value = await value.checkData()
+			} catch {}
 		}
 
 		this.set(key, value as V)
@@ -141,7 +148,7 @@ export default class Collection<K, V> extends Map {
 		const json = {}
 
 		// @ts-ignore json obj does not have a type
-		for (const item of this.values()) json[item.id] = item
+		for (const item of this.values()) json[item[this.primaryKey]] = item
 
 		return json
 	}

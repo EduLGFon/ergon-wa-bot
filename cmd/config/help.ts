@@ -8,7 +8,7 @@ export default class extends Cmd {
 	}
 
 	async run({ t, bot, args, msg, user }: CmdCtx) {
-		const cmdsList = bot.cmds
+		const cmdsList = bot.cache.cmds
 			.filter((c: Cmd) => !c.access.restrict) // ignore dev cmds
 			.map((c: Cmd) => `➥ *${user.prefix}${c.name}*: ${t(`${c.name}.desc`)}\n`)
 			.join('')
@@ -19,7 +19,8 @@ export default class extends Cmd {
 			t('help.lang', { lang: `${user.prefix}language` }) // lang msg
 
 		if (args[0]) { // send single cmd info
-			const c = bot.cmds.find((c) => c.name === args[0] || c.alias.includes(args[0]))
+			const c = bot.cache.cmds
+				.find((c) => c.name === args[0] || c.alias.includes(args[0]))
 			// search cmd by name or alias
 
 			if (c) {

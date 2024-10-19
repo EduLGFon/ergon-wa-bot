@@ -9,6 +9,6 @@ export default async function (bot: Baileys, groups: Partial<GroupMetadata>[]) {
 	// bc it could be incomplete or partial
 
 	// cache new group info
-	bot.groups.add(g.id, g)
+	bot.cache.groups.add(g.id, g)
 	return
 }

@@ -20,8 +20,8 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		} // count msgs with cool values for group msgs rank cmd
 
 		// run functions waiting for msgs (waitFor)
-		if (bot.wait.has(e)) {
-			bot.wait.forEach((f: Function) => {
+		if (bot.cache.wait.has(e)) {
+			bot.cache.wait.forEach((f: Function) => {
 				try {
 					f(bot, msg, user, group)
 				} catch (e) {
@@ -77,7 +77,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		async function sendUsage() {
 			args[0] = cmd.name
 
-			bot.cmds.get('help').run(ctx)
+			bot.cache.cmds.get('help').run(ctx)
 			bot.react(msg, '🤔')
 			return
 		}
