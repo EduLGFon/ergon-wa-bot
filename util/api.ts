@@ -92,6 +92,8 @@ async function gemini({ prompt, model, buffer, mime, user, callback }: aiPrompt)
 			text += chunk.text()
 			callback(generateResponse(chunk))
 		}
+		const response = await result.response
+		return callback(generateResponse(response))
 	} catch (e: any) {
 		text = `Error: ${e.message.encode()}`
 		print(text)
@@ -106,9 +108,7 @@ async function gemini({ prompt, model, buffer, mime, user, callback }: aiPrompt)
 			tokens: chunk.usageMetadata?.candidatesTokenCount || 0,
 		} as aiResponse
 	}
-
-	const response = await result!.response
-	return callback(generateResponse(response))
+	return
 }
 
 // async function gpt({ content, model }: aiPrompt) {

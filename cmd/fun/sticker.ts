@@ -11,7 +11,7 @@ export default class extends Cmd {
 	}
 
 	async run({ msg, bot, args, user, group, sendUsage, t }: CmdCtx) {
-		if (!isVisual(msg.type) && !isVisual(msg.quoted.type)) return sendUsage()
+		if (!isVisual(msg.type) && !isVisual(msg.quoted?.type)) return sendUsage()
 
 		let target = isVisual(msg.type) ? msg : msg.quoted
 		let buffer = await bot.downloadMedia(target)
