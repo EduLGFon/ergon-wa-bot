@@ -15,7 +15,7 @@ export default class CacheManager {
 	// Collections (Stored data)
 	cmds: Collection<str, Cmd>
 	wait: Collection<str, Func>
-	users: Collection<str, User>
+	users: Collection<num, User>
 	events: Collection<str, Func>
 	groups: Collection<str, Group>
 	timeouts: Collection<str, NodeJS.Timeout>
@@ -67,7 +67,11 @@ export default class CacheManager {
 			// parse cache
 
 			for (const [k, v] of Object.entries(json)) {
-				this[category as 'cmds'].add(k, v!)
+				const place = this[category as 'groups']
+				// @ts-ignore
+				const value = await new place.base!(v).checkData(this.bot)
+
+				place.add(k, value)
 				// save it
 			}
 			print('CACHE', `${category} cache resumed`, 'blue')
