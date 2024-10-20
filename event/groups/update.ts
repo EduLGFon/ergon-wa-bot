@@ -3,12 +3,14 @@ import { GroupMetadata } from 'baileys'
 
 // group update event
 export default async function (bot: Baileys, groups: Partial<GroupMetadata>[]) {
-	// fetch group metadata
-	const g = await bot.sock.groupMetadata(groups[0].id!)
-	// fetching is better than use this event args
-	// bc it could be incomplete or partial
+	for (const g of groups) {
+		if (!g.id) continue
 
-	// cache new group info
-	bot.cache.groups.add(g.id, g)
+		bot.cache.groups.delete(g.id) // delete group cache
+		await bot.getGroup(g.id) // create a new one
+		// it fetchs group metadata
+		// fetching is better than use this event args
+		// bc it could be incomplete or partial
+	}
 	return
 }

@@ -8,7 +8,7 @@ export default class extends Cmd {
 	async run({ t, user, msg, bot, args, sendUsage }: CmdCtx) {
 		if (!args[0] || args[0].length > 3) return sendUsage()
 
-		user.prefix = args[0].slice(0, 3)
+		user.prefix = args[0]
 
 		bot.send(msg, t('prefix.changed', { prefix: user.prefix }))
 		return

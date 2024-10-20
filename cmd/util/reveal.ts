@@ -9,17 +9,20 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, args, bot, sendUsage, t }: CmdCtx) {
+	async run({ msg, args, group, user, bot, sendUsage, t }: CmdCtx) {
 		if (!msg.isMedia && !msg.quoted?.isMedia) return sendUsage()
 
 		let target = msg.isMedia ? msg : msg.quoted // get msg or msg quoted media
 		let buffer = await bot.downloadMedia(target)
-			.catch((e) => {
-				console.error(e, 'CMD/STICKER')
-				bot.send(msg, e.message.encode())
-			})
+			.catch((e) => {})
 
-		if (!Buffer.isBuffer(buffer)) return bot.send(msg, t('sticker.nobuffer'))
+		if (!Buffer.isBuffer(buffer)) {
+			target = (group || user).msgs.get(target.key.id)
+			buffer = await bot.downloadMedia(target)
+				.catch((e) => {})
+
+			if (!Buffer.isBuffer(buffer)) return bot.send(msg, t('sticker.nobuffer'))
+		}
 
 		await bot.react(msg, 'loading')
 		const msgObj = { // don't send media with view once if user says forever/f

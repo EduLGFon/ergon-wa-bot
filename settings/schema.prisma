@@ -8,27 +8,27 @@ datasource db {
 }
 
 model users {
-  id     String @id
-  name   String @default("")
-  lang   String
-  prefix String
-  cmds   Int    @default(0)
+  id      Int     @id @default(autoincrement())
+  phone   String  @db.VarChar(15) @unique
+  name    String  @db.VarChar()
+  lang    String  @db.VarChar(2)
+  prefix  String  @db.VarChar(3)
+  cmds    Int     @default(0)
 }
 
 model msgs {
-  author String
-  group  String
-  count  Int    @default(1)
+  author  Int
+  group   String  @db.VarChar(35)
+  count   Int     @default(1)
 
   @@id([author, group])
 }
 
 model reminders {
-  author   String
-  chat     String
-  msg      String
-  remindAt String
-  isDone   Boolean?
   id       Int      @id @default(autoincrement())
-
+  author   Int
+  chat     String   @db.VarChar(35)
+  msg      String   @db.VarChar(100)
+  remindAt String
+  isDone   Boolean  @default(false)
 }

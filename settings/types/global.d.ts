@@ -9,6 +9,7 @@ declare function print(...args: any[]): void
 
 interface String {
 	encode(): str
+	parsePhone(): str
 	toPascalCase(): str
 	align(limit: num, char?: str, endPosition?: bool): str
 	t(lang: str, options?: any): str
@@ -24,10 +25,11 @@ interface Number {
 
 interface Reminder {
 	id: num
-	author: str
+	author: num
 	chat: str
 	msg: str
 	remindAt: str
+	isDone: bool
 }
 
 interface aiResponse {

@@ -6,6 +6,7 @@ import { Baileys } from '../../map.js'
  * is promoted or demoted on a group.
  */
 export default async function (bot: Baileys, groupEvent: Event) {
+	print(`Group Update Action:`, groupEvent.action)
 	if (!['promote', 'demote'].includes(groupEvent.action)) return
 	const group = await bot.getGroup(groupEvent.id)
 

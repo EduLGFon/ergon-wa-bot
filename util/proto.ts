@@ -29,6 +29,11 @@ export default () => {
 				return '```\n' + this + '```'
 			},
 		},
+		parsePhone: { // parse wpp id to phone number
+			value: function () {
+				return this.split('@')[0].split(':')[0]
+			},
+		},
 		bold: { // make text bold
 			value: function (this: str) {
 				const chars = this.split('')
@@ -167,6 +172,7 @@ export default () => {
 	global.print = console.log = (...args) => { // print() === console.log()
 		if (typeof args[0] !== 'string' || !args[2]) {
 			if (typeof args[0] === 'object') return console.info(inspect(args[0], { depth: null }))
+
 			console.info(...args)
 			return // Ignore this shitty code.
 		}

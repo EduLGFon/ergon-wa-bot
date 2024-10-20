@@ -1,5 +1,5 @@
+import { Baileys, Collection, db, Msg, prisma } from '../map.js'
 import { GroupMetadata, GroupParticipant } from 'baileys'
-import { Collection, db, Msg, prisma } from '../map.js'
 
 export default class Group {
 	id: str
@@ -23,38 +23,40 @@ export default class Group {
 
 	msgs: Collection<str, Msg>
 
-	constructor(id: str, g: GroupMetadata | Group) {
-		this.id = id
+	constructor(data: Group | GroupMetadata) {
+		this.id = data.id
 		// @ts-ignore Shut up TypeScript
-		this.name = g.subject || g.name
+		this.name = data.subject || data.name
 		// this.owner = g.owner
 		// this.nameTimestamp = g.subjectTime;
 		// this.creation = g.creation;
 		// this.desc = g.desc
-		this.restrict = g.restrict
-		this.announce = g.announce
+		this.restrict = data.restrict
+		this.announce = data.announce
 		// @ts-ignore
-		this.members = g.participants || g.members
-		this.size = g.size || this.members.length
-		// this.ephemeral = g.ephemeralDuration;
+		this.members = data?.participants || data?.members
+		this.size = data.size || this.members.length
+		// this.ephemeral = data.ephemeral || data.ephemeralDuration;
 		// @ts-ignore
-		this.invite = g.inviteCode || g.invite
-		this.author = g.author
+		this.invite = data.inviteCode || data.invite
+		this.author = data.author
 		this.msgs = new Collection(db.group.msgsLimit)
+
+		// @ts-ignore
+		this.msgs.iterate(data?.msgs)
 	}
 
-	async countMsg(author: str) { // +1 to group member msgs count
+	async countMsg(author: num) { // +1 to group member msgs count
 		await prisma.msgs.upsert({
 			where: {
 				author_group: {
 					author,
-					group: this.id,
+					group: this.id.parsePhone(),
 				},
 			},
 			create: { // create user counter
 				author,
-				group: this.id,
-				count: 1,
+				group: this.id.parsePhone(),
 			},
 			update: { // or add 1  to count
 				count: { increment: 1 },
@@ -63,13 +65,13 @@ export default class Group {
 		return
 	}
 
-	async getCountedMsgs(author?: str) {
+	async getCountedMsgs(author?: num) {
 		if (author) {
 			return await prisma.msgs.findUnique({
 				where: {
 					author_group: {
 						author,
-						group: this.id,
+						group: this.id.parsePhone(),
 					},
 				},
 			})
@@ -77,14 +79,43 @@ export default class Group {
 
 		const msgs = await prisma.msgs.findMany({
 			where: {
-				group: this.id,
+				group: this.id.parsePhone(),
+			},
+			orderBy: {
+				count: 'desc',
 			},
 		})
 
 		return msgs
 	}
 
-	async checkData() {
+	// async indexParticipants(data: Group | GroupMetadata, bot: Baileys) {
+	// 	let participants: { phone: str; admin: any }[] = []
+	// 	const members: User[] = []
+
+	// 	if ((data as Group).members) { // data is a cached group
+	// 		data = data as Group
+	// 		participants = data.members.map((m) => {
+	// 			return { phone: m.phone, admin: m.admin }
+	// 		})
+	// 	} else { // data is a raw group metadata
+	// 		data = data as GroupMetadata
+	// 		participants = data.participants.map((p) => {
+	// 			return { phone: p.id, admin: p.admin }
+	// 		})
+	// 	}
+
+	// 	for (const m of participants) {
+	// 		const user = await bot.getUser({ phone: m.phone })
+	// 		user.admin = m.admin
+	// 		members.push(user)
+	// 	}
+
+	// 	return members
+	// }
+
+	async checkData(bot: Baileys) {
+		// this.members = await this.indexParticipants(this.members as any, bot)
 		// I don't save any data of groups, but I let this func here bc
 		// if some day I store groups data,
 		// the code will be prepared to check these data

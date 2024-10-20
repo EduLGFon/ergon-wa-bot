@@ -1,4 +1,4 @@
-import { CacheManager, Cmd, emojis, getCtx, Group, Logger, Msg, msgMeta } from '../map.js'
+import { CacheManager, Cmd, emojis, getCtx, Group, Logger, Msg, msgMeta, User } from '../map.js'
 import baileys, {
 	type AnyMessageContent,
 	type BaileysEventMap,
@@ -55,7 +55,7 @@ export default class Baileys {
 			markOnlineOnConnect: false,
 			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
-			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast'),
+			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast') || jid.includes('newsletter'),
 			getMessage: this.getMsg.bind(this), // get stored msgs to resent failed ones
 		})
 		this.store?.bind(this.sock.ev)
@@ -113,6 +113,27 @@ export default class Baileys {
 		return await this.send(chat, { delete: key })
 	}
 
+	async getUser({ id, phone }: { id?: num; phone?: str }): Promise<User> {
+		let user
+
+		if (id) { // means user is already on db
+			const cache = this.cache.users.get(id)
+
+			if (cache) return cache
+			user = await new User({ id }).checkData()
+			this.cache.users.add(id, user)
+		} else {
+			const number = phone!.parsePhone()
+			const cache = this.cache.users.find((u) => u.phone === number)
+
+			if (cache) return cache
+			user = await new User({ phone }).checkData()
+			this.cache.users.add(user.id, user)
+		}
+
+		return user
+	}
+
 	// get a group cache or fetch it
 	async getGroup(id: str): Promise<Group> {
 		let group = this.cache.groups.get(id) // cache
@@ -122,7 +143,8 @@ export default class Baileys {
 			// fetch group metadata
 			group = await this.sock.groupMetadata(id)
 
-			group = await this.cache.groups.add(group.id, group)
+			group = await new Group(group).checkData(this)
+			this.cache.groups.add(group.id, group)
 			return group
 		}
 	}

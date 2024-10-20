@@ -27,4 +27,6 @@ export default abstract class Cmd {
 	}
 
 	abstract run(ctx: CmdCtx): Promise<any> // run function
+
+	async checkData() {}
 }

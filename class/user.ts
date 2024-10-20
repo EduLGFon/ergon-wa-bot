@@ -2,10 +2,14 @@ import { Collection, db, Msg, prisma } from '../map.js'
 import { Content } from '@google/generative-ai'
 
 export default class User {
-	_username: str
-	_userLanguage: str
-	_userPrefix: str
+	id: num
+	phone: str
+
+	_name: str
+	_lang: str
+	_prefix: str
 	_cmdsCount: num
+
 	geminiCtx: Content[] // gemini conversation history
 	lastCmd: {
 		time: num
@@ -13,27 +17,37 @@ export default class User {
 	}
 	msgs: Collection<str, Msg>
 
-	constructor(public id: str, data: Partial<User>, username?: str) {
-		this.id = id.split('@')[0].split(':')[0]
+	constructor(data: Partial<User>) {
+		this.id = data.id || 0
+		this.phone = (data.phone || '').parsePhone()
+
+		this._name = data._name || 'name'
+		this._cmdsCount = data._cmdsCount || 0
+		this._prefix = data._prefix || db.user.prefix
+		this._lang = data._lang || db.user.language
+
 		this.lastCmd = data.lastCmd || { time: 0 }
 		this.geminiCtx = data.geminiCtx || []
-
-		this._username = username || data._username || ''
-		this._cmdsCount = data._cmdsCount || 0
-		this._userPrefix = data._userPrefix || db.user.prefix
-		this._userLanguage = data._userLanguage || db.user.language
-
 		this.msgs = new Collection(db.user.msgsLimit)
+
+		this.msgs.iterate(data?.msgs)
+	}
+
+	// get chat: get user phone number on cache to send msgs
+	public get chat() {
+		return this.phone + '@s.whatsapp.net'
 	}
 
 	// get name: get user name on cache
 	public get name() {
-		return this._username
+		return this._name
 	}
 
 	// set name: update user name on cache and db
 	public set name(value: str) {
-		this._username = value
+		value = value.slice(0, 25)
+
+		this._name = value
 		;(async () =>
 			await prisma.users.update({
 				where: { id: this.id },
@@ -43,12 +57,14 @@ export default class User {
 
 	// get lang: get user language on cache
 	public get lang() {
-		return this._userLanguage
+		return this._lang
 	}
 
 	// set lang: update user language on cache and db
 	public set lang(value: str) {
-		this._userLanguage = value
+		value = value.slice(0, 2)
+
+		this._lang = value
 		;(async () =>
 			await prisma.users.update({
 				where: { id: this.id },
@@ -58,12 +74,14 @@ export default class User {
 
 	// get prefix: get prefix prefix on cache
 	get prefix() {
-		return this._userPrefix
+		return this._prefix
 	}
 
 	// set prefix: update user prefix on cache and db
 	set prefix(value: str) {
-		this._userPrefix = value
+		value = value.slice(0, 3)
+
+		this._prefix = value
 		;(async () =>
 			await prisma.users.update({
 				where: { id: this.id },
@@ -91,35 +109,32 @@ export default class User {
 
 	// checkData: sync user data on cache/db
 	async checkData() {
-		let data = await prisma.users.findUnique({
-			where: { id: this.id }, // fetch it
+		let data = await prisma.users.findFirst({
+			where: {
+				OR: [
+					{ phone: this.phone },
+					{ id: this.id },
+				],
+			}, // fetch it
 		})
 
 		if (!data) {
 			data = await prisma.users.create({
 				data: { // create a new user
-					id: this.id,
-					name: this._username, // default values
-					lang: this._userLanguage,
-					prefix: this._userPrefix,
-					cmds: 0,
-				},
-			})
-		}
-
-		if (this._username && (data.name !== this._username)) {
-			data = await prisma.users.update({
-				where: { id: this.id },
-				data: { // update user name for rank
-					name: this._username,
+					phone: this.phone,
+					name: this._name, // default values
+					lang: this._lang,
+					prefix: this._prefix,
 				},
 			})
 		}
 
 		// update cache
-		this._username = data.name
-		this._userLanguage = data.lang
-		this._userPrefix = data.prefix
+		this.id = data.id
+		this.phone = data.phone
+		this._name = data.name
+		this._lang = data.lang
+		this._prefix = data.prefix
 		this._cmdsCount = data.cmds
 
 		return this

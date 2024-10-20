@@ -3,6 +3,7 @@ import {
 	Baileys,
 	Cmd,
 	CmdCtx,
+	coolValues,
 	findKey,
 	Group,
 	isMedia,
@@ -13,22 +14,21 @@ import {
 import type { AnyMessageContent, proto } from 'baileys'
 
 // getCtx: command context === message abstraction layer
-async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
+async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx> {
 	const { message, key, pushName } = raw
 
 	// msg type
 	const type = getMsgType(message!)
-
-	let userID = key.fromMe ? bot.sock.user?.id : key.remoteJid
-
-	if (key.participant) userID = key.participant
+	if (!coolValues.includes(type)) return {} as CmdCtx
 
 	let group: Group
 	if (key.remoteJid?.includes('@g.us')) group = await bot.getGroup(key.remoteJid)
 
-	userID = userID!.split('@')[0].split(':')[0]
-	let user: User = bot.cache.users.get(userID)
-	if (!user) user = await bot.cache.users.add(userID!, {}, [pushName!])
+	let phone = key.fromMe ? bot.sock.user?.id! : key.remoteJid!
+	if (key.participant) phone = key.participant!
+
+	let user = await bot.getUser({ phone })
+	if (pushName && pushName !== user.name) user.name = pushName
 
 	let msg: Msg = {
 		key,
@@ -39,7 +39,7 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys) {
 		isBot: Boolean(key.fromMe && !Object.keys(key).includes('participant')), // if it's baileys client,
 		isMedia: isMedia(type), // is video, photo or audio msg
 		mime: findKey(message, 'mimetype'), // media mimetype like image/png
-		quoted: getQuoted(raw)!, // quoted msg
+		quoted: getQuoted(raw, group! || user)!, // quoted msg
 		raw, // raw msg obj
 	}
 
@@ -92,17 +92,16 @@ function getInput(msg: Msg, bot: Baileys, prefix: str) {
 }
 
 // getQuoted: get the quoted msg of a raw msg
-function getQuoted(raw: proto.IWebMessageInfo) {
+function getQuoted(raw: proto.IWebMessageInfo, user: User | Group) {
 	const m = raw.message!
 
 	//@ts-ignore 'quotedMessage' is missing on lib types
 	const quotedRaw: Partial<proto.IMessage> = findKey(m, 'quotedMessage')
 
 	if (!quotedRaw) return
-
 	const type = getMsgType(quotedRaw) // quoted message type
 
-	return {
+	let quoted = {
 		type, // msg type
 		isMedia: isMedia(type),
 		//@ts-ignore
@@ -110,6 +109,22 @@ function getQuoted(raw: proto.IWebMessageInfo) {
 		mime: findKey(quotedRaw, 'mimetype'),
 		raw: { message: quotedRaw }, // raw quote msg obj
 	} as Msg
+
+	let cachedMsg = user.msgs.find((m) =>
+		// compare quoted msg with cached msgs
+		m.type === quoted.type &&
+		m.isMedia === quoted.isMedia &&
+		m.text === quoted.text &&
+		m.mime === quoted.mime &&
+		Object.entries(quoted.raw.message!).every(([k, v]) => {
+			const data = m.raw?.message![k as 'chat']
+
+			if (typeof data === 'object') return true
+			return data === v
+		})
+	)
+
+	return cachedMsg || quoted
 }
 
 // getMsgText: "get msg text"
@@ -157,17 +172,17 @@ function msgMeta(
 
 // checkPermissions: check cmd permissions like block random guys from using eval
 function checkPermissions(cmd: Cmd, user: User, group?: Group) {
-	const devs = process.env.DEVS!
+	const isDev = process.env.DEVS!.includes(user.phone)
 	// if a normal user tries to run a only-for-devs cmd
-	if (cmd.access.restrict && !devs.includes(user.id)) return 'block'
+	if (cmd.access.restrict && !isDev) return 'block'
 
 	if (group) { // if msg chat is a group
 		if (!cmd.access.groups) return 'x'
 
 		const admins = group.members.map((m) => m.admin && m.id)
-		// all group admins ID
-		const userId = user.id + '@s.whatsapp.net'
-		if (cmd.access.admin && (!admins.includes(userId) && !devs.includes(user.id))) {
+		// all group admins id
+
+		if (cmd.access.admin && (!admins.includes(user.chat) && !isDev)) {
 			return 'block' // Devs can use admin cmds for security reasons
 		}
 	} else if (!cmd.access.dm) return 'x'

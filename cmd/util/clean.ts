@@ -23,19 +23,26 @@ export default class extends Cmd {
 		// the bot can only delete up to 200 cached msgs
 
 		let msgs = group.msgs.map((m) => m.key)
+			.reverse()
+			.slice(1, amount + 1)
 
 		if (this.subCmds[0] === args[1]) msgs = msgs.reverse()
 		// it will delete latest msgs first
 
-		for (const m of msgs) {
-			await bot.deleteMsg(m) // delete msg for everyone
-			group.msgs.delete(m.id) // delete it from cache
+		for (const i in msgs) {
+			if (Number(i) % 10 === 0 && i !== '0') await delay(1_000)
+			await bot.deleteMsg(msgs[i]) // delete msg for everyone
+			group.msgs.delete(msgs[i].id) // delete it from cache
 
 			await delay(500)
 		}
 
-		await bot.deleteMsg(msg)
-		if (disclaimerMsg) bot.deleteMsg(disclaimerMsg.msg)
+		if (disclaimerMsg) { // delete disclaimer msg
+			await bot.deleteMsg(disclaimerMsg.msg)
+			group.msgs.delete(disclaimerMsg.msg.key.id)
+		}
+		bot.deleteMsg(msg) // delete cmd msg
+		group.msgs.delete(msg.key.id)
 		return
 	}
 }

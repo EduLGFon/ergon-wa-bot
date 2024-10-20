@@ -29,19 +29,22 @@ function start(bot: Baileys, resolve: Function) {
 
 async function sendReminders(bot: Baileys, r: Reminder) {
 	try {
-		let text = `@${r.author}\n`
+		const user = await bot.getUser({ id: r.author })
+		const lang = `langs.${user!.lang}`.t('en') || 'Portuguese'
+
+		let text = `\`${r.msg.replaceAll('`', '\`')}\`\n@${user.phone}`
+
 		const aiMsg = await gemini({
 			instruction:
-				'Create only one humorous message to notify a user of a reminder in the following template. Always respond in Portuguese and on template.\ntemplate: "humorous message \n `reminder`"\nreminder: ',
+				`Create only one humorous message to notify a user of a reminder in ${lang}.\nreminder: `,
 			prompt: r.msg,
 			model: api.aiModel.gemini,
 		})
 
-		if (!aiMsg || !aiMsg.text || !aiMsg.text.includes(r.msg)) text += '`' + r.msg + '`'
-		else text += aiMsg.text
+		text += aiMsg?.text ? `, ${aiMsg?.text}` : ''
 
 		// send remind msg
-		await bot.sock.sendMessage(r.chat, { text, mentions: [r.author + '@s.whatsapp.net'] })
+		await bot.sock.sendMessage(r.chat, { text, mentions: [user.chat] })
 		return 200
 	} catch (e) {
 		console.error(e, 'SERVER')

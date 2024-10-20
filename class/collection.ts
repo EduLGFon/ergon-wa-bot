@@ -1,7 +1,7 @@
 export default class Collection<K, V> extends Map {
 	primaryKey: str
 	limit: num
-	base?: any
+	base?: FunctionConstructor
 
 	constructor(limit?: num, base?: any, PK = 'id') {
 		super()
@@ -25,18 +25,18 @@ export default class Collection<K, V> extends Map {
 			value = Object.assign(value, existing)
 		}
 
-		if (this.base) {
-			value = (value instanceof this.base ||
-					value?.constructor?.name === this.base.name)
-				? value
-				// @ts-ignore
-				: new this.base(key, value, ...extra)
+		// if (this.base) {
+		// 	value = (value instanceof this.base ||
+		// 			value?.constructor?.name === this.base.name)
+		// 		? value
+		// 		// @ts-ignore
+		// 		: new this.base(key, value, ...extra)
 
-			try {
-				// @ts-ignore check item data automaticaly
-				value = await value.checkData()
-			} catch {}
-		}
+		// 	try {
+		// 		// @ts-ignore check item data automaticaly
+		// 		value = await value.checkData()
+		// 	} catch {}
+		// }
 
 		this.set(key, value as V)
 
@@ -152,5 +152,14 @@ export default class Collection<K, V> extends Map {
 		for (const [k, v] of this.entries()) json[k] = v
 
 		return json
+	}
+
+	// iterate: itereate entries of an object and add it
+	iterate(obj: any) {
+		if (!obj) return
+
+		for (const [k, v] of Object.entries(obj)) {
+			this.add(k as K, v as V)
+		}
 	}
 }

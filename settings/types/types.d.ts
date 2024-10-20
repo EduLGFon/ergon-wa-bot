@@ -55,7 +55,7 @@ interface CmdCtx {
 }
 
 interface GroupMsg {
-	author: str
+	author: num
 	group: str
 	count: num
 }

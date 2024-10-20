@@ -12,15 +12,14 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 
 		// get abstract msg obj
 		const context = await getCtx(m, bot)
+		if (!context.msg) continue
 		const { msg, args, cmd, group, user } = context
 
-		if (coolValues.includes(msg.type)) {
-			if (group) {
-				group.msgs.add(msg.key.id!, msg)
-				if (!msg.isBot) group.countMsg(user.id)
-				// count msgs with cool values for group msgs rank cmd
-			} else user.msgs.add(msg.key.id!, msg)
-		}
+		if (group) {
+			group.msgs.add(msg.key.id!, msg)
+			if (!msg.isBot) group.countMsg(user.id)
+			// count msgs with cool values for group msgs rank cmd
+		} else user.msgs.add(msg.key.id!, msg)
 
 		// run functions waiting for msgs (waitFor)
 		if (bot.cache.wait.has(e)) {

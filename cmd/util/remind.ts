@@ -53,7 +53,7 @@ export default class extends Cmd {
 			data: { // create remind
 				author: user.id,
 				chat: msg.chat,
-				msg: args.join(' ').trim().slice(0, 128), // remove unnecessary spaces from str
+				msg: args.join(' ').trim().slice(0, 100), // remove unnecessary spaces from str
 				remindAt: String(time),
 			},
 		})
