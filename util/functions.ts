@@ -1,5 +1,6 @@
 import { Baileys, bot, Group, runner, sticker, User } from '../map.js'
 import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
+import { now } from './proto.js'
 
 // Delay: make the code wait for some time
 async function delay(time: num) { // resolve promise at timeout
@@ -13,7 +14,9 @@ async function cacheAllGroups(bot: Baileys) {
 	let groups = Object.keys(groupList)
 
 	groups.forEach(async (g) => {
-		bot.cache.groups.add(g, groupList[g])
+		const group = await new Group(groupList[g]).checkData(bot)
+
+		bot.cache.groups.add(group.id, group)
 	})
 
 	print('CACHE', `${groups.length} groups cached`, 'blue')
@@ -28,6 +31,7 @@ function genStickerMeta(user: User, group?: Group) {
 		author: sticker.author.join('\n')
 			.replace('{username}', user.name) // replace placeholders with
 			.replace('{link}', bot.link) // useful infos
+			.replace('{date}', now('D'))
 			.replace('{group}', group?.name || 'Not a group'),
 	}
 }
