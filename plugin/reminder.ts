@@ -22,7 +22,7 @@ app
 setInterval(async () => {
 	let reminders = await prisma.reminders.findMany({
 		orderBy: { remindAt: 'asc' },
-		where: { isDone: null },
+		where: { isDone: false },
 	}) // fetch all reminders
 
 	reminders = reminders.filter((r) => Number(r.remindAt) < Date.now())
