@@ -35,21 +35,28 @@
 
 - [PostgreSQL 🐘](https://www.postgresql.org/download/) (For database)
 
-> 🪧 » _Recommended version: 14 or higher_
+> 🪧 » _Recommended version: 16 or higher_
 
-**WALL-E also support these languages, but you DON'T need to install it if you won't use:**
+**OPTIONAL TOOLS**
 
-- [BUN 🧁](https://bun.sh) (Can be used to run the runner)
+- FFMPEG (For gif stickers)
 
-> 🪧 » _Recommended version: 1.1.18 or higher_
+> 🪧 » _You need to install it on your system_
+> Run `sudo apt install ffmpeg` for Debian/Ubuntu
 
 - [Python 🐍](https://www.python.org/) (For rmbg plugin)
 
 > 🪧 » _Recommended version: 3.10 or higher_
 
+**WALL-E also support these languages, but you DON'T need to install it if you won't use:**
+
+- [BUN 🧁](https://bun.sh) (Can be used to run the runner)
+
+> 🪧 » _Recommended version: 1.1.34 or higher_
+
 - [DENO 🦕](https://deno.com/)
 
-> 🪧 » _Recommended version: 1.44 or higher_
+> 🪧 » _Recommended version: 2.04 or higher_
 
 - [LUAJIT 🌙](https://luajit.org/)
 

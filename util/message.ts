@@ -124,7 +124,7 @@ function getQuoted(raw: proto.IWebMessageInfo, user: User | Group) {
 		})
 	)
 
-	return cachedMsg || quoted
+	return quoted || cachedMsg
 }
 
 // getMsgText: "get msg text"

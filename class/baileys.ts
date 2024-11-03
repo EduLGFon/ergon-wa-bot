@@ -55,7 +55,7 @@ export default class Baileys {
 			markOnlineOnConnect: false,
 			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
-			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast') || jid.includes('newsletter'),
+			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast') || jid?.includes('newsletter'),
 			getMessage: this.getMsg.bind(this), // get stored msgs to resent failed ones
 		})
 		this.store?.bind(this.sock.ev)
