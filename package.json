@@ -6,8 +6,8 @@
 		"node": ">=20"
 	},
 	"scripts": {
-		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm start",
-		"update": "git pull origin master; npm update --save; deno upgrade; bun upgrade; npm run postinstall",
+		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && pipx install rembg; npm start",
+		"update": "git pull origin master; npm update --save; deno upgrade; bun upgrade; pipx upgrade-all;  npm run postinstall",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r build/ & npx tsc",
 		"start": "npx pm2 start settings/ecosystem.config.cjs --attach",
