@@ -26,6 +26,9 @@ export default class extends Cmd {
 			bot.react(msg, 'x')
 			return e.message.encode()
 		})
+		response = response
+			.replaceAll('**', '*')
+			.replaceAll('#', '>')
 
 		await bot.send(msg, `\`- Grok-beta:\` ${response}`)
 		bot.react(msg, 'ok')

@@ -14,7 +14,7 @@ export default class User {
 	grok: { role: str; content: str }[]
 	lastCmd: {
 		time: num
-		cmdReply?: str
+		processing?: bool
 	}
 	msgs: Collection<str, Msg>
 
