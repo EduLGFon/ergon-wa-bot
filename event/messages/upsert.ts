@@ -1,4 +1,4 @@
-import { Baileys, checkPermissions, CmdCtx, coolValues, delay, getCtx } from '../../map.js'
+import { Baileys, checkPermissions, CmdCtx, delay, getCtx } from '../../map.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
 
@@ -15,6 +15,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		if (!context.msg) continue
 		const { msg, args, cmd, group, user } = context
 
+		if (!user || !msg) return
 		if (group) {
 			group.msgs.add(msg.key.id!, msg)
 			if (!msg.isBot) group.countMsg(user.id)

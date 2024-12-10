@@ -35,7 +35,7 @@ export default class Baileys {
 		// const { version } = await fetchLatestBaileysVersion()
 		/** WA is showing fake versions to ban bots. DO NOT UNCOMMENT IT */
 
-		const version: [num, num, num] = [2, 3000, 1015901307]
+		const version: [num, num, num] = [2, 3000, 1017531287]
 		// This version is secure
 		print('NET', `Connecting to WA v${version.join('.')}`, 'green')
 
@@ -55,7 +55,8 @@ export default class Baileys {
 			markOnlineOnConnect: false,
 			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
-			shouldIgnoreJid: (jid: str) => jid?.includes('broadcast') || jid?.includes('newsletter'),
+			shouldIgnoreJid: (jid: str) =>
+				jid?.includes('broadcast') || jid?.includes('newsletter'),
 			getMessage: this.getMsg.bind(this), // get stored msgs to resent failed ones
 		})
 		this.store?.bind(this.sock.ev)
@@ -113,7 +114,7 @@ export default class Baileys {
 		return await this.send(chat, { delete: key })
 	}
 
-	async getUser({ id, phone }: { id?: num; phone?: str }): Promise<User> {
+	async getUser({ id, phone }: { id?: num; phone?: str }): Promise<User | undefined> {
 		let user
 
 		if (id) { // means user is already on db
@@ -128,6 +129,7 @@ export default class Baileys {
 
 			if (cache) return cache
 			user = await new User({ phone }).checkData()
+			if (!user) return
 			this.cache.users.add(user.id, user)
 		}
 

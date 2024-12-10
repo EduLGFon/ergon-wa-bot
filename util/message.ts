@@ -17,9 +17,11 @@ import type { AnyMessageContent, proto } from 'baileys'
 async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx> {
 	const { message, key, pushName } = raw
 
+	let fakeCtx = {} as CmdCtx
+
 	// msg type
 	const type = getMsgType(message!)
-	if (!coolValues.includes(type)) return {} as CmdCtx
+	if (!coolValues.includes(type)) return fakeCtx
 
 	let group: Group
 	if (key.remoteJid?.includes('@g.us')) group = await bot.getGroup(key.remoteJid)
@@ -27,6 +29,7 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx>
 	let phone = key.fromMe ? bot.sock.user?.id! : key.remoteJid!
 	if (key.participant) phone = key.participant!
 
+	if (phone.endsWith('@g.us')) return fakeCtx
 	let user = await bot.getUser({ phone })
 
 	let msg: Msg = {
@@ -57,8 +60,8 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx>
 	return {
 		msg,
 		args,
-		cmd,
-		user,
+		cmd: cmd as Cmd,
+		user: user as User,
 		group: group!,
 	} as CmdCtx
 }
