@@ -1,5 +1,5 @@
 import { FileMetadataResponse, FileState, GoogleAIFileManager } from '@google/generative-ai/server'
-import { aiPrompt, delay, makeTempFile, runner } from '../map.js'
+import { aiPrompt, delay, makeTempFile, runner, User } from '../map.js'
 import {
 	EnhancedGenerateContentResponse,
 	GenerateContentResult,
@@ -10,7 +10,7 @@ import {
 } from '@google/generative-ai'
 // import OpenAI from 'openai'
 
-export { gemini, imgRemover, runCode }
+export { gemini, imgRemover, runCode, xAI }
 
 async function runCode(data: { lang?: str; code?: str; file?: str }) {
 	const req = await fetch(`http://localhost:${runner.port}/run`, {
@@ -151,6 +151,35 @@ async function gemini({ instruction, prompt, model, buffer, mime, user, callback
 		} as aiResponse
 	}
 	return
+}
+
+async function xAI(user: User, prompt: str) {
+	if (!user.grok) user.grok = []
+
+	user.grok.push({ role: 'user', content: prompt })
+	let data = {
+		messages: user.grok,
+		model: 'grok-beta',
+		stream: false,
+		temperature: 0,
+	}
+
+	const req = await fetch('https://api.x.ai/v1/chat/completions', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${process.env.XAI}`,
+		},
+		body: JSON.stringify(data),
+	})
+
+	const response = await req.json()
+
+	const message = response.choices[0].message
+	delete message.refusal
+
+	user.grok.push(message)
+	return message.content
 }
 
 // GPT is not supported anymore

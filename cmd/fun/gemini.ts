@@ -4,8 +4,8 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['g'],
-			subCmds: ['pro', 'reset'],
 			cooldown: 5,
+			subCmds: ['pro', 'reset'],
 		})
 	}
 

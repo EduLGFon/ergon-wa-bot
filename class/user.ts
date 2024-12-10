@@ -11,6 +11,7 @@ export default class User {
 	_cmdsCount: num
 
 	geminiCtx: Content[] // gemini conversation history
+	grok: { role: str; content: str }[]
 	lastCmd: {
 		time: num
 		cmdReply?: str
@@ -28,6 +29,7 @@ export default class User {
 
 		this.lastCmd = data.lastCmd || { time: 0 }
 		this.geminiCtx = data.geminiCtx || []
+		this.grok = data.grok || []
 		this.msgs = new Collection(db.user.msgsLimit)
 
 		this.msgs.iterate(data?.msgs)

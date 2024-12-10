@@ -142,6 +142,8 @@ npm run update
 
 # `-1.` 🗒️ Notes:
 
+- I recommend you to clean cache and log out WhatsApp Web sometimes to fix decrypt bugs
+
 - Experiencing bugs? Open a issue with your problem or make a pull request with the solution. I will
   try to fix it as soon as possible.
 
