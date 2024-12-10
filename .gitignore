@@ -3,6 +3,7 @@
 cache/
 *.env
 test/
+settings/venv/*
 
 # Builds
 build/

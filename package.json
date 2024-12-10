@@ -6,7 +6,8 @@
 		"node": ">=22"
 	},
 	"scripts": {
-		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && pipx install rembg; npm start",
+		"setup": "npm install -g typescript pm2 prisma && npm run prisma:push && npm install && npm run setup:py; npm start",
+		"setup:py": "python3 -m venv settings/venv && settings/venv/bin/pip install rembg onnxruntime",
 		"update": "git pull origin master; npm update --save; deno upgrade; bun upgrade; pipx upgrade-all;  npm run postinstall",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r build/ & npx tsc",

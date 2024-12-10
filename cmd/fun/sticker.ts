@@ -6,7 +6,6 @@ import {
 	isVisual,
 	makeTempFile,
 	runCode,
-	runner,
 } from '../../map.js'
 import { Sticker } from 'wa-sticker-formatter'
 import { readFile } from 'node:fs/promises'
@@ -28,12 +27,11 @@ export default class extends Cmd {
 		if (!Buffer.isBuffer(buffer)) return bot.send(msg, t('sticker.nobuffer'))
 		await bot.react(msg, 'loading')
 
-		let stickerTypes = ['rounded', 'full', 'crop', 'circle']
+		let stickerTypes = ['full', 'crop']
 		let quality = 20 // media quality after compression
 
 		switch (target.type) {
 			case 'video':
-				stickerTypes = ['full', 'rounded'] // crop videos requires a stronger machine
 				quality = 10 // videos needs to be more compressed
 				// but compress a video too much can cause some glitches on video
 				break

@@ -56,7 +56,7 @@
 		"tempFolder": "settings/temp",
 		"port": 3077,
 		"py": {
-			"cmd": ["python3"],
+			"cmd": ["settings/venv/bin/python3"],
 			"ext": "py"
 		},
 		"lua": {
