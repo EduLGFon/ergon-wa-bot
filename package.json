@@ -19,18 +19,18 @@
 		"translate": "npx @parvineyvazov/json-translator locale/pt.json  -m google -f pt -t en es fr pl"
 	},
 	"dependencies": {
-		"@google/generative-ai": "^0.20.0",
-		"@prisma/client": "^5.21.1",
+		"@google/generative-ai": "^0.21.0",
+		"@prisma/client": "^6.0.1",
 		"@types/express": "^5.0.0",
 		"baileys": "^6.7.9",
 		"chalk": "^5.3.0",
-		"express": "^4.21.1",
+		"express": "^4.21.2",
 		"google-sr": "^4.0.0",
 		"google-translate": "github:iamtraction/google-translate",
 		"googlethis": "^1.8.0",
 		"humanize-duration": "^3.32.1",
-		"i18next": "^23.16.4",
-		"i18next-fs-backend": "^2.3.2",
+		"i18next": "^24.0.5",
+		"i18next-fs-backend": "^2.6.0",
 		"jimp": "^0.16.13",
 		"luxon": "^3.5.0",
 		"pino": "^9.5.0",
@@ -40,9 +40,9 @@
 	"devDependencies": {
 		"@types/humanize-duration": "^3.27.4",
 		"@types/luxon": "^3.4.2",
-		"@types/node": "^20.17.5",
-		"pino-pretty": "^11.3.0",
-		"prisma": "^5.21.1",
-		"typescript": "^5.6.3"
+		"@types/node": "^22.10.1",
+		"pino-pretty": "^13.0.0",
+		"prisma": "^6.0.1",
+		"typescript": "^5.7.2"
 	}
 }

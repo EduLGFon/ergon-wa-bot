@@ -41,13 +41,12 @@
 
 - FFMPEG (For gif stickers)
 
-> 🪧 » _You need to install it on your system_
-> _Run `sudo apt install ffmpeg` for Debian/Ubuntu_
+> 🪧 » _You need to install it on your system_ _Run `sudo apt install ffmpeg` for Debian/Ubuntu_
 
 - [Python 🐍](https://www.python.org/) (For rmbg plugin)
 
-> 🪧 » _Recommended version: 3.12 or higher_
-> _Run `sudo apt install pipx` to install Package Installer for Python_
+> 🪧 » _Recommended version: 3.12 or higher_ _Run `sudo apt install pipx` to install Package
+> Installer for Python_
 
 **WALL-E also support these languages, but you DON'T need to install it if you won't use:**
 
