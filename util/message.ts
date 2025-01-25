@@ -177,19 +177,21 @@ function msgMeta(
 function checkPermissions(cmd: Cmd, user: User, group?: Group) {
 	const isDev = process.env.DEVS!.includes(user.phone)
 	// if a normal user tries to run a only-for-devs cmd
-	if (cmd.access.restrict && !isDev) return 'block'
+	if (cmd.access.restrict && !isDev) return 'prohibited'
 
 	if (group) { // if msg chat is a group
-		if (!cmd.access.groups) return 'x'
+		if (!cmd.access.groups) return 'block'
 
 		const admins = group.members.map((m) => m.admin && m.id)
 		// all group admins id
 
 		if (cmd.access.admin && (!admins.includes(user.chat) && !isDev)) {
-			return 'block' // Devs can use admin cmds for security reasons
+			return 'prohibited' // Devs can use admin cmds for security reasons
 		}
-	} else if (!cmd.access.dm) return 'x'
+	} else if (!cmd.access.dm) return 'block'
 	// if there's no group and cmd can't run on DM
+
+	if (cmd.access.needsDb && !process.env.DATABASE_URL) return 'nodb'
 
 	return true
 }

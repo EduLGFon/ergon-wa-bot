@@ -1,4 +1,4 @@
-import { Cmd, CmdCtx, GroupMsg, prisma, User } from '../../map.js'
+import { Cmd, CmdCtx } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
@@ -6,14 +6,15 @@ export default class extends Cmd {
 			access: {
 				dm: false,
 				groups: true,
+				needsDb: true,
 			},
 		})
 	}
 
 	async run({ bot, msg, group }: CmdCtx) {
-		let text = `*[🏆] - ${group!.name}'s Rank*\n\n`
+		let text = `*[🏆] - Rank*\n\n`
 
-		const msgs = await group!.getCountedMsgs() as GroupMsg[]
+		const msgs = await group!.getCountedMsgs()
 
 		for (const i in msgs) {
 			const { author, count } = msgs[i]

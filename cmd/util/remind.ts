@@ -5,6 +5,9 @@ export default class extends Cmd {
 		super({
 			alias: ['re', 'lembrete'],
 			subCmds: ['list'],
+			access: {
+				needsDb: true,
+			},
 		})
 	}
 

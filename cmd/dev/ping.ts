@@ -10,52 +10,34 @@ export default class extends Cmd {
 		let text = `*Ping* 🏓\n`
 
 		// Calculate WA Ping
-		const whatsapp = await measurePing(bot.react.bind(bot), msg, 'loading')
-		text += createStr('🌐', '.WhatsApp_', whatsapp)
+		const WAPing = await measurePing(bot.react.bind(bot), msg, 'loading')
+		text += createStr('🌐', '.WhatsApp_', WAPing)
 
 		// Calculate DB Ping
-		const db = await measurePing(prisma.users.findUnique, { where: { id: user.id } })
-		text += createStr('🥜', '..Database_', db)
-
-		// Calculate Runner ping
-		const runner = await measurePing(fetch, 'http://localhost:3077/ping')
-		text += createStr('👟', '....Runner_..', runner)
-
-		// Calculate main server ping
-		const main = await measurePing(fetch, 'http://localhost:3001/ping')
-		text += createStr('✨', '.....Main_.....', main)
-
-		// Calculate reminder ping
-		const reminder = await measurePing(fetch, 'http://localhost:7361/ping')
-		text += createStr('🔔', '..Reminder..', reminder)
+		const DbPing = await measurePing(prisma.users.findUnique, { where: { id: user.id } })
+		text += createStr('🥜', '..Database_', DbPing)
 
 		await bot.send(msg, text)
 		bot.react(msg, 'ok')
 		return
 	}
 }
-function createStr(emoji: str, name: str, data: { status: str; ping: num }) {
-	return `[${emoji}]` + name.bold() + '|' + data.status.bold() + '|' +
-		`${data.ping}ms`.align(8).bold() + '\n'
+function createStr(emoji: str, name: str, ping: num) {
+	return `[${emoji}]` + name.bold() + '|' +
+		`${ping}ms`.align(8).bold() + '\n'
 }
-async function measurePing(func: Func, ...args: any) {
-	const data = await new Promise(async (res) => {
-		let status = '..Off..'
-		let ping = -1
-		setTimeout(() => res({ ping, status }), 2_000)
+async function measurePing(func: Func, ...args: any): Promise<number> {
+	return await new Promise(async (res) => {
+		let ping
 
-		const startTime = Date.now()
-		const data = await func(...args).catch(() => {})
-		ping = Date.now() - startTime
+		try {
+			const startTime = Date.now()
+			await func(...args)
+			ping = Date.now() - startTime
+		} catch (_e: any) {
+			ping = -1
+		}
 
-		if (data?.status === 200 || data?.chat || data?.id) status = '..On..'
-		else ping = -1
-
-		return res({
-			ping,
-			status,
-		})
+		return res(ping)
 	})
-
-	return await data as { ping: num; status: str }
 }

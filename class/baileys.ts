@@ -97,9 +97,9 @@ export default class Baileys {
 		const { chat, key } = m
 
 		// @ts-ignore find emojis by name | 'ok' => '✅'
-		const reaction = emojis[emoji] || emoji
-		const ctx = await this.send(chat, { react: { text: reaction, key } })
-		return ctx.msg
+		const text = emojis[emoji] || emoji
+		await this.send(chat, { react: { text, key } })
+		return
 	}
 
 	async editMsg(msg: Msg, text: str) {
@@ -131,6 +131,7 @@ export default class Baileys {
 			if (cache) return cache
 			user = await new User({ phone }).checkData()
 			if (!user) return
+			if (!process.env.DATABASE_URL) user.id = Number(user.phone)
 			this.cache.users.add(user.id, user)
 		}
 

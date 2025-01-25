@@ -47,6 +47,8 @@ export default class Group {
 	}
 
 	async countMsg(author: num) { // +1 to group member msgs count
+		if (!process.env.DATABASE_URL) return
+
 		await prisma.msgs.upsert({
 			where: {
 				author_group: {
@@ -66,16 +68,18 @@ export default class Group {
 	}
 
 	async getCountedMsgs(author?: num) {
-		if (author) {
-			return await prisma.msgs.findUnique({
-				where: {
-					author_group: {
-						author,
-						group: this.id.parsePhone(),
-					},
-				},
-			})
-		}
+		if (!process.env.DATABASE_URL) return []
+
+		// if (author) {
+		// 	return await prisma.msgs.findUnique({
+		// 		where: {
+		// 			author_group: {
+		// 				author,
+		// 				group: this.id.parsePhone(),
+		// 			},
+		// 		},
+		// 	})
+		// }
 
 		const msgs = await prisma.msgs.findMany({
 			where: {

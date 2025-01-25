@@ -37,6 +37,7 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 		// Check cmd permissions
 		const auth = checkPermissions(cmd, user, group)
 		if (auth !== true) {
+			if (auth === 'nodb') bot.send(msg, 'Este comando requer um banco de dados configurado.')
 			bot.react(msg, auth)
 			continue // you got censored OOOOMAGAAAA
 		}

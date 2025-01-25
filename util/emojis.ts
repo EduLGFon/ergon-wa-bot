@@ -4,11 +4,13 @@
  */
 
 export default {
+	prohibited: '📛',
 	sparkles: '✨',
 	loading: '⌛',
 	block: '⛔',
 	think: '💭',
 	clock: '🕓',
+	nodb: '📂',
 	ok: '✅',
 	x: '❌',
 }

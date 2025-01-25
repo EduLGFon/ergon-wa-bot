@@ -10,6 +10,7 @@ export default abstract class Cmd {
 		groups: bool // cmd can run on groups
 		admin: bool // only admins can run the cmd
 		restrict: bool // only devs can run the cmd
+		needsDb: bool // cmd requires database to run.
 	}>
 
 	constructor(c: Partial<Cmd>) {
@@ -22,6 +23,7 @@ export default abstract class Cmd {
 			groups: true,
 			admin: false,
 			restrict: false,
+			needsDb: false,
 		}, c.access) // Compare command permissions
 		// with this default setting
 	}

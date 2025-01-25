@@ -51,6 +51,7 @@ export default class User {
 
 		this._name = value
 		;(async () =>
+			process.env.DATABASE_URL &&
 			await prisma.users.update({
 				where: { id: this.id },
 				data: { name: value },
@@ -68,6 +69,7 @@ export default class User {
 
 		this._lang = value
 		;(async () =>
+			process.env.DATABASE_URL &&
 			await prisma.users.update({
 				where: { id: this.id },
 				data: { lang: value },
@@ -85,6 +87,7 @@ export default class User {
 
 		this._prefix = value
 		;(async () =>
+			process.env.DATABASE_URL &&
 			await prisma.users.update({
 				where: { id: this.id },
 				data: { prefix: value },
@@ -101,6 +104,7 @@ export default class User {
 		this.lastCmd = { time: Date.now() }
 		this._cmdsCount++
 
+		if (!process.env.DATABASE_URL) return
 		await prisma.users.update({
 			where: { id: this.id },
 			data: {
@@ -142,6 +146,8 @@ export default class User {
 
 			return this
 		} catch (e) {
+			if (!process.env.DATABASE_URL) return this
+
 			print('CHECKUSERDATA ERROR', e, 'red')
 			print('User data:', {
 				phone: this.phone,
