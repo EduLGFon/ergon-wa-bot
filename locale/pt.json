@@ -1,6 +1,7 @@
 {
 	"events": {
-		"cooldown": "[🕓] - Tá com pressa? Você foi taxado em *{{time}}*, espera um pouquinho aí"
+		"cooldown": "[🕓] - Tá com pressa? Você foi taxado em *{{time}}*, espera um pouquinho aí",
+		"nodb": "[💡] Este comando requer um banco de dados configurado."
 	},
 	"langs": {
 		"pt": "Português",
@@ -47,8 +48,7 @@
 		"changed": "[✔️] - O seu novo prefixo é: *{{prefix}}*"
 	},
 	"ping": {
-		"desc": "Veja o tempo de resposta do bot",
-		"pinging": "Calculando o tempo de resposta..."
+		"desc": "Veja o tempo de resposta do bot"
 	},
 	"choose": {
 		"usage": "<opção 1>, <opção 2>, [opção 3], [...]",
@@ -70,17 +70,26 @@
 			"pro Explique física quântica como se você fosse um adolescente"
 		]
 	},
+	"grok": {
+		"usage": "<prompt>",
+		"desc": "Converse com a IA do Elon Musk",
+		"examples": [
+			"O que você acha do Elon Musk?",
+			"Imite o Donald Trump",
+			"Quais são as melhores ervas para fins medicinais?"
+		]
+	},
 	"rank": {
-		"usage": "",
 		"desc": "Veja o rank de membros que mais conversaram no grupo",
+		"msgs": "*{{postion}}.* {{author}}: {{count}} mensagens\n",
 		"examples": [""]
 	},
 	"sticker": {
 		"usage": "<(imagem/gif)> [rmbg: remove o fundo de uma imagem]",
 		"desc": "Crie stickers sem fundo!!!!",
 		"examples": [
-			"rmbg <imagem anexada>",
-			"(imagem mencionada)"
+			"rmbg <imagem>",
+			"(imagem)"
 		],
 		"nobuffer": "[⚠️] - Mídia incompatível ou não encontrada"
 	},
@@ -94,8 +103,16 @@
 		"noAmount": "\"clean 0\"? Tá achando que aqui é o seu quarto que você não limpa nada?",
 		"deleted": "Vou apagar as últimas {{msgsSize}} mensagens e depois vou voltar a dormir bem aqui na minha rede"
 	},
+	"download": {
+		"usage": "[a: áudio] <url>",
+		"desc": "Faça download de vídeos e áudios",
+		"examples": [
+			"{link}",
+			"a {link}"
+		]
+	},
 	"everyone": {
-		"usage": "[conteúdo da mensagem]",
+		"usage": "[mensagem]",
 		"desc": "Mencione todos os usuários de um grupo em uma única mensagem",
 		"examples": [
 			"",
@@ -106,19 +123,30 @@
 	"remind": {
 		"usage": "<duração> <mensagem>",
 		"desc": "Agende lembretes",
+		"limit": "[💡] A duração deve ser maior que 1m e menor que 365d.",
+		"pending": "*Lembretes pendentes:* {{pending}}\n\n",
+		"done": "*Lembretes concluídos:* {{done}}",
 		"examples": [
+			"45d Voltar com a ex",
 			"10m 15s Desligar o reator nuclear",
-			"1h 42m Comprar pão",
-			"15s Gozar"
+			"1m Gozar"
+		]
+	},
+	"remove": {
+		"usage": "<imagem>",
+		"desc": "Remova o fundo de uma imagem",
+		"examples": [
+			"<imagem>",
+			"(imagem)"
 		]
 	},
 	"reveal": {
-		"usage": "(mídia de visualização única) [forever/f: revela para sempre]",
+		"usage": "(mídia de visualização única)",
 		"desc": "Só mais uma vez! Revele uma mídia de visualização única",
 		"examples": [
-			"(imagem de visualização única) forever",
+			"(imagem de visualização única)",
 			"(vídeo de visualização única)",
-			"(audio de visualização única) f"
+			"(audio de visualização única)"
 		]
 	},
 	"search": {
@@ -136,16 +164,5 @@
 			"fr Pussy",
 			"es War is love"
 		]
-	},
-	"download": {
-		"usage": "<audio/video> <url>",
-		"desc": "Faça download de vídeos e áudios",
-		"examples": [
-			"audio https://music.youtube.com/watch?v=4QLvEIXlF6Q",
-			"a https://youtu.be/4QLvEIXlF6Q",
-			"video https://youtu.be/4QLvEIXlF6Q"
-		],
-		"true": "*[⌛] - Baixando o vídeo... Por favor aguarde um momento.*",
-		"false": "*[⌛] - Baixando o áudio... Por favor aguarde um momento.*"
 	}
 }

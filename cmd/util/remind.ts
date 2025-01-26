@@ -11,11 +11,11 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ bot, user, msg, args, sendUsage }: CmdCtx) {
+	async run({ bot, user, msg, args, sendUsage, t }: CmdCtx) {
 		if (args[0] === this.subCmds[0]) { // list
 			const list = await prisma.reminders.findMany({ where: { author: user.id } }) // all user reminders
 
-			const pendingReminders = list
+			const pending = list // pending reminders
 				.filter((i) => !i.isDone) // active reminders
 				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt)) // order by duration ASC
 				.map((l, i) => {
@@ -25,7 +25,7 @@ export default class extends Cmd {
 				})
 				.join('\n')
 
-			const doneReminders = list
+			const done = list // done reminders
 				.filter((i) => i.isDone) // completed reminders
 				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt))
 				.map((l, i) => `${i + 1}. \`${l.msg}\``)
@@ -33,8 +33,8 @@ export default class extends Cmd {
 
 			let text = ''
 
-			if (pendingReminders[0]) text += `*Reminders list:*\n${pendingReminders}\n\n`
-			if (doneReminders[0]) text += `*Done reminders:*\n${doneReminders}`
+			if (pending) text += t('remind.pending', { pending })
+			if (done) text += t('remind.done', { done })
 
 			bot.send(msg, text.trim())
 			return
@@ -45,7 +45,10 @@ export default class extends Cmd {
 		// '1s' => 1000ms
 
 		// sendUsage if time is invalid, less than 1m or more than 1y
-		if (!matchMs[0] || matchMs[0] <= 59_999 || matchMs[0] >= 31_536_000_000) return sendUsage()
+		if (!matchMs[0] || matchMs[0] <= 59_999 || matchMs[0] >= 31_536_000_000) {
+			bot.send(msg, t('remind.limit'))
+			return
+		}
 
 		const time = Date.now() + matchMs[0] // remind at this moment
 

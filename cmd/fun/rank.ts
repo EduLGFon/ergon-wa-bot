@@ -11,7 +11,7 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ bot, msg, group }: CmdCtx) {
+	async run({ bot, msg, group, t }: CmdCtx) {
 		let text = `*[🏆] - Rank*\n\n`
 
 		const msgs = await group!.getCountedMsgs()
@@ -21,7 +21,11 @@ export default class extends Cmd {
 
 			const user = await bot.getUser({ id: author })
 
-			text += `*${Number(i) + 1}.* ${user?.name || author}: *${count}* messages\n`
+			text += t('rank.msgs', {
+				position: Number(i) + 1,
+				author: user?.name || author,
+				count,
+			})
 		}
 
 		bot.send(msg, text)

@@ -5,7 +5,6 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['r'],
-			subCmds: ['forever', 'f'],
 		})
 	}
 
@@ -25,8 +24,7 @@ export default class extends Cmd {
 		}
 
 		await bot.react(msg, 'loading')
-		const msgObj = { // don't send media with view once if user says forever/f
-			viewOnce: !this.subCmds.includes(args[0]),
+		const msgObj = {
 			caption: target.text ? '`' + target.text + '`' : '',
 		} as AnyMessageContent
 
