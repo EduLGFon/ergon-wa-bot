@@ -9,8 +9,11 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ bot, msg, args, sendUsage, t }: CmdCtx) {
-		if (!args[0]) return sendUsage()
+	async run({ bot, msg, args, sendUsage}: CmdCtx) {
+		let url = msg.text.getUrl()
+
+		if (!url) url = msg?.quoted?.text?.getUrl()
+		if (!url) return sendUsage()
 
 		let type: 'video' | 'audio' = 'video'
 		if (args[0] === 'a') {
@@ -44,7 +47,6 @@ export default class extends Cmd {
 
 		const path = `settings/temp/${data.fileName}`
 		cliArgs.push(`-o ${path}`)
-		print(cliArgs.join(' '))
 
 		try {
 			await bot.react(msg, 'loading')
@@ -61,7 +63,6 @@ export default class extends Cmd {
 
 			print(data)
 			await bot.send(msg, data as AnyMessageContent)
-			// unlinkSync(path)
 			bot.react(msg, 'ok')
 		} catch (e: any) {
 			await bot.send(msg, `error: ${e?.message || e}`)

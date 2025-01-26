@@ -107,6 +107,7 @@
 		"usage": "[a: áudio] <url>",
 		"desc": "Faça download de vídeos e áudios",
 		"examples": [
+			"(mensagem com link)",
 			"{link}",
 			"a {link}"
 		]
@@ -124,8 +125,8 @@
 		"usage": "<duração> <mensagem>",
 		"desc": "Agende lembretes",
 		"limit": "[💡] A duração deve ser maior que 1m e menor que 365d.",
-		"pending": "*Lembretes pendentes:* {{pending}}\n\n",
-		"done": "*Lembretes concluídos:* {{done}}",
+		"pending": "[⏰] *Lembretes pendentes:*\n {{pending}}\n\n",
+		"done": "[✅] *Lembretes concluídos:*\n {{done}}",
 		"examples": [
 			"45d Voltar com a ex",
 			"10m 15s Desligar o reator nuclear",

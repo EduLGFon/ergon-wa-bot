@@ -18,6 +18,13 @@ export { now }
 export default () => {
 	/* String Prototypes */
 	Object.defineProperties(String.prototype, {
+		// get a URL on a string
+		getUrl: {
+			value: function () {
+				const regex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi
+				return this.match(regex)
+			}
+		},
 		//      'deno'.toPascalCase() === 'Deno'
 		toPascalCase: {
 			value: function () {

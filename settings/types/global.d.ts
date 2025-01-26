@@ -8,6 +8,7 @@ type Func = Function
 declare function print(...args: any[]): void
 
 interface String {
+	getUrl(): str[] | null
 	encode(): str
 	parsePhone(): str
 	toPascalCase(): str
