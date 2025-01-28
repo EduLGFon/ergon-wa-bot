@@ -20,7 +20,7 @@ export default class extends Cmd {
 		const lang: Lang = langs.includes(args[0]) ? args.shift() : 'eval'
 		const code = args.join(' ')
 		let output, startTime: num
-		bot.react(msg, 'loading')
+		await bot.react(msg, 'loading')
 
 		if (lang === 'eval') {
 			let evaled // run on this thread
@@ -57,9 +57,8 @@ export default class extends Cmd {
 		const text = `\`$ ${lang} (${RAM} | ${duration})\`\n` +
 			output.trim().encode()
 
-		bot.send(msg, text)
+		await bot.send(msg, text)
 		bot.react(msg, 'ok')
-		cleanTemp() // clean temp folder
 		return
 	}
 }

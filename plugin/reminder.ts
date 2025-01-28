@@ -21,7 +21,7 @@ app
 	)
 
 setInterval(async () => {
-	if (!process.env.DATABASE_URL) return
+	//if (!process.env.DATABASE_URL) return
 
 	let reminders = await prisma.reminders.findMany({
 		orderBy: { remindAt: 'asc' },

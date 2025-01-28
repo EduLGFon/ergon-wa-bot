@@ -9,7 +9,7 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ bot, msg, args, sendUsage}: CmdCtx) {
+	async run({ bot, msg, args, sendUsage }: CmdCtx) {
 		let url = msg.text.getUrl()
 
 		if (!url) url = msg?.quoted?.text?.getUrl()
@@ -61,7 +61,6 @@ export default class extends Cmd {
 			//@ts-ignore
 			delete data.fileName
 
-			print(data)
 			await bot.send(msg, data as AnyMessageContent)
 			bot.react(msg, 'ok')
 		} catch (e: any) {

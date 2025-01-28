@@ -81,7 +81,7 @@
 	},
 	"rank": {
 		"desc": "Veja o rank de membros que mais conversaram no grupo",
-		"msgs": "*{{postion}}.* {{author}}: {{count}} mensagens\n",
+		"msgs": "*{{position}}.* {{author}}: {{count}} mensagens\n",
 		"examples": [""]
 	},
 	"sticker": {

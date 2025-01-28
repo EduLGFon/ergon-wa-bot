@@ -9,6 +9,7 @@ export default {
 	loading: '⌛',
 	block: '⛔',
 	think: '💭',
+	lamp: '💡',
 	clock: '🕓',
 	nodb: '📂',
 	ok: '✅',
