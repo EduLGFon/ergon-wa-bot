@@ -52,14 +52,13 @@ export { api, bot, db, emojis, runner, sticker }
 
 // Classes
 import Collection from './class/collection.js'
-import { reminder } from './plugin/reminder.js'
 import Baileys from './class/baileys.js'
 import prisma from './util/prisma.js'
 import Group from './class/group.js'
 import User from './class/user.js'
 import Cmd from './class/cmd.js'
 
-export { Baileys, Cmd, Collection, Group, prisma, reminder, User }
+export { Baileys, Cmd, Collection, Group, prisma, User }
 
 // Functions
 import {
@@ -81,10 +80,12 @@ import {
 	isValidPositiveIntenger,
 	makeTempFile,
 } from './util/functions.js'
-import CacheManager from './plugin/cache.js'
-import proto from './util/proto.js'
 import locale, { languages } from './util/locale.js'
-import { gemini, imgRemover, runCode } from './util/api.js'
+import CacheManager from './plugin/cache.js'
+import { gemini, xAI } from './util/api.js'
+import reminder from './plugin/reminder.js'
+import runCode from './plugin/runCode.js'
+import proto from './util/proto.js'
 
 export {
 	cacheAllGroups,
@@ -100,7 +101,6 @@ export {
 	getMsgText,
 	getMsgType,
 	getQuoted,
-	imgRemover,
 	isEmpty,
 	isValidPositiveIntenger,
 	languages,
@@ -108,5 +108,7 @@ export {
 	makeTempFile,
 	msgMeta,
 	proto,
+	reminder,
 	runCode,
+	xAI,
 }

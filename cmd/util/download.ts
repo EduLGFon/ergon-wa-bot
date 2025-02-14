@@ -51,10 +51,7 @@ export default class extends Cmd {
 		try {
 			await bot.react(msg, 'loading')
 
-			await runCode({
-				lang: 'zsh',
-				code: `settings/venv/bin/yt-dlp ${cliArgs.join(' ')} "${args[0]}"`,
-			})
+			await runCode('zsh', `settings/venv/bin/yt-dlp ${cliArgs.join(' ')} "${args[0]}"`)
 
 			data[type] = readFileSync(path)
 

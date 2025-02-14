@@ -46,8 +46,8 @@ export default class extends Cmd {
 		} else {
 			startTime = Date.now()
 
-			output = await runCode({ lang, code })
-			// runCode: run on a separate thread
+			output = await runCode(lang, code)
+			// runCode: run on a child process
 		}
 
 		// execution duration

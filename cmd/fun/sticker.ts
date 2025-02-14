@@ -66,15 +66,12 @@ export default class extends Cmd {
 						const file = await makeTempFile(buffer, 'sticker_', '.webp')
 						// create temporary file
 
-						await runCode({ // execute python background remover plugin on
-							file: 'plugin/removeBg.py', // a separate thread
-							code: `${file} ${file}.png`,
-							// cli args
-						})
+						// execute python background remover plugin on
+						await runCode('py', `${file} ${file}.png`, 'plugin/removeBg.py')
+						// a child process
+
 						buffer = await readFile(`${file}.png`) || buffer
 						// read new file
-
-						cleanTemp() // clean temp folder
 					}
 			}
 

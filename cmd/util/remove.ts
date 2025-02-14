@@ -22,15 +22,15 @@ export default class extends Cmd {
 		const file = await makeTempFile(buffer, 'rmbg_', '.webp')
 		// create temporary file
 
-		await runCode({ // execute python background remover plugin on
-			file: 'plugin/removeBg.py', // a separate thread
-			code: `${file} ${file}.png`,
-			// cli args
-		})
+		// execute python background remover plugin on
+		await runCode('py', `${file} ${file}.png`, 'plugin/removeBg.py')
+		// a child process
+
 		buffer = await readFile(`${file}.png`) || buffer
 		// read new file
 
-		bot.send(msg.chat, { caption: emojis['sparkles'], image: buffer })
+		await bot.send(msg.chat, { caption: emojis['sparkles'], image: buffer })
+		bot.react(msg, 'ok')
 		return
 	}
 }

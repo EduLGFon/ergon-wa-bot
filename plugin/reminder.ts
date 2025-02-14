@@ -1,12 +1,12 @@
 import { api, Baileys, gemini, prisma, User } from '../map.js'
 
-export function reminder(bot: Baileys) {
+export default function reminder(bot: Baileys) {
 	if (!process.env.DATABASE_URL) return
-	
+
 	checkReminders(bot)
 	setInterval(async () => checkReminders(bot), 1_000 * 60)
-	
-	print('REMINDER', `started.`, 'gray')
+
+	print('REMINDER', `checking`, 'gray')
 	return
 }
 

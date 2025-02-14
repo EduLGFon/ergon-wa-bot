@@ -1,36 +1,14 @@
 import { FileMetadataResponse, FileState, GoogleAIFileManager } from '@google/generative-ai/server'
-import { api, delay, makeTempFile, runner, User } from '../map.js'
+import { api, delay, makeTempFile, User } from '../map.js'
 import {
-	EnhancedGenerateContentResponse,
 	GenerateContentResult,
-	GenerateContentStreamResult,
 	GoogleGenerativeAI,
 	HarmBlockThreshold,
 	HarmCategory,
 } from '@google/generative-ai'
 // import OpenAI from 'openai'
 
-export { gemini, imgRemover, runCode, xAI }
-
-async function runCode(data: { lang?: str; code?: str; file?: str }) {
-	const req = await fetch(`http://localhost:${runner.port}/run`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(data),
-	})
-
-	return await req.text()
-}
-
-async function imgRemover(img: str, quality: num) {
-	const req = await fetch(`http://localhost:${runner.port}/remover`, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ img, quality }),
-	})
-
-	return await req.json()
-}
+export { gemini, xAI }
 
 async function gemini(
 	{ instruction, prompt, model, buffer, mime, user }: aiPrompt,
