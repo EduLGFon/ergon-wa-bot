@@ -84,8 +84,9 @@ export default () => {
 		},
 		toMs: { // convert a str on ms
 			value: function () { // '10s' => 1_000 * 10
-				const match: str[] = this.match(/(\d+)(y|d|h|m|s|w)/gi)
-				if (!match || match[0]) return [0]
+				const match: str[] = this.match(/(\d+)(y|d|h|m|s|w)/gi) || []
+
+				if (!match[0]) return [0]
 
 				const ms = match
 					.map((m) => {

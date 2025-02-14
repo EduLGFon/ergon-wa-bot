@@ -52,14 +52,14 @@ export { api, bot, db, emojis, runner, sticker }
 
 // Classes
 import Collection from './class/collection.js'
-import { server } from './plugin/server.js'
+import { reminder } from './plugin/reminder.js'
 import Baileys from './class/baileys.js'
 import prisma from './util/prisma.js'
 import Group from './class/group.js'
 import User from './class/user.js'
 import Cmd from './class/cmd.js'
 
-export { Baileys, Cmd, Collection, Group, prisma, server, User }
+export { Baileys, Cmd, Collection, Group, prisma, reminder, User }
 
 // Functions
 import {

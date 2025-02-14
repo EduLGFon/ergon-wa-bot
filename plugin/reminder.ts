@@ -1,28 +1,16 @@
-import settings from '../settings/settings.json' with { type: 'json' }
-import prisma from '../util/prisma.js'
-import express from 'express'
-const app = express()
+import { api, Baileys, gemini, prisma, User } from '../map.js'
 
-/** Reminder
- * This plugin will check every 5s if there is a pending reminder
- * and when its time gets over, sends reminder request to main thread
- * so the bot will remind the user on another process
- */
+export function reminder(bot: Baileys) {
+	if (!process.env.DATABASE_URL) return
+	
+	checkReminders(bot)
+	setInterval(async () => checkReminders(bot), 1_000 * 60)
+	
+	print('REMINDER', `started.`, 'gray')
+	return
+}
 
-app
-	.use(express.json()) // use content-type: json
-	.get('/ping', async (_req, res) => {
-		res.sendStatus(200)
-		return
-	})
-	.listen(
-		settings.api.reminderPort,
-		() => console.log(`Reminder ready on port ${settings.api.reminderPort}!`),
-	)
-
-setInterval(async () => {
-	//if (!process.env.DATABASE_URL) return
-
+async function checkReminders(bot: Baileys) {
 	let reminders = await prisma.reminders.findMany({
 		orderBy: { remindAt: 'asc' },
 		where: { isDone: false },
@@ -32,14 +20,8 @@ setInterval(async () => {
 	// filter for pending reminders
 
 	for (const r of reminders) {
-		console.log(r)
-
-		// alert WALL-E about them
-		await fetch(`http://localhost:${settings.bot.port}/reminder`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(r),
-		})
+		print(r.msg)
+		sendReminders(bot, r)
 			.then(() =>
 				prisma.reminders.update({
 					where: { id: r.id },
@@ -49,4 +31,23 @@ setInterval(async () => {
 			.catch((e) => console.log(r, e.message))
 	}
 	return
-}, 1_000 * 60)
+}
+
+async function sendReminders(bot: Baileys, r: Reminder) {
+	const user = await bot.getUser({ id: r.author }) as User
+	const lang = `langs.${user!.lang}`.t('en') || 'Portuguese'
+
+	let text = `\`${r.msg.replaceAll('`', '\`')}\`\n@${user.phone}`
+
+	const aiMsg = await gemini({
+		prompt:
+			`Create a humorous message to notify a WhatsApp user of a reminder in ${lang}. Just respond with the reminder. Reminder: ${r.msg}`,
+		model: api.aiModel.gemini,
+	}).catch(() => {})
+
+	text += aiMsg?.text ? `, ${aiMsg.text}` : ''
+
+	// send remind msg
+	await bot.sock.sendMessage(r.chat, { text, mentions: [user.chat] })
+	return
+}

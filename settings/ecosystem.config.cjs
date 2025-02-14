@@ -26,10 +26,5 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		// exec_mode: 'cluster',
 		log_file: 'settings/log/runner.log', // both error and output log
 		// merge_logs: true, // merge logs from all intances
-	}, {
-		name: 'reminder',
-		script: 'build/plugin/reminder.js',
-		node_args,
-		log_file: 'settings/log/reminder.log', // both error and output log
-	}],
+	}]
 }
