@@ -14,8 +14,7 @@ export default class User {
 	geminiCtx: Content[] // gemini conversation history
 	grok: { role: str; content: str }[]
 	lastCmd: {
-		time: num
-		processing?: bool
+		delay: num
 	}
 	msgs: Collection<str, Msg>
 
@@ -29,7 +28,7 @@ export default class User {
 		this._prefix = data._prefix || db.user.prefix
 		this._lang = data._lang || db.user.language
 
-		this.lastCmd = data.lastCmd || { time: 0 }
+		this.lastCmd = data.lastCmd || { delay: 0 }
 		this.geminiCtx = data.geminiCtx || []
 		this.grok = data.grok || []
 		this.msgs = new Collection(db.user.msgsLimit)
@@ -103,7 +102,6 @@ export default class User {
 
 	// addCmd: +1 on user cmds count on cache and db
 	async addCmd() {
-		this.lastCmd = { time: Date.now() }
 		this._cmdsCount++
 
 		if (!process.env.DATABASE_URL) return
