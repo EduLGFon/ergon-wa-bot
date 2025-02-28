@@ -6,11 +6,15 @@ const textTypes = {
 	'extendedTextMessage': 'text',
 }
 
-const visualTypes = {
+const visualNonStickerTypes = {
 	'ptvMessage': 'video',
 	'videoMessage': 'video',
 	'imageMessage': 'image',
 	'viewOnceMessageV2': 'image',
+}
+
+const visualTypes = {
+	...visualNonStickerTypes,
 	'stickerMessage': 'sticker',
 }
 
@@ -49,11 +53,23 @@ const allMsgTypes = { // all msg types
 	'pollUpdateMessage': 'pollUpdate',
 }
 
+const visualNonStickerValues = Object.values(visualNonStickerTypes)
 const visualValues = Object.values(visualTypes)
 const coolValues = Object.values(coolTypes)
 const mediaValues = Object.values(mediaTypes)
 
 const isMedia = (type: MsgTypes) => mediaValues.includes(type)
 const isVisual = (type: MsgTypes) => visualValues.includes(type)
+const isVisualNonSticker = (type: MsgTypes) => visualNonStickerValues.includes(type)
 
-export { allMsgTypes, coolTypes, coolValues, isMedia, isVisual, mediaTypes, textTypes, visualTypes }
+export {
+	allMsgTypes,
+	coolTypes,
+	coolValues,
+	isMedia,
+	isVisual,
+	isVisualNonSticker,
+	mediaTypes,
+	textTypes,
+	visualTypes,
+}
