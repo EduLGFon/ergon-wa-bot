@@ -30,8 +30,20 @@ type MsgTypes =
 	| 'poll'
 	| 'pollUpdate'
 
+interface DownloadableInfo {
+	mediaKey: Uint8Array<ArrayBufferLike>
+	url: str
+	directPath: str
+	thumbnailDirectPath: str
+}
+
+type MediaMsg =
+	| { imageMessage: DownloadableInfo }
+	| { videoMessage: DownloadableInfo }
+	| { ptvMessage: DownloadableInfo }
+	| { audioMessage: DownloadableInfo }
+
 interface Msg {
-	key: proto.IMessageKey
 	chat: str
 	author: str
 	edited: bool
@@ -41,7 +53,8 @@ interface Msg {
 	mime: str
 	isBot: bool
 	quoted: Msg
-	raw: proto.IWebMessageInfo
+	message: MediaMsg | null
+	key: proto.IMessageKey
 }
 
 interface CmdCtx {
@@ -61,4 +74,4 @@ interface GroupMsg {
 	count: num
 }
 
-export { aiPrompt, CmdCtx, GroupMsg, Lang, Logger, Msg, MsgTypes }
+export { aiPrompt, CmdCtx, GroupMsg, Lang, Logger, MediaMsg, Msg, MsgTypes }

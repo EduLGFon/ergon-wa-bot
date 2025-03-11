@@ -1,4 +1,4 @@
-import { Baileys, locale, proto, server } from './map.js'
+import { Baileys, locale, proto, reminder } from './map.js'
 
 const logger = proto() // load prototypes
 locale() // load locales
@@ -8,7 +8,7 @@ const bot = new Baileys('settings/auth', logger)
 start()
 async function start() {
 	await bot.connect()
-	await server(bot) // start express server
+	reminder(bot) // start reminder service
 }
 
 process // "anti-crash" to handle lib instabilities

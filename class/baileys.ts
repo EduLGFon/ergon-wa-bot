@@ -83,10 +83,10 @@ export default class Baileys {
 		body: str | AnyMessageContent,
 		reply?: baileys.proto.IWebMessageInfo,
 	) {
-		let { text, chat, quote } = msgMeta(id, body, reply)
+		let { text, chat, quote: _q } = msgMeta(id, body, reply)
 		// get msg metadata
 
-		const msg = await this.sock.sendMessage(chat, text, quote)
+		const msg = await this.sock.sendMessage(chat, text) //, quote)
 
 		// convert raw msg on cmd context
 		return await getCtx(msg!, this)
@@ -164,12 +164,12 @@ export default class Baileys {
 	}
 
 	async downloadMedia(msg: Msg) {
-		const media = await downloadMediaMessage(msg.raw, 'buffer', {}, {
+		const media = await downloadMediaMessage(msg, 'buffer', {}, {
 			logger: this.logger,
 			reuploadRequest: this.sock.updateMediaMessage,
 		})! as Buf
 
-		return media || await this.sock.updateMediaMessage(msg.raw)
+		return media || await this.sock.updateMediaMessage(msg)
 	}
 
 	async folderHandler(path: str, handler: Func) {

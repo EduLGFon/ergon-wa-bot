@@ -4,7 +4,7 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['re', 'lembrete'],
-			subCmds: ['list'],
+			subCmds: ['list', 'delete'],
 			access: {
 				needsDb: true,
 			},
@@ -12,33 +12,40 @@ export default class extends Cmd {
 	}
 
 	async run({ bot, user, msg, args, sendUsage, t }: CmdCtx) {
-		if (args[0] === this.subCmds[0]) { // list
-			const list = await prisma.reminders.findMany({ where: { author: user.id } }) // all user reminders
+		const cmds = {
+			async list() {
+				const list = await prisma.reminders.findMany({ where: { author: user.id } }) // all user reminders
 
-			const pending = list // pending reminders
-				.filter((i) => !i.isDone) // active reminders
-				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt)) // order by duration ASC
-				.map((l, i) => {
-					let duration = (Number(l.remindAt) - Date.now()).duration()
+				const pending = list // pending reminders
+					.filter((i) => !i.isDone) // active reminders
+					.sort((a, b) => Number(a.remindAt) - Number(b.remindAt)) // order by duration ASC
+					.map((l, i) => {
+						let duration = (Number(l.remindAt) - Date.now()).duration()
 
-					return `${i + 1}. \`${l.msg}\` in *${duration}*`
-				})
-				.join('\n')
+						return `${i + 1}. \`${l.msg}\` in *${duration}*`
+					})
+					.join('\n')
 
-			const done = list // done reminders
-				.filter((i) => i.isDone) // completed reminders
-				.sort((a, b) => Number(a.remindAt) - Number(b.remindAt))
-				.map((l, i) => `${i + 1}. \`${l.msg}\``)
-				.join('\n')
+				const done = list // done reminders
+					.filter((i) => i.isDone) // completed reminders
+					.sort((a, b) => Number(a.remindAt) - Number(b.remindAt))
+					.map((l, i) => `${i + 1}. \`${l.msg}\``)
+					.join('\n')
 
-			let text = ''
+				let text = ''
 
-			if (pending) text += t('remind.pending', { pending })
-			if (done) text += t('remind.done', { done })
+				if (pending) text += t('remind.pending', { pending })
+				if (done) text += t('remind.done', { done })
 
-			bot.send(msg, text.trim())
-			return
+				bot.send(msg, text.trim())
+				return
+			},
+			async delete() {
+			},
 		}
+
+		const match = cmds[args[0] as 'list']
+		if (match) return match()
 		if (!args[1]) return sendUsage()
 
 		const matchMs = args.join(' ').toMs() // convert string to ms

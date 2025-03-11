@@ -1,10 +1,9 @@
 import {
-	cleanTemp,
 	Cmd,
 	CmdCtx,
 	delay,
 	genStickerMeta,
-	isVisual,
+	isVisualNonSticker,
 	makeTempFile,
 	Msg,
 	runCode,
@@ -16,10 +15,12 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['s', 'sexo'],
+			subCmds: ['rmbg', 'crop', 'rounded', 'circle', 'default'],
 		})
 	}
 
 	async run({ msg, bot, args, user, group, sendUsage, t }: CmdCtx) {
+		const isValid = isVisualNonSticker
 		// if (!user.warns.find((i) => i === 'MS')) {
 		// 	await bot.send(
 		// 		msg,
@@ -28,32 +29,53 @@ export default class extends Cmd {
 		// 	user.warns.push('MS')
 		// }
 
-		let target = isVisual(msg.type) ? msg : (isVisual(msg?.quoted?.type) ? msg.quoted : null)
+		let target = isValid(msg.type) ? msg : (isValid(msg?.quoted?.type) ? msg.quoted : null)
 		// target = user msg or user quoted msg
 
-		if (target) return createSticker(target)
+		if (target) {
+			await bot.react(msg, 'loading')
+			await createSticker(target, this.subCmds)
+			await delay(1_000)
+			await bot.react(msg, 'ok')
+			return /* Why so many 'awaits'?
+			* .s is the most used command and sometimes causes rate limit.
+			* So, waiting for each task helps to have less problems.
+			*/
+		}
 
 		// this logic will create a sticker for each media sent by
 		// the user until a msg is not from them
-		const msgs = (group || user).msgs.reverse().slice(1)
+		const chat = group || bot.cache.users.find((u) => u.phone === msg.chat.parsePhone())!
+		const msgs = chat.msgs.reverse().slice(1)
+		// Sorts msgs from newest to oldest and ignores the cmd msg
 
-		for (let i in msgs) {
-			if (msgs[i].author !== msg.author || !isVisual(msgs[i].type)) {
-				if (i === '0') return sendUsage()
-				return
-			}
+		// Find the index of the first msg that is not from the same author or is not valid
+		const invalidIndex = msgs.findIndex((m) => m.author !== msg.author || !isValid(m.type))
 
-			await createSticker(msgs[i])
-			await delay(2_000)
+		const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
+
+		if (validMsgs.length === 0) return sendUsage()
+		await bot.react(msg, 'loading')
+
+		for (const m of validMsgs) {
+			await createSticker(m, this.subCmds)
+			await delay(2000)
 		}
+		await bot.react(msg, 'ok')
 
-		async function createSticker(target: Msg) {
+		async function createSticker(target: Msg, subCmds: str[]) {
 			// choose between msg media or quoted msg media
 			let buffer = await bot.downloadMedia(target)
 
 			if (!Buffer.isBuffer(buffer)) return bot.send(msg, t('sticker.nobuffer'))
 
 			let stickerTypes = ['full', 'crop']
+			if (args.includes(subCmds[1])) stickerTypes.push('crop')
+			if (args.includes(subCmds[2])) stickerTypes.push('rounded')
+			if (args.includes(subCmds[3])) stickerTypes.push('circle')
+			if (args.includes(subCmds[4])) stickerTypes.push('default')
+			// add other sticker types
+
 			let quality = 20 // media quality after compression
 
 			switch (target.type) {
@@ -62,19 +84,16 @@ export default class extends Cmd {
 					// but compress a video too much can cause some glitches on video
 					break
 				case 'image':
-					if (args[0] === 'rmbg') { // remove image background
+					if (args.includes(subCmds[0])) { // remove image background
 						const file = await makeTempFile(buffer, 'sticker_', '.webp')
 						// create temporary file
 
-						await runCode({ // execute python background remover plugin on
-							file: 'plugin/removeBg.py', // a separate thread
-							code: `${file} ${file}.png`,
-							// cli args
-						})
+						// execute python background remover plugin on
+						await runCode('py', `${file} ${file}.png`, 'plugin/removeBg.py')
+						// a child process
+
 						buffer = await readFile(`${file}.png`) || buffer
 						// read new file
-
-						cleanTemp() // clean temp folder
 					}
 			}
 

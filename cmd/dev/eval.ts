@@ -20,7 +20,7 @@ export default class extends Cmd {
 		const lang: Lang = langs.includes(args[0]) ? args.shift() : 'eval'
 		const code = args.join(' ')
 		let output, startTime: num
-		await bot.react(msg, 'loading')
+		// await bot.react(msg, 'loading')
 
 		if (lang === 'eval') {
 			let evaled // run on this thread
@@ -46,19 +46,21 @@ export default class extends Cmd {
 		} else {
 			startTime = Date.now()
 
-			output = await runCode({ lang, code })
-			// runCode: run on a separate thread
+			output = await runCode(lang, code)
+			// runCode: run on a child process
 		}
 
 		// execution duration
 		const duration = (Date.now() - startTime!).duration(true)
 		const RAM = process.memoryUsage().rss.bytes() // current RAM usage
 
-		const text = `\`$ ${lang} (${RAM} | ${duration})\`\n` +
-			output.trim().encode()
+		if (output === 'undefined') output = ''
+		else output = '\n' + output.trim()
+
+		const text = `\`$ ${duration}/${RAM}\`` + output
 
 		await bot.send(msg, text)
-		bot.react(msg, 'ok')
+		// bot.react(msg, 'ok')
 		return
 	}
 }

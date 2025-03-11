@@ -56,15 +56,19 @@ export default async function (bot: Baileys, raw: { messages: proto.IWebMessageI
 			t,
 		}
 
-		const cooldown = user.lastCmd.time + cmd.cooldown * 1_000 - Date.now()
-		if (cooldown > 0) {
-			await bot.send(msg, t('events.cooldown', { time: cooldown.duration(true) }))
-			// warns user about cooldown
+		const now = Date.now()
+		const cooldown = cmd.cooldown * 1_000
+		if (user.lastCmd.delay > now) {
+			user.lastCmd.delay += cooldown
+			const timeout = user.lastCmd.delay - now
 
-			await bot.react(msg, 'clock')
-			await delay(cooldown)
+			await bot.send(msg, t('events.cooldown', { time: timeout.duration(true) }))
+			// warns user about cooldown
+			if (timeout / 2 < cooldown) await bot.react(msg, 'clock')
+
+			await delay(timeout)
 			// wait until it gets finished
-		}
+		} else user.lastCmd.delay = now + cooldown
 
 		user.addCmd() // 1+ on user personal cmds count
 

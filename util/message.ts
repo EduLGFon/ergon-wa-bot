@@ -7,6 +7,7 @@ import {
 	findKey,
 	Group,
 	isMedia,
+	MediaMsg,
 	Msg,
 	MsgTypes,
 	User,
@@ -20,8 +21,8 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx>
 	let fakeCtx = {} as CmdCtx
 
 	// msg type
-	const type = getMsgType(message!)
-	if (!coolValues.includes(type)) return fakeCtx
+	const types = getMsgType(message!)
+	if (!coolValues.includes(types[0])) return fakeCtx
 
 	let group: Group
 	if (key.remoteJid?.includes('@g.us')) group = await bot.getGroup(key.remoteJid)
@@ -32,18 +33,20 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx>
 	if (phone.endsWith('@g.us')) return fakeCtx
 	let user = await bot.getUser({ phone })
 
+	const isMediaMsg = isMedia(types[0]) // is it video, photo or audio msg
+
 	let msg: Msg = {
-		key,
 		chat: key?.remoteJid!, // msg chat id
 		author: user?.phone!,
-		type,
+		type: types[0],
 		text: getMsgText(message!),
 		edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
 		isBot: Boolean(key.fromMe && !Object.keys(key).includes('participant')), // if it's baileys client,
-		isMedia: isMedia(type), // is video, photo or audio msg
+		isMedia: isMediaMsg,
 		mime: findKey(message, 'mimetype'), // media mimetype like image/png
 		quoted: getQuoted(raw, group! || user)!, // quoted msg
-		raw, // raw msg obj
+		message: getDownloadableData(raw, types, isMediaMsg),
+		key,
 	}
 
 	let args: str[] = []
@@ -65,6 +68,24 @@ async function getCtx(raw: proto.IWebMessageInfo, bot: Baileys): Promise<CmdCtx>
 		user: user as User,
 		group: group!,
 	} as CmdCtx
+}
+
+// get only metadata needed to download medias
+function getDownloadableData(raw: any, types: [MsgTypes, str], isMediaMsg: bool) {
+	if (!isMediaMsg) return null
+	const msg = raw?.message || raw
+
+	let newObj = {}
+	const oldMsg = msg[types[1]]
+	// @ts-ignore i need it
+	newObj[types[1]] = {
+		url: oldMsg.url,
+		directPath: oldMsg.directPath,
+		mediaKey: oldMsg.mediaKey,
+		thumbnailDirectPath: oldMsg.thumbnailDirectPath,
+	}
+
+	return newObj as MediaMsg
 }
 
 // getInput: get cmd, args and ignore non-prefixed msgs
@@ -106,18 +127,20 @@ function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const m = raw.message!
 
 	//@ts-ignore 'quotedMessage' is missing on lib types
-	const quotedRaw: Partial<proto.IMessage> = findKey(m, 'quotedMessage')
+	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(m, 'quotedMessage')
 
 	if (!quotedRaw) return
-	const type = getMsgType(quotedRaw) // quoted message type
+	const types = getMsgType(quotedRaw) // quoted message type
+	const isMediaMsg = isMedia(types[0]) // is it video, photo or audio msg
+	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
 	let quoted = {
-		type, // msg type
-		isMedia: isMedia(type),
+		type: types[0], // msg type
+		isMedia: isMediaMsg,
 		//@ts-ignore
 		text: getMsgText(quotedRaw),
 		mime: findKey(quotedRaw, 'mimetype'),
-		raw: { message: quotedRaw }, // raw quote msg obj
+		message: getDownloadableData(quotedRaw, types, isMediaMsg),
 	} as Msg
 
 	let cachedMsg = chat.msgs.find((m) =>
@@ -142,17 +165,17 @@ function getMsgText(m: proto.IMessage) {
 }
 
 // getMsgType: Get the type of a raw message
-function getMsgType(m: proto.IMessage): MsgTypes {
+function getMsgType(m: proto.IMessage): [MsgTypes, str] {
 	for (const [rawType, newType] of Object.entries(allMsgTypes)) {
 		const res = findKey(m, rawType)
-
-		if (res) return String(newType).trim() as MsgTypes
+		if (res) return [newType, rawType] as [MsgTypes, str] // ['image', 'imageMessage']
 	}
 
-	console.error(m, 'UMT') // When a Unknown Message Type appears
+	console.log('UMT', 'Unknown message type', 'red') // When a Unknown Message Type appears
+	console.info(m)
 	// I analize and categorize it.
 
-	return Object.keys(m!)[0] as MsgTypes // return raw type
+	return ['event', Object.keys(m!)[0]] // return raw type
 }
 
 // msgMeta: get some meta data from a msg
@@ -165,13 +188,13 @@ function msgMeta(
 	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	// @ts-ignore
-	const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
+	// const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
 	// @ts-ignore
 	const key = msg?.key ? msg.key : msg
 
 	if (!chat.includes('@')) chat += '@s.whatsapp.net'
 
-	return { key, text, chat, quote }
+	return { key, text, chat, quote: {} }
 }
 
 // checkPermissions: check cmd permissions like block random guys from using eval
@@ -197,4 +220,4 @@ function checkPermissions(cmd: Cmd, user: User, group?: Group) {
 	return true
 }
 
-export { checkPermissions, getCtx, getMsgText, getMsgType, getQuoted, msgMeta }
+export { checkPermissions, getCtx, msgMeta }

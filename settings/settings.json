@@ -1,6 +1,5 @@
 {
 	"bot": {
-		"port": 3001,
 		"link": "dsc.gg/wallebot",
 		"region": {
 			"timezone": "America/Sao_Paulo",
@@ -21,7 +20,6 @@
 	},
 
 	"api": {
-		"reminderPort": 7361,
 		"aiModel": {
 			"gpt": "gpt-3.5-turbo",
 			"gemini": "gemini-2.0-flash",
@@ -54,7 +52,6 @@
 
 	"runner": {
 		"tempFolder": "settings/temp",
-		"port": 3077,
 		"py": {
 			"cmd": ["settings/venv/bin/python3"],
 			"ext": "py"
