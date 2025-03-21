@@ -1,0 +1,41 @@
+{
+	"tasks": {
+		"setup": {
+			"cmd": "deno upgrade; deno install --allow-scripts",
+			"desc": "Setup the project"
+		}
+	},
+	"imports": {
+		// modules
+		"humanize-duration": "npm:humanize-duration@^3.32.1",
+		"qr": "npm:qrcode-terminal@^0.12.0",
+		"wa": "npm:whatsapp-web.js@^1.26.0",
+		"luxon": "https://moment.github.io/luxon/es6/luxon.js",
+		"sqlite": "https://deno.land/x/sqlite@v3.9.1/mod.ts",
+		// files
+		"types": "./conf/types/types.d.ts",
+		"defaults": "./conf/defaults.json",
+		"db": "./plugin/db.ts",
+		// folders
+		"class/": "./class/"
+	},
+	"fmt": { // DENO Formatter settings
+		"indentWidth": 4,
+		"singleQuote": true,
+		"useTabs": true,
+		"semiColons": false,
+		"lineWidth": 100,
+		"exclude": ["../build", "auth/"]
+	},
+	"lint": { // DENO Lint rules
+		"rules": {
+			"exclude": ["no-explicit-any"]
+		} // does not throws at any any
+	},
+	"nodeModulesDir": "auto",
+	"lock": false,
+	"unstable": ["byonm"], // DENO unstable features
+	"compilerOptions": {
+		"types": ["./types/global.d.ts"]
+	}
+}

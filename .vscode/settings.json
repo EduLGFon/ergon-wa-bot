@@ -1,6 +1,6 @@
 {
 	"deno.enable": true,
 	"deno.lint": true,
-	"deno.config": "conf/deno.jsonc",
+	"deno.config": "deno.jsonc",
 	"deno.unstable": ["byonm"]
 }
