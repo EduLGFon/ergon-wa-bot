@@ -9,19 +9,21 @@ export default class User {
 	cmdPrefix: str
 	cmds: num
 	delay: num
-	data?: Partial<User>
+	db?: Partial<User>
 
-	constructor(data: { id?: num; phone?: str }) {
-		this.data = getUser(data) // get user data from database by id or phone
-		this.id = this.data.id!
-		this.username = this.data.name || 'user'
-		this.phone = this.data.phone!
-		this.language = this.data.lang || defaults.lang
-		this.cmdPrefix = this.data.prefix || defaults.prefix
-		this.cmds = this.data.cmds || 0
+	constructor(data: { id?: num; phone?: str; name?: str }) {
+		this.db = getUser(data) // get user data from database by id or phone
+		this.id = this.db.id!
+		this.username = this.db.name || 'user'
+		this.phone = this.db.phone!
+		this.language = this.db.lang || defaults.lang
+		this.cmdPrefix = this.db.prefix || defaults.prefix
+		this.cmds = this.db.cmds || 0
 		this.delay = 0 // delay for anti-flood
 
-		delete this.data // delete redundant data
+		// if name is different from database, update it
+		if (data.name && data.name !== this.db.name) this.name = data.name
+		delete this.db // delete redundant data
 	}
 
 	get name() {

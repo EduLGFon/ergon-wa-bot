@@ -1,11 +1,12 @@
 import { folderHandler, loadCmd, loadEvent } from './util/client.ts'
 import { Client, LocalAuth } from 'wa'
-import proto from './util/proto.ts'
+import proto, { run } from 'util/proto.ts'
 
 proto() // load prototypes
+await run('pkill chrome') // puppeeter does not close when using --watch
 const bot = new Client({
-	authStrategy: new LocalAuth({ dataPath: 'conf', clientId: 'walle' }),
-	// auth path = conf/session-walle
+	authStrategy: new LocalAuth({ dataPath: 'conf', clientId: 'ergon' }),
+	// auth path = conf/session-ergon
 	puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
 })
 

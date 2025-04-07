@@ -2,7 +2,7 @@ import humanizeDuration, { Unit } from 'humanize-duration'
 import defaults from 'defaults' with { type: 'json' }
 import { DateTime } from 'luxon'
 
-export { now }
+export { decode, now, run }
 export default function () {
 	strPrototypes() // create string prototypes
 	numPrototypes() // create number prototypes
@@ -92,4 +92,29 @@ function print(...args: any) {
 		`%c[ ${now('TT.SSS')} |${memory}|${title.align(9)}] - ${msg}`,
 		`color: ${color}`,
 	)
+}
+
+async function run(cmd: str, callBack?: Func, time?: num) {
+	const splited = cmd.split(' ')
+	const proc = new Deno.Command(splited[0], {
+		args: splited.slice(1),
+		stdout: 'piped', // catch output
+		stderr: 'piped', // catch error
+	})
+
+	const cp = proc.spawn()
+	let text = 'Spawning cp...\n'
+	let interval
+
+	if (callBack) interval = setInterval(() => callBack(text), time || 500)
+
+	for await (const line of cp.stdout) text += decode(line)
+	for await (const line of cp.stderr) text += decode(line)
+
+	if (callBack) clearInterval(interval)
+	return text
+}
+
+function decode(stream: Uint8Array<ArrayBuffer>) {
+	return new TextDecoder().decode(stream)
 }
