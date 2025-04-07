@@ -1,16 +1,11 @@
-import cache from './cache.ts'
 import { Client } from 'wa'
+import cache from 'cache'
 
 export async function folderHandler(path: str, handler: Func, bind: any) {
 	// iterates through a folder and loads all files
 	let count = 0
 
 	for await (const folder of Deno.readDir(path)) {
-		if (folder.isDirectory) {
-			// if the file is a folder, it will call itself recursively
-			return folderHandler(`${path}/${folder.name}`, handler, bind)
-		}
-
 		const file = await import(`${path}/${folder.name}`)
 		const event = folder.name.split('.')[0]
 
@@ -28,8 +23,10 @@ export async function folderHandler(path: str, handler: Func, bind: any) {
 
 export function loadEvent(event: str, func: Func, bot: Client) {
 	bot.on(event, (...args) => func(bot, ...args))
+	return
 }
 
 export function loadCmd(cmd: str, func: any, _bot: Client) {
 	cache.cmds.add(cmd, new func())
+	return
 }

@@ -1,9 +1,8 @@
 {
 	"tasks": {
-		"setup": {
-			"cmd": "deno upgrade; deno install --allow-scripts",
-			"desc": "Setup the project"
-		}
+		"setup": "deno upgrade; deno install --allow-scripts",
+		"dev": "deno run --watch wa.ts",
+		"start": "deno run -A wa.ts"
 	},
 	"imports": {
 		// modules
@@ -15,9 +14,11 @@
 		// files
 		"types": "./conf/types/types.d.ts",
 		"defaults": "./conf/defaults.json",
+		"cache": "./util/cache.ts",
 		"db": "./plugin/db.ts",
 		// folders
-		"class/": "./class/"
+		"class/": "./class/",
+		"util/": "./util/"
 	},
 	"fmt": { // DENO Formatter settings
 		"indentWidth": 4,
