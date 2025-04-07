@@ -46,7 +46,7 @@ function createUser(user: User) {
 function getUser(user: User): User {
 	let data
 	if (user.phone) {
-		user.phone = user.phone.split('@')[0]
+		user.phone = user.phone.split(':')[0].split('@')[0]
 		data =
 			db.queryEntries('SELECT * FROM users WHERE phone = :phone;', { phone: user.phone })[0]
 		if (!data) {
