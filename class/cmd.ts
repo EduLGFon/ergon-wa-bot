@@ -26,5 +26,5 @@ export default abstract class Cmd {
 		// with this default setting
 	}
 
-	abstract run(ctx: CmdCtx): Promise<void> // run function
+	abstract run(ctx: CmdCtx): any // run function
 }

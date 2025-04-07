@@ -11,7 +11,7 @@ import Cmd from 'class/cmd.ts'
 export default {
 	users: new Collection(defaults.cache.users, User),
 	groups: new Collection(defaults.cache.groups, User),
-	cmds: new Collection(0, Cmd),
+	cmds: new Collection<str, Cmd>(0, Cmd),
 }
 // const cachedData = ['users', 'groups']
 
