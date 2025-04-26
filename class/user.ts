@@ -1,5 +1,6 @@
 import defaults from 'defaults' with { type: 'json' }
 import db, { getUser } from 'db'
+import { Content } from 'gemini'
 
 export default class User {
 	id: num
@@ -9,6 +10,7 @@ export default class User {
 	_prefix: str
 	cmds: num
 	delay: num
+	gemini?: Content[]
 	db?: Partial<User>
 
 	constructor(data: { id?: num; phone?: str; name?: str }) {
