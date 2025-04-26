@@ -1,7 +1,11 @@
-import Cmd from 'class/cmd.ts'
-import { CmdCtx } from 'types'
+// deno-lint-ignore-file no-unused-vars
+import defaults from 'defaults' with { type: 'json' }
+import { delay, now } from 'util/functions.ts'
 import { inspect } from 'node:util'
-import { randomEmoji } from 'util/emojis.ts'
+import cache from 'util/cache.ts'
+import { CmdCtx } from 'types'
+import Cmd from 'class/cmd.ts'
+import db from 'plugin/db.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -9,19 +13,41 @@ export default class extends Cmd {
 			name: 'eval',
 			alias: ['e'],
 			access: {
-				admin: true,
+				restrict: true,
 			},
 		})
 	}
 
 	async run({ bot, msg, args, user }: CmdCtx) {
-		if (!args[0]) return msg.reply('Please provide code to evaluate.')
-		randomEmoji
+		defaults
+		cache
+		delay
+		now
+		db
 
-		const code = args.join(' ')
-		const result = await eval(code)
+		let output = ''
+		const startTime = Date.now()
+		try {
+			/** Dynamic async eval: put code on async function if it includes 'await'
+			 * you will need to use 'return' on the end of your code
+			 * if you want to see a returned value
+			 */
+			output = args.includes('await')
+				? await eval(`(async () => { ${args.join(' ')} })()`)
+				: await eval(args.join(' '))
 
-		bot.sendMessage(msg.to, inspect(result, { depth: null }))
+			output = inspect(output, { depth: null })
+		} catch (e: any) {
+			output = e.message || e
+		}
+
+		// code execution duration
+		const duration = (Date.now() - startTime).duration(true)
+		const RAM = Deno.memoryUsage().rss.bytes() // current RAM usage
+
+		output = `\`$ ${duration}/${RAM}\`` + output === 'undefined' ? '' : output.trim()
+
+		bot.sendMessage(msg.to, output)
 		return
 	}
 }

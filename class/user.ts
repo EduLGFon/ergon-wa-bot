@@ -3,10 +3,10 @@ import db, { getUser } from 'db'
 
 export default class User {
 	id: num
-	username: str
+	_name: str
 	phone: str
-	language: str
-	cmdPrefix: str
+	_lang: str
+	_prefix: str
 	cmds: num
 	delay: num
 	db?: Partial<User>
@@ -14,10 +14,10 @@ export default class User {
 	constructor(data: { id?: num; phone?: str; name?: str }) {
 		this.db = getUser(data) // get user data from database by id or phone
 		this.id = this.db.id!
-		this.username = this.db.name || 'user'
+		this._name = this.db.name || 'user'
 		this.phone = this.db.phone!
-		this.language = this.db.lang || defaults.lang
-		this.cmdPrefix = this.db.prefix || defaults.prefix
+		this._lang = this.db.lang || defaults.lang
+		this._prefix = this.db.prefix || defaults.prefix
 		this.cmds = this.db.cmds || 0
 		this.delay = 0 // delay for anti-flood
 
@@ -27,11 +27,11 @@ export default class User {
 	}
 
 	get name() {
-		return this.username
+		return this._name
 	}
 
 	set name(value: str) { // user.name = 'new user name'; then update database
-		this.username = value
+		this._name = value
 
 		// Update the user's name in the database
 		db.query('update users set name = :name where id = :id', {
@@ -42,11 +42,11 @@ export default class User {
 	}
 
 	get lang() {
-		return this.language
+		return this._lang
 	}
 
 	set lang(value: str) { // user.lang = 'new user lang'; then update database
-		this.language = value
+		this._lang = value
 
 		// Update the user's language in the database
 		db.query('update users set lang = :lang where id = :id', {
@@ -57,11 +57,11 @@ export default class User {
 	}
 
 	get prefix() {
-		return this.cmdPrefix
+		return this._prefix
 	}
 
 	set prefix(value: str) { // user.prefix = 'new user prefix'; then update database
-		this.cmdPrefix = value
+		this._prefix = value
 
 		// Update the user's prefix in the database
 		db.query('update users set prefix = :prefix where id = :id', {
