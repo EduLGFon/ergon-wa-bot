@@ -1,22 +1,24 @@
 {
 	"tasks": {
 		"setup": "deno upgrade; deno install --allow-scripts",
-		"dev": "deno run --watch wa.ts",
-		"start": "deno run -A wa.ts"
+		"dev": "deno run -A --watch wa.ts"
 	},
 	"imports": {
 		// modules
+		"imageScript": "https://deno.land/x/imagescript@1.3.0/mod.ts",
+		"luxon": "https://moment.github.io/luxon/es6/luxon.js",
 		"humanize-duration": "npm:humanize-duration@^3.32.1",
+		"pm2": "npm:pm2@^6.0.5",
+		"sqlite": "https://deno.land/x/sqlite@v3.9.1/mod.ts",
 		"qr": "npm:qrcode-terminal@^0.12.0",
 		"wa": "npm:whatsapp-web.js@^1.26.0",
-		"luxon": "https://moment.github.io/luxon/es6/luxon.js",
-		"sqlite": "https://deno.land/x/sqlite@v3.9.1/mod.ts",
 		// files
 		"types": "./conf/types/types.d.ts",
 		"defaults": "./conf/defaults.json",
 		"cache": "./util/cache.ts",
 		"db": "./plugin/db.ts",
 		// folders
+		"plugin/": "./plugin/",
 		"class/": "./class/",
 		"util/": "./util/"
 	},

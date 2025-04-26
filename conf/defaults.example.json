@@ -1,7 +1,8 @@
 {
 	"lang": "pt",
-	"prefix": ",",
+	"prefix": ".",
 	"timezone": "America/Sao_Paulo",
+	"devs": [""],
 	"cache": {
 		"users": 200,
 		"groups": 200,

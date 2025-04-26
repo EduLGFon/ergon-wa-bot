@@ -2,5 +2,10 @@
 	"deno.enable": true,
 	"deno.lint": true,
 	"deno.config": "deno.jsonc",
-	"deno.unstable": ["byonm"]
+	"deno.unstable": [
+		"byonm"
+	],
+	"editor.defaultFormatter": "denoland.vscode-deno",
+	"editor.formatOnPaste": true,
+	"editor.formatOnSave": true
 }
