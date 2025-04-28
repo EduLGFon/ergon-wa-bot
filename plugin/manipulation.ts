@@ -1,9 +1,8 @@
 // importa a lib de imagem
-import { Buffer } from 'node:buffer'
 import { Image } from 'imageScript'
 
 export { crop }
-async function crop(input: Buffer<ArrayBuffer>) {
+async function crop(input: Buf) {
 	// lê a imagem de um arquivo (ou pode vir de um fetch, buffer, etc.)
 	const image = await Image.decode(input)
 

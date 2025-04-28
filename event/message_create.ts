@@ -18,11 +18,14 @@ export default async function (bot: Client, msg: Message) {
 	if (!['chat', 'audio', 'ptt', 'image', 'video'].includes(msg.type)) return
 	if (msg.id.remote.includes('broadcast')) return // ignore broadcast messages
 
-	const user = new User({
-		phone: msg.author || msg.from,
-		// @ts-ignore akshually, this is a bug in the library
-		name: msg._data.notifyName,
-	})
+	const phone = msg.author || msg.from
+	let user = cache.users.get(phone)
+	if (!user) {
+		user = new User({ phone })
+		cache.users.add(user.phone, user)
+	}
+	// @ts-ignore akshually, this is a bug in the library
+	user.name = msg._data.notifyName
 
 	if (!msg.body.startsWith(user.prefix)) return
 	/* * Command checking */

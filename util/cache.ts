@@ -9,7 +9,7 @@ import Cmd from 'class/cmd.ts'
  * user/group cache.
  */
 export default {
-	users: new Collection(defaults.cache.users, User),
+	users: new Collection<str, User>(defaults.cache.users, User),
 	groups: new Collection(defaults.cache.groups, User),
 	cmds: new Collection<str, Cmd>(0, Cmd),
 }

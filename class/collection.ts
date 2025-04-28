@@ -1,4 +1,4 @@
-export default class Collection<K, V> extends Map {
+export default class Collection<K, V> extends Map<K, V> {
 	primaryKey: str
 	limit: num
 	base?: FunctionConstructor
@@ -43,7 +43,7 @@ export default class Collection<K, V> extends Map {
 		if (this.limit && this.size > this.limit) {
 			const iter = this.keys()
 			while (this.size > this.limit) {
-				this.delete(iter.next().value)
+				this.delete(iter.next().value!)
 			}
 		}
 
@@ -99,7 +99,7 @@ export default class Collection<K, V> extends Map {
 
 		for (let c = 0; c < index; ++c) iter.next()
 
-		return iter.next().value
+		return iter.next().value!
 	}
 
 	// Every: Returns true if all items pass in the check
@@ -122,17 +122,17 @@ export default class Collection<K, V> extends Map {
 	}
 
 	// Reduce: same as Array#reduce
-	reduce(func: (preValue: V, nextValue: V) => V, initialValue = 0): any {
-		const items = this.values()
-		let next
-		let previous = initialValue || items.next().value
+	// reduce(func: (preValue: V, nextValue: V) => V, initialValue = 0): any {
+	// 	const items = this.values()
+	// 	let next
+	// 	let previous = initialValue || items.next().value
 
-		while ((next = items.next().value) !== undefined) {
-			previous = func(previous, next)
-		}
+	// 	while ((next = items.next().value) !== undefined) {
+	// 		previous = func(previous, next)
+	// 	}
 
-		return previous
-	}
+	// 	return previous
+	// }
 
 	// Remove: what do you think this method does?
 	remove(id: K): V | null {

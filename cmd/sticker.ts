@@ -1,6 +1,5 @@
+import { getMedia, now, toBase64 } from 'util/functions.ts'
 import { crop } from 'plugin/manipulation.ts'
-import { now } from 'util/functions.ts'
-import { Buffer } from 'node:buffer'
 import { MessageMedia } from 'wa'
 import { CmdCtx } from 'types'
 import Cmd from 'class/cmd.ts'
@@ -16,11 +15,10 @@ export default class extends Cmd {
 	}
 
 	async run({ bot, msg, user }: CmdCtx) {
-		const target = msg.hasMedia ? msg : (msg.hasQuotedMsg ? await msg.getQuotedMessage() : msg)
-		if (!target.hasMedia) return msg.reply('Mídia não encontrada')
+		const media = await getMedia(msg)
+		if (!media) return msg.reply('Mídia não encontrada')
+		const { mime, data, target } = media
 
-		const media = await target.downloadMedia()
-		if (!media) return bot.sendMessage(msg.to, 'Falha ao baixar mídia.')
 		const msgConf = {
 			sendMediaAsSticker: true,
 			stickerAuthor: '',
@@ -31,16 +29,16 @@ export default class extends Cmd {
 				`[❓] Suporte: dsc.gg/ergon`,
 		}
 
-		const rawMedia = new MessageMedia(media.mimetype, media.data)
+		const rawMedia = new MessageMedia(mime, data)
 		await bot.sendMessage(msg.to, rawMedia, msgConf)
 
 		if (target.type === 'image') {
-			const buffer = Buffer.from(media.data, 'base64')
+			const buffer = data.toBuffer()
 			const cropped = await crop(buffer)
 
 			const croppedMedia = new MessageMedia(
-				media.mimetype,
-				Buffer.from(cropped).toString('base64'),
+				media.mime,
+				toBase64(cropped),
 			)
 			await bot.sendMessage(msg.to, croppedMedia, msgConf)
 		}

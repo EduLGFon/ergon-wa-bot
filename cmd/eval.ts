@@ -45,7 +45,7 @@ export default class extends Cmd {
 		const duration = (Date.now() - startTime).duration(true)
 		const RAM = Deno.memoryUsage().rss.bytes() // current RAM usage
 
-		output = `\`$ ${duration}/${RAM}\`` + output === 'undefined' ? '' : output.trim()
+		output = `\`$ ${duration}/${RAM}\`` + (output === 'undefined' ? '' : '\n' + output.trim())
 
 		bot.sendMessage(msg.to, output)
 		return
