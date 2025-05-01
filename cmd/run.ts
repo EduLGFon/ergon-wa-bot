@@ -1,6 +1,7 @@
+import { sendOrEdit } from 'util/functions.ts'
 import { run } from 'util/proto.ts'
-import Cmd from 'class/cmd.ts'
 import { CmdCtx } from 'types'
+import Cmd from 'class/cmd.ts'
 import { Message } from 'wa'
 
 export default class extends Cmd {
@@ -15,22 +16,20 @@ export default class extends Cmd {
 	}
 
 	async run({ bot, msg, args }: CmdCtx) {
-		let statusMsg: Message
+		const statusMsg = { msg: {} } as { msg: Message }
 
 		const startTime = Date.now()
-		const output = await run(args.join(' '), sendOrEdit, 2_000)
+		const output = await run(args.join(' '), 1_500, sendOrEdit, [bot, statusMsg!, msg.to])
 
 		const duration = (Date.now() - startTime).duration(true)
 		const RAM = Deno.memoryUsage().rss.bytes() // current RAM usage
 
-		await sendOrEdit('`$ ' + duration + '/' + RAM + '`\n```' + output + '```')
-
-		async function sendOrEdit(text: str) {
-			// @ts-ignore Checking if the message was sent
-			if (statusMsg?.id) {
-				await statusMsg.edit(text).catch(() => console.log('Failed to edit message'))
-			} else statusMsg = await bot.sendMessage(msg.to, text)
-		}
+		await sendOrEdit(
+			bot,
+			statusMsg!,
+			msg.to,
+			'`$ ' + duration + '/' + RAM + '`\n```' + output + '```',
+		)
 		return
 	}
 }

@@ -1,11 +1,11 @@
 import defaults from 'defaults' with { type: 'json' }
+import { Client, Message } from 'wa'
 import { Buffer } from 'node:buffer'
 import { DateTime } from 'luxon'
 import User from 'class/user.ts'
 import Cmd from 'class/cmd.ts'
-import { Message } from 'wa'
 
-export { checkPerms, delay, getMedia, now, toBase64 }
+export { checkPerms, delay, getMedia, now, sendOrEdit, toBase64 }
 
 async function getMedia(msg: Message) {
 	const target = msg.hasMedia ? msg : (msg.hasQuotedMsg ? await msg.getQuotedMessage() : null)
@@ -23,6 +23,13 @@ async function getMedia(msg: Message) {
 
 function toBase64(buffer: Uint8Array) {
 	return Buffer.from(buffer).toString('base64')
+}
+
+async function sendOrEdit(bot: Client, data: { msg: Message }, chat: str, text: str) {
+	// @ts-ignore Checking if the message was sent
+	if (data.msg?.id) {
+		await data.msg.edit(text).catch((e) => console.log('Failed to edit message', e))
+	} else data.msg = await bot.sendMessage(chat, text)
 }
 
 // checkPerms: check cmd permissions like block random guys from using eval

@@ -1,5 +1,5 @@
-import qrcode from 'qr'
 import { Client } from 'wa'
+import qrcode from 'qr'
 
 // When the client receive the login QR-Code
 export default async function (bot: Client, qr: str) {

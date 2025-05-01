@@ -1,9 +1,10 @@
-import defaults from 'defaults' with { type: 'json' }
-import Cmd from 'class/cmd.ts'
-import { CmdCtx } from 'types'
+import { getMedia, sendOrEdit } from 'util/functions.ts'
 import emojis, { restrictEmojis } from 'util/emojis.ts'
-import { getMedia } from 'util/functions.ts'
+import defaults from 'defaults' with { type: 'json' }
 import { gemini } from 'util/api.ts'
+import { CmdCtx } from 'types'
+import Cmd from 'class/cmd.ts'
+import { Message } from 'wa'
 
 export default class extends Cmd {
 	constructor() {
@@ -30,20 +31,24 @@ export default class extends Cmd {
 			args.shift()
 		}
 
-		await msg.react(emojis['think'])
 		const file = await getMedia(msg)
 
-		try {
-			const data = await gemini({
-				model,
-				input: args.join(' '),
-				user,
-				file,
+		const streamMsg = {
+			msg: {},
+		} as { msg: Message }
+		await gemini({
+			model,
+			input: args.join(' '),
+			user,
+			file,
+			callBack: sendOrEdit,
+			args: [bot, streamMsg!, msg.to],
+		})
+			.then(() => msg.react(emojis['think']))
+			.catch((e) => {
+				console.log('CMD/GEMINI', e, 'red')
+				bot.sendMessage(msg.to, String(e.message || e))
 			})
-			bot.sendMessage(msg.to, ` - *${data.model}*:\n${data.text}`)
-		} catch (e: any) {
-			console.log('CMD/GEMINI', e, 'red')
-			return bot.sendMessage(msg.to, String(e.message || e))
-		}
+		return
 	}
 }

@@ -1,6 +1,6 @@
 import humanizeDuration, { Unit } from 'humanize-duration'
-import { Buffer } from 'node:buffer'
 import { now } from 'util/functions.ts'
+import { Buffer } from 'node:buffer'
 
 export { decode, run }
 export default function () {
@@ -106,7 +106,7 @@ function print(...args: any) {
 	)
 }
 
-async function run(cmd: str, callBack?: Func, time?: num) {
+async function run(cmd: str, time?: num, callBack?: Func, args?: any[]) {
 	const splited = cmd.split(' ')
 	const proc = new Deno.Command(splited[0], {
 		args: splited.slice(1),
@@ -118,7 +118,7 @@ async function run(cmd: str, callBack?: Func, time?: num) {
 	let text = ''
 	let interval
 
-	if (callBack) interval = setInterval(async () => await callBack(text), time || 500)
+	if (callBack) interval = setInterval(async () => await callBack(...args!, text), time || 500)
 
 	for await (const line of cp.stdout) text += decode(line)
 	for await (const line of cp.stderr) text += decode(line)
