@@ -1,6 +1,7 @@
 import humanizeDuration, { Unit } from 'humanize-duration'
 import { now } from 'util/functions.ts'
 import { Buffer } from 'node:buffer'
+import { Duration } from 'luxon'
 
 export { decode, run }
 export default function () {
@@ -13,6 +14,7 @@ export default function () {
 function strPrototypes() {
 	Object.defineProperties(String.prototype, {
 		align: { // align a word between spaces
+			// famous left padding
 			value: function (limit: num, char: str = ' ', endPosition?: bool) {
 				let ratio = (limit - this.length) / 2
 				if (ratio < 1) ratio = 1
@@ -28,15 +30,35 @@ function strPrototypes() {
 			value: function () {
 				const buffer = Buffer.from(this, 'base64')
 				return new Blob([buffer], { type: 'application/octet-stream' })
-				// convert to Uint8Array
-				// const byteCharacters = atob(this)
-				// const byteNumbers = new Uint8Array(byteCharacters.length)
+			},
+		},
+		toMs: { // convert a str on ms
+			value: function () { // '10s' => 1_000 * 10
+				const match: str[] = this.match(/(\d+)(y|d|h|m|s|w)/gi) || []
 
-				// for (let i = 0; i < byteCharacters.length; i++) {
-				// 	byteNumbers[i] = byteCharacters.charCodeAt(i)
-				// }
+				if (!match[0]) return [0]
 
-				// return new Blob([byteNumbers.buffer], { type: 'application/octet-stream' })
+				const ms = match
+					.map((m) => {
+						const quantity = parseInt(m, 10)
+						const unit = m.replace(String(quantity), '')
+
+						const duration = Duration.fromObject({
+							years: unit === 'y' ? quantity : 0,
+							months: unit === 'mo' ? quantity : 0, // Convert 'd' to 'days'
+							days: unit === 'd' ? quantity : 0, // Convert 'd' to 'days'
+							hours: unit === 'h' ? quantity : 0,
+							minutes: unit === 'm' ? quantity : 0,
+							seconds: unit === 's' ? quantity : 0,
+							weeks: unit === 'w' ? quantity : 0,
+							quarters: 0,
+							milliseconds: 0,
+						})
+						return duration.as('milliseconds')
+					})
+					.reduce((prev, crt) => prev + crt)
+
+				return [ms, match]
 			},
 		},
 	})
@@ -89,18 +111,21 @@ function numPrototypes() {
 	})
 }
 
-function print(...args: any) {
-	if (!args[2]) return console.info(...args)
+function print(...anyArgs: any) {
+	if (!anyArgs[2]) return console.info(...anyArgs)
 
-	const [title, msg, color] = [...args]
+	const args = [...anyArgs]
+	const color = args.pop()
 	const memory = Deno.memoryUsage().rss.bytes().align(5)
 
 	console.info(
-		`%c[ ${now('TT.SSS')} |${memory}|${title.align(9)}] - ${msg}`,
+		`%c[ ${now('TT.SSS')} |${memory}|${args.shift().align(9)}] - ${args.shift()}`,
+		...args,
 		`color: ${color}`,
 	)
 }
 
+// run a cmd on shell
 async function run(args: str[], time?: num, callBack?: Func, cbArgs?: any[]) {
 	const proc = new Deno.Command(args[0], {
 		args: args.slice(1),

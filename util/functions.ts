@@ -1,11 +1,13 @@
 import defaults from 'defaults' with { type: 'json' }
-import { Client, Message } from 'wa'
 import { Buffer } from 'node:buffer'
 import { DateTime } from 'luxon'
 import User from 'class/user.ts'
 import Cmd from 'class/cmd.ts'
+import db from 'plugin/db.ts'
+import { Message } from 'wa'
+import bot from 'main'
 
-export { checkPerms, delay, getMedia, now, sendOrEdit, toBase64 }
+export { checkPerms, createMemories, delay, getMedia, now, sendOrEdit, toBase64 }
 
 async function getMedia(msg: Message) {
 	const target = msg.hasMedia ? msg : (msg.hasQuotedMsg ? await msg.getQuotedMessage() : null)
@@ -25,7 +27,7 @@ function toBase64(buffer: Uint8Array) {
 	return Buffer.from(buffer).toString('base64')
 }
 
-async function sendOrEdit(bot: Client, data: { msg: Message }, chat: str, text: str) {
+async function sendOrEdit(data: { msg: Message }, chat: str, text: str) {
 	// @ts-ignore Checking if the message was sent
 	if (data.msg?.id) {
 		await data.msg.edit(text).catch((e) => console.log('Failed to edit message', e))
@@ -66,4 +68,26 @@ function now(format = 'TT') {
 // delay: wait a few ms
 async function delay(ms: num) {
 	return await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// createMemories: add memories to user
+function createMemories(user: User, memories: str[]) {
+	const textMemories = []
+	for (const memory of memories) {
+		const m = memory.split(':')[1].slice(0, -1) // get memory from {MEMORY:memory}
+		// check if memory already exists
+		if (!m || user.memories.includes(m)) continue
+
+		// add memory to user
+		user.memories.push(m)
+		textMemories.push(`- *Memória adicionada: ${m}*`)
+	}
+
+	// update user in database
+	db.query('update users set memories = :memories where id = :id;', {
+		id: user.id,
+		memories: JSON.stringify(user.memories),
+	})
+
+	return textMemories
 }

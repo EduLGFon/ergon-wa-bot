@@ -3,30 +3,34 @@ import db, { getUser } from 'db'
 import { Content } from 'gemini'
 
 export default class User {
-	id: num
-	_name: str
-	phone: str
-	_telegram?: num
-	_lang: str
-	_prefix: str
-	cmds: num
-	delay: num
-	gemini?: Content[]
-	db?: Partial<User>
+	id!: num
+	private _name!: str
+	phone!: str
+	private _telegram?: num
+	private _lang!: str
+	private _prefix!: str
+	cmds!: num
+	delay!: num
+	memories!: str[]
+	gemini!: Content[]
 
 	constructor(data: { id?: num; phone?: str; name?: str; telegram?: num }) {
-		this.db = getUser(data) // get user data from database by id or phone
-		this.id = this.db.id!
-		this._name = this.db.name || 'user'
-		this.phone = this.db.phone!
-		this._lang = this.db.lang || defaults.lang
-		this._prefix = this.db.prefix || defaults.prefix
-		this.cmds = this.db.cmds || 0
+		this.fetchData(data)
+	}
+	fetchData(data: Partial<UserSchema>) {
+		const db = getUser(data) // get user data from database by id or phone
+		this.id = db.id!
+		this._name = db.name || 'user'
+		this.phone = db.phone!
+		this._lang = db.lang || defaults.lang
+		this._prefix = db.prefix || defaults.prefix
+		this.cmds = db.cmds || 0
 		this.delay = 0 // delay for anti-flood
+		this.memories = JSON.parse(db.memories || '[]') // array of Gemini memories
+		this.gemini = [] // array of Gemini messages
 
 		// if name is different from database, update it
-		if (data.name && data.name !== this.db.name) this.name = data.name
-		delete this.db // delete redundant data
+		if (data.name && data.name !== db.name) this.name = data.name
 	}
 
 	get name() {

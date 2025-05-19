@@ -1,6 +1,7 @@
+import { createReminders, getUserReminders, reminderRegex } from './reminders.ts'
 import { createPartFromUri, FileState, GoogleGenAI, Part } from 'gemini'
+import { createMemories, delay } from './functions.ts'
 import defaults from 'defaults' with { type: 'json' }
-import { delay } from './functions.ts'
 import User from 'class/user.ts'
 
 export { gemini }
@@ -11,6 +12,7 @@ type GeminiArgs = {
 	model?: str
 	input: str
 	user: User
+	chat?: str
 	callBack?: Func
 	args: any[]
 	file?: {
@@ -18,7 +20,9 @@ type GeminiArgs = {
 		mime: str
 	}
 }
-async function gemini({ input, user, callBack, file, args, model }: GeminiArgs) {
+const memoryRegex = /{MEMORY:( |)[a-z].+}/gi
+
+async function gemini({ input, user, chat, callBack, file, args, model }: GeminiArgs) {
 	model = model || defaults.ai.gemini
 	let message: str | [Part, str] = input
 	let upload
@@ -27,7 +31,7 @@ async function gemini({ input, user, callBack, file, args, model }: GeminiArgs) 
 
 	let interval: num
 	if (callBack) {
-		interval = setInterval(async () => await callBack(...args, headerTxt + text), 1_500)
+		interval = setInterval(async () => await callBack(...args, headerTxt + text), 2_000)
 	}
 
 	if (file) {
@@ -64,24 +68,38 @@ async function gemini({ input, user, callBack, file, args, model }: GeminiArgs) 
 		message = [createPartFromUri(upload.uri!, upload.mimeType!), input]
 	}
 
-	const chat = GoogleAI.chats.create({
+	const geminiChat = GoogleAI.chats.create({
 		model,
 		config: {
-			systemInstruction:
-				'Você é um membro de um grupo do WhatsApp. Sempre pesquise as informações antes de responder e vá direto ao ponto. Não use emojis. Use formatação do WhatsApp.',
+			systemInstruction: [
+				'Você é um assistente de IA que ajuda os usuários a encontrar informações na web.',
+				'Você deve fornecer respostas curtas e diretas.',
+				'Sempre pesquise na web antes de responder.',
+				'Ao longo da conversa, você deve anotar tudo que aprender sobre o usuário em várias memórias.',
+				'Modelo de Memória: "{MEMORY:message}"',
+				'Exemplo: "{MEMORY:O usuário tem um cachorro chamado Pedro}"',
+				'Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme.',
+				'Converta a data do alarme para daqui a years (y), months (mo), weeks (w), days (d), hours (h), minutes (m) ou seconds (s).',
+				'Modelo de Lembrete: "{REMINDER:humurous message:duration}"',
+				'Exemplo: "{REMINDER:Coloca comida pro Pedro senão ele vai morrer de fome:1h}"',
+				'Os alarmes servem apenas para lembrar o usuário de algo.',
+				'Memórias do usuário:',
+				...user.memories,
+				'Lembretes do usuário:',
+				...getUserReminders(user),
+			],
 			tools: [{ googleSearch: {} }],
 		},
-		history: user.gemini || [],
+		history: user.gemini,
 	})
 
-	const stream = await chat.sendMessageStream({ message })
+	const stream = await geminiChat.sendMessageStream({ message })
 
 	for await (const chunk of stream) {
-		headerTxt = `- *${model}*\n`
 		const tokens = chunk?.usageMetadata?.totalTokenCount || -1
 		const thoughts = chunk?.usageMetadata?.thoughtsTokenCount || 0
 
-		headerTxt += `- *Tokens: ${tokens} | Raciocínio: ${thoughts}*\n`
+		headerTxt = `- *${model}*\n` + `- *Tokens: ${tokens} | Raciocínio: ${thoughts}*\n`
 
 		if (chunk.candidates) {
 			const searches = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
@@ -94,11 +112,20 @@ async function gemini({ input, user, callBack, file, args, model }: GeminiArgs) 
 
 		if (chunk.text !== undefined) text += chunk.text
 	}
-	user.gemini = user.gemini ? [...user.gemini, ...chat.getHistory()] : chat.getHistory()
+
+	if (memoryRegex.test(text)) {
+		const matches = text.match(memoryRegex)!
+		const memories = createMemories(user, matches)
+		matches.forEach((m, i) => text.replace(m, memories[i])) // remove memories from text
+	}
+	if (reminderRegex.test(text)) text = createReminders(user, text, chat!)
+
+	user.gemini = geminiChat.getHistory()
 
 	if (callBack) {
 		clearInterval(interval!)
-		callBack(...args, headerTxt + text)
+		await delay(2_000)
+		await callBack(...args, headerTxt + text)
 	}
 	// if (upload) GoogleAI.files.delete({ name: upload.name! })
 

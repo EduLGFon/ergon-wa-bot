@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     name        TEXT,
     phone       TEXT UNIQUE NOT NULL,
     telegram    INTEGER UNIQUE,
+	memories	TEXT DEFAULT '[]',
     lang        TEXT,
     prefix      TEXT,
     cmds        INTEGER DEFAULT 0
@@ -33,18 +34,17 @@ CREATE TABLE IF NOT EXISTS reminders (
 export default db
 export { createUser, getUser }
 
-type UserSchema = { id?: num; name?: str; phone?: str; telegram?: num; lang?: str; prefix?: str }
-function createUser(user: UserSchema) {
+function createUser(user: Partial<UserSchema>) {
 	db.query(
 		`
-    INSERT INTO users (name, phone, lang, prefix)
-    VALUES (:name, :phone, :lang, :prefix);`,
+    INSERT INTO users (name, phone, telegram, lang, prefix, cmds, memories)
+    VALUES (:name, :phone, :telegram, :lang, :prefix, :cmds, :memories);`,
 		user,
 	)
 	return
 }
 
-function getUser(user: UserSchema): UserSchema {
+function getUser(user: Partial<UserSchema>): UserSchema {
 	let data
 	if (user.phone) {
 		user.phone = user.phone.split(':')[0].split('@')[0]
@@ -63,5 +63,5 @@ function getUser(user: UserSchema): UserSchema {
 		})[0]
 	}
 
-	return data!
+	return data as UserSchema
 }
