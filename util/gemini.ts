@@ -11,13 +11,21 @@ export default async function gemini(
 	{ input, user, chat, file, callBack, args, model = defaults.ai.gemini }: GeminiArgs,
 ) {
 	let upload
+	let interval
+	const isStream = input.startsWith('s ')
+	const title = model.includes('2.0') ? 'gemini' : 'Gemini'
 	const msg = {
 		header: ``,
 		text: '> ',
+		tokens: -1,
+		thoughts: 0,
 	}
-
-	const interval = callBack ? createInterval(callBack, args, msg) : 0
+	if (isStream) {
+		createInterval(callBack!, args, msg)
+		input = input.slice(2)
+	}
 	if (file) upload = await uploadFile(file as GoogleFile, msg)
+	const message = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
 
 	const gemini = GoogleAI.chats.create({
 		model,
@@ -26,30 +34,22 @@ export default async function gemini(
 	})
 
 	let stream
-	let title = 'Gemini'
-	const message = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
-	if (model.includes('2.0')) {
-		stream = await gemini.sendMessage({ message })
-		title = 'gemini'
-	} else stream = await gemini.sendMessageStream({ message })
+	if (isStream) stream = await gemini.sendMessageStream({ message })
+	else stream = await gemini.sendMessage({ message })
 
-	const tokens = {
-		total: -1,
-		thoughts: 0,
-	}
 	msg.header = ''
 	// @ts-ignore i don't have another way to check this
 	if (!stream.text) {
 		stream = stream as AsyncGenerator<GenerateContentResponse>
-		for await (const chunk of stream) handleResponse(chunk, tokens, msg)
+		for await (const chunk of stream) handleResponse(chunk, msg)
 	} else {
 		stream = stream as GenerateContentResponse
-		handleResponse(stream, tokens, msg)
+		handleResponse(stream, msg)
 	}
 
 	msg.header =
-		`- *${title} (Tokens: ${tokens.total} ${
-			tokens.thoughts ? `| Raciocínio: ${tokens.thoughts}` : ''
+		`- *${title} (Tokens: ${msg.tokens} ${
+			msg.thoughts ? `| Raciocínio: ${msg.thoughts}` : ''
 		})*\n` +
 		msg.header
 
@@ -69,9 +69,9 @@ export default async function gemini(
 	return
 }
 
-function handleResponse(chunk: GenerateContentResponse, tokens: AITokens, msg: AIMsg) {
-	tokens.total = chunk?.usageMetadata?.totalTokenCount || -1
-	tokens.thoughts = chunk?.usageMetadata?.thoughtsTokenCount || 0
+function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
+	msg.tokens = chunk?.usageMetadata?.totalTokenCount || -1
+	msg.thoughts = chunk?.usageMetadata?.thoughtsTokenCount || 0
 
 	if (chunk?.candidates) {
 		const searches = chunk.candidates[0]?.groundingMetadata?.webSearchQueries

@@ -16,8 +16,8 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, user, send }: CmdCtx) {
-		const media = await getMedia(msg) // download msg media or quoted msg media
+	async run({ msg, user, send, startTyping }: CmdCtx) {
+		const media = await getMedia(msg, startTyping) // download msg media or quoted msg media
 		if (!media) return msg.reply('Mídia não encontrada')
 		const { mime, data, target } = media
 
@@ -42,9 +42,9 @@ export default class extends Cmd {
 					toBase64(cropped),
 				)
 				await send(croppedMedia, msgConf)
+				return
 			},
 			async video() {
-				console.log(mime, target.type)
 				const name = Date.now() + '.mp4'
 				const buffer = Buffer.from(data, 'base64')
 				const input = `conf/temp/${name}`
@@ -56,7 +56,8 @@ export default class extends Cmd {
 					'-i',
 					input,
 					'-vf',
-					"crop='in_w:in_w'",
+					// "crop='in_w:in_w'",
+					"crop='min(in_w\,in_h)':'min(in_w\,in_h)'",
 					'-y',
 					output,
 				])
@@ -66,16 +67,18 @@ export default class extends Cmd {
 				await send(croppedMedia, msgConf)
 				Deno.remove(input)
 				Deno.remove(output)
+				return
 			},
 			sticker() {
 				send(rawMedia)
+				return
 			},
 		}
 
 		if (target.type in msgtypeWays) {
 			await send(rawMedia, msgConf)
 			// @ts-ignore don't fuck
-			await msgtypeWays[target.type]()
+			msgtypeWays[target.type]()
 		}
 		return
 	}
