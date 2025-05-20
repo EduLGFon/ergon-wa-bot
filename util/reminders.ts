@@ -3,7 +3,7 @@ import { delay } from 'util/functions.ts'
 import { send } from './message.ts'
 import User from 'class/user.ts'
 
-export { createReminders, getUserReminders, reminderRegex, sendReminders }
+export { createReminders, getUserReminders, sendReminders }
 
 let reminderTimeout: num
 let nextReminderTime = 0
@@ -54,16 +54,17 @@ function scheduleReminderCheck(time: num) {
 }
 
 // createReminder: set user reminders
-function createReminders(user: User, text: str, chat: str) {
+function createReminders(user: User, msg: AIMsg, chat: str) {
 	// regex matches
-	const matches = text.match(reminderRegex)!
-	const textReminders: str[] = []
+	const matches = msg.text.match(reminderRegex)
+	if (!matches) return msg.text // no reminders found
 
 	for (const reminder of matches) {
 		const duration = reminder.split(':')[2].slice(0, -1).toMs()
 		// get duration from {REMINDER:reminder:duration}
 		const time = Date.now() + duration[0]
 		// reminder absolute time
+		const message = reminder.split(':')[1].trim()
 
 		// set reminder in database
 		db.query(
@@ -71,22 +72,19 @@ function createReminders(user: User, text: str, chat: str) {
 			{
 				author: user.id,
 				chat,
-				msg: reminder.split(':')[1], // get reminder from {REMINDER:reminder:duration}
+				msg: message, // get reminder from {REMINDER:reminder:duration}
 				time,
 			},
 		)
-		textReminders.push(
-			`- *Lembrete adicionado:* \`${reminder.split(':')[1]}\` em \`${duration[1]}\``,
-		)
+
+		// replace {REMINDER:reminder:duration} with the text reminder
+		msg.text = msg.text.replace(reminder, '') // remove reminder from text
+		msg.header += `- *Lembrete adicionado:* \`${message}\` em \`${duration[1]}\`\n`
 
 		// create a timeout for the next reminder
 		if (!nextReminderTime || time < nextReminderTime) scheduleReminderCheck(time)
+		return
 	}
-
-	// replace {REMINDER:reminder:duration} with the text reminder
-	matches.forEach((m, i) => text = text.replace(m, textReminders[i])) // remove reminders from text
-
-	return text
 }
 
 // getUserReminders: get all reminders created by the user

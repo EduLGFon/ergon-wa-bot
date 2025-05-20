@@ -10,6 +10,10 @@ interface CmdCtx {
 	react(emoji: keyof typeof emojis): Promise<void>
 }
 
+type GoogleFile = {
+	data: str
+	mime: str
+}
 type GeminiArgs = {
 	model?: str
 	input: str
@@ -17,8 +21,5 @@ type GeminiArgs = {
 	chat?: str
 	callBack?: Func
 	args: any[]
-	file?: {
-		data: str
-		mime: str
-	}
+	file?: GoogleFile
 }
