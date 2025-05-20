@@ -1,11 +1,9 @@
-import { getMedia, sendOrEdit } from 'util/functions.ts'
-import emojis, { restrictEmojis } from 'util/emojis.ts'
+import { getMedia, sendOrEdit } from 'util/message.ts'
 import defaults from 'defaults' with { type: 'json' }
-import { gemini } from 'util/gemini.ts'
+import gemini from 'util/gemini.ts'
 import { CmdCtx } from 'types'
 import Cmd from 'class/cmd.ts'
 import { Message } from 'wa'
-import bot from 'main'
 
 export default class extends Cmd {
 	constructor() {
@@ -15,18 +13,18 @@ export default class extends Cmd {
 			subCmds: ['reset', 'pro'],
 		})
 	}
-	async run({ msg, args, user }: CmdCtx) {
-		if (!args[0]) return bot.sendMessage(msg.to, 'Por favor escreva um prompt')
+	async run({ msg, args, user, send, react }: CmdCtx) {
+		if (!args[0]) return send('Por favor escreva um prompt')
 		let model = defaults.ai.gemini // default gemini model
 
 		if (args[0] === this.subCmds[0]) { // reset
 			user.gemini = []
-			if (!args[1]) return msg.react(restrictEmojis['ok'])
+			if (!args[1]) return react('ok')
 			args.shift()
 		}
 
 		if (args[0] === this.subCmds[1]) { // use pro model
-			if (!args[1]) return bot.sendMessage(msg.to, 'Por favor escreva um prompt')
+			if (!args[1]) return send('Por favor escreva um prompt')
 			model = defaults.ai.gemini25 // gemini 2.5 flash preview
 			args.shift()
 		}
@@ -43,12 +41,12 @@ export default class extends Cmd {
 			chat: msg.to, // this chat id
 			file,
 			callBack: sendOrEdit, // edit msg while gemini writes it
-			args: [bot, streamMsg!, msg.to], // arguments to pass to the callback
+			args: [streamMsg!, msg.to], // arguments to pass to the callback
 		})
-			.then(() => msg.react(emojis['think']))
+			.then(() => react('think'))
 			.catch((e) => {
 				console.log('CMD/GEMINI', e.stack, 'red')
-				bot.sendMessage(msg.to, String(e.message || e))
+				send(String(e.message || e))
 			})
 		return
 	}

@@ -18,7 +18,7 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, args, user }: CmdCtx) {
+	async run({ msg, args, user, send }: CmdCtx) {
 		defaults
 		getUser
 		cache
@@ -48,7 +48,7 @@ export default class extends Cmd {
 
 		output = `\`$ ${duration}/${RAM}\`` + (output === 'undefined' ? '' : '\n' + output.trim())
 
-		bot.sendMessage(msg.to, output)
+		send(output)
 		return
 	}
 }

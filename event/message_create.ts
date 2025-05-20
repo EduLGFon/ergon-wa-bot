@@ -1,7 +1,6 @@
-import { restrictEmojis } from 'util/emojis.ts'
-import { checkPerms } from 'util/functions.ts'
-import { delay } from 'util/functions.ts'
+import { react, send } from 'util/message.ts'
 // import telegram from 'plugin/telegram.ts'
+import { delay } from 'util/functions.ts'
 import User from 'class/user.ts'
 import { Message } from 'wa'
 import cache from 'cache'
@@ -49,8 +48,9 @@ export default async function (msg: Message) {
 	// small lib bug fix to make the bot send messages to the right chat
 
 	/* * Permissions checking */
-	const auth = checkPerms(cmd, user, msg)
-	if (auth !== true) return msg.react(restrictEmojis[auth])
+	const auth = cmd.checkPerms(user, msg)
+	const reactOnMsg = react.bind(msg)
+	if (auth !== true) return reactOnMsg(auth)
 	// you got censored OOOOMAGAAAA
 
 	/* * Cooldown checking */
@@ -73,6 +73,6 @@ export default async function (msg: Message) {
 
 	user.addCmd() // 1+ on user personal cmds count
 
-	cmd.run({ msg, args, user })
+	cmd.run({ msg, args, user, send: send.bind(msg.to), react: reactOnMsg })
 		.catch((e: any) => msg.reply(`Erro: ${e.message || e}`) ?? console.error(e))
 }

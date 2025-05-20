@@ -1,7 +1,7 @@
 import db, { getUser } from 'plugin/db.ts'
 import { delay } from 'util/functions.ts'
+import { send } from './message.ts'
 import User from 'class/user.ts'
-import bot from 'main'
 
 export { createReminders, getUserReminders, reminderRegex, sendReminders }
 
@@ -20,7 +20,9 @@ async function sendReminders() {
 		const user = getUser({ id: r.author })
 
 		// send reminder to chat mentioning user
-		await bot.sendMessage(r.chat, `@${user.phone}\n- *Lembrete:* \`${r.msg}\` `)
+		await send.bind(r.chat)(`@${user.phone}\n- *Lembrete:* \`${r.msg}\` `, {
+			mentions: [user.phone!],
+		})
 			.then(() => {
 				db.query(`UPDATE reminders SET status = 1 WHERE id = :id`, { id: r.id })
 				console.log('REMINDER', `'${r.msg}' to ${user.phone} (${r.chat})`, 'blue')

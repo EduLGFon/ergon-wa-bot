@@ -2,27 +2,14 @@ import { createReminders, getUserReminders, reminderRegex } from './reminders.ts
 import { createPartFromUri, FileState, GoogleGenAI, Part } from 'gemini'
 import { createMemories, delay } from './functions.ts'
 import defaults from 'defaults' with { type: 'json' }
-import User from 'class/user.ts'
-
-export { gemini }
+import { GeminiArgs } from 'types'
 
 const GoogleAI = new GoogleGenAI({ apiKey: defaults.ai.gemini_key })
-
-type GeminiArgs = {
-	model?: str
-	input: str
-	user: User
-	chat?: str
-	callBack?: Func
-	args: any[]
-	file?: {
-		data: str
-		mime: str
-	}
-}
 const memoryRegex = /{MEMORY:( |)[a-z].+}/gi
 
-async function gemini({ input, user, chat, callBack, file, args, model }: GeminiArgs) {
+export default async function gemini(
+	{ input, user, chat, callBack, file, args, model }: GeminiArgs,
+) {
 	model = model || defaults.ai.gemini
 	let message: str | [Part, str] = input
 	let upload

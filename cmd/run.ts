@@ -1,4 +1,4 @@
-import { sendOrEdit } from 'util/functions.ts'
+import { sendOrEdit } from 'util/message.ts'
 import { run } from 'util/proto.ts'
 import { CmdCtx } from 'types'
 import Cmd from 'class/cmd.ts'

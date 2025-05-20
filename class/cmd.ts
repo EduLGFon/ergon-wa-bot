@@ -1,4 +1,7 @@
+import defaults from 'defaults' with { type: 'json' }
 import type { CmdCtx } from 'types'
+import User from './user.ts'
+import { Message } from 'wa'
 
 export default abstract class Cmd {
 	name: str
@@ -27,4 +30,27 @@ export default abstract class Cmd {
 	}
 
 	abstract run(ctx: CmdCtx): any // run function
+
+	// checkPerms: check cmd permissions like block random guys from using eval
+	checkPerms(user: User, msg: Message) {
+		const isDev = defaults.devs.includes(user.phone)
+		// if a normal user tries to run a only-for-devs cmd
+
+		if (this.access.restrict && !isDev) return 'prohibited'
+
+		if (msg.to.includes('@g.us')) { // if msg chat is a group
+			if (!this.access.groups) return 'block'
+
+			// to do: add admins check
+			// const admins = group.members.map((m) => m.admin && m.id)
+			// // all group admins id
+
+			// if (cmd.access.admin && (!admins.includes(user.chat) && !isDev)) {
+			// 	return 'prohibited' // Devs can use admin cmds for security reasons
+			// }
+		} else if (!this.access.dm) return 'block'
+		// if there's no group and cmd can't run on DM
+
+		return true
+	}
 }
