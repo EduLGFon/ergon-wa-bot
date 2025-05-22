@@ -60,11 +60,13 @@ export default async function (msg: Message) {
 		user.delay += cooldown
 		const timeout = user.delay - now
 
-		await msg.reply(
-			`[🕓] - Tá com pressa? Você foi taxado em *${
-				timeout.duration(true)
-			}*, espera um pouquinho aí`,
-		)
+		if (user.delay - Date.now() < 10_000) {
+			await msg.reply(
+				`[🕓] - Tá com pressa? Você foi taxado em *${
+					timeout.duration(true)
+				}*, espera um pouquinho aí`,
+			)
+		}
 		// warns user about cooldown
 
 		await delay(timeout)

@@ -29,12 +29,12 @@ export default class extends Cmd {
 		// 	args.shift()
 		// }
 
-		const file = await getMedia(msg, startTyping) // download msg media or quoted msg media
+		await startTyping()
+		const file = await getMedia(msg) // download msg media or quoted msg media
 
 		const streamMsg = { // Workaround to make the variable always point to
 			msg: {}, // this memory space
 		} as { msg: Message }
-		await startTyping()
 		await gemini({
 			model,
 			input: args.join(' '),

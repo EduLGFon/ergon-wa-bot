@@ -6,7 +6,7 @@ export { getMedia, react, send, sendOrEdit, startTyping }
 
 // download media from message or quoted message
 // if there's no media, return undefined
-async function getMedia(msg: Message, startTyping?: Func, sendRecording: bool = false) {
+async function getMedia(msg: Message, startTyping?: Func, sendRecording?: bool) {
 	const target = msg.hasMedia ? msg : (msg.hasQuotedMsg ? await msg.getQuotedMessage() : null)
 
 	if (!target || !target.hasMedia) return

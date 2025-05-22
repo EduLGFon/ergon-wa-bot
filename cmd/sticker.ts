@@ -1,5 +1,5 @@
-import { now, toBase64 } from 'util/functions.ts'
-import { crop } from 'plugin/manipulation.ts'
+import { now, randomDelay, toBase64 } from 'util/functions.ts'
+// import { crop } from 'plugin/manipulation.ts'
 import { getMedia } from 'util/message.ts'
 import { Buffer } from 'node:buffer'
 import { run } from 'util/proto.ts'
@@ -11,13 +11,14 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['sexo', 's'],
-			cooldown: 4_000,
+			cooldown: 5_000,
 			// subCmds: [''],
 		})
 	}
 
 	async run({ msg, user, send, startTyping }: CmdCtx) {
 		const media = await getMedia(msg, startTyping) // download msg media or quoted msg media
+		await randomDelay()
 		if (!media) return msg.reply('Mídia não encontrada')
 		const { mime, data, target } = media
 
@@ -33,15 +34,15 @@ export default class extends Cmd {
 		const rawMedia = new MessageMedia(mime, data)
 
 		const msgtypeWays = {
-			async image() {
-				const buffer = Buffer.from(data, 'base64')
-				const cropped = await crop(buffer)
+			image() {
+				// const buffer = Buffer.from(data, 'base64')
+				// const cropped = await crop(buffer)
 
-				const croppedMedia = new MessageMedia(
-					media.mime,
-					toBase64(cropped),
-				)
-				await send(croppedMedia, msgConf)
+				// const croppedMedia = new MessageMedia(
+				// 	media.mime,
+				// 	toBase64(cropped),
+				// )
+				// await send(croppedMedia, msgConf)
 				return
 			},
 			async video() {

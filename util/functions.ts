@@ -4,7 +4,12 @@ import { DateTime } from 'luxon'
 import User from 'class/user.ts'
 import db from 'plugin/db.ts'
 
-export { createMemories, delay, now, toBase64 }
+export { createMemories, delay, now, randomDelay, toBase64 }
+
+async function randomDelay() {
+	const timeout = 2 + Math.floor(Math.random() * 5)
+	return await delay(timeout * 1000)
+}
 
 function toBase64(buffer: Uint8Array) {
 	return Buffer.from(buffer).toString('base64')
