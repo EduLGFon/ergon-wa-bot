@@ -1,4 +1,4 @@
-import { api, Cmd, CmdCtx, gemini } from '../../map.js'
+import { Cmd, CmdCtx, defaults, gemini } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
@@ -11,7 +11,7 @@ export default class extends Cmd {
 
 	async run({ bot, msg, args, user, sendUsage }: CmdCtx) {
 		if (!args[0]) return sendUsage()
-		let model = api.aiModel.gemini // gemini flash model
+		let model = defaults.ai.gemini // gemini flash model
 
 		if (args[0] === this.subCmds[1]) {
 			user.geminiCtx = [] // reset user ctx/conversation history
@@ -21,7 +21,7 @@ export default class extends Cmd {
 
 		if (args[0] === this.subCmds[0]) { // use gemini pro model
 			if (!args[1]) return sendUsage() // if there is no prompt
-			model = api.aiModel.geminiPro
+			model = defaults.ai.gemini_pro
 			args.shift() // remove 'pro' from prompt
 		}
 

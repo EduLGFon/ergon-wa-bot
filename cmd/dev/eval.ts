@@ -1,4 +1,4 @@
-import { cleanTemp, Cmd, CmdCtx, delay, isEmpty, Lang, prisma, runCode, runner } from '../../map.js'
+import { Cmd, CmdCtx, defaults, delay, isEmpty, Lang, prisma, runCode } from '../../map.js'
 import { inspect } from 'node:util'
 import baileys from 'baileys'
 
@@ -13,7 +13,7 @@ export default class extends Cmd {
 
 	async run(ctx: CmdCtx) {
 		const { args, bot, msg, user, group, cmd, t, sendUsage } = ctx
-		const langs = Object.keys(runner)
+		const langs = Object.keys(defaults.runner)
 		// all supported programming languages
 
 		// Language to be runned

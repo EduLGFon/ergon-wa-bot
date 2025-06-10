@@ -1,4 +1,4 @@
-import { api, Baileys, gemini, prisma, User } from '../map.js'
+import { Baileys, defaults, gemini, prisma, User } from '../map.js'
 
 export default function reminder(bot: Baileys) {
 	if (!process.env.DATABASE_URL) return
@@ -42,7 +42,7 @@ async function sendReminders(bot: Baileys, r: Reminder) {
 	const aiMsg = await gemini({
 		prompt:
 			`Create a humorous message to notify a WhatsApp user of a reminder in ${lang}. Just respond with the reminder. Reminder: ${r.msg}`,
-		model: api.aiModel.gemini,
+		model: defaults.ai.gemini,
 	}).catch(() => {})
 
 	text += aiMsg?.text ? `, ${aiMsg.text}` : ''

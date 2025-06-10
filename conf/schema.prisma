@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id      Int     @id @default(autoincrement())
+  phone   String  @db.VarChar(15) @unique
+  name    String  @db.VarChar()
+  lang    String  @db.VarChar(2)
+  prefix  String  @db.VarChar(3)
+  cmds    Int     @default(0)
+}
+
+model msgs {
+  author  Int
+  group   String  @db.VarChar(35)
+  count   Int     @default(1)
+
+  @@id([author, group])
+}
+
+model reminders {
+  id       Int      @id @default(autoincrement())
+  author   Int
+  chat     String   @db.VarChar(35)
+  msg      String   @db.VarChar(100)
+  remindAt String
+  isDone   Boolean  @default(false)
+}

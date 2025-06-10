@@ -6,7 +6,6 @@
 			"logLanguage": "pt"
 		}
 	},
-
 	"db": {
 		"user": {
 			"prefix": ".",
@@ -18,15 +17,13 @@
 			"msgsLimit": 200
 		}
 	},
-
 	"api": {
 		"aiModel": {
 			"gpt": "gpt-3.5-turbo",
 			"gemini": "gemini-2.0-flash",
-			"geminiPro": "gemini-1.5-pro"
+			"geminiPro": "gemini-2.5-pro-exp-03-25"
 		}
 	},
-
 	"sticker": {
 		"packName": [
 			"꒷︶꒷꒦ Sticker ꒷꒦︶꒷",
@@ -49,35 +46,49 @@
 			"︰{group}"
 		]
 	},
-
 	"runner": {
-		"tempFolder": "settings/temp",
+		"tempFolder": "conf/temp",
 		"py": {
-			"cmd": ["settings/venv/bin/python3"],
+			"cmd": [
+				"conf/venv/bin/python3"
+			],
 			"ext": "py"
 		},
 		"lua": {
-			"cmd": ["luajit"],
+			"cmd": [
+				"luajit"
+			],
 			"ext": "lua"
 		},
 		"node": {
-			"cmd": ["node"],
+			"cmd": [
+				"node"
+			],
 			"ext": "js"
 		},
 		"deno": {
-			"cmd": ["deno run -A"],
+			"cmd": [
+				"deno run -A"
+			],
 			"ext": "ts"
 		},
 		"bun": {
-			"cmd": ["bun run"],
+			"cmd": [
+				"bun run"
+			],
 			"ext": "ts"
 		},
 		"zsh": {
-			"cmd": ["zsh"],
+			"cmd": [
+				"zsh"
+			],
 			"ext": "sh"
 		},
 		"cpp": {
-			"cmd": ["g++ -o settings/temp/main ", "./settings/temp/main #"],
+			"cmd": [
+				"g++ -o conf/temp/main ",
+				"./conf/temp/main #"
+			],
 			"ext": "cpp"
 		}
 	}

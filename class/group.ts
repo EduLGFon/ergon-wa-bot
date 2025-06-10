@@ -1,13 +1,13 @@
-import { Baileys, Collection, db, Msg, prisma } from '../map.js'
+import { Baileys, Collection, defaults, Msg, prisma } from '../map.js'
 import { GroupMetadata, GroupParticipant } from 'baileys'
 
 export default class Group {
 	id: str
 	owner?: str
 	name: str
-	// nameTimestamp?: num;
+	nameTimestamp?: num
 	// group name modification date
-	// creation?: num;
+	creation?: num
 	desc?: str
 	restrict?: bool
 	// restrict: is set when group only allows admins to change group settings
@@ -28,8 +28,9 @@ export default class Group {
 		// @ts-ignore Shut up TypeScript
 		this.name = data.subject || data.name
 		// this.owner = g.owner
-		// this.nameTimestamp = g.subjectTime;
-		// this.creation = g.creation;
+		//@ts-ignore
+		this.nameTimestamp = data?.subjectTime || data?.nameTimestamp
+		this.creation = data.creation
 		// this.desc = g.desc
 		this.restrict = data.restrict
 		this.announce = data.announce
@@ -40,7 +41,7 @@ export default class Group {
 		// @ts-ignore
 		this.invite = data.inviteCode || data.invite
 		this.author = data.author
-		this.msgs = new Collection(db.group.msgsLimit)
+		this.msgs = new Collection(defaults.cache.groupMsgs)
 
 		// @ts-ignore
 		this.msgs.iterate(data?.msgs)

@@ -1,4 +1,4 @@
-import { Collection, db, Msg, prisma } from '../map.js'
+import { Collection, defaults, Msg, prisma } from '../map.js'
 import { Content } from '@google/generative-ai'
 
 export default class User {
@@ -25,13 +25,13 @@ export default class User {
 
 		this._name = data._name || 'name'
 		this._cmdsCount = data._cmdsCount || 0
-		this._prefix = data._prefix || db.user.prefix
-		this._lang = data._lang || db.user.language
+		this._prefix = data._prefix || defaults.prefix
+		this._lang = data._lang || defaults.lang
 
 		this.lastCmd = data.lastCmd || { delay: 0 }
 		this.geminiCtx = data.geminiCtx || []
 		this.grok = data.grok || []
-		this.msgs = new Collection(db.user.msgsLimit)
+		this.msgs = new Collection(defaults.cache.dmMsgs)
 
 		this.msgs.iterate(data?.msgs)
 	}

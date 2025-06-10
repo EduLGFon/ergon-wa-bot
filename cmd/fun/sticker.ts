@@ -1,13 +1,13 @@
 import {
 	Cmd,
 	CmdCtx,
-	delay,
 	genStickerMeta,
 	isVisualNonSticker,
 	makeTempFile,
 	Msg,
 	runCode,
 } from '../../map.js'
+import { randomDelay } from '../../util/functions.js'
 import { Sticker } from 'wa-sticker-formatter'
 import { readFile } from 'node:fs/promises'
 
@@ -21,27 +21,12 @@ export default class extends Cmd {
 
 	async run({ msg, bot, args, user, group, sendUsage, t }: CmdCtx) {
 		const isValid = isVisualNonSticker
-		// if (!user.warns.find((i) => i === 'MS')) {
-		// 	await bot.send(
-		// 		msg,
-		// 		'[💡] Agora você pode fazer figurinhas de várias imagens enviando ".s" depois delas.',
-		// 	)
-		// 	user.warns.push('MS')
-		// }
 
 		let target = isValid(msg.type) ? msg : (isValid(msg?.quoted?.type) ? msg.quoted : null)
 		// target = user msg or user quoted msg
 
-		if (target) {
-			await bot.react(msg, 'loading')
-			await createSticker(target, this.subCmds)
-			await delay(1_000)
-			await bot.react(msg, 'ok')
-			return /* Why so many 'awaits'?
-			* .s is the most used command and sometimes causes rate limit.
-			* So, waiting for each task helps to have less problems.
-			*/
-		}
+
+		if (target) return await createSticker(target, this.subCmds)
 
 		// this logic will create a sticker for each media sent by
 		// the user until a msg is not from them
@@ -59,9 +44,7 @@ export default class extends Cmd {
 
 		for (const m of validMsgs) {
 			await createSticker(m, this.subCmds)
-			await delay(2000)
 		}
-		await bot.react(msg, 'ok')
 
 		async function createSticker(target: Msg, subCmds: str[]) {
 			// choose between msg media or quoted msg media
@@ -80,7 +63,7 @@ export default class extends Cmd {
 
 			switch (target.type) {
 				case 'video':
-					quality = 10 // videos needs to be more compressed
+					quality = 25 // videos needs to be more compressed
 					// but compress a video too much can cause some glitches on video
 					break
 				case 'image':
@@ -98,6 +81,8 @@ export default class extends Cmd {
 			}
 
 			for (const type of stickerTypes) {
+				await randomDelay()
+
 				const metadata = new Sticker(buffer!, { // create sticker metadata
 					...genStickerMeta(user, group), // sticker author and pack
 					type,

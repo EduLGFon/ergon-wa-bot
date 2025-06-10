@@ -21,7 +21,7 @@ export default class extends Cmd {
 			type = 'audio'
 		}
 
-		const cliArgs = ['--cookies', 'settings/cookies.txt']
+		const cliArgs = ['--cookies', 'conf/cookies.txt']
 
 		const data: {
 			fileName: str
@@ -45,13 +45,13 @@ export default class extends Cmd {
 			data.mimetype = 'audio/mpeg'
 		}
 
-		const path = `settings/temp/${data.fileName}`
+		const path = `conf/temp/${data.fileName}`
 		cliArgs.push(`-o ${path}`)
 
 		try {
 			await bot.react(msg, 'loading')
 
-			await runCode('zsh', `settings/venv/bin/yt-dlp ${cliArgs.join(' ')} "${args[0]}"`)
+			await runCode('zsh', `conf/venv/bin/yt-dlp ${cliArgs.join(' ')} "${args[0]}"`)
 
 			data[type] = readFileSync(path)
 

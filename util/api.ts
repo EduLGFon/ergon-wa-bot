@@ -1,5 +1,5 @@
 import { FileMetadataResponse, FileState, GoogleAIFileManager } from '@google/generative-ai/server'
-import { api, delay, makeTempFile, User } from '../map.js'
+import { defaults, delay, makeTempFile, User } from '../map.js'
 import {
 	GenerateContentResult,
 	GoogleGenerativeAI,
@@ -20,9 +20,8 @@ async function gemini(
 	let file: FileMetadataResponse // Prompt file
 	let result: GenerateContentResult // AI Result
 
-	// The Gemini 1.5 models are versatile and work with both text-only and multimodal prompts
 	const gemini = genAI.getGenerativeModel({
-		model: model || api.aiModel.gemini,
+		model: model || defaults.ai.gemini,
 		safetySettings: [{ // won't block any potential dangerous content
 			category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
 			threshold: HarmBlockThreshold.BLOCK_NONE,

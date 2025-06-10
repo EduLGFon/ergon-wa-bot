@@ -6,10 +6,8 @@ import baileys, {
 	downloadMediaMessage,
 	// fetchLatestBaileysVersion,
 	makeCacheableSignalKeyStore,
-	makeInMemoryStore,
 	makeWASocket,
 	useMultiFileAuthState,
-	WAMessageKey,
 	type WASocket,
 } from 'baileys'
 import { readdirSync } from 'node:fs'
@@ -20,13 +18,11 @@ export default class Baileys {
 
 	// Cache (Stored data)
 	cache: CacheManager
-	store: ReturnType<typeof makeInMemoryStore>
 
 	constructor(public auth: str, public logger: Logger) {
 		this.auth = auth // auth folder
 		this.logger = logger
 
-		this.store = makeInMemoryStore({ logger })
 		this.cache = new CacheManager(this)
 	}
 
@@ -35,7 +31,7 @@ export default class Baileys {
 		// const { version } = await fetchLatestBaileysVersion()
 		/** WA is showing fake versions to ban bots. DO NOT UNCOMMENT IT */
 
-		const version: [num, num, num] = [2, 3000, 1019707846]
+		const version: [num, num, num] = [2, 3000, 1023223821]
 		// This version is secure
 		print('NET', `Connecting to WA v${version.join('.')}`, 'green')
 
@@ -51,16 +47,13 @@ export default class Baileys {
 			logger: this.logger,
 			version,
 			syncFullHistory: false,
-			printQRInTerminal: true,
 			markOnlineOnConnect: false,
 			browser: Browsers.macOS('Desktop'),
 			// ignore status updates
 			shouldIgnoreJid: (jid: str) =>
 				jid?.includes('broadcast') || jid?.includes('newsletter') ||
 				jid?.includes('13135550002@s.whatsapp.net'),
-			// getMessage: this.getMsg.bind(this), // get stored msgs to resent failed ones
 		})
-		this.store?.bind(this.sock.ev)
 
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
@@ -151,16 +144,6 @@ export default class Baileys {
 			this.cache.groups.add(group.id, group)
 			return group
 		}
-	}
-
-	// getMsgs: get sent msgs to prevent msg failure
-	async getMsg(key: WAMessageKey): Promise<baileys.proto.IMessage | undefined> {
-		if (this.store) {
-			const msg = await this.store.loadMessage(key.remoteJid!, key.id!)
-			return msg?.message || undefined
-		}
-
-		return baileys.proto.Message.fromObject({})
 	}
 
 	async downloadMedia(msg: Msg) {

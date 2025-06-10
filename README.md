@@ -37,8 +37,8 @@
 
 - [PostgreSQL 🐘](https://www.postgresql.org/download/) (For database)
 
-> 🪧 » _Recommended version: 16 or higher_
-> Some cmds may require a database to work (e.g. rank/remind) or to set language/prefix permanently. but WALL-E works ok with no db.
+> 🪧 » _Recommended version: 16 or higher_ Some cmds may require a database to work (e.g.
+> rank/remind) or to set language/prefix permanently. but WALL-E works ok with no db.
 
 - FFMPEG (For gif stickers)
 
@@ -80,41 +80,40 @@ git clone https://github.com/Sunf3r/WALL-E # You need to have git installed to r
 
 You can configure the bot however you want in the following files:
 
-- `settings.json` (`settings/settings.json`)
+- `conf.json` (`conf/defaults.json`)
 
 ```json
 {
-	"bot": {
-		"link": "dsc.gg/wallebot", // support channel link
-		"region": {
-			"timezone": "America/Sao_Paulo",
-			"logLanguage": "pt"
-		}
+	"database_url": "postgresql://role:password@host:port/db",
+	"lang": "pt",
+	"prefix": ".",
+	"timezone": "America/Sao_Paulo",
+	"devs": [
+		"developer 1 phone number",
+		"without + and ()",
+		"only numbers"
+	],
+	"ai": {
+		"gemini_key": "get a key on https://aistudio.google.com/app/apikey",
+		"gemini": "gemini-2.0-flash",
+		"gemini2": "gemini-2.0-flash",
+		"gemini2_lite": "gemini-2.0-flash-lite",
+		"gemini25": "gemini-2.5-flash-preview-04-17",
+		"gemini_pro": "gemini-2.5-pro-preview-05-06"
 	},
-
-	"sticker": {
-		"packName": ["pack", "name"], // sticker pack name
-		"author": ["wall-e", "sticker maker"] // sticker author name
-	},
-
-	"db": {
-		"user": {
-			"prefix": ".", // default prefix to new users
-			"language": "pt", // default language to new users
-			"cacheLimit": 500, // max users in memory
-			"msgsLimit": 200 // max msgs in memory (per user)
-		},
-		"group": {
-			"msgsLimit": 200 // max msgs in memory (per group)
-		}
+	"cache": {
+		"users": 200,
+		"groups": 200,
+		"dmMsgs": 10,
+		"groupMsgs": 200
 	}
 }
 ```
 
-- `.env` (`settings/.env.example`)
+- `.env` (`conf/.env.example`)
 
-> 💡 » _Set sensitive keys and rename "`.env.example`" to "`.env`"_.
-> if you have a database, remove the # before DATABASE_URL and fill the URL.
+> 💡 » _Set sensitive keys and rename "`.env.example`" to "`.env`"_. if you have a database, remove
+> the # before DATABASE_URL and fill the URL.
 
 ### `3 -` 🧰 Installing dependencies and starting 🚀:
 
@@ -149,7 +148,7 @@ npm start
 
 ## Just scan the QR Code that will appear on terminal and then it's ready!
 
-> ⚠️ » All logs and QR codes will appear on `settings/logs/output.txt`.
+> ⚠️ » All logs and QR codes will appear on `conf/log/out`.
 
 # `-1.` 🗒️ Important Notes:
 

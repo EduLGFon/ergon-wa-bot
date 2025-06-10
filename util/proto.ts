@@ -2,15 +2,15 @@ import humanizeDuration, { Unit } from 'humanize-duration'
 import { DateTime, Duration } from 'luxon'
 import { inspect } from 'node:util'
 import { getFixedT } from 'i18next'
-import { bot } from '../map.js'
+import { defaults } from '../map.js'
 import chalk from 'chalk'
 import pino from 'pino'
 
 // get 'now' date time formatted
 const now = (format = 'TT') =>
 	DateTime.now()
-		.setZone(bot.region.timezone)
-		.setLocale(bot.region.logLanguage)
+		.setZone(defaults.timezone)
+		.setLocale(defaults.lang)
 		.toFormat(format) // TT = HOURS:MINITES:SECONDS
 
 export { now }

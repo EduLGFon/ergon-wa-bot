@@ -42,20 +42,19 @@ export default class CacheManager {
 	}
 
 	async save() {
-		if (!existsSync('settings/cache')) await mkdir('settings/cache')
-		// await Deno.mkdir('settings/cache'))
+		if (!existsSync('conf/cache')) await mkdir('conf/cache')
 
 		for (const category of cachedData) {
 			const collection = this[category as 'cmds']
 			const str = JSON.stringify(collection.toJSON()) // converts data to String
-			await writeFile(`settings/cache/${category}.json`, str) // write cache
+			await writeFile(`conf/cache/${category}.json`, str) // write cache
 		}
 		return
 	}
 
 	async resume() {
 		for (const category of cachedData) {
-			const cache = await readFile(`settings/cache/${category}.json`, { encoding: 'utf8' })
+			const cache = await readFile(`conf/cache/${category}.json`, { encoding: 'utf8' })
 				.catch(() => {})
 			// read file
 

@@ -1,14 +1,15 @@
 # Settings
-**/auth*
-cache/
+auth
+venv
+cache
 *.env
-test/
-settings/venv/*
+test
 cookies.txt
+defaults.json
 
 # Builds
-build/
-node_modules/
+build
+node_modules
 
 # Logs / Lock
 log

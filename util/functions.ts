@@ -1,6 +1,24 @@
-import { Baileys, bot, Group, runner, sticker, User } from '../map.js'
+import { Baileys, defaults, Group, User } from '../map.js'
 import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises'
 import { now } from './proto.js'
+
+export {
+	cacheAllGroups,
+	cleanTemp,
+	delay,
+	findKey,
+	genRandomName,
+	genStickerMeta,
+	isEmpty,
+	isValidPositiveIntenger,
+	makeTempFile,
+	randomDelay
+}
+
+async function randomDelay() {
+	const time = 2_000 + Math.floor(Math.random() * 3_000)
+	return delay(time)
+}
 
 // Delay: make the code wait for some time
 async function delay(time: num) { // resolve promise at timeout
@@ -26,13 +44,12 @@ async function cacheAllGroups(bot: Baileys) {
 // genStickerMeta: Generate the author/pack for a sticker
 function genStickerMeta(user: User, group?: Group) {
 	return {
-		pack: sticker.packName.join('\n'),
-
-		author: sticker.author.join('\n')
-			.replace('{username}', user.name) // replace placeholders with
-			.replace('{link}', bot.link) // useful infos
-			.replace('{date}', now('D'))
-			.replace('{group}', group?.name || 'Not a group'),
+		author: '',
+		pack: `=== Ergon Bot ===\n` +
+			`[👑] Autor: ${user.name}\n` +
+			`[📅] Data: ${now('D')}\n` +
+			// `[☃️] Dev: Edu\n` +
+			`[❓] Suporte: dsc.gg/ergon`,
 	}
 }
 
@@ -97,7 +114,7 @@ function genRandomName(length: num = 20, prefix = '', suffix = ''): str {
 // makeTempFile: Write a temporary file
 async function makeTempFile(content: Buf | str, preffix?: str, suffix?: str) {
 	const fileName = genRandomName(20, preffix, suffix) // generate random name
-	const path = `${runner.tempFolder}/${fileName}`
+	const path = `${defaults.runner.tempFolder}/${fileName}`
 
 	await writeFile(path, content) // create file
 
@@ -106,25 +123,14 @@ async function makeTempFile(content: Buf | str, preffix?: str, suffix?: str) {
 
 // cleanTemp: Clean temp folder
 async function cleanTemp() {
-	await mkdir(runner.tempFolder).catch(() => {})
+	const temp = defaults.runner.tempFolder
+	await mkdir(temp).catch(() => { })
 	// create temp folder if it does not exists
 
-	const files = await readdir(runner.tempFolder) // read folder
+	const files = await readdir(temp) // read folder
 
-	files.forEach((f) => unlink(`${runner.tempFolder}/${f}`))
+	files.forEach((f) => unlink(`${temp}/${f}`))
 	// delete all files on it
 
 	return
-}
-
-export {
-	cacheAllGroups,
-	cleanTemp,
-	delay,
-	findKey,
-	genRandomName,
-	genStickerMeta,
-	isEmpty,
-	isValidPositiveIntenger,
-	makeTempFile,
 }

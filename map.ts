@@ -15,7 +15,7 @@ import {
 	mediaTypes,
 	textTypes,
 	visualTypes,
-} from './settings/types/msgs.js'
+} from './conf/types/msgs.js'
 import type {
 	aiPrompt,
 	CmdCtx,
@@ -25,7 +25,7 @@ import type {
 	MediaMsg,
 	Msg,
 	MsgTypes,
-} from './settings/types/types.js'
+} from './conf/types/types.js'
 
 export {
 	aiPrompt,
@@ -48,11 +48,10 @@ export {
 }
 
 // Config files
-import settings from './settings/settings.json' with { type: 'json' }
+import defaults from './conf/defaults.json' with { type: 'json' }
 import emojis from './util/emojis.js'
-const { bot, db, runner, sticker, api } = settings
 
-export { api, bot, db, emojis, runner, sticker }
+export { defaults, emojis }
 
 // Classes
 import Collection from './class/collection.js'

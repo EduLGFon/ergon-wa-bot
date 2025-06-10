@@ -1,4 +1,4 @@
-import settings from '../settings/settings.json' with { type: 'json' }
+import defaults from '../conf/defaults.json' with { type: 'json' }
 import { execSync } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 
@@ -13,11 +13,11 @@ export default async function runCode(lang: langs, code = '', file: str = '') {
 		if (file) {
 			lang = file.split('.')[1] as langs // get file extension
 
-			data = settings.runner[lang] // get language instruction
+			data = defaults.runner[lang] // get language instruction
 		} else {
-			data = settings.runner[lang]
+			data = defaults.runner[lang]
 
-			file = `${settings.runner.tempFolder}/exec.${data.ext}` // file path
+			file = `${defaults.runner.tempFolder}/exec.${data.ext}` // file path
 			await writeFile(file, code) // write file
 			code = ''
 			// don't write code in CLI to prevent issues

@@ -1,5 +1,6 @@
-import { type ConnectionState, DisconnectReason } from 'baileys'
 import { Baileys, cacheAllGroups, Collection, delay } from '../../map.js'
+import { type ConnectionState, DisconnectReason } from 'baileys'
+import QRCode from 'qrcode'
 
 // Keep last 5 logins DateTime
 const lastLogins = new Collection<num, num>(5)
@@ -9,6 +10,10 @@ export default async function (bot: Baileys, event: Partial<ConnectionState>) {
 	const disconnection = event.lastDisconnect?.error as any
 	const exitCode = disconnection?.output?.statusCode
 	// disconnection code
+
+	if (event.qr) {
+		console.log(await QRCode.toString(event.qr, { type: 'terminal' }))
+	}
 
 	switch (event.connection) {
 		case 'open': // bot started
