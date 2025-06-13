@@ -1,9 +1,9 @@
-import { Baileys } from '../../map.js'
 import { GroupMetadata } from 'baileys'
 import cache from '../../plugin/cache.js'
+import bot from '../../wa.js'
 
 // group update event
-export default async function (bot: Baileys, groups: Partial<GroupMetadata>[]) {
+export default async function (groups: Partial<GroupMetadata>[]) {
 	for (const g of groups) {
 		if (!g.id) continue
 

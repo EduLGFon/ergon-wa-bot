@@ -1,11 +1,11 @@
 import { ParticipantAction } from 'baileys'
-import { Baileys } from '../../map.js'
+import bot from '../../wa.js'
 
 /** group-participants.update:
  * This event will update members cache when a group member
  * is promoted or demoted on a group.
  */
-export default async function (bot: Baileys, groupEvent: Event) {
+export default async function (groupEvent: Event) {
 	if (!['promote', 'demote'].includes(groupEvent.action)) return
 	const group = await bot.getGroup(groupEvent.id)
 

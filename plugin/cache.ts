@@ -58,7 +58,7 @@ class CacheManager {
 			}
 
 			const cache = await readFile(`conf/cache/${category}.json`, { encoding: 'utf8' })
-				.catch(() => {})
+				.catch(() => { })
 			// read file
 
 			if (!cache) {
@@ -71,9 +71,9 @@ class CacheManager {
 			for (const [k, v] of Object.entries(json)) {
 				const place = this[category as 'groups']
 				// @ts-ignore
-				const value = await new place.base!(v).checkData(this.bot)
+				// const value = await new place.base!(v).checkData(this.bot)
 
-				place.set(k, value)
+				// place.set(k, value)
 				// save it
 			}
 			print('CACHE', `${category} cache resumed`, 'blue')
@@ -83,5 +83,5 @@ class CacheManager {
 }
 
 const cache = new CacheManager()
-cache.resume()
+// cache.resume()
 export default cache

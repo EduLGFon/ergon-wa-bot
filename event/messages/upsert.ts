@@ -1,11 +1,12 @@
-import { Baileys, checkPermissions, CmdCtx, delay, getCtx } from '../../map.js'
 import { deleteMessage, react, send, startTyping } from '../../util/messages.js'
+import { checkPermissions, CmdCtx, delay, getCtx } from '../../map.js'
 import cache from '../../plugin/cache.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
+import bot from '../../wa.js'
 
 // messages upsert event
-export default async function (bot: Baileys, raw: { messages: proto.IWebMessageInfo[] }, e: str) {
+export default async function (raw: { messages: proto.IWebMessageInfo[] }, e: str) {
 	// raw.messages = []
 
 	// sometimes you can receive more then 1 message per trigger, so use for
