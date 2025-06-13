@@ -16,23 +16,23 @@ class CacheManager {
 	cmds: Collection<str, Cmd>
 	wait: Collection<str, Func>
 	users: Collection<num, User>
-	events: Collection<str, Func>
-	groups: Collection<str, Group>
-	timeouts: Collection<str, NodeJS.Timeout>
+	events: Map<str, Func>
+	groups: Map<str, Group>
+	timeouts: Map<str, NodeJS.Timeout>
 
 	constructor() {
 		// wait: arbitrary functions that can be called on events
 		this.wait = new Collection(0)
 		// Events collection (0 means no limit)
-		this.events = new Collection(0, null, 'name')
+		this.events = new Map()
 		// Cmds collection
-		this.cmds = new Collection(0, Cmd, 'name')
+		this.cmds = new Collection(0, 'name')
 		// Users collection
-		this.users = new Collection(100, User)
+		this.users = new Collection(100)
 		// Groups collection
-		this.groups = new Collection(500, Group)
+		this.groups = new Map()
 		// Timeouts
-		this.timeouts = new Collection(0)
+		this.timeouts = new Map()
 	}
 
 	async save() {
@@ -73,7 +73,7 @@ class CacheManager {
 				// @ts-ignore
 				const value = await new place.base!(v).checkData(this.bot)
 
-				place.add(k, value)
+				place.set(k, value)
 				// save it
 			}
 			print('CACHE', `${category} cache resumed`, 'blue')

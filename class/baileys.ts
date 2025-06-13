@@ -94,10 +94,10 @@ export default class Baileys {
 		if (group) return group
 		else {
 			// fetch group metadata
-			group = await this.sock.groupMetadata(id)
+			const data = await this.sock.groupMetadata(id)
 
-			group = await new Group(group).checkData(this)
-			cache.groups.add(group.id, group)
+			group = await new Group(data).checkData(this)
+			cache.groups.set(group.id, group)
 			return group
 		}
 	}

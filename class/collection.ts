@@ -1,13 +1,11 @@
 export default class Collection<K, V> extends Map {
 	primaryKey: str
 	limit: num
-	base?: FunctionConstructor
 
-	constructor(limit?: num, base?: any, PK = 'id') {
+	constructor(limit?: num, PK = 'id') {
 		super()
 		this.primaryKey = PK
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
-		this.base = base
 	}
 
 	// Add: adds a value to the collection
@@ -25,19 +23,6 @@ export default class Collection<K, V> extends Map {
 			value = Object.assign(value, existing)
 		}
 
-		// if (this.base) {
-		// 	value = (value instanceof this.base ||
-		// 			value?.constructor?.name === this.base.name)
-		// 		? value
-		// 		// @ts-ignore
-		// 		: new this.base(key, value, ...extra)
-
-		// 	try {
-		// 		// @ts-ignore check item data automaticaly
-		// 		value = await value.checkData()
-		// 	} catch {}
-		// }
-
 		this.set(key, value as V)
 
 		if (this.limit && this.size > this.limit) {
@@ -48,19 +33,6 @@ export default class Collection<K, V> extends Map {
 		}
 
 		return value as V
-	}
-
-	// Update: updates a item in the collection
-	async update(key: K, value: V, extra?: any[]): Promise<V> {
-		if (!key) throw new Error('Missing object key')
-
-		const item = this.get(key)
-		if (!item) return await this.add(key, value, extra)
-
-		value = Object.assign(item, value)
-		this.set(key, value)
-
-		return item
 	}
 
 	// Filter: same as Array#filter
@@ -92,35 +64,6 @@ export default class Collection<K, V> extends Map {
 		return arr
 	}
 
-	// Random: returns a random item of the Map
-	random(): V {
-		const index = Math.floor(Math.random() * this.size)
-		const iter = this.values()
-
-		for (let c = 0; c < index; ++c) iter.next()
-
-		return iter.next().value
-	}
-
-	// Every: Returns true if all items pass in the check
-	// Returns false if one item does not pass in the function
-	every(func: (item: V) => bool): bool {
-		for (const item of this.values()) {
-			if (!func(item)) return false
-		}
-
-		return true
-	}
-
-	// Some: Returns true if some item passes in the function
-	some(func: (item: V) => any): bool {
-		for (const item of this.values()) {
-			if (func(item)) return true
-		}
-
-		return false
-	}
-
 	// Reduce: same as Array#reduce
 	reduce(func: (preValue: V, nextValue: V) => V, initialValue = 0): any {
 		const items = this.values()
@@ -132,16 +75,6 @@ export default class Collection<K, V> extends Map {
 		}
 
 		return previous
-	}
-
-	// Remove: what do you think this method does?
-	remove(id: K): V | null {
-		const item = this.get(id)
-		if (!item) return null
-
-		this.delete(id)
-
-		return item
 	}
 
 	// Reverse: reverse items on a array

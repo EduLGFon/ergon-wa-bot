@@ -33,7 +33,7 @@ async function cacheAllGroups(bot: Baileys) {
 	groups.forEach(async (g) => {
 		const group = await new Group(groupList[g]).checkData(bot)
 
-		cache.groups.add(group.id, group)
+		cache.groups.set(group.id, group)
 	})
 
 	print('CACHE', `${groups.length} groups cached`, 'blue')

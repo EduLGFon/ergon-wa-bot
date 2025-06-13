@@ -5,8 +5,6 @@ export default function reminder(bot: Baileys) {
 
 	checkReminders(bot)
 	setInterval(async () => checkReminders(bot), 1_000 * 60)
-
-	print('REMINDER', `checking`, 'gray')
 	return
 }
 
