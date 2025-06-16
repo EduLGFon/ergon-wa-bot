@@ -13,7 +13,7 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 	if (!target || !target.isMedia) return
 	if (startTyping) await startTyping()
 
-	const media = await downloadMediaMessage(msg, 'buffer', {}, {
+	const media = await downloadMediaMessage(target, 'buffer', {}, {
 		reuploadRequest: bot.sock.updateMediaMessage,
 		logger,
 	})

@@ -55,7 +55,7 @@ export default class Baileys {
 		// Use saved session
 		const { state, saveCreds } = await useMultiFileAuthState(this.auth)
 		console.log('Using auth state:', this.auth)
-		
+
 		this.sock = makeWASocket({
 			auth: {
 				creds: state.creds,

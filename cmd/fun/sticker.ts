@@ -19,7 +19,7 @@ export default class extends Cmd {
 		const media = await getMedia(msg)
 
 		// if there is no media or msg type is not visual
-		if (!media || !isVisual(msg.type)) {
+		if (!media || !isVisual(media.target.type)) {
 			// this logic will create a sticker for each media sent by
 			// the user until a msg is not from them
 			const chat = group || cache.users.find((u) => u.phone === msg.chat.parsePhone())!
