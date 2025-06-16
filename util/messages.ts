@@ -3,7 +3,7 @@ import { emojis, getCtx, Msg, msgMeta } from '../map.js'
 import { logger } from './proto.js'
 import bot from '../wa.js'
 
-export { deleteMessage, editMsg, getMedia, react, send, startTyping }
+export { deleteMessage, editMsg, getMedia, react, send, sendOrEdit, startTyping }
 
 async function getMedia(msg: Msg, startTyping?: Func) {
 	const target = msg.isMedia ? msg : msg.quoted
@@ -16,7 +16,10 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 		logger,
 	})
 
-	return media
+	return {
+		data: media,
+		mime: target.mime, // media mimetype like image/png
+	}
 }
 
 async function startTyping(this: str) {
@@ -34,7 +37,7 @@ async function send(this: str, body: str | AnyMessageContent) {
 	) //, quote)
 
 	// convert raw msg on cmd context
-	return await getCtx(msg!, bot)
+	return await getCtx(msg!)
 }
 
 // simple abstraction to react to a msg
@@ -58,4 +61,13 @@ async function deleteMessage(this: Msg | proto.IMessageKey) {
 
 	await send.bind(chat)({ delete: key })
 	return
+}
+
+// sendOrEdit: send a message or edit it if it was already sent
+// this is used to edit the message while the AI is writing
+async function sendOrEdit(data: { msg: Msg }, chat: str, text: str) {
+	if (data.msg?.key?.id) {
+		await editMsg.bind(data.msg)(text).catch((e) => console.log('Failed to edit message', e))
+		// @ts-ignore
+	} else data.msg = await send.bind(chat)(text)
 }

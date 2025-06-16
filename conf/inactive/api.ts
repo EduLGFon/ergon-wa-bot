@@ -85,7 +85,7 @@ async function gemini(
 	 * it also allows to use dynamic initial instructions, so Gemini language
 	 * can be switched as bot user language.
 	 */
-	const chat = gemini.startChat({ history: user.gemini, })
+	const chat = gemini.startChat({ history: user.gemini })
 	result = await chat.sendMessage(prompt)
 
 	user.gemini = await chat.getHistory()

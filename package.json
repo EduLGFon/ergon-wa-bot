@@ -26,13 +26,11 @@
 		"translate": "npx @parvineyvazov/json-translator locale/pt.json -m google -f pt -t en es fr pl"
 	},
 	"dependencies": {
-		"@google/generative-ai": "^0.21.0",
+		"@google/genai": "^1.5.1",
 		"@prisma/client": "^6.9.0",
 		"baileys": "^6.7.18",
 		"chalk": "^5.4.1",
-		"google-sr": "^5.0.0",
 		"google-translate": "github:iamtraction/google-translate",
-		"googlethis": "^1.8.0",
 		"humanize-duration": "^3.33.0",
 		"i18next": "^24.2.3",
 		"i18next-fs-backend": "^2.6.0",

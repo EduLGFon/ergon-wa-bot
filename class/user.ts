@@ -1,6 +1,6 @@
 import { Collection, defaults, Msg, prisma } from '../map.js'
 import { UserSchema } from '../conf/types/types.js'
-import { Content } from '@google/generative-ai'
+import { Content } from '@google/genai'
 
 export default class User {
 	id: num

@@ -32,7 +32,6 @@ export async function connect(auth: str) {
 	// save login creds
 	bot.ev.on('creds.update', saveCreds)
 	return bot
-
 }
 
 export default class Baileys {

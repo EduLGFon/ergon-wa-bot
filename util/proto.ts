@@ -1,6 +1,5 @@
 import humanizeDuration, { Unit } from 'humanize-duration'
 import { DateTime, Duration } from 'luxon'
-import { inspect } from 'node:util'
 import { getFixedT } from 'i18next'
 import { defaults } from '../map.js'
 import chalk from 'chalk'
@@ -25,6 +24,79 @@ const logger = pino.default({
 export { logger, now }
 
 export default () => {
+	strPrototypes() // add string prototypes
+	numPrototypes() // add number prototypes
+	global.print = console.log = print
+
+	return
+}
+
+const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+function print(...anyArgs: any) {
+	if (!anyArgs[2]) return console.info(...anyArgs)
+
+	const args = [...anyArgs]
+	let color = args.pop()
+	const memory = process.memoryUsage().rss.bytes().align(5)
+	if (brightColors.includes(color)) color += 'Bright'
+
+	console.info(chalk.bold[color as 'red'](
+		`[ ${now('TT.SSS')} |${memory}|${args.shift().align(9)}] - ${args.shift()}`,
+		...args,
+	))
+	return
+}
+
+function numPrototypes() {
+	/* Number Prototypes */
+	Object.defineProperties(Number.prototype, {
+		bytes: { // convert bytes to human readable nums
+			value: function () {
+				const types = ['B', 'KB', 'MB', 'GB']
+				let type = 0
+				// deno-lint-ignore no-this-alias
+				let number = this
+
+				while (number / 1024 >= 1) {
+					type++
+					number = number / 1024
+				}
+
+				return number.toFixed() + types[type]
+			},
+		},
+		duration: { // convert ms time in short duration str
+			value: function (ms?: bool) { // 1000 => 1s
+				const units: Unit[] = ['y', 'd', 'h', 'm', 's']
+				if (ms) units.push('ms')
+
+				return humanizeDuration.humanizer({
+					language: 'short',
+					delimiter: ' ',
+					round: true,
+					spacer: '',
+					largest: 2,
+					units,
+					languages: {
+						short: {
+							y: () => 'y',
+							mo: () => 'mo',
+							w: () => 'w',
+							d: () => 'd',
+							h: () => 'h',
+							m: () => 'm',
+							s: () => 's',
+							ms: () => 'ms',
+						},
+					},
+				})(this)
+			},
+		},
+	})
+	return
+}
+
+function strPrototypes() {
 	/* String Prototypes */
 	Object.defineProperties(String.prototype, {
 		// get a URL on a string
@@ -43,7 +115,7 @@ export default () => {
 		},
 		encode: { // encode strings
 			value: function () {
-				return '```\n' + this + '```'
+				return '`\n' + this.replace('`', '\`') + '`'
 			},
 		},
 		parsePhone: { // parse wpp id to phone number
@@ -80,6 +152,7 @@ export default () => {
 			},
 		},
 		align: { // align a word between spaces
+			// famous left padding
 			value: function (limit: num, char: str = ' ', endPosition?: bool) {
 				let ratio = (limit - this.length) / 2
 				if (ratio < 1) ratio = 1
@@ -103,12 +176,15 @@ export default () => {
 						const unit = m.replace(String(quantity), '')
 
 						const duration = Duration.fromObject({
-							years: unit === 'y' ? quantity : undefined,
-							days: unit === 'd' ? quantity : undefined, // Convert 'd' to 'days'
-							hours: unit === 'h' ? quantity : undefined,
-							minutes: unit === 'm' ? quantity : undefined,
-							seconds: unit === 's' ? quantity : undefined,
-							weeks: unit === 'w' ? quantity : undefined,
+							years: unit === 'y' ? quantity : 0,
+							months: unit === 'mo' ? quantity : 0, // Convert 'd' to 'days'
+							days: unit === 'd' ? quantity : 0, // Convert 'd' to 'days'
+							hours: unit === 'h' ? quantity : 0,
+							minutes: unit === 'm' ? quantity : 0,
+							seconds: unit === 's' ? quantity : 0,
+							weeks: unit === 'w' ? quantity : 0,
+							quarters: 0,
+							milliseconds: 0,
 						})
 						return duration.as('milliseconds')
 					})
@@ -118,106 +194,5 @@ export default () => {
 			},
 		},
 	})
-
-	/* Number Prototypes */
-	Object.defineProperties(Number.prototype, {
-		bytes: { // convert bytes to human readable nums
-			value: function (onlyNumbers?: bool) {
-				const types = ['B', 'KB', 'MB', 'GB']
-				let type = 0
-				let number = this
-
-				while (number / 1024 >= 1) {
-					type++
-					number = number / 1024
-				}
-
-				number = number.toFixed()
-
-				// if (number.slice(-2) === '.0') number = number.slice(0, -2);
-
-				return onlyNumbers ? Number(number) : number + types[type]
-			},
-		},
-		duration: { // convert ms time in short duration str
-			value: function (ms?: bool) { // 1000 => 1s
-				const units: Unit[] = ['y', 'd', 'h', 'm', 's']
-				if (ms) units.push('ms')
-
-				return humanizeDuration.humanizer({
-					language: 'short',
-					delimiter: ' ',
-					round: true,
-					spacer: '',
-					largest: 2,
-					units,
-					languages: {
-						short: {
-							y: () => 'y',
-							mo: () => 'mo',
-							w: () => 'w',
-							d: () => 'd',
-							h: () => 'h',
-							m: () => 'm',
-							s: () => 's',
-							ms: () => 'ms',
-						},
-					},
-				})(this)
-			},
-		},
-	})
-
-	/** Console.error:
-	 * It's a error control function
-	 * Only error msgs appears on logs/terminal
-	 * and its stack appears on a specific error file
-	 * That control is handled by pm2. I only
-	 * choose console.error or console.log
-	 */
-	const printError = console.error // error old function
-	console.error = (error: { stack: str; message: str }, title = 'ERROR') => {
-		const msg = error?.message || error
-		console.log(title, msg, 'red') // error msg goes to output file
-
-		const stack = String(error?.stack || error)
-		printError(fmtLog(title, stack, 'red')) // error stack goes to error file
-		return
-	}
-
-	/** Print = Console.log
-	 * Just a print function, but styled. Like you.
-	 */
-	global.print = console.log = (...args) => { // print() === console.log()
-		if (typeof args[0] !== 'string' || !args[2]) {
-			if (typeof args[0] === 'object') return console.info(inspect(args[0], { depth: null }))
-
-			console.info(...args)
-			return // Ignore this shitty code.
-		}
-
-		let [title, msg, color]: str[] = [...args]
-		// Uh but why do I know these arguments will always come this way?
-		// I only code this way. Yea, it's not the best way, but it's definitely a way
-
-		const str = fmtLog(title, msg, color)
-
-		console.info(str)
-		// it prints: [ 18:04:99.069 | 69MB | TITLE ] - msg (colored)
-		return
-	}
-
 	return
-}
-
-function fmtLog(title: str, msg: str, color: str) {
-	const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
-	const memory = process.memoryUsage().rss.bytes() as str
-
-	if (brightColors.includes(color)) color += 'Bright'
-
-	const str = `[ ${now('TT.SSS')} |${memory.align(5)}|${title.align(9)}] - ${msg}`
-	// [ 18:04:99.069 | 69MB | TITLE ] - msg (colored)
-
-	return chalk.bold[color as 'red'](str)
 }

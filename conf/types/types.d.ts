@@ -73,11 +73,11 @@ interface GroupMsg {
 }
 
 type GoogleFile = {
-	data: str
+	data: Buffer
 	mime: str
 }
 type GeminiArgs = {
-	model?: str
+	model?: num
 	input: str
 	user: User
 	chat?: str
@@ -94,18 +94,7 @@ type UserSchema = {
 	lang: str | null
 	prefix: str | null
 	cmds: num | null
-	memories: str
+	memories: str | null
 }
 
-export {
-	aiPrompt,
-	CmdCtx,
-	GeminiArgs,
-	GoogleFile,
-	GroupMsg,
-	Lang,
-	MediaMsg,
-	Msg,
-	MsgTypes,
-	UserSchema,
-}
+export { CmdCtx, GeminiArgs, GoogleFile, GroupMsg, MediaMsg, Msg, MsgTypes, UserSchema }

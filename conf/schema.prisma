@@ -8,12 +8,22 @@ datasource db {
 }
 
 model users {
-  id     Int     @id @default(autoincrement())
-  phone  String  @unique @db.VarChar()
-  name   String? @db.VarChar()
-  lang   String? @db.VarChar()
-  prefix String? @db.VarChar()
-  cmds   Int?
+  id       Int     @id @default(autoincrement())
+  phone    String  @unique @db.VarChar()
+  name     String? @db.VarChar()
+  memories String? @db.VarChar()
+  lang     String? @db.VarChar()
+  prefix   String? @db.VarChar()
+  cmds     Int?
+}
+
+model alarms {
+  id     Int    @id @default(autoincrement())
+  author Int
+  chat   String @db.VarChar()
+  msg    String @db.VarChar(256)
+  time   String @db.VarChar()
+  status Int    @default(0)
 }
 
 model msgs {
@@ -22,13 +32,4 @@ model msgs {
   count  Int    @default(1)
 
   @@id([author, group])
-}
-
-model reminders {
-  id       Int     @id @default(autoincrement())
-  author   Int
-  chat     String  @db.VarChar(35)
-  msg      String  @db.VarChar(100)
-  remindAt String
-  isDone   Boolean @default(false)
 }

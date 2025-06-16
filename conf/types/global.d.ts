@@ -8,43 +8,20 @@ type Func = Function
 declare function print(...args: any[]): void
 
 interface String {
+	align(limit: num, char?: str, endPosition?: bool): str
+	toMs(): [num, str[]]
 	getUrl(): str[] | null
 	encode(): str
 	parsePhone(): str
 	toPascalCase(): str
-	align(limit: num, char?: str, endPosition?: bool): str
 	t(lang: str, options?: any): str
 	filterForRegex(): str
-	toMs(): [num, str[]]
 	bold(): str
 }
 
 interface Number {
-	bytes(onlyNumbers?: bool): str | num
+	bytes(): str
 	duration(ms?: bool): str
-}
-
-interface Reminder {
-	id: num
-	author: num
-	chat: str
-	msg: str
-	remindAt: str
-	isDone: bool
-}
-
-interface aiPrompt {
-	instruction?: str
-	prompt: str | [Part, str]
-	model?: str
-	buffer?: Buf
-	mime?: str
-	user?: User
-}
-
-interface aiResponse {
-	text: str
-	tokens?: num
 }
 
 // alarm database typescript schema
@@ -54,7 +31,10 @@ type Alarm = {
 	chat: str
 	msg: str
 	time: str
-	status: num
+	status: int
 }
 
 type AIMsg = { header: str; text: str; tokens: num; thoughts: num }
+
+type Lang = 'py' | 'lua' | 'node' | 'deno' | 'bun' | 'zsh' | 'cpp'
+// supported programming languages
