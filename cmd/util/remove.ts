@@ -10,9 +10,7 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, startTyping, send, sendUsage, t }: CmdCtx) {
-		if (!isVisual(msg.type) && !isVisual(msg.quoted?.type)) return sendUsage()
-
+	async run({ msg, startTyping, send, t }: CmdCtx) {
 		let media = await getMedia(msg)
 
 		if (!media) return send(t('sticker.nobuffer'))

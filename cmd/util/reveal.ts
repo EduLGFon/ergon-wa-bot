@@ -21,7 +21,7 @@ export default class extends Cmd {
 		} as AnyMessageContent
 
 		// @ts-ignore send sticker as image
-		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = buffer
+		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = media.data
 
 		send(msgObj)
 		return

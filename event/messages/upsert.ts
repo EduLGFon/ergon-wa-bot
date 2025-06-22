@@ -1,6 +1,5 @@
 import { deleteMessage, react, send, startTyping } from '../../util/messages.js'
-import { checkPermissions, CmdCtx, delay, getCtx } from '../../map.js'
-import cache from '../../plugin/cache.js'
+import { CmdCtx, delay, getCtx } from '../../map.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
 import bot from '../../wa.js'
@@ -14,16 +13,12 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		if (!m?.message) continue
 
 		// get abstract msg obj
-		const context = await getCtx(m)
-		if (!context.msg) continue
-		const { msg, args, cmd, group, user } = context
+		const { msg, args, cmd, group, user } = await getCtx(m)
+		if (!user || !msg) continue
 
-		if (!user || !msg) return
-		if (group) {
-			group.msgs.add(msg.key.id!, msg)
-			if (!msg.isBot) group.countMsg(user.id)
-			// count msgs with cool values for group msgs rank cmd
-		} else user.msgs.add(msg.key.id!, msg)
+		/* * Messages counting & storing */
+		if (group) group.countMsg(user, msg) // count msgs with cool values for group msgs rank cmd
+		else user.msgs.add(msg.key.id!, msg)
 
 		if (!cmd) continue
 		// get locales function
@@ -31,23 +26,19 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		const reactToMsg = react.bind(msg)
 		const sendMsg = send.bind(msg.chat)
 
-		// Check cmd permissions
-		const auth = checkPermissions(cmd, user, group)
-		if (auth !== true) {
-			if (auth === 'nodb') sendMsg(t('events.nodb'))
-			reactToMsg(auth)
-			continue // you got censored OOOOMAGAAAA
-		}
+		/* * Cmd permissions checking */
+		const auth = cmd.checkPerms(msg, user, group)
+		if (auth !== true) continue // you got censored OOOOMAGAAAA
+		
 
 		const ctx: CmdCtx = {
-			sendUsage, // sends cmd help menu
 			group,
 			args,
 			user,
 			bot,
 			cmd,
 			startTyping: startTyping.bind(msg.chat),
-			send: send.bind(msg.chat),
+			send: sendMsg,
 			react: reactToMsg,
 			deleteMsg: deleteMessage.bind(msg),
 			msg,
@@ -77,14 +68,6 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 				sendMsg(`[⚠️] ${e?.message || e}`)
 				return
 			})
-
-		// sendUsage: sends cmd help menu
-		async function sendUsage() {
-			args[0] = cmd.name
-
-			cache.cmds.get('help').run(ctx)
-			return
-		}
 	}
 	return
 }

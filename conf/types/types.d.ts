@@ -40,13 +40,12 @@ type MediaMsg =
 interface Msg {
 	chat: str
 	author: str
-	edited: bool
 	text: str
 	type: MsgTypes
-	isMedia: bool
+	hasMedia: bool
 	mime: str
 	isBot: bool
-	quoted: Msg
+	quoted?: Msg
 	message: MediaMsg | null
 	key: proto.IMessageKey
 }
@@ -63,7 +62,6 @@ interface CmdCtx {
 	react(emoji: str | ReturnType<typeof emojis>): Promise<void>
 	deleteMsg(): Promise<void>
 	t: TFunction<'translation', undefined>
-	sendUsage(): Promise<void>
 }
 
 interface GroupMsg {

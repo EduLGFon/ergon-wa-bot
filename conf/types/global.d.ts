@@ -10,7 +10,7 @@ declare function print(...args: any[]): void
 interface String {
 	align(limit: num, char?: str, endPosition?: bool): str
 	toMs(): [num, str[]]
-	getUrl(): str[] | null
+	getUrl(): str[] | undefined
 	encode(): str
 	parsePhone(): str
 	toPascalCase(): str

@@ -8,14 +8,14 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, args, send, deleteMsg, group, sendUsage, t }: CmdCtx) {
+	async run({ msg, args, send, deleteMsg, group, t }: CmdCtx) {
 		group = group!
 		let disclaimerMsg
 		const amount = Number(args[0]) // amount of msgs to be deleted for everyone-
 
 		if (amount === 0) return send(t('clean.noAmount'))
 
-		if (!isValidPositiveIntenger(amount)) return sendUsage()
+		if (!isValidPositiveIntenger(amount)) return send('usage.clean')
 
 		if (group.msgs.size < amount) {
 			disclaimerMsg = await send(t('clean.deleted', { msgsSize: group.msgs.size }))

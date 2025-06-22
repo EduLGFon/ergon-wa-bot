@@ -1,4 +1,4 @@
-import { Collection, defaults, Msg, prisma } from '../map.js'
+import { Collection, defaults, Msg, prisma, User } from '../map.js'
 import { GroupMetadata, GroupParticipant } from 'baileys'
 
 export default class Group {
@@ -47,18 +47,19 @@ export default class Group {
 		this.msgs.iterate(data?.msgs)
 	}
 
-	async countMsg(author: num) { // +1 to group member msgs count
-		if (!process.env.DATABASE_URL) return
+	async countMsg(user: User, msg: Msg) { // +1 to group member msgs count
+		this.msgs.add(msg.key.id!, msg)
+		if (!process.env.DATABASE_URL || msg.isBot) return
 
 		await prisma.msgs.upsert({
 			where: {
 				author_group: {
-					author,
+					author: user.id,
 					group: this.id.parsePhone(),
 				},
 			},
 			create: { // create user counter
-				author,
+				author: user.id,
 				group: this.id.parsePhone(),
 			},
 			update: { // or add 1  to count

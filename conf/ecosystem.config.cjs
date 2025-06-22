@@ -14,7 +14,6 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		name: 'wa',
 		script: 'build/wa.js', /// main file
 		node_args,
-		out_file: 'conf/log/out', // only output log
-		error_file: 'conf/log/err', // only error log
+		out_file: 'conf/log.txt',
 	}],
 }

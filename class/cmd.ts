@@ -1,4 +1,5 @@
-import type { CmdCtx } from '../map.js'
+import { defaults, Group, type CmdCtx, type Msg, type User } from '../map.js'
+import { react, send } from '../util/messages.js'
 
 export default abstract class Cmd {
 	name: str
@@ -31,4 +32,31 @@ export default abstract class Cmd {
 	abstract run(ctx: CmdCtx): Promise<any> // run function
 
 	async checkData() {}
+
+	checkPerms(msg: Msg, user: User, group?: Group) {
+		const reactMsg = react.bind(msg)
+		const sendMsg = send.bind(msg.chat)
+
+		const isDev = defaults.devs.includes(user.phone)
+		// if a normal user tries to run a only-for-devs cmd
+
+		if (this.access.restrict && !isDev) return reactMsg('prohibited')
+
+		if (group) { // if msg chat is a group
+			if (!this.access.groups) return reactMsg('block')
+
+			const admins = group.members.map((m) => m.admin && m.id) || []
+			// all group admins id
+
+			if (this.access.admin && (!admins.includes(user.chat) && !isDev)) {
+				return reactMsg('prohibited') // Devs can use admin cmds for security reasons
+			}
+		} else if (!this.access.dm) return reactMsg('block')
+		// if there's no group and cmd can't run on DM
+
+		if (this.access.needsDb && !process.env.DATABASE_URL) return sendMsg('events.nodb')
+		
+		// if cmd requires database to run
+		return true
+	}
 }

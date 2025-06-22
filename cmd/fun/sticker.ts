@@ -33,7 +33,7 @@ export default class extends Cmd {
 
 			const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
 
-			if (!validMsgs.length) return send(t('sticker.nobuffer'))
+			if (!validMsgs.length) return send('usage.sticker')
 			await react('sparkles')
 
 			for (const m of validMsgs) await createSticker(m, this.subCmds)
@@ -78,7 +78,7 @@ export default class extends Cmd {
 					return
 				},
 				async video() {
-					quality = 25 // videos needs to be more compressed
+					quality = Number(args[0]) || 25 // videos needs to be more compressed
 					// but compress a video too much can cause some glitches on video
 				},
 			}
@@ -99,11 +99,12 @@ export default class extends Cmd {
 					quality,
 				})
 
-				await randomDelay()
+				if (target.type !== 'video') await randomDelay()
 					.then(async () => {
 						// send several crop types of the same sticker
 						await send(await metadata.toMessage())
 					})
+				else await send(await metadata.toMessage())
 			}
 
 			return

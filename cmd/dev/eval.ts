@@ -1,6 +1,7 @@
 import { Cmd, CmdCtx, defaults, delay, isEmpty, prisma, runCode } from '../../map.js'
+import cache from '../../plugin/cache.js'
 import { inspect } from 'node:util'
-import baileys from 'baileys'
+import bot from '../../wa.js'
 
 export default class extends Cmd {
 	constructor() {
@@ -12,7 +13,7 @@ export default class extends Cmd {
 	}
 
 	async run(ctx: CmdCtx) {
-		const { args, bot, msg, user, group, cmd, t, send, react, startTyping, sendUsage } = ctx
+		const { args, bot, msg, user, group, cmd, t, send, react, startTyping } = ctx
 		const langs = Object.keys(defaults.runner)
 		// all supported programming languages
 
@@ -25,8 +26,9 @@ export default class extends Cmd {
 			let evaled // run on this thread
 			prisma
 			delay // i may need it, so TS won't remove from build if it's here
-			baileys
 			isEmpty
+			cache
+			bot
 
 			try {
 				/** Dynamic async eval: put code on async function if it includes 'await'

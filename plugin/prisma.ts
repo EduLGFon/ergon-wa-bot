@@ -9,16 +9,18 @@ export default prisma
 export { createUser, getGroup, getUser }
 
 async function createUser({ phone, name }: { phone: str; name?: str }): Promise<User> {
+	let id = Number(phone)
 	if (process.env.DATABASE_URL) {
-		await prisma.users.create({
+		const data = await prisma.users.create({
 			data: {
 				phone,
 				name,
 			},
 		})
+		id = data.id
 	}
 
-	const user = new User({ phone, name })
+	const user = new User({ id, phone, name })
 	cache.users.add(user.id, user)
 
 	return user

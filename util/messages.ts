@@ -8,9 +8,9 @@ import bot from '../wa.js'
 export { deleteMessage, editMsg, getMedia, react, send, sendOrEdit, startTyping }
 
 async function getMedia(msg: Msg, startTyping?: Func) {
-	const target = msg.isMedia ? msg : msg.quoted
+	const target = msg.hasMedia ? msg : msg.quoted
 
-	if (!target || !target.isMedia) return
+	if (!target || !target.hasMedia) return
 	if (startTyping) await startTyping()
 
 	const media = await downloadMediaMessage(target, 'buffer', {}, {
