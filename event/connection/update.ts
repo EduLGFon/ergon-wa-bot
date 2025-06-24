@@ -13,7 +13,7 @@ export default async function (event: Partial<ConnectionState>) {
 	// disconnection code
 
 	if (event.qr) {
-		console.log(await QRCode.toString(event.qr, { type: 'terminal' }))
+		print(await QRCode.toString(event.qr, { type: 'terminal' }))
 	}
 
 	switch (event.connection) {

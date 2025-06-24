@@ -36,9 +36,9 @@ async function sendAlarms() {
 					where: { id: a.id },
 					data: { status: 1 },
 				})
-				console.log('ALARM', `'${a.msg}' to ${user!.phone} (${a.chat})`, 'blue')
+				print('ALARM', `'${a.msg}' to ${user!.phone} (${a.chat})`, 'blue')
 			})
-			.catch((e) => console.log('ALARM', e.stack, 'red'))
+			.catch((e) => print('ALARM', e.stack, 'red'))
 
 		// wait some seconds before sending the next alarm
 		await randomDelay()

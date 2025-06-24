@@ -47,7 +47,7 @@ export default class extends Cmd {
 
 		async function sendPrompt(model: num) {
 			if (model < 0) {
-				console.log('GEMINI', 'No more models to try', 'red')
+				print('GEMINI', 'No more models to try', 'red')
 				return await send('Nenhum modelo disponível para este prompt')
 			}
 
@@ -60,7 +60,7 @@ export default class extends Cmd {
 				callBack: sendOrEdit, // edit msg while gemini writes it
 				args: [streamMsg!, msg.chat], // arguments to pass to the callback
 			}).catch(async (e): Promise<any> => {
-				console.log(model, e, 'red')
+				print(model, e, 'red')
 				return await sendPrompt(model - 1) // try next model
 			})
 		}

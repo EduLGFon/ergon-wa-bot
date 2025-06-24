@@ -64,7 +64,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 
 		Promise.resolve(cmd.run!(ctx))
 			.catch(async (e) => {
-				console.log(`EVENT/${event}`, e, 'red')
+				print(`EVENT/${event}`, e, 'red')
 				sendMsg(`[⚠️] ${e?.message || e}`)
 				return
 			})

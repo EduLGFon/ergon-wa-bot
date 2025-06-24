@@ -20,7 +20,7 @@ export default async function () {
 
 		print('i18next', `${languages.length} languages loaded`, 'blue')
 	} catch (e) {
-		console.log('i18next', e, 'red')
+		print('i18next', e, 'red')
 	}
 	return
 }

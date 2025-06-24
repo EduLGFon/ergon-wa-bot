@@ -53,7 +53,7 @@ async function loadEvents() {
 		bot.sock.ev.on(name as keyof BaileysEventMap, (...args) => {
 			// It allows to modify events in run time
 			cache.events.get(name)!(...args, name)
-				.catch((e: Error) => console.log(`EVENT/${name}:`, e, 'red'))
+				.catch((e: Error) => print(`EVENT/${name}:`, e, 'red'))
 			// eventFunction(...args, name);
 		})
 	})

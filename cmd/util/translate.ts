@@ -22,7 +22,7 @@ export default class extends Cmd {
 
 			send(text)
 		} catch (e) {
-			console.log('CMD/TRANSLATE', e, 'red')
+			print('CMD/TRANSLATE', e, 'red')
 			send('usage.translate')
 		}
 		return

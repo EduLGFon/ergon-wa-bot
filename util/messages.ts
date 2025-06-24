@@ -89,7 +89,7 @@ async function deleteMessage(this: Msg | proto.IMessageKey) {
 // this is used to edit the message while the AI is writing
 async function sendOrEdit(data: { msg: Msg }, chat: str, text: str) {
 	if (data.msg?.key?.id) {
-		await editMsg.bind(data.msg)(text).catch((e) => console.log('Failed to edit message', e))
+		await editMsg.bind(data.msg)(text).catch((e) => print('Failed to edit message', e))
 		// @ts-ignore
 	} else data.msg = await send.bind(chat)(text)
 }
