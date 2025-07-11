@@ -18,6 +18,7 @@
 	},
 	"runner": {
 		"tempFolder": "conf/temp/",
+		"ytdlp": "conf/venv/bin/yt-dlp",
 		"py": {
 			"cmd": [
 				"conf/venv/bin/python3"

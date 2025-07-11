@@ -1,5 +1,6 @@
+import { Cmd, CmdCtx, defaults, runCode } from '../../map.js'
+import { randomEmoji } from '../../util/emojis.js'
 import { AnyMessageContent } from 'baileys'
-import { Cmd, CmdCtx, runCode } from '../../map.js'
 import { readFileSync } from 'node:fs'
 
 export default class extends Cmd {
@@ -10,27 +11,17 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, args, react, user, send }: CmdCtx) {
-		let url = msg.text.getUrl()
-
-		if (!url) url = msg?.quoted?.text?.getUrl()
+	async run({ msg, args, user, startTyping, send }: CmdCtx) {
+		const url = msg.text.getUrl() || msg?.quoted?.text?.getUrl()
 		if (!url) return send('usage.download', user)
 
-		let type: 'video' | 'audio' = 'video'
-		if (args[0] === 'a') {
-			args.shift()
-			type = 'audio'
-		}
+		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
 		const cliArgs = ['--cookies', 'conf/cookies.txt']
 
-		const data: {
-			fileName: str
-			mimetype: str
-			video?: Buffer
-			audio?: Buffer
-		} = {
-			fileName: `yt_dlp_${Date.now()}.`,
+		const data = {
+			caption: randomEmoji(),
+			fileName: `download_${Date.now()}.`,
 			mimetype: '',
 		}
 
@@ -46,23 +37,23 @@ export default class extends Cmd {
 			data.mimetype = 'audio/mpeg'
 		}
 
-		const path = `conf/temp/${data.fileName}`
+		const path = `${defaults.runner.tempFolder}${data.fileName}`
 		cliArgs.push(`-o ${path}`)
 
 		try {
-			await react('loading')
+			await startTyping()
+			await runCode('zsh', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
-			await runCode('zsh', `conf/venv/bin/yt-dlp ${cliArgs.join(' ')} "${args[0]}"`)
-
-			data[type] = readFileSync(path)
+			Object.setPrototypeOf(data, {
+				[type]: readFileSync(path)
+			})
 
 			//@ts-ignore
 			delete data.fileName
 
-			await send(data as AnyMessageContent)
-			react('ok')
+			send(data as AnyMessageContent)
 		} catch (e: any) {
-			await send(`error: ${e?.message || e}`)
+			send(`Não foi possível baixar o arquivo:\n${e.message}`)
 		}
 		return
 	}
