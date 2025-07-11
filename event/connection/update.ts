@@ -43,12 +43,6 @@ export default async function (event: Partial<ConnectionState>) {
 		case 'close':
 			print('CLOSED', `Reason (${exitCode}): ${disconnection}`, 'blue')
 
-			print('is closed?', bot.sock.ws.isClosed)
-			print('is open?', bot.sock.ws.isOpen)
-			setTimeout(() => {
-				print('is closed?', bot.sock.ws.isClosed)
-				print('is open?', bot.sock.ws.isOpen)
-			}, 15_000)
 			const reconnect = shouldReconnect(exitCode)
 
 			// reconnect if it's not a logout

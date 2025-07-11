@@ -1,5 +1,6 @@
 import { AnyMessageContent, downloadMediaMessage, proto } from 'baileys'
 import { CmdCtx, emojis, getCtx, Msg, msgMeta, User } from '../map.js'
+import { randomEmoji } from './emojis.js'
 import cache from '../plugin/cache.js'
 import { logger } from './proto.js'
 import { getFixedT } from 'i18next'
@@ -65,7 +66,8 @@ async function send(this: str, text: str | AnyMessageContent, user?: User) {
 // simple abstraction to react to a msg
 async function react(this: Msg, emoji: str) {
 	// @ts-ignore find emojis by name | 'ok' => '✅'
-	const text = emojis[emoji] || emoji
+	const text = emoji === 'random' ? randomEmoji() : emojis[emoji] || emoji
+
 	await send.bind(this.chat)({ react: { text, key: this.key } })
 	return
 }

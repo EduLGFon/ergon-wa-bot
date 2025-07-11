@@ -115,7 +115,7 @@ function strPrototypes() {
 		},
 		encode: { // encode strings
 			value: function () {
-				return '`' + this.replace('`', '') + '`'
+				return '`' + this.replace('`', '').trim() + '`'
 			},
 		},
 		parsePhone: { // parse wpp id to phone number

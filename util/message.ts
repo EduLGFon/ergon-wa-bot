@@ -88,7 +88,7 @@ function getDownloadableData(raw: any, types: [MsgTypes, str], isMediaMsg: bool)
 		mediaKey: oldMsg?.mediaKey,
 		thumbnailDirectPath: oldMsg?.thumbnailDirectPath,
 	}
-	if (!oldMsg?.url) print('getDownloadableData', raw, 'red')
+	if (!oldMsg?.url) print('getDownloadableData', raw)
 	return newObj as MediaMsg
 }
 
@@ -136,9 +136,7 @@ function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	if (!quotedRaw) return
 	const types = getMsgType(quotedRaw) // quoted message type
 	const isMediaMsg = isMedia(types[0]) // is it video, photo or audio msg
-	print('quoted raw', quotedRaw)
 	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
-	print('quoted raw', quotedRaw)
 
 	let quoted = {
 		type: types[0], // msg type

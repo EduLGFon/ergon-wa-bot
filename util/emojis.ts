@@ -3,30 +3,50 @@
  * 'ok' -> '✅'
  */
 
-const funEmojis = {
-	funny: '😂',
-	sad: '😢',
-	angry: '😡',
-	love: '😍',
-	heart: '❤️',
-	like: '👍',
-	dislike: '👎',
-	cry: '😭',
-	kiss: '😘',
-	hug: '🤗',
-	sparkles: '✨',
-	think: '💭',
-	light: '💡',
-	question: '❓',
-}
+const emojis = [
+	'😂',
+	'😢',
+	'😡',
+	'😍',
+	'❤️',
+	'👍',
+	'👎',
+	'😭',
+	'😘',
+	'🤗',
+	'✨',
+	'💭',
+	'💡',
+	'❓',
+	'🇧🇷',
+	'🤓',
+	'🤨',
+	'🫦',
+	'😍',
+	'🤣',
+	'🥺',
+	'😱',
+	'😨',
+	'🫣',
+	'🫥',
+	'🤡',
+	'🤝',
+	'🤏',
+	'🙏',
+	'👀',
+	'🐦',
+	'⚡',
+	'🔥',
+	'🏳️‍🌈',
+]
 
-function randomEmoji(): string {
-	const emojis = Object.values(funEmojis)
+export function randomEmoji(): string {
 	return emojis[Math.floor(Math.random() * emojis.length)]
 }
 
 const restrictEmojis = {
 	prohibited: '📛',
+	sparkles: '✨',
 	loading: '⌛',
 	block: '⛔',
 	clock: '🕓',
@@ -35,8 +55,6 @@ const restrictEmojis = {
 	x: '❌',
 }
 
-export { randomEmoji, restrictEmojis }
 export default {
-	...funEmojis,
 	...restrictEmojis,
 }

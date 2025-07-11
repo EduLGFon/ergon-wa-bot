@@ -34,13 +34,13 @@ export default class extends Cmd {
 			const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
 
 			if (!validMsgs.length) return send('usage.sticker', user)
-			await react('sparkles')
+			await react('random')
 
 			for (const m of validMsgs) await createSticker(m, this.subCmds)
 			return
 		}
 
-		await startTyping()
+		await react('random')
 		createSticker(media.target, this.subCmds)
 		return
 
@@ -78,7 +78,7 @@ export default class extends Cmd {
 					return
 				},
 				async video() {
-					quality = Number(args[0]) || 25 // videos needs to be more compressed
+					// quality = Number(args[0]) || 25 // videos needs to be more compressed
 					// but compress a video too much can cause some glitches on video
 				},
 			}
@@ -88,7 +88,7 @@ export default class extends Cmd {
 			}
 
 			for (const type of formats) {
-				const metadata = new Sticker(data!, {
+				const sticker = await new Sticker(data!, {
 					author: '', // sticker metadata
 					pack: `=== Ergon Bot ===\n` +
 						`[👑] Autor: ${user.name}\n` +
@@ -96,16 +96,14 @@ export default class extends Cmd {
 						// `[☃️] Dev: Edu\n` +
 						`[❓] Suporte: dsc.gg/ergon`,
 					type,
-					quality,
-				})
+					quality: 1,
+				}).toMessage()
 
-				if (target.type !== 'video') {
+				if (target.type === 'video') send(sticker)
+				else {
 					await randomDelay()
-						.then(async () => {
-							// send several crop types of the same sticker
-							await send(await metadata.toMessage())
-						})
-				} else await send(await metadata.toMessage())
+					send(sticker)
+				}
 			}
 
 			return
