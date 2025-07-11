@@ -1,7 +1,7 @@
 // Delay: make the code wait for some time
 const delay = async (time: num) => await new Promise((r) => setTimeout(() => r(true), time))
 
-const randomDelay = async () => delay(2_000 + Math.floor(Math.random() * 3_000))
+const randomDelay = async (min = 2_000, max = 5_000) => delay(min + Math.floor(Math.random() * max))
 
 // isValidPositiveIntenger: validate a number
 const isValidPositiveIntenger = (num: num) => !Number.isNaN(num) && num > 0 && Number.isInteger(num)

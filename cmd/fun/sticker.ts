@@ -34,12 +34,14 @@ export default class extends Cmd {
 			const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
 
 			if (!validMsgs.length) return send('usage.sticker', user)
+			await randomDelay(69, 500)
 			await react('random')
 
 			for (const m of validMsgs) await createSticker(m, this.subCmds)
 			return
 		}
 
+		await randomDelay(69, 500)
 		await react('random')
 		createSticker(media.target, this.subCmds)
 		return
