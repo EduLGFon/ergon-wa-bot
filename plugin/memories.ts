@@ -10,7 +10,7 @@ async function createMemories(user: User, msg: AIMsg) {
 
 	for (const memory of matches) {
 		const m = memory.split('MEMORY:')[1].slice(0, -1).trim() // get memory from {MEMORY:memory}
-		
+
 		// check if memory already exists
 		if (m && !user.memories.includes(m)) {
 			// it do not exist, so add it
