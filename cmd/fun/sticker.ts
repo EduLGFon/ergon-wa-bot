@@ -15,7 +15,7 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, args, user, group, send, react, startTyping, t }: CmdCtx) {
+	async run({ msg, args, user, group, send, react }: CmdCtx) {
 		const media = await getMedia(msg)
 
 		// if there is no media or msg type is not visual
@@ -34,22 +34,20 @@ export default class extends Cmd {
 			const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
 
 			if (!validMsgs.length) return send('usage.sticker', user)
-			await randomDelay(69, 500)
-			await react('random')
+			randomDelay(69, 500).then(() => react('random'))
 
 			for (const m of validMsgs) await createSticker(m, this.subCmds)
 			return
 		}
 
-		await randomDelay(69, 500)
-		await react('random')
+		randomDelay(69, 500).then(() => react('random'))
 		createSticker(media.target, this.subCmds)
 		return
 
 		async function createSticker(target: Msg, subCmds: str[]) {
 			const media = await getMedia(target)
-			let { data, mime } = media!
-			let quality = 20 // media quality after compression
+			let { buffer, mime, duration, length, width, height } = media!
+			let quality = 1
 
 			const formats = ['full', 'crop']
 			if (args.includes(subCmds[1])) formats.push('rounded')
@@ -59,53 +57,94 @@ export default class extends Cmd {
 
 			const msgTypeWays = {
 				sticker() {
-					send({ image: data })
+					send({ image: buffer })
 					return
 				},
 				async image() {
 					if (!args.includes(subCmds[0])) return
 					// remove image background
-					const file = await writeFile(
-						defaults.runner.tempFolder + `sticker_${Date.now()}.webp`,
-						data,
-					)
+
+					const path = defaults.runner.tempFolder + `rmsticker_${Date.now()}.webp`
+					await writeFile(path, buffer)
+
 					// create temporary file
 
 					// execute python background remover plugin on
-					await runCode('py', `${file} ${file}.png`, 'plugin/removeBg.py')
+					await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
 					// a child process
 
-					data = await readFile(`${file}.png`) || data
+					buffer = await readFile(`${path}.png`) || buffer
 					// read new file
 					return
 				},
 				async video() {
-					// quality = Number(args[0]) || 25 // videos needs to be more compressed
-					// but compress a video too much can cause some glitches on video
+					// print('mime', mime)
+					// quality = 1 // do not use sharp compression
+					// const path = defaults.runner.tempFolder + `sticker_${Date.now()}.mp4`
+					// const newPath = `${path}.gif`
+					// await writeFile(path, buffer)
+					// // create temporary file
+					// print(`length: ${Number(length) / 1024}kb`)
+					// width = 160
+
+					// // const bitrate = Math.floor((0.49 * 1024 * 1024 * 8) / (duration + 1) / 1000) // calculate bitrate in kbps
+					// // print(`video bitrate: ${bitrate}kbps`)
+					// // await runCode(
+					// 	// 	'zsh',
+					// // 	`ffmpeg -i ${path} -c:v libx264 -b:v ${bitrate}k -r 20 -an ${newPath}`,
+					// // )
+					// await runCode('zsh', `ffmpeg -i ${path} -vf "fps=10,scale=${width}:-1:flags=lanczos,palettegen" ${path}_palette.png`)
+					// await runCode('zsh', `ffmpeg -i ${path} -i ${path}_palette.png -filter_complex "fps=10,scale=${width}:-1:flags=lanczos[x];[x][1:v]paletteuse" ${newPath}`)
+
+					// const newSize = await runCode('zsh', `stat -c %s ${newPath}`)
+					// print(`video new size: ${Number(newSize) / 1024}kb`)
+					// buffer = await readFile(newPath)
+					// return
 				},
 			}
 
 			if (target.type in msgTypeWays) {
 				await msgTypeWays[target.type as keyof typeof msgTypeWays]()
 			}
+			//  async function writeExif(media: Buf, packname?: str) {
+			//   const stringJson = JSON.stringify({
+			// 	"sticker-pack-id": randomBytes(32).toString('hex'),
+			//     "sticker-pack-name": packname || '',
+			//     "sticker-pack-publisher": `=== Ergon Bot ===\n` +
+			// 						`[👑] Autor: ${user.name}\n` +
+			// 						`[📅] Data: ${now('D')}\n` +
+			// 						// `[☃️] Dev: Edu\n` +
+			// 						`[❓] Suporte: dsc.gg/ergon`,
+			//     "emojis": [""]
+			//   });
+			//   const exifAttr = Buffer.from('SUkqAAgAAAABAEFXBwAAAAAAFgAAAA==', 'base64');
+			//   const jsonBuff = Buffer.from(stringJson, "utf8");
+			//   const exif = Buffer.concat([exifAttr, jsonBuff]);
+			//   exif.writeUIntLE(jsonBuff.length, 14, 4);
 
-			for (const type of formats) {
-				const sticker = await new Sticker(data!, {
+			//   const img = new webpmux.Image();
+			//   await img.load(media);
+			//   img.exif = exif;
+			//   return img.save(null);
+			// }
+
+			for (const f of formats) {
+				const sticker = await new Sticker(buffer!, {
 					author: '', // sticker metadata
 					pack: `=== Ergon Bot ===\n` +
 						`[👑] Autor: ${user.name}\n` +
 						`[📅] Data: ${now('D')}\n` +
 						// `[☃️] Dev: Edu\n` +
 						`[❓] Suporte: dsc.gg/ergon`,
-					type,
-					quality: 1,
+					type: f,
+					quality: Number(args[0]) || quality,
 				}).toMessage()
 
 				if (target.type === 'video') send(sticker)
-				else {
-					await randomDelay()
-					send(sticker)
-				}
+				else randomDelay().then(async () => send(sticker))
+
+				// if (mediaType === 'video') send({ sticker: await writeExif(buffer) })
+				// else randomDelay().then(async () => send({ sticker: await writeExif(buffer)}))
 			}
 
 			return

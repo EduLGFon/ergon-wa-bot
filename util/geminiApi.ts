@@ -121,7 +121,7 @@ async function uploadFile(file: GoogleFile, msg: AIMsg) {
 	 */
 	msg.header += '- *Google File API*\n- *Uploading file...*\n'
 	let upload = await GoogleAI.files.upload({
-		file: new Blob([file.data]),
+		file: new Blob([file.buffer]),
 		config: { mimeType: file.mime },
 	})
 	msg.header += `- *Upload complete.*\n`

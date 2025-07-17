@@ -37,7 +37,6 @@ export default class extends Cmd {
 			args.shift()
 		}
 		await startTyping()
-		const file = await getMedia(msg) // download msg media or quoted msg media
 
 		const streamMsg = { // Workaround to make the variable always point to
 			msg: {}, // this memory space
@@ -56,7 +55,7 @@ export default class extends Cmd {
 				input: args.join(' '),
 				user,
 				chat: msg.chat, // this chat id
-				file,
+				file: await getMedia(msg),
 				callBack: sendOrEdit, // edit msg while gemini writes it
 				args: [streamMsg!, msg.chat], // arguments to pass to the callback
 			}).catch(async (e): Promise<any> => {

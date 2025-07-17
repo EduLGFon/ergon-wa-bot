@@ -1,6 +1,8 @@
 import { Cmd, CmdCtx, defaults, delay, isEmpty, prisma, runCode } from '../../map.js'
+import { readFile, writeFile } from 'node:fs/promises'
 import cache from '../../plugin/cache.js'
 import { inspect } from 'node:util'
+import fs from "node:fs/promises"
 import bot from '../../wa.js'
 
 export default class extends Cmd {
@@ -29,6 +31,8 @@ export default class extends Cmd {
 			isEmpty
 			cache
 			bot
+			writeFile
+			readFile
 
 			try {
 				/** Dynamic async eval: put code on async function if it includes 'await'

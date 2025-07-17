@@ -8,6 +8,10 @@ export default class Collection<K, V> extends Map {
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
 	}
 
+	get(key: K): V {
+		return super.get(key) as V
+	}
+
 	// Add: adds a value to the collection
 	async add(key: K, value?: V | object, extra: any[] = []): Promise<V> {
 		if (!key) throw new Error('Missing object key')

@@ -17,16 +17,13 @@ export default class extends Cmd {
 		await startTyping()
 
 		const path = defaults.runner.tempFolder + `rm_${Date.now()}.webp`
-		await writeFile(
-			path,
-			media.data,
-		)
+		await writeFile(path, media.buffer)
 		// create temporary file
-		// execute python background remover plugin on
 		await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
+		// execute python background remover plugin on
 		// a child process
 
-		const buffer = await readFile(`${path}.png`) || media.data
+		const buffer = await readFile(`${path}.png`) || media.buffer
 		// read new file
 
 		send({ caption: emojis['sparkles'], image: buffer })

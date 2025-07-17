@@ -15,7 +15,7 @@ import {
 	textTypes,
 	visualTypes,
 } from './conf/types/msgs.js'
-import type { CmdCtx, GroupMsg, MediaMsg, Msg, MsgTypes } from './conf/types/types.js'
+import type { CmdCtx, GroupMsg, Msg, MsgTypes } from './conf/types/types.js'
 
 export {
 	allMsgTypes,
@@ -25,7 +25,6 @@ export {
 	GroupMsg,
 	isMedia,
 	isVisual,
-	MediaMsg,
 	mediaTypes,
 	Msg,
 	MsgTypes,

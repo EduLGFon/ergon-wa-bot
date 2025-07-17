@@ -1,7 +1,8 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
 import { Collection, delay } from '../../map.js'
-import QRCode from 'qrcode'
 import bot, { start } from '../../wa.js'
+import { inspect } from 'node:util'
+import QRCode from 'qrcode'
 
 // Keep last 5 logins DateTime
 const lastLogins = new Collection<num, num>(5)
@@ -11,7 +12,7 @@ export default async function (event: Partial<ConnectionState>) {
 	const disconnection = event.lastDisconnect?.error as any
 	const exitCode = disconnection?.output?.statusCode
 	// disconnection code
-	print('event', event)
+	print('event', inspect(event, { depth: null }))
 
 	if (event.qr) {
 		print(await QRCode.toString(event.qr, { type: 'terminal' }))

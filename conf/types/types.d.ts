@@ -24,29 +24,15 @@ type MsgTypes =
 	| 'poll'
 	| 'pollUpdate'
 
-interface DownloadableInfo {
-	mediaKey: Uint8Array<ArrayBufferLike>
-	url: str
-	directPath: str
-	thumbnailDirectPath: str
-}
-
-type MediaMsg =
-	| { imageMessage: DownloadableInfo }
-	| { videoMessage: DownloadableInfo }
-	| { ptvMessage: DownloadableInfo }
-	| { audioMessage: DownloadableInfo }
-
 interface Msg {
 	chat: str
 	author: str
 	text: str
 	type: MsgTypes
-	hasMedia: bool
+	media?: str
 	mime: str
 	isBot: bool
 	quoted?: Msg
-	message: MediaMsg | null
 	key: proto.IMessageKey
 }
 
@@ -71,7 +57,7 @@ interface GroupMsg {
 }
 
 type GoogleFile = {
-	data: Buffer
+	buffer: Buffer
 	mime: str
 }
 type GeminiArgs = {

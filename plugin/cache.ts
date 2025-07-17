@@ -17,6 +17,7 @@ class CacheManager {
 	wait: Collection<str, Func>
 	users: Collection<num, User>
 	events: Map<str, Func>
+	media: Collection<str, Media>
 	groups: Collection<str, Group>
 	timeouts: Map<str, NodeJS.Timeout>
 
@@ -29,6 +30,10 @@ class CacheManager {
 		this.cmds = new Collection(0, 'name')
 		// Users collection
 		this.users = new Collection(100)
+		// Media collection
+		// It stores media data like images, videos, etc.
+		// It uses URL as key to avoid duplicates
+		this.media = new Collection(100, 'url')
 		// Groups collection
 		this.groups = new Collection(100)
 		// Timeouts

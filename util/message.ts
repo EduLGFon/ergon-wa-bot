@@ -6,14 +6,14 @@ import {
 	findKey,
 	Group,
 	isMedia,
-	MediaMsg,
 	Msg,
 	MsgTypes,
 	User,
 } from '../map.js'
-import type { AnyMessageContent, proto } from 'baileys'
+import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
 import { getGroup, getUser } from '../plugin/prisma.js'
 import cache from '../plugin/cache.js'
+import { logger } from './proto.js'
 import bot from '../wa.js'
 
 // getCtx: command context === message abstraction layer
@@ -34,21 +34,18 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	if (phone.endsWith('@g.us')) return fakeCtx
 	let user = await getUser({ phone })
 
-	const hasMedia = isMedia(types[0]) // is it video, photo or audio msg
 	const mime = findKey(message, 'mimetype') // media mimetype like image/png
 	const isBot = Boolean(key.fromMe && !Object.keys(key).includes('participant')) // if it's baileys client
-	const quoted = getQuoted(raw, group! || user) // quoted msg
 
 	let msg: Msg = {
 		chat: key?.remoteJid!, // msg chat id
 		author: user?.phone!,
 		type: types[0],
 		text: getMsgText(message!),
+		media: await downloadMedia(raw, types),
+		quoted: await getQuoted(raw, group! || user), // quoted msg
 		isBot,
-		hasMedia,
 		mime,
-		quoted,
-		message: getDownloadableData(raw, types, hasMedia),
 		key,
 		// edited: Object.keys(message!)[0] === 'editedMessage', // if the msg is edited
 	}
@@ -74,22 +71,35 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	} as CmdCtx
 }
 
-// get only metadata needed to download medias
-function getDownloadableData(raw: any, types: [MsgTypes, str], isMediaMsg: bool) {
-	if (!isMediaMsg) return null
-	const msg = raw?.message || raw
+// download msg media
+async function downloadMedia(raw: any, types: [MsgTypes, str]) {
+	const msg = (raw?.message || raw)[types[1]] || raw
+	if (!isMedia(types[0]) || !msg.url) return
 
-	let newObj = {}
-	const oldMsg = msg[types[1]]
-	// @ts-ignore i need it
-	newObj[types[1]] = {
-		url: oldMsg?.url,
-		directPath: oldMsg?.directPath,
-		mediaKey: oldMsg?.mediaKey,
-		thumbnailDirectPath: oldMsg?.thumbnailDirectPath,
-	}
-	if (!oldMsg?.url) print('getDownloadableData', raw)
-	return newObj as MediaMsg
+	if (cache.media.has(msg.url)) return msg.url // return cached media
+	const buffer = await downloadMediaMessage(
+		raw.message ? raw : { message: raw },
+		'buffer',
+		{},
+		{
+			reuploadRequest: bot.sock.updateMediaMessage,
+			logger,
+		},
+	)
+
+	if (!buffer) return
+
+	cache.media.set(msg.url, { // cache media
+		buffer,
+		mime: msg.mimetype,
+		length: msg.fileLength.low,
+		duration: msg.seconds || 0, // for audio and video
+		type: types[0],
+		height: msg.height || 0,
+		width: msg.width || 0,
+	})
+
+	return msg.url
 }
 
 // getInput: get cmd, args and ignore non-prefixed msgs
@@ -127,7 +137,7 @@ function getInput(msg: Msg, prefix: str) {
 }
 
 // getQuoted: get the quoted msg of a raw msg
-function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
+async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const m = raw.message!
 
 	//@ts-ignore 'quotedMessage' is missing on lib types
@@ -135,22 +145,20 @@ function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 
 	if (!quotedRaw) return
 	const types = getMsgType(quotedRaw) // quoted message type
-	const isMediaMsg = isMedia(types[0]) // is it video, photo or audio msg
 	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
 	let quoted = {
 		type: types[0], // msg type
-		hasMedia: isMediaMsg,
+		media: await downloadMedia(quotedRaw, types),
 		//@ts-ignore
 		text: getMsgText(quotedRaw),
 		mime: findKey(quotedRaw, 'mimetype'),
-		message: getDownloadableData(quotedRaw, types, isMediaMsg),
 	} as Msg
 
 	let cachedMsg = chat.msgs.find((m) =>
 		// compare quoted msg with cached msgs
 		quoted?.type === m.type &&
-		quoted?.hasMedia === m.hasMedia &&
+		quoted?.media === m.media &&
 		quoted?.text === m.text &&
 		quoted?.mime === m.mime
 	)
@@ -197,4 +205,4 @@ function msgMeta(
 	return { key, text, chat, quote: {} }
 }
 
-export { getCtx, msgMeta }
+export { downloadMedia, getCtx, msgMeta }

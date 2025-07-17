@@ -17,11 +17,11 @@ export default class extends Cmd {
 		await randomDelay()
 
 		const msgObj = {
-			caption: media.target?.text || '',
+			caption: media.target.text.encode()
 		} as AnyMessageContent
 
 		// @ts-ignore send sticker as image
-		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = media.data
+		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = media.buffer
 
 		send(msgObj)
 		return

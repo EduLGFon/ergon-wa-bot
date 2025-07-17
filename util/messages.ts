@@ -1,28 +1,30 @@
-import { AnyMessageContent, downloadMediaMessage, proto } from 'baileys'
 import { CmdCtx, emojis, getCtx, Msg, msgMeta, User } from '../map.js'
+import { AnyMessageContent, proto } from 'baileys'
+import { downloadMedia } from './message.js'
 import { randomEmoji } from './emojis.js'
 import cache from '../plugin/cache.js'
-import { logger } from './proto.js'
 import { getFixedT } from 'i18next'
 import bot from '../wa.js'
 
 export { deleteMessage, editMsg, getMedia, react, send, sendOrEdit, startTyping }
 
 async function getMedia(msg: Msg, startTyping?: Func) {
-	const target = msg.hasMedia ? msg : msg.quoted
+	const target = msg.media ? msg : msg.quoted
 
-	if (!target || !target.hasMedia) return
+	if (!target || !target.media) return
 	if (startTyping) await startTyping()
 
-	const media = await downloadMediaMessage(target, 'buffer', {}, {
-		reuploadRequest: bot.sock.updateMediaMessage,
-		logger,
-	})
+	let media = cache.media.get(target.media)
+	if (!media) media = await downloadMedia(target, [target.type, 'media'])
 
 	return {
-		data: media,
-		mime: target.mime, // media mimetype like image/png,
 		target,
+		buffer: media.buffer,
+		mime: media.mime,
+		length: media.length,
+		duration: media.duration,
+		height: media.height,
+		width: media.width,
 	}
 }
 
@@ -45,7 +47,9 @@ async function send(this: str, text: str | AnyMessageContent, user?: User) {
 			if (text.startsWith('usage.')) { // it's a cmd usage
 				text = text.replace('usage.', '')
 
-				cache.cmds.get('help').run({ args: [text], send: send.bind(this), user, t })
+				cache.cmds.get('help').run(
+					{ args: [text], send: send.bind(this), user, t } as CmdCtx,
+				)
 				// run help cmd to get cmd usage
 				return {} as CmdCtx
 			}
