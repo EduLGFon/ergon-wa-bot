@@ -15,9 +15,12 @@ export default async function runCode(lang: Lang, code = '', file: str = '', tem
 			data = defaults.runner[lang]
 
 			file = `${defaults.runner.tempFolder}exec.${data.ext}` // file path
-			if (template in data.templates && template != '') { //check if have some template selected
-				code = data.templates[template].replace("//__CODE__//", code)//and replace the placeholder to the code
+
+			if (template in data.templates && template != '') { //check if have some valid template selected
+				code = (data.templates as Record<string, string>)[template].replace("//__CODE__//", code)
+				//and replace the placeholder to the code
 			}
+
 			await writeFile(file, code) // write file
 			code = ''
 			// don't write code in CLI to prevent issues
@@ -38,3 +41,7 @@ export default async function runCode(lang: Lang, code = '', file: str = '', tem
 			.replace(new RegExp(regex, 'gi'), '') // remove cli from error msg
 	}
 }
+//    ___
+//   (o o)        linksyyy pass here
+//   ( V )
+///--m - m---------\
