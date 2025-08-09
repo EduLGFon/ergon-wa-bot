@@ -24,51 +24,70 @@
 			"cmd": [
 				"conf/venv/bin/python3"
 			],
-			"ext": "py"
+			"ext": "py",
+			"templates": {}
 		},
 		"lua": {
 			"cmd": [
 				"luajit"
 			],
-			"ext": "lua"
+			"ext": "lua",
+			"templates": {}
 		},
 		"node": {
 			"cmd": [
 				"node"
 			],
-			"ext": "js"
+			"ext": "js",
+			"templates": {}
 		},
 		"deno": {
 			"cmd": [
 				"deno run -A"
 			],
-			"ext": "ts"
+			"ext": "ts",
+			"templates": {}
 		},
 		"bun": {
 			"cmd": [
 				"bun run"
 			],
-			"ext": "ts"
+			"ext": "ts",
+			"templates": {}
 		},
 		"fish": {
 			"cmd": [
 				"fish"
 			],
-			"ext": "sh"
+			"ext": "sh",
+			"templates": {}
+		},
+		"zsh": {
+			"cmd": [
+				"zsh"
+			],
+			"ext": "sh",
+			"templates": {}
 		},
 		"cpp": {
 			"cmd": [
 				"g++ -o conf/temp/main ",
 				"./conf/temp/main #"
 			],
-			"ext": "cpp"
+			"ext": "cpp",
+			"templates": {
+				"main": "#include <iostream>\n int main() {\n//__CODE__//\n}"
+			}
 		},
 		"rust": {
 			"cmd": [
-				"rustc -o conf/temp/main ",
-				"./conf/temp/main #"
+				"rustc -o conf/temp/main",
+				"./conf/temp/main"
 			],
-			"ext": "rs"
+			"ext": "rs",
+			"templates": {
+				"main": "fn main() {\n//__CODE__//\n}"
+			}
 		}
 	}
 }

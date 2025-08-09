@@ -20,7 +20,11 @@ export default class extends Cmd {
 		// all supported programming languages
 
 		// Language to be runned
-		const lang = langs.includes(args[0]) ? args.shift() as Lang : 'eval'
+		const firstArg = args[0].split('-')
+		const lang = langs.includes(firstArg[0]) ? args.shift()?.split('-')[0] as Lang : 'eval'
+		const template = (firstArg[1] ?? '')
+		console.log(args.join(' '))
+
 		const startTime = Date.now() // start time for execution duration
 		let output = '' // output of the code execution
 
@@ -50,7 +54,7 @@ export default class extends Cmd {
 			output = inspect(evaled, { depth: null })
 			// inspect output: stringify obj to human readable form
 		} else {
-			output = await runCode(lang, args.join(' '))
+			output = await runCode(lang, args.join(' '), undefined, template)
 			// runCode: run on a child process
 		}
 
