@@ -57,7 +57,7 @@ interface GroupMsg {
 }
 
 type GoogleFile = {
-	buffer: Buffer
+	buffer: Buffer<ArrayBufferLike> | ArrayBuffer
 	mime: str
 }
 type GeminiArgs = {

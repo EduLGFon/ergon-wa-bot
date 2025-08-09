@@ -1,5 +1,5 @@
-import { Collection, defaults, Msg, prisma, User } from '../map.js'
-import { GroupMetadata, GroupParticipant } from 'baileys'
+import { Collection, defaults, type Msg, prisma, User } from '../map.js'
+import type { GroupMetadata, GroupParticipant } from 'baileys'
 
 export default class Group {
 	id: str

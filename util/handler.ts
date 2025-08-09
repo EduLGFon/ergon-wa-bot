@@ -1,4 +1,4 @@
-import { BaileysEventMap } from 'baileys'
+import type { BaileysEventMap } from 'baileys'
 import cache from '../plugin/cache.js'
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'

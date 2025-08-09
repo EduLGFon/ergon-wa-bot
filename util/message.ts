@@ -1,13 +1,13 @@
 import {
 	allMsgTypes,
 	Cmd,
-	CmdCtx,
+	type CmdCtx,
 	coolValues,
 	findKey,
 	Group,
 	isMedia,
-	Msg,
-	MsgTypes,
+	type Msg,
+	type MsgTypes,
 	User,
 } from '../map.js'
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
@@ -96,7 +96,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 
 	if (!buffer) return
 
-	cache.media.set(msg.url, { // cache media
+	cache.media.add(msg.url, { // cache media
 		buffer,
 		url: msg.url,
 		mime: msg.mimetype,

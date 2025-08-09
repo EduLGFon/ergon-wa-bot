@@ -1,8 +1,8 @@
 import baileys, {
-	AuthenticationCreds,
-	AuthenticationState,
+	type AuthenticationCreds,
+	type AuthenticationState,
 	BufferJSON,
-	SignalDataTypeMap,
+	type SignalDataTypeMap,
 } from 'baileys'
 import prisma from './prisma.js'
 const {
@@ -33,8 +33,7 @@ const authState = async (): Promise<
 	}
 
 	const credsKey = 'creds'
-	let creds: AuthenticationCreds = (await getData(credsKey)) ||
-		initAuthCreds()
+	let creds: AuthenticationCreds = (await getData(credsKey)) || initAuthCreds()
 	if (!(await getData(credsKey))) {
 		await setData(credsKey, creds)
 	}

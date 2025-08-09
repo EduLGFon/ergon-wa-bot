@@ -1,4 +1,4 @@
-import humanizeDuration, { Unit } from 'humanize-duration'
+import humanizeDuration, { type Unit } from 'humanize-duration'
 import { DateTime, Duration } from 'luxon'
 import { getFixedT } from 'i18next'
 import { defaults } from '../map.js'
@@ -13,7 +13,7 @@ const now = (format = 'TT') =>
 		.toFormat(format) // TT = HOURS:MINITES:SECONDS
 
 // Pino Logger
-const logger = pino.default({
+const logger = pino({
 	level: 'error',
 	transport: {
 		target: 'pino-pretty',
@@ -51,6 +51,7 @@ function numPrototypes() {
 	/* Number Prototypes */
 	Object.defineProperties(Number.prototype, {
 		bytes: { // convert bytes to human readable nums
+			configurable: true,
 			value: function () {
 				const types = ['B', 'KB', 'MB', 'GB']
 				let type = 0
@@ -66,6 +67,7 @@ function numPrototypes() {
 			},
 		},
 		duration: { // convert ms time in short duration str
+			configurable: true,
 			value: function (ms?: bool) { // 1000 => 1s
 				const units: Unit[] = ['y', 'd', 'h', 'm', 's']
 				if (ms) units.push('ms')
@@ -101,6 +103,7 @@ function strPrototypes() {
 	Object.defineProperties(String.prototype, {
 		// get a URL on a string
 		getUrl: {
+			configurable: true,
 			value: function () {
 				const regex =
 					/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi
@@ -109,21 +112,25 @@ function strPrototypes() {
 		},
 		//      'deno'.toPascalCase() === 'Deno'
 		toPascalCase: {
+			configurable: true,
 			value: function () {
 				return this.slice(0, 1).toUpperCase() + this.slice(1)
 			},
 		},
 		encode: { // encode strings
+			configurable: true,
 			value: function () {
 				return !this ? '' : '`' + this.replace('`', '').trim() + '`'
 			},
 		},
 		parsePhone: { // parse wpp id to phone number
+			configurable: true,
 			value: function () {
 				return this.split('@')[0].split(':')[0]
 			},
 		},
 		bold: { // make text bold
+			configurable: true,
 			value: function (this: str) {
 				const chars = this.split('')
 				let result = ''
@@ -141,17 +148,20 @@ function strPrototypes() {
 			},
 		},
 		filterForRegex: { // remove some chars that conflict with regex chars
+			configurable: true,
 			value: function () {
 				return this.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 			},
 		},
 		t: { // get locale
+			configurable: true,
 			value: function (lang: str, options = {}) {
 				// 'help.menu'.t('en') => 'help menu'
 				return getFixedT(lang)(this, options)
 			},
 		},
 		align: { // align a word between spaces
+			configurable: true,
 			// famous left padding
 			value: function (limit: num, char: str = ' ', endPosition?: bool) {
 				let ratio = (limit - this.length) / 2
@@ -165,6 +175,7 @@ function strPrototypes() {
 			},
 		},
 		toMs: { // convert a str on ms
+			configurable: true,
 			value: function () { // '10s' => 1_000 * 10
 				const match: str[] = this.match(/(\d+)(y|d|h|m|s|w)/gi) || []
 

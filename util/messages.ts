@@ -1,5 +1,5 @@
-import { CmdCtx, emojis, getCtx, Msg, msgMeta, User } from '../map.js'
-import { AnyMessageContent, proto } from 'baileys'
+import { type CmdCtx, emojis, getCtx, type Msg, msgMeta, User } from '../map.js'
+import type { AnyMessageContent, proto } from 'baileys'
 import { downloadMedia } from './message.js'
 import { randomEmoji } from './emojis.js'
 import cache from '../plugin/cache.js'
@@ -100,9 +100,9 @@ async function deleteMessage(this: Msg | proto.IMessageKey) {
 
 // sendOrEdit: send a message or edit it if it was already sent
 // this is used to edit the message while the AI is writing
-async function sendOrEdit(data: { msg: Msg }, chat: str, text: str) {
+async function sendOrEdit(data: StreamMsg, text: str) {
 	if (data.msg?.key?.id) {
 		await editMsg.bind(data.msg)(text).catch((e) => print('Failed to edit message', e))
-		// @ts-ignore
-	} else data.msg = await send.bind(chat)(text)
+	} else if (text) data.msg = (await send.bind(data.msg.chat)(text)).msg
+	return
 }

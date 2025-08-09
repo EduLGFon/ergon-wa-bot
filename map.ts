@@ -19,15 +19,15 @@ import type { CmdCtx, GroupMsg, Msg, MsgTypes } from './conf/types/types.js'
 
 export {
 	allMsgTypes,
-	CmdCtx,
+	type CmdCtx,
 	coolTypes,
 	coolValues,
-	GroupMsg,
+	type GroupMsg,
 	isMedia,
 	isVisual,
 	mediaTypes,
-	Msg,
-	MsgTypes,
+	type Msg,
+	type MsgTypes,
 	textTypes,
 	visualTypes,
 }
