@@ -5,6 +5,7 @@
  */
 const node_args = [
 	'--expose-gc',
+	// '--max-old-space-size=16384',
 	'--env-file=conf/.env',
 ]
 

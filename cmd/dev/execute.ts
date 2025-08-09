@@ -13,7 +13,7 @@ export default class extends Cmd {
 		const startTime = Date.now()
 		const code = args.join(' ')
 
-		let output = await runCode('zsh', code)
+		let output = await runCode('fish', code)
 		// runCode: run on a child process
 
 		// execution duration

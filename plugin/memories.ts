@@ -20,7 +20,8 @@ async function createMemories(user: User, msg: AIMsg) {
 			msg.text = msg.text.replace(memory, '')
 			continue
 		}
-		msg.text = msg.text.replace(memory, `*🧠 Consultando memória: ${m.encode()}*`)
+		msg.text = msg.text.replace(memory, '') // remove placeholder from text
+		msg.header += `*🧠 Memória ativada: ${m.encode()}*\n`
 	}
 
 	// update user in database

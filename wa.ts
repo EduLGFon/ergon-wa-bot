@@ -5,11 +5,10 @@ import Baileys from './class/baileys.js'
 
 proto() // load prototypes
 locale() // load locales
-const bot = new Baileys('conf/auth')
-// auth/ contains auth info to login without scan QR Code again
+const bot = new Baileys()
 
 start()
-export async function start() {
+async function start() {
 	await bot.connect()
 	await loadCmds()
 	await loadEvents()

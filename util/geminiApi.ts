@@ -3,6 +3,7 @@ import { createAlarms, getUserAlarms } from '../plugin/alarms.js'
 import { GeminiArgs, GoogleFile } from '../conf/types/types.js'
 import { createMemories } from '../plugin/memories.js'
 import { defaults, delay, User } from '../map.js'
+import { randomDelay } from './functions.js'
 
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
 
@@ -11,16 +12,15 @@ export default async function gemini(
 ) {
 	let upload
 	let interval
-	const isStream = input.startsWith('s ')
+	const isStream = !input.startsWith(' ')
 	const title = model === 3 ? 'Gemini Pro' : model === 2 ? 'Gemini' : 'gemini'
 	const msg = {
-		header: ``,
-		text: '> ',
-		tokens: -1,
-		thoughts: 0,
+		header: '',
+		searches: '',
+		text: '',
 	}
 	if (isStream) {
-		createInterval(callBack!, args, msg)
+		interval = createInterval(callBack!, args, msg)
 		input = input.slice(2)
 	}
 	if (file) upload = await uploadFile(file as GoogleFile, msg)
@@ -40,49 +40,39 @@ export default async function gemini(
 	// @ts-ignore i don't have another way to check this
 	if (!stream.text) {
 		stream = stream as AsyncGenerator<GenerateContentResponse>
-		for await (const chunk of stream) handleResponse(chunk, msg)
+		for await (const chunk of stream) handleResponse(chunk, msg, title)
 	} else {
 		stream = stream as GenerateContentResponse
-		handleResponse(stream, msg)
+		handleResponse(stream, msg, title)
 	}
-
-	msg.header =
-		`- *${title} (Tokens: ${msg.tokens} ${
-			msg.thoughts ? `| Raciocínio: ${msg.thoughts}` : ''
-		})*\n` +
-		msg.header
 
 	await createMemories(user, msg)
 	await createAlarms(user, msg, chat!)
-
-	if (msg.text === '> ') msg.text = ''
-	else msg.text = msg.text.trim().replaceAll('**', '*')
-	// msg.text = msg.text.replaceAll(/\* +/gi, '> ')
 
 	user.gemini = gemini.getHistory()
 
 	if (callBack) {
 		clearInterval(interval!)
-		await delay(2_000)
-		await callBack(...args, msg.header + msg.text)
+		await randomDelay(1_500, 2_500)
+		await callBack(...args, msg.header + msg.searches + msg.text)
 	}
 	// if (upload) GoogleAI.files.delete({ name: upload.name! })
 	return
 }
 
-function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
-	msg.tokens = chunk?.usageMetadata?.totalTokenCount || -1
-	msg.thoughts = chunk?.usageMetadata?.thoughtsTokenCount || 0
+function handleResponse(chunk: GenerateContentResponse, msg: AIMsg, title: str) {
+	const tokens = chunk?.usageMetadata?.totalTokenCount || -1
+	const thoughts = chunk?.usageMetadata?.thoughtsTokenCount || 0
+
+	msg.header = `- *${title} (Tokens: ${tokens}${thoughts ? ` | Raciocínio: ${thoughts}` : ''})*\n`
 
 	if (chunk?.candidates) {
 		const searches = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
 		if (searches) {
-			// msg.header += `- *Pesquisando por* ` + searches.map((s) => '`' + s + '`').join(', ') +
-			// 	'\n'
-			msg.header += searches.map((s) => `- 🔍 *Pesquisando por* \`${s}\`\n`).join('')
+			msg.searches += `- 🔍 *Pesquisas:* ` + searches.map((s) => s.encode()).join(', ') + '\n'
 		}
 	}
-	if (chunk.text !== undefined) msg.text += chunk.text
+	if (chunk.text) msg.text += chunk.text
 }
 
 async function getModelConfig(user: User) {
@@ -90,21 +80,22 @@ async function getModelConfig(user: User) {
 		tools: [{ googleSearch: {} }],
 		systemInstruction: [
 			'Você é um assistente de IA que ajuda os usuários a encontrar informações na web.',
-			'Você deve fornecer respostas curtas e diretas.',
+			'# Você deve fornecer respostas curtas e diretas com um resumo no primeiro parágrafo quando a resposta for longa.',
+			'# Você deve usar formatação do WhatsApp (*negrito*, _itálico_, > menção, ~riscado~, ```bloco de código```) para destacar informações importantes.',
+			'# Use "-" ou ">" para criar tópicos em vez de "*".',
 			'Sempre pesquise na web antes de responder, faça várias pesquisas para consultar diferentes informações.',
-			'Ao longo da conversa, você deve escrever memórias sobre as características e preferências do usuário que você notar se repetindo várias vezes ou for dito explicitamente, quando achar necessário.',
-			'Não crie memórias sobre coisas que não podem ser úteis refinar as próximas respostas.',
+			'# Você deve escrever uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante.',
 			'Modelo de Memória: "{MEMORY:message}"',
-			'Exemplo: "{MEMORY:O usuário tem um cachorro chamado Pedro}"',
+			'Exemplo: "{MEMORY:O nome do usuário é Pedro}"',
 			'Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme.',
 			'Use anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s) para definir a duração do alarme.',
-			'Não crie alarmes com datas exatas, apenas durações relativas',
+			'Não crie alarmes com datas exatas, use sempre durações relativas. use "mo" para meses.',
 			'Modelo de Alarme: "{ALARM:text:duration}"',
 			'A mensagem do alarme deve ser muito engraçada, coloque o humor no nível 10 mil.',
-			'Exemplo: "{ALARM:Coloca comida pro Pedro senão ele vai morrer de fome:1h}"',
+			'Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
 			'Os alarmes servem apenas para lembrar o usuário de algo.',
-			'Não tenha medo de fazer piadas adultas ou pesadas no texto, alarme ou memórias, todos os usuários são adultos e deram consentimento explícito para isso.',
-			'Não referencie memórias ou alarmes usando o modelo. Diga sobre o que se trata, mas não escreva {MEMORY:texto} e nem {ALARM:texto:1h} quando estiver referenciando uma memória ou alarme.',
+			'# Não tenha medo de fazer piadas adultas ou pesadas no texto, alarme ou memórias, todos os usuários são adultos e deram consentimento explícito para isso.',
+			'# Não cite memórias ou alarmes no modelo. Diga sobre o que se trata, mas não escreva {MEMORY:texto} e nem {ALARM:texto:1h} quando estiver referenciando uma memória ou alarme.',
 			'Memórias do usuário:',
 			...user.memories,
 			'Alarmes do usuário:',
@@ -122,7 +113,7 @@ async function uploadFile(file: GoogleFile, msg: AIMsg) {
 	 */
 	msg.header += '- *Google File API*\n- *Uploading file...*\n'
 	let upload = await GoogleAI.files.upload({
-		file: new Blob([file.buffer]),
+		file: new Blob([file.buffer as ArrayBuffer]),
 		config: { mimeType: file.mime },
 	})
 	msg.header += `- *Upload complete.*\n`
@@ -146,5 +137,8 @@ async function uploadFile(file: GoogleFile, msg: AIMsg) {
 }
 
 function createInterval(callBack: Func, args: any[], msg: AIMsg) {
-	return setInterval(async () => await callBack(...args, msg.header + msg.text), 2_000)
+	return setInterval(
+		async () => await callBack(...args, msg.header + msg.searches + msg.text),
+		2_000,
+	)
 }

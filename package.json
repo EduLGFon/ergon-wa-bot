@@ -27,24 +27,24 @@
 		"translate": "npx @parvineyvazov/json-translator locale/pt.json -m google -f pt -t en es fr de"
 	},
 	"dependencies": {
-		"@google/genai": "^1.12.0",
+		"@google/genai": "^1.13.0",
 		"@prisma/client": "^6.13.0",
 		"baileys": "^6.7.18",
-		"chalk": "^5.4.1",
+		"chalk": "^5.5.0",
 		"google-translate": "github:iamtraction/google-translate",
 		"humanize-duration": "^3.33.0",
 		"i18next": "^25.3.2",
 		"i18next-fs-backend": "^2.6.0",
 		"luxon": "^3.7.1",
 		"node-webpmux": "^3.2.1",
-		"pino": "^9.7.0",
+		"pino": "^9.8.0",
 		"qrcode": "^1.5.4",
 		"wa-sticker-formatter": "^4.4.4"
 	},
 	"devDependencies": {
 		"@types/humanize-duration": "^3.27.4",
 		"@types/luxon": "^3.7.1",
-		"@types/node": "^22.17.0",
+		"@types/node": "^22.17.1",
 		"@types/qrcode": "^1.5.5",
 		"pino-pretty": "^13.1.1",
 		"prisma": "^6.13.0"

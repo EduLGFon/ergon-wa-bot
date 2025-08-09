@@ -1,6 +1,6 @@
 import { getMedia, sendOrEdit } from '../../util/messages.js'
 import { cleanMemories } from '../../plugin/memories.js'
-import { Cmd, CmdCtx, Msg } from '../../map.js'
+import { Cmd, CmdCtx, defaults } from '../../map.js'
 import gemini from '../../util/geminiApi.js'
 
 export default class extends Cmd {
@@ -14,7 +14,7 @@ export default class extends Cmd {
 
 	async run({ msg, args, react, user, send, startTyping }: CmdCtx) {
 		if (!args[0]) return send('Por favor escreva um prompt')
-		let model = 2 // default gemini model (2.5 flash)
+		let model = 2 // default gemini model
 
 		if (args[0] === this.subCmds[0]) { // clean
 			user.gemini = []
@@ -33,14 +33,16 @@ export default class extends Cmd {
 
 		if (args[0] === this.subCmds[2]) { // use pro model
 			if (!args[1]) return send('Por favor escreva um prompt')
-			model = 3 // gemini 2.5 pro preview
+			model = 3
 			args.shift()
 		}
 		await startTyping()
 
 		const streamMsg = { // Workaround to make the variable always point to
-			msg: {}, // this memory space
-		} as { msg: Msg }
+			msg: { // this memory space
+				chat: msg.chat,
+			},
+		}
 		await sendPrompt(model)
 		react('sparkles')
 
@@ -57,9 +59,9 @@ export default class extends Cmd {
 				chat: msg.chat, // this chat id
 				file: await getMedia(msg),
 				callBack: sendOrEdit, // edit msg while gemini writes it
-				args: [streamMsg!, msg.chat], // arguments to pass to the callback
+				args: [streamMsg!], // arguments to pass to the callback
 			}).catch(async (e): Promise<any> => {
-				print(model, e, 'red')
+				print(defaults.ai.gemini_chain[model], e, 'red')
 				return await sendPrompt(model - 1) // try next model
 			})
 		}

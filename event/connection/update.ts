@@ -1,6 +1,7 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
+import { loadEvents } from '../../util/handler.js'
 import { Collection, delay } from '../../map.js'
-import bot, { start } from '../../wa.js'
+import bot from '../../wa.js'
 import QRCode from 'qrcode'
 
 // Keep last 5 logins DateTime
@@ -54,8 +55,8 @@ export default async function (event: Partial<ConnectionState>) {
 
 				const now = Date.now()
 				lastLogins.add(now, now)
-				bot.connect()
-				// start()
+				await bot.connect()
+				loadEvents()
 				return
 			}
 			print('WA', 'Logged out', 'red')

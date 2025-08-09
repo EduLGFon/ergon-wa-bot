@@ -42,7 +42,7 @@ export default class extends Cmd {
 
 		try {
 			await startTyping()
-			await runCode('zsh', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
+			await runCode('fish', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
 			Object.setPrototypeOf(data, {
 				[type]: readFileSync(path),
