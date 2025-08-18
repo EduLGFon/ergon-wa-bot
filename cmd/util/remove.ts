@@ -16,7 +16,7 @@ export default class extends Cmd {
 		if (!media || !media.mime.includes('image')) return send(t('sticker.nobuffer'))
 		await startTyping()
 
-		const path = defaults.runner.tempFolder + `rm_${Date.now()}.webp`
+		const path = defaults.runner.tempFolder + `/rm_${Date.now()}.webp`
 		await writeFile(path, media.buffer)
 		// create temporary file
 		await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')

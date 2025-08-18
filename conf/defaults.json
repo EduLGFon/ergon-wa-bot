@@ -18,7 +18,7 @@
 		"groupMsgs": 200
 	},
 	"runner": {
-		"tempFolder": "conf/temp/",
+		"tempFolder": "conf/temp",
 		"ytdlp": "conf/venv/bin/yt-dlp",
 		"py": {
 			"cmd": [

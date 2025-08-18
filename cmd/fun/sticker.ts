@@ -64,7 +64,7 @@ export default class extends Cmd {
 					if (!args.includes(subCmds[0])) return
 					// remove image background
 
-					const path = defaults.runner.tempFolder + `rmsticker_${Date.now()}.webp`
+					const path = defaults.runner.tempFolder + `/rmsticker_${Date.now()}.webp`
 					await writeFile(path, buffer)
 
 					// create temporary file

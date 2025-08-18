@@ -44,7 +44,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 			}
 			// it's not a this-process JS code
 			// so let's create a file and run it with the right runtime
-			file = `${defaults.runner.tempFolder}exec.${data.ext!}` // temp/exec.rs
+			file = `${defaults.runner.tempFolder}/exec.${data.ext!}` // temp/exec.rs
 
 			await writeFile(file, code) // write file
 			code = '' // clean the code bc it will be on CLI if (file)
