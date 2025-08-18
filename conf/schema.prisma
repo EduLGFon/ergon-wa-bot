@@ -34,7 +34,22 @@ model msgs {
   @@id([author, group])
 }
 
-model authStorage {
-  key  String @id
-  data Json
+model BaileysAuthCreds {
+  sessionId String  @id
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BaileysAuthKey {
+  sessionId String
+  category  String
+  keyId     String
+  data      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([sessionId, category, keyId])
+  @@index([sessionId, category])
 }

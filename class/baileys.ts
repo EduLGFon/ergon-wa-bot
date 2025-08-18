@@ -10,7 +10,7 @@ import {
 	useMultiFileAuthState,
 	type WASocket,
 } from 'baileys'
-import authState from '../plugin/authState.js'
+import postgresAuthState from '../plugin/authState.js'
 import { logger } from '../util/proto.js'
 
 export default class Baileys {
@@ -19,10 +19,9 @@ export default class Baileys {
 	constructor() {}
 
 	async connect() {
-		// await prisma.authStorage.deleteMany({}) // clear old authStorage
 		// Use saved session
 		const { state, saveCreds } = process.env.DATABASE_URL
-			? await authState()
+			? await postgresAuthState('ergon')
 			: await useMultiFileAuthState('conf/auth')
 
 		this.sock = makeWASocket({

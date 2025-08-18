@@ -4,81 +4,167 @@ import baileys, {
 	BufferJSON,
 	type SignalDataTypeMap,
 } from 'baileys'
+import type { PrismaPromise } from '@prisma/client'
 import prisma from './prisma.js'
-const {
-	initAuthCreds,
-	proto,
-} = baileys
 
-const authState = async (): Promise<
-	{ state: AuthenticationState; saveCreds: () => Promise<void> }
-> => {
-	// Database operations replacing file operations with BufferJSON conversions
-	const getData = async (key: string): Promise<any | null> => {
-		const record = await prisma.authStorage.findUnique({ where: { key } })
-		return record ? JSON.parse(JSON.stringify(record.data), BufferJSON.reviver) : null
-	}
+const { initAuthCreds, proto } = baileys
 
-	const setData = async (key: string, data: any): Promise<void> => {
-		const jsonData = JSON.parse(JSON.stringify(data, BufferJSON.replacer))
-		await prisma.authStorage.upsert({
-			where: { key },
-			update: { data: jsonData },
-			create: { key, data: jsonData },
+const toStorableJson = (value: unknown) => JSON.parse(JSON.stringify(value, BufferJSON.replacer))
+
+const fromStorableJson = <T = any>(value: unknown | null): T | null => {
+	if (value == null) return null
+	return JSON.parse(JSON.stringify(value), BufferJSON.reviver) as T
+}
+
+const postgresAuthState = async (
+	folder: string,
+): Promise<{ state: AuthenticationState; saveCreds: () => Promise<void> }> => {
+	const sessionId = folder
+
+	const writeData = async (data: any, file: string) => {
+		if (file === 'creds.json') {
+			const json = toStorableJson(data)
+			await prisma.baileysAuthCreds.upsert({
+				where: { sessionId },
+				create: { sessionId, data: json },
+				update: { data: json },
+			})
+			return
+		}
+
+		const match = /^(.*?)-(.*)\.json$/.exec(file)
+		if (!match) return
+		const [, category, keyId] = match
+		const json = toStorableJson(data)
+
+		await prisma.baileysAuthKey.upsert({
+			where: { sessionId_category_keyId: { sessionId, category, keyId } },
+			create: { sessionId, category, keyId, data: json },
+			update: { data: json },
 		})
 	}
 
-	const removeData = async (key: string): Promise<void> => {
-		await prisma.authStorage.deleteMany({ where: { key } })
+	const readData = async (file: string) => {
+		try {
+			if (file === 'creds.json') {
+				const row = await prisma.baileysAuthCreds.findUnique({ where: { sessionId } })
+				return fromStorableJson(row?.data)
+			}
+			const match = /^(.*?)-(.*)\.json$/.exec(file)
+			if (!match) return null
+			const [, category, keyId] = match
+			const row = await prisma.baileysAuthKey.findUnique({
+				where: { sessionId_category_keyId: { sessionId, category, keyId } },
+			})
+			return fromStorableJson(row?.data)
+		} catch {
+			return null
+		}
 	}
 
-	const credsKey = 'creds'
-	let creds: AuthenticationCreds = (await getData(credsKey)) || initAuthCreds()
-	if (!(await getData(credsKey))) {
-		await setData(credsKey, creds)
+	const removeData = async (file: string) => {
+		try {
+			if (file === 'creds.json') {
+				await prisma.baileysAuthCreds.delete({ where: { sessionId } }).catch(() => {})
+				return
+			}
+			const match = /^(.*?)-(.*)\.json$/.exec(file)
+			if (!match) return
+			const [, category, keyId] = match
+			await prisma.baileysAuthKey
+				.delete({ where: { sessionId_category_keyId: { sessionId, category, keyId } } })
+				.catch(() => {})
+		} catch {}
 	}
+
+	const creds: AuthenticationCreds = (await readData('creds.json')) || initAuthCreds()
 
 	return {
 		state: {
 			creds,
 			keys: {
 				get: async (type, ids) => {
-					const data: {
-						[_: string]: SignalDataTypeMap[typeof type]
-					} = {}
-					await Promise.all(
-						ids.map(async (id) => {
-							const key = `${type}-${id}`
-							let value = await getData(key)
-							if (type === 'app-state-sync-key' && value) {
-								value = proto.Message.AppStateSyncKeyData
-									.fromObject(value)
-							}
-							data[id] = value
-						}),
-					)
-					return data
+					if (!ids.length) return {}
+					const rows = await prisma.baileysAuthKey.findMany({
+						where: {
+							sessionId,
+							category: type as unknown as string,
+							keyId: { in: ids },
+						},
+					})
+
+					const out: { [_: string]: SignalDataTypeMap[typeof type] } = {}
+					const map = new Map(rows.map((r) => [r.keyId, r.data]))
+					for (const id of ids) {
+						let value =
+							fromStorableJson<SignalDataTypeMap[typeof type]>(map.get(id) ?? null) ??
+								undefined
+						if (type === 'app-state-sync-key' && value) {
+							value = proto.Message.AppStateSyncKeyData.fromObject(
+								value as any,
+							) as any
+						}
+						out[id] = value as any
+					}
+					return out
 				},
 				set: async (data) => {
-					const tasks: Promise<void>[] = []
+					const ops: PrismaPromise<any>[] = []
+
 					for (const category in data) {
-						const catData = data[category as keyof SignalDataTypeMap]
-						for (const id in catData!) {
-							const key = `${category}-${id}`
-							const value = catData[id]
-							tasks.push(
-								value ? setData(key, value) : removeData(key),
-							)
+						const byId = (data as any)[category] as Record<string, any>
+						for (const keyId in byId) {
+							const value = byId[keyId]
+							if (value) {
+								const json = toStorableJson(value)
+								ops.push(
+									prisma.baileysAuthKey.upsert({
+										where: {
+											sessionId_category_keyId: {
+												sessionId,
+												category,
+												keyId,
+											},
+										},
+										create: { sessionId, category, keyId, data: json },
+										update: { data: json },
+									}),
+								)
+							} else {
+								ops.push(
+									prisma.baileysAuthKey.delete({
+										where: {
+											sessionId_category_keyId: {
+												sessionId,
+												category,
+												keyId,
+											},
+										},
+									}),
+								)
+							}
 						}
 					}
-					await Promise.all(tasks)
+
+					if (ops.length) {
+						try {
+							await prisma.$transaction(ops)
+						} catch (err) {
+							if (
+								!(err instanceof Error &&
+									err.message.includes('Record to delete does not exist'))
+							) {
+								throw err
+							}
+						}
+					}
 				},
 			},
 		},
 		saveCreds: async () => {
-			return setData(credsKey, creds)
+			await writeData(creds, 'creds.json')
 		},
 	}
 }
 
-export default authState
+export default postgresAuthState
