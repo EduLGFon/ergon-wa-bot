@@ -24,50 +24,43 @@
 			"cmd": [
 				"conf/venv/bin/python3"
 			],
-			"ext": "py",
-			"templates": {}
+			"ext": "py"
 		},
 		"lua": {
 			"cmd": [
 				"luajit"
 			],
-			"ext": "lua",
-			"templates": {}
+			"ext": "lua"
 		},
 		"node": {
 			"cmd": [
 				"node"
 			],
-			"ext": "js",
-			"templates": {}
+			"ext": "js"
 		},
 		"deno": {
 			"cmd": [
 				"deno run -A"
 			],
-			"ext": "ts",
-			"templates": {}
+			"ext": "ts"
 		},
 		"bun": {
 			"cmd": [
 				"bun run"
 			],
-			"ext": "ts",
-			"templates": {}
+			"ext": "ts"
 		},
 		"fish": {
 			"cmd": [
 				"fish"
 			],
-			"ext": "sh",
-			"templates": {}
+			"ext": "sh"
 		},
 		"zsh": {
 			"cmd": [
 				"zsh"
 			],
-			"ext": "sh",
-			"templates": {}
+			"ext": "sh"
 		},
 		"cpp": {
 			"cmd": [
@@ -75,19 +68,31 @@
 				"./conf/temp/main #"
 			],
 			"ext": "cpp",
-			"templates": {
-				"main": "#include <iostream>\n int main() {\n//__CODE__//\n}"
-			}
+			"triggers": [{
+				"notIncludes": ["int main"],
+				"template": "int main() { {{code}} }"
+			}, {
+				"notIncludes": ["#include <iostream>"],
+				"template": "#include <iostream>\n{{code}}"
+			}]
 		},
-		"rust": {
+		"rs": {
 			"cmd": [
 				"rustc -o conf/temp/main",
 				"./conf/temp/main"
 			],
 			"ext": "rs",
-			"templates": {
-				"main": "fn main() {\n//__CODE__//\n}"
-			}
+			"triggers": [{
+				"notIncludes": ["fn main"],
+				"template": "fn main() { {{code}} }"
+			}]
+		},
+		"eval": {
+			"cmd": [],
+			"triggers": [{
+				"includes": ["await"],
+				"template": "(async () => { {{code}} })()"
+			}]
 		}
 	}
 }

@@ -6,7 +6,7 @@ type Func = Function
 
 // you can find these functions on `util/proto.ts`
 declare function print(...args: any[]): void
-declare module 'node-webpmux'
+
 interface String {
 	align(limit: num, char?: str, endPosition?: bool): str
 	toMs(): [num, str[]]
@@ -55,5 +55,5 @@ interface MediaMsg {
 type AIMsg = { header: str; text: str }
 
 type StreamMsg = { msg: Msg; chat: str }
-type Lang = 'py' | 'lua' | 'node' | 'deno' | 'bun' | 'fish' | 'cpp'
+type Lang = 'py' | 'lua' | 'rs' | 'node' | 'deno' | 'bun' | 'fish' | 'zsh' | 'cpp' | 'eval'
 // supported programming languages
