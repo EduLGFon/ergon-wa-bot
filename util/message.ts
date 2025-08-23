@@ -28,18 +28,22 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	let group = undefined
 	if (key.remoteJid?.includes('@g.us')) group = await getGroup(key.remoteJid)
 
-	let phone = key.fromMe ? bot.sock.user?.id! : key.remoteJid!
-	if (key.participant) phone = key.participant!
+	let lid = key.fromMe ? bot.sock.user?.id : key.remoteJid!
+	if (key.participant) lid = key.participant!
+	if (lid?.includes(':')) {
+		const splitted = lid.split(':')
+		lid = splitted[0] + '@' + splitted[1].split('@')[1]
+	}
 
-	if (phone?.endsWith('@g.us')) return fakeCtx
-	let user = await getUser({ phone })
+	if (lid?.endsWith('@g.us')) return fakeCtx
+	let user = await getUser({ lid })
 
 	const mime = findKey(message, 'mimetype') // media mimetype like image/png
 	const isBot = Boolean(key.fromMe && !Object.keys(key).includes('participant')) // if it's baileys client
 
 	let msg: Msg = {
 		chat: key?.remoteJid!, // msg chat id
-		author: user?.phone!,
+		author: user?.id!,
 		type: types[0],
 		text: getMsgText(message!),
 		media: await downloadMedia(raw, types),

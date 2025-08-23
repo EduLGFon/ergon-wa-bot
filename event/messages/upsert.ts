@@ -20,9 +20,9 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		/* * Messages counting & storing */
 		if (!msg.isEdited) {
 			// count msgs with valid types for group msgs rank cmd
-			if (group) group.countMsg(user, msg)
+			if (group) group.countMsg(msg)
 			else { // store msgs for searching images on sticker cmd
-				const chat = await getUser({ phone: msg.chat })
+				const chat = await getUser({ lid: msg.chat })
 				chat!.msgs.add(msg.key.id!, msg)
 			}
 		}

@@ -29,7 +29,7 @@ async function sendAlarms() {
 		// send alarm to chat mentioning user
 		await send.bind(a.chat)({
 			text: `@${user!.phone}\n- 🔔 *Alarme:* \`${a.msg}\` `,
-			mentions: [user!.chat],
+			mentions: [user!.lid],
 		})
 			.then(async () => {
 				await prisma.alarms.update({

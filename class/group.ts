@@ -42,19 +42,19 @@ export default class Group {
 		this.msgs.iterate(data?.msgs) // retrieve cached msgs on startup (if exists)
 	}
 
-	async countMsg(user: User, msg: Msg) { // +1 to group member msgs count
+	async countMsg(msg: Msg) { // +1 to group member msgs count
 		this.msgs.add(msg.key.id!, msg) // add it to cache
 		if (!process.env.DATABASE_URL || msg.isBot) return
 
 		await prisma.msgs.upsert({ // save it on db
 			where: {
 				author_group: {
-					author: user.id,
+					author: msg.author,
 					group: this.id.parsePhone(),
 				},
 			},
 			create: { // create user counter
-				author: user.id,
+				author: msg.author,
 				group: this.id.parsePhone(),
 			},
 			update: { // or add 1  to count

@@ -9,39 +9,38 @@ const prisma = new PrismaClient()
 export default prisma
 export { createUser, getGroup, getUser }
 
-async function createUser({ phone, name }: { phone: str; name?: str }): Promise<User> {
-	let id = Number(phone)
+async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
+	let id = Number(lid.parsePhone())
 	if (process.env.DATABASE_URL) {
 		const data = await prisma.users.create({
 			data: { // create user on DB if there is one
-				phone,
+				lid,
 				name,
 			},
 		})
 		id = data.id
 	}
 
-	const user = new User({ id, phone, name })
+	const user = new User({ id, lid, name })
 	cache.users.add(user.id, user)
 
 	return user
 }
 
 async function getUser(
-	{ id, phone, name }: { id?: num; phone?: str; name?: str },
+	{ id, lid, name }: { id?: num; lid?: str; name?: str },
 ): Promise<User | undefined> {
-	if (phone) {
-		// search by phone on cache
-		const number = phone!.parsePhone()
-		const data = cache.users.find((u) => u.phone === number)
+	if (lid) {
+		// search by lid on cache
+		const data = cache.users.find((u) => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users.findUnique({ where: { phone: number } })
+		const dbUser = await prisma.users.findFirst({ where: { lid } })
 			.catch(() => {}) // there is no DB. Let's just ignore it
 
 		if (!dbUser) {
 			// not on db, so it's a new user
-			return await createUser({ phone: number, name })
+			return await createUser({ lid, name })
 			// createUser() will also add it to cache
 		}
 
@@ -50,7 +49,7 @@ async function getUser(
 		cache.users.add(user.id, user)
 		return user
 	}
-	// no phone provided, so lets search by id on cache
+	// no lid provided, so lets search by id on cache
 	const data = cache.users.find((u) => u.id === id)
 	if (data) return data
 

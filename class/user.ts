@@ -1,9 +1,9 @@
 import { Collection, defaults, type Msg, prisma } from '../map.js'
-import type { UserSchema } from '../conf/types/types.js'
 import type { Content } from '@google/genai'
 
 export default class User {
 	id: num
+	lid: str
 	phone: str
 
 	private _name: str
@@ -16,9 +16,10 @@ export default class User {
 	gemini: Content[]
 	msgs: Collection<str, Msg>
 
-	constructor({ id, phone, name, cmds, prefix, lang, memories }: Partial<UserSchema>) {
+	constructor({ id, lid, name, cmds, prefix, lang, memories }: Partial<UserSchema>) {
 		this.id = id!
-		this.phone = phone!.parsePhone()
+		this.lid = lid!
+		this.phone = lid!.parsePhone()
 
 		this._name = name || 'user'
 		this._lang = lang || defaults.lang
@@ -30,11 +31,6 @@ export default class User {
 		this.memories = JSON.parse(memories || '[]')
 		this.gemini = []
 	}
-
-	public get chat() { // get user id to send msgs
-		return this.phone + '@s.whatsapp.net'
-	}
-
 	public get name() { // get user name from cache
 		return this._name
 	}

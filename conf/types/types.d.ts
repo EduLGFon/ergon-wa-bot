@@ -26,7 +26,7 @@ type MsgTypes =
 
 interface Msg {
 	chat: str
-	author: str
+	author: num
 	text: str
 	type: MsgTypes
 	media?: MediaMsg

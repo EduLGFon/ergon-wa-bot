@@ -26,7 +26,7 @@ export default class extends Cmd {
 			const member = await getUser({ id: msgs[i].author }) as User
 			let name = (member.name || member.phone).trim()
 
-			if (!members.includes(member.chat)) name = `~${name}~`
+			if (!members.includes(member.lid)) name = `~${name}~`
 			// it means user is not a member from this group anymore
 
 			text += `${Number(i) + 1}. ${name}: *${count}*\n`

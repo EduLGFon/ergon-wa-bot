@@ -51,7 +51,7 @@ export default abstract class Cmd {
 			const admins = group.members.map((m) => m.admin && m.id) || []
 			// all group admins id
 
-			if (this.access.admin && (!admins.includes(user.chat) && !isDev)) {
+			if (this.access.admin && (!admins.includes(user.lid) && !isDev)) {
 				return reactMsg('prohibited') // Devs can use admin cmds for security reasons
 			}
 		} else if (!this.access.dm) return reactMsg('block') // this cmd can't run on DMs

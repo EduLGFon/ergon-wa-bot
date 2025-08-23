@@ -9,7 +9,7 @@ datasource db {
 
 model users {
   id       Int     @id @default(autoincrement())
-  phone    String  @unique @db.VarChar()
+  lid      String  @unique @db.VarChar()
   name     String? @db.VarChar()
   memories String? @db.VarChar()
   lang     String? @db.VarChar()

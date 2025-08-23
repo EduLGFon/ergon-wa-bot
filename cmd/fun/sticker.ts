@@ -22,7 +22,7 @@ export default class extends Cmd {
 		if (!media || !isVisual(media.target.type)) {
 			// this logic will create a sticker for each media sent by
 			// the user until a msg is not from them
-			const chat = group || cache.users.find((u) => u.phone === msg.chat.parsePhone())!
+			const chat = group || cache.users.find((u) => u.lid === msg.chat)!
 			const msgs = chat.msgs.reverse().slice(1)
 			// Sorts msgs from newest to oldest and ignores the cmd msg
 

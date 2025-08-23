@@ -26,7 +26,7 @@ interface Number {
 
 type UserSchema = { // user db typescript schema
 	id: num
-	phone: str
+	lid: str
 	name: str | null
 	lang: str | null
 	prefix: str | null
