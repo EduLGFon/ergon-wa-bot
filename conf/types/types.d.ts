@@ -57,7 +57,7 @@ interface GroupMsg {
 }
 
 type GoogleFile = {
-	buffer: Buffer<ArrayBufferLike> | ArrayBuffer
+	buffer: Buf<ArrayBufferLike> | ArrayBuffer
 	mime: str
 }
 type GeminiArgs = {
@@ -70,15 +70,4 @@ type GeminiArgs = {
 	file?: GoogleFile
 }
 
-// user typescript schema
-type UserSchema = {
-	id: num
-	phone: str
-	name: str | null
-	lang: str | null
-	prefix: str | null
-	cmds: num | null
-	memories: str | null
-}
-
-export { CmdCtx, GeminiArgs, GoogleFile, GroupMsg, MediaMsg, Msg, MsgTypes, UserSchema }
+export { CmdCtx, GeminiArgs, GoogleFile, GroupMsg, MediaMsg, Msg, MsgTypes }

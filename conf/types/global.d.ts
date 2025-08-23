@@ -4,7 +4,7 @@ type bool = boolean
 type Buf = Buffer
 type Func = Function
 
-// you can find these functions on `util/proto.ts`
+// you can find these (print, str, num) functions on `util/proto.ts`
 declare function print(...args: any[]): void
 
 interface String {
@@ -24,8 +24,17 @@ interface Number {
 	duration(ms?: bool): str
 }
 
-// alarm database typescript schema
-type Alarm = {
+type UserSchema = { // user db typescript schema
+	id: num
+	phone: str
+	name: str | null
+	lang: str | null
+	prefix: str | null
+	cmds: num | null
+	memories: str | null
+}
+
+type Alarm = { // alarm db schema
 	id: num
 	author: num
 	chat: str
@@ -35,7 +44,7 @@ type Alarm = {
 }
 
 interface Media {
-	buffer: Buffer<ArrayBufferLike>
+	buffer: Buff<ArrayBufferLike>
 	url: str
 	mime: str
 	length: num
