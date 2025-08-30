@@ -43,7 +43,7 @@ export default class extends Cmd {
 		let output = ''
 		try {
 			await startTyping()
-			output = await runCode('fish', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
+			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
 			Object.setPrototypeOf(data, {
 				[type]: readFileSync(path),

@@ -11,7 +11,7 @@ export default class extends Cmd {
 
 	async run({ args, send }: CmdCtx) {
 		const startTime = Date.now()
-		const output = await runCode('fish', args.join(' '))
+		const output = await runCode('bash', args.join(' '))
 		// runCode: run on a child process
 
 		// execution duration

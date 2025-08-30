@@ -50,9 +50,9 @@
 			],
 			"ext": "ts"
 		},
-		"fish": {
+		"bash": {
 			"cmd": [
-				"fish"
+				"bash"
 			],
 			"ext": "sh"
 		},
