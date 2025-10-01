@@ -1,7 +1,7 @@
-import { getMedia, sendOrEdit } from '../../util/messages.js'
 import { cleanMemories } from '../../plugin/memories.js'
 import { randomDelay } from '../../util/functions.js'
 import { Cmd, CmdCtx, defaults } from '../../map.js'
+import { getMedia } from '../../util/messages.js'
 import gemini from '../../util/geminiApi.js'
 
 export default class extends Cmd {
@@ -38,21 +38,14 @@ export default class extends Cmd {
 			args.shift()
 		}
 		await startTyping()
-
-		const streamMsg = { // Workaround to make the variable always point to
-			msg: { // this memory space
-				chat: msg.chat,
-			},
-		}
-
 		await sendPrompt(model)
 		await randomDelay(2_000, 3_000) // wait before reacting for anti-bot detection reasons
 		react('sparkles')
 
-		async function sendPrompt(model: num) {
+		async function sendPrompt(model: num, error?: any) {
 			if (model < 0) {
 				print('GEMINI', 'No more models to try', 'red')
-				return await send('Nenhum modelo disponível para este prompt')
+				return await send(`Nenhum modelo disponível para este prompt\n\n${error.message}`)
 			}
 
 			return await gemini({
@@ -61,11 +54,9 @@ export default class extends Cmd {
 				user,
 				chat: msg.chat, // this chat id
 				file: await getMedia(msg),
-				callBack: sendOrEdit, // edit msg while gemini writes it
-				args: [streamMsg!], // arguments to pass to the callback
 			}).catch(async (e): Promise<any> => {
-				print(defaults.ai.gemini_chain[model], e, 'red')
-				return await sendPrompt(model - 1) // try next model
+				print(defaults.ai.gemini_chain[model], e)
+				return await sendPrompt(model - 1, e) // try next model
 			})
 		}
 	}
