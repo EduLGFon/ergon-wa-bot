@@ -12,5 +12,5 @@ rollback
 node_modules
 
 # Logs / Lock
-log.txt
+out.log
 conf/temp/*
