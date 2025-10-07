@@ -73,29 +73,29 @@
 				"template": "int main() { {{code}} }"
 			}, {
 				"notIncludes": ["#include <iostream>"],
-				"template": `#include <iostream>      // I/O streams.
-							#include <string>        // String class.
-							#include <vector>        // Dynamic array.
-							#include <map>           // Ordered key-value map.
-							#include <unordered_map> // Unordered key-value map (hash map).
-							#include <set>           // Ordered unique elements.
-							#include <algorithm>     // Standard algorithms.
-							#include <numeric>       // Numeric operations.
-							#include <memory>        // Smart pointers.
-							#include <utility>       // Utilities like std::pair.
-							#include <fstream>       // File streams.
-							#include <sstream>       // String streams.
-							#include <iomanip>       // I/O manipulators.
-							#include <limits>        // Numeric limits.
-							#include <stdexcept>     // Standard exceptions.
-							#include <functional>    // Function objects.
-							#include <thread>        // Multi-threading.
-							#include <mutex>         // Thread synchronization.
-							#include <chrono>        // Time utilities.
-							#include <filesystem>    // File system access (C++17).
-							#include <cmath>         // Math functions.
-							#include <cstdlib>       // General utilities.
-							int main(){{code}}`
+				"template": "#include <iostream>      // I/O streams\n
+							#include <string>        // String class\n
+							#include <vector>        // Dynamic array\n
+							#include <map>           // Ordered key-value map\n
+							#include <unordered_map> // Unordered key-value map (hash map)\n
+							#include <set>           // Ordered unique elements\n
+							#include <algorithm>     // Standard algorithms\n
+							#include <numeric>       // Numeric operations\n
+							#include <memory>        // Smart pointers\n
+							#include <utility>       // Utilities like std::pair\n
+							#include <fstream>       // File streams\n
+							#include <sstream>       // String streams\n
+							#include <iomanip>       // I/O manipulators\n
+							#include <limits>        // Numeric limits\n
+							#include <stdexcept>     // Standard exceptions\n
+							#include <functional>    // Function objects\n
+							#include <thread>        // Multi-threading\n
+							#include <mutex>         // Thread synchronization\n
+							#include <chrono>        // Time utilities\n
+							#include <filesystem>    // File system access (C++17)\n
+							#include <cmath>         // Math functions\n
+							#include <cstdlib>       // General utilities\n
+							int main(){{code}}"
 			}]
 		},
 		"rs": {
