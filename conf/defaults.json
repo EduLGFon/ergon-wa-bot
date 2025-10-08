@@ -73,7 +73,7 @@
 				"template": "int main() { {{code}} }"
 			}, {
 				"notIncludes": ["#include <iostream>"],
-				"template": "#include <iostream>\n#include <string>\n#include <vector>\n#include <map>\n#include <unordered_map>\n#include <set>\n#include <algorithm>\n#include <numeric>\n#include <memory>\n#include <utility>\n#include <fstream>\n#include <sstream>\n#include <iomanip>\n#include <limits>\n#include <stdexcept>\n#include <functional>\n#include <thread>\n#include <mutex>\n#include <chrono>\n#include <filesystem>\n#include <cmath>\n#include <cstdlib>\n{{code}}"
+				"template": "#include <iostream>\n{{code}}"
 			}]
 		},
 		"rs": {
