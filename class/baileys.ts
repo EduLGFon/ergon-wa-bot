@@ -20,11 +20,11 @@ export default class Baileys {
 
 	async connect() {
 		// Use saved session (otherwise you'll need to log in again every time)
-		const { state, saveCreds } = process.env.DATABASE_URL
-			? await postgresAuthState('ergon') // save auth creds/keys on db
-			// using postgresAuthState will avoid MANY problems you will
-			// encounter using the file system auth storing
-			: await useMultiFileAuthState('conf/auth')
+		const { state, saveCreds } = await useMultiFileAuthState('conf/auth') //process.env.DATABASE_URL
+		//? await postgresAuthState('ergon') // save auth creds/keys on db
+		// using postgresAuthState will avoid MANY problems you will
+		// encounter using the file system auth storing
+		//: await useMultiFileAuthState('conf/auth')
 		// it is here just bc you may don't have a postgresql db setted.
 
 		this.sock = makeWASocket({
