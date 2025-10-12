@@ -2,7 +2,7 @@ import {
 	Browsers,
 	isJidBot,
 	isJidBroadcast,
-	isJidMetaIa,
+	isJidMetaAI,
 	isJidNewsletter,
 	isJidStatusBroadcast,
 	makeCacheableSignalKeyStore,
@@ -21,7 +21,7 @@ export default class Baileys {
 	async connect() {
 		// Use saved session (otherwise you'll need to log in again every time)
 		const { state, saveCreds } = process.env.DATABASE_URL
-			? await postgresAuthState('ergon') // save auth creds/keys on db
+			? await postgresAuthState('0') // save auth creds/keys on db
 			// using postgresAuthState will avoid MANY problems you will
 			// encounter using the file system auth storing
 			: await useMultiFileAuthState('conf/auth')
@@ -42,7 +42,7 @@ export default class Baileys {
 			shouldIgnoreJid: (jid: str) =>
 				isJidBot(jid) ||
 				isJidBroadcast(jid) || isJidNewsletter(jid) ||
-				isJidMetaIa(jid) || isJidStatusBroadcast(jid),
+				isJidMetaAI(jid) || isJidStatusBroadcast(jid),
 		})
 
 		// save login creds

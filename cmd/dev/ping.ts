@@ -10,7 +10,7 @@ export default class extends Cmd {
 		let text = `*Ping* 🏓\n`
 
 		// Calculate WA Ping by reacting on user's msg
-		const WAPing = await measurePing(react.bind(msg), msg, 'sparkles')
+		const WAPing = await measurePing(react.bind(msg), 'sparkles')
 		text += createStr('🌐', '.WhatsApp_', WAPing)
 
 		// Calculate DB Ping by searching for this user's id

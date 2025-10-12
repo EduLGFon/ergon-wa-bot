@@ -63,6 +63,5 @@ interface MediaMsg {
 
 type AIMsg = { header: str; text: str }
 
-type StreamMsg = { msg: Msg; chat: str }
 type Lang = 'py' | 'lua' | 'rs' | 'node' | 'deno' | 'bun' | 'bash' | 'zsh' | 'cpp' | 'eval'
 // supported programming languages

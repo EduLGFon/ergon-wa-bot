@@ -24,27 +24,33 @@ async function sendAlarms() {
 		const time = Number(a.time) // alarm alert time
 
 		if (time > Date.now()) continue // not its time rn
+		// we need to get Date.now() every time to
+		// avoid negative time on schedule
 		const user = await getUser({ id: a.author })
 
-		// send alarm to chat mentioning user
-		await send.bind(a.chat)({
-			text: `@${user!.phone}\n- 🔔 *Alarme:* \`${a.msg}\` `,
-			mentions: [user!.lid],
-		})
-			.then(async () => {
-				await prisma.alarms.update({
-					where: { id: a.id },
-					data: { status: 1 }, // alarm was sent
-				})
-				print('ALARM', `'${a.msg}' to ${user!.phone} (${a.chat})`, 'blue')
+		try {
+			// send alarm to chat mentioning user
+			await send.bind(a.chat)({
+				text: `@${user!.phone}\n- 🔔 *Alarme:* \`${a.msg}\` `,
+				mentions: [user!.lid],
 			})
-			.catch((e) => print('ALARM', e.stack, 'red'))
+			await prisma.alarms.update({
+				where: { id: a.id },
+				data: { status: 1 }, // alarm was sent
+			})
+			a.status = 1
+			print('ALARM', `'${a.msg}' to ${user!.phone} (${a.chat})`, 'blue')
+		} catch (e: any) {
+			print('ALARM', e.stack, 'red')
+		}
 
 		// wait some seconds before sending the next alarm
 		await randomDelay()
 	}
 
-	const nextAlarm = alarms.sort((a, b) => Number(a.time) - Number(b.time))[0]
+	const nextAlarm = alarms
+		.filter((a) => !a.status)
+		.sort((a, b) => Number(a.time) - Number(b.time))[0]
 	if (!nextAlarm) {
 		clearTimeout(alarmTimeout)
 		nextAlarmTime = 0
@@ -58,9 +64,23 @@ async function sendAlarms() {
 }
 
 function scheduleAlarmCheck(time: num) { // set timeout for the next alarm check
+	let duration = time - Date.now()
+	if (duration > 2147483647) { // bruh moment
+		/** setTimeout() only accepts 32 bit signed integers as duration
+		 * but this timeout duration exploted the limit (-2^31 to 2^31 - 1)
+		 * what it means is that the timeout duration is too big (more than 24 days 21 hours)
+		 * but NodeJS can't handle it and is going to replace it
+		 * and this will make this function to be called every 1ms.
+		 * it will overflow the stack and db and boom.
+		 */
+		// so we are going to change it to 2^31 - 1
+		duration = 2147483647
+	}
 	clearTimeout(alarmTimeout)
-	nextAlarmTime = time
-	alarmTimeout = setTimeout(sendAlarms, time - Date.now())
+	nextAlarmTime = time // this one we can let normal way bc it's only used
+	// for time comparisons
+	print('timeout duration:', duration, 'red')
+	alarmTimeout = setTimeout(sendAlarms, duration)
 }
 
 // createAlarm: set user alarms
@@ -76,6 +96,10 @@ async function createAlarms(user: User, msg: AIMsg, chat: str) {
 		// alarm absolute time
 		const message = alarm.split(':')[1].trim()
 
+		// replace {ALARM:msg:duration} with the text alarm
+		msg.text = msg.text.replace(alarm, '')
+		msg.header += `- 🔔 *Alarme criado:* \`${message}\` em \`${duration[1]}\`\n`
+
 		// set alarm in database
 		await prisma.alarms.create({
 			data: {
@@ -86,14 +110,10 @@ async function createAlarms(user: User, msg: AIMsg, chat: str) {
 			},
 		})
 
-		// replace {ALARM:msg:duration} with the text alarm
-		msg.text = msg.text.replace(alarm, '') // remove alarm from text
-		msg.header += `- 🔔 *Alarme criado:* \`${message}\` em \`${duration[1]}\`\n`
-
 		// create a timeout for the next alarm
 		if (!nextAlarmTime || time < nextAlarmTime) scheduleAlarmCheck(time)
-		return
 	}
+	return
 }
 
 async function getUserAlarms(user: User) { // get all alarms created by the user

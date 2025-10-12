@@ -1,7 +1,7 @@
 # Settings
 auth
 venv
-cache/*
+conf/cache/*
 *.env
 test
 cookies.txt
@@ -12,5 +12,5 @@ rollback
 node_modules
 
 # Logs / Lock
-log.txt
-temp/*
+out.log
+conf/temp/*

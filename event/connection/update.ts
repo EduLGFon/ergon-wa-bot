@@ -5,8 +5,9 @@ import bot from '../../wa.js'
 import QRCode from 'qrcode'
 import { randomDelay } from '../../util/functions.js'
 
-// Keep last 5 logins DateTime to avoid reconecting too fast
-const lastLogins = new Collection<num, num>(5)
+const MAX_LOGINS_IN_MINUTE = 3
+// Keep last logins DateTime to avoid reconecting too fast
+const lastLogins = new Collection<num, num>(MAX_LOGINS_IN_MINUTE)
 
 // connection update event
 export default async function (event: Partial<ConnectionState>) {
@@ -69,11 +70,11 @@ function shouldReconnect(code: num) {
 	if (isLogout) return false
 	// does not try to reconnect if session was logged out
 
-	const loginsAvarageDate = lastLogins.reduce((prev, crt) => prev + crt) / 5
+	const loginsAvarageDate = lastLogins.reduce((prev, crt) => prev + crt) / MAX_LOGINS_IN_MINUTE
 	const oneMinuteAgo = Date.now() - 60_000
 
 	if (loginsAvarageDate > oneMinuteAgo) return 'wait'
-	// bot will wait before reconnecting if last 5 logins was one minute ago
+	// bot will wait before reconnecting if last MAX_LOGINS_IN_MINUTE logins was one minute ago
 
 	return true
 }

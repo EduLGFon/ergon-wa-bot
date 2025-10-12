@@ -26,7 +26,7 @@ export { logger, now }
 export default () => {
 	strPrototypes() // add string prototypes
 	numPrototypes() // add number prototypes
-	global.print = console.log = print
+	global.print = print
 
 	return
 }

@@ -1,4 +1,4 @@
-import baileys, {
+import {
 	type AuthenticationCreds,
 	type AuthenticationState,
 	BufferJSON,
@@ -23,92 +23,98 @@ const fromStorableJson = <T = any>(value: unknown | null): T | null => {
 }
 
 const postgresAuthState = async (
-	folder: string,
+	session: str,
 ): Promise<{ state: AuthenticationState; saveCreds: () => Promise<void> }> => {
-	const sessionId = folder
-
 	const writeCreds = async (data: any) => {
 		const json = toStorableJson(data)
-		await prisma.baileysAuthCreds.upsert({
-			where: { sessionId },
-			create: { sessionId, data: json },
+		await prisma.authCreds.upsert({
+			where: { session },
+			create: { session, data: json },
 			update: { data: json },
 		})
 	}
 
 	const readCreds = async () => {
-		const row = await prisma.baileysAuthCreds.findUnique({ where: { sessionId } })
-		return fromStorableJson<AuthenticationCreds>(row?.data)
+		const row = await prisma.authCreds.findUnique({ where: { session } })
+		return fromStorableJson(row?.data)
 	}
 
-	const creds: AuthenticationCreds = (await readCreds()) || initAuthCreds()
+	let creds = await readCreds()
+	if (!creds) {
+		creds = initAuthCreds()
+		await writeCreds(creds)
+	}
 
 	return {
 		state: {
 			creds,
 			keys: {
 				get: async (type, ids) => {
-					if (!ids.length) return {} as any
-					const rows = await prisma.baileysAuthKey.findMany({
+					if (!ids[0]) {
+						print('AUTHSTATE', 'no IDs', 'red')
+						print(type, ids)
+						return {}
+					}
+					const rows = await prisma.authKey.findMany({
 						where: {
-							sessionId,
-							category: type as unknown as string,
-							keyId: { in: ids },
+							session,
+							category: type,
+							key: { in: ids },
 						},
 					})
 
-					const out: { [_: string]: SignalDataTypeMap[typeof type] } = {}
-					const map = new Map(rows.map((r) => [r.keyId, r.data]))
-					for (const id of ids) {
-						let value =
-							fromStorableJson<SignalDataTypeMap[typeof type]>(map.get(id) ?? null) ??
-								undefined
-						if (type === 'app-state-sync-key' && value) {
-							value = proto.Message.AppStateSyncKeyData.fromObject(
-								value as any,
-							) as any
-						}
-						out[id] = value as any
-					}
-					return out
+					const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
+					await Promise.all(
+						ids.map(async (id) => {
+							let value = fromStorableJson(
+								rows.find((r) => r.key === id && r.category === type)?.data,
+							)
+							if (type === 'app-state-sync-key' && value) {
+								value = proto.Message.AppStateSyncKeyData.create(value)
+							}
+							data[id] = value
+						}),
+					)
+
+					return data
 				},
 				set: async (data) => {
-					const ops: PrismaPromise<any>[] = []
+					const tasks: PrismaPromise<any>[] = []
 
 					for (const category in data) {
-						const byId = (data as any)[category] as Record<string, any>
-						for (const keyId in byId) {
-							const value = byId[keyId]
+						const catData = data[category as keyof SignalDataTypeMap]
+						for (const key in catData!) {
+							const value = catData[key]
+							const json = toStorableJson(value)
+
 							if (value) {
-								const json = toStorableJson(value)
-								ops.push(
-									prisma.baileysAuthKey.upsert({
+								tasks.push(
+									prisma.authKey.upsert({
 										where: {
-											sessionId_category_keyId: {
-												sessionId,
+											session_category_key: {
+												session,
 												category,
-												keyId,
+												key,
 											},
 										},
-										create: { sessionId, category, keyId, data: json },
+										create: { session, category, key, data: json },
 										update: { data: json },
 									}),
 								)
 							} else {
-								// deleteMany não lança erro quando o registro não existe
-								ops.push(
-									prisma.baileysAuthKey.deleteMany({
-										where: { sessionId, category, keyId },
+								tasks.push(
+									prisma.authKey.deleteMany({
+										where: { session, category, key },
 									}),
 								)
 							}
 						}
 					}
-
-					if (ops.length) {
-						// Opcional: você pode fatiar em lotes se o número de operações for muito grande
-						await prisma.$transaction(ops)
-					}
+					await Promise.all(tasks)
+					// if (tasks.length) {
+					// 	await prisma.$transaction(tasks)
+					// }
+					return
 				},
 			},
 		},

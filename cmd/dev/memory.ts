@@ -4,6 +4,9 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['m'],
+			access: {
+				restrict: true,
+			},
 		})
 	}
 	async run({ send }: CmdCtx) {

@@ -28,26 +28,26 @@
 		"translate": "npx @parvineyvazov/json-translator locale/pt.json -m google -f pt -t en es fr de"
 	},
 	"dependencies": {
-		"@google/genai": "^1.16.0",
-		"@prisma/client": "^6.15.0",
-		"baileys": "^6.7.19",
-		"chalk": "^5.6.0",
+		"@google/genai": "^1.24.0",
+		"@prisma/client": "^6.17.1",
+		"baileys": "github:WhiskeySockets/Baileys",
+		"chalk": "^5.6.2",
 		"google-translate": "github:iamtraction/google-translate",
-		"humanize-duration": "^3.33.0",
-		"i18next": "^25.4.2",
+		"humanize-duration": "^3.33.1",
+		"i18next": "^25.6.0",
 		"i18next-fs-backend": "^2.6.0",
-		"luxon": "^3.7.1",
+		"luxon": "^3.7.2",
 		"node-webpmux": "^3.2.1",
-		"pino": "^9.9.0",
+		"pino": "^9.13.1",
 		"qrcode": "^1.5.4",
 		"wa-sticker-formatter": "^4.4.4"
 	},
 	"devDependencies": {
 		"@types/humanize-duration": "^3.27.4",
 		"@types/luxon": "^3.7.1",
-		"@types/node": "^24.3.0",
+		"@types/node": "^24.7.2",
 		"@types/qrcode": "^1.5.5",
-		"pino-pretty": "^13.1.1",
-		"prisma": "^6.15.0"
+		"pino-pretty": "^13.1.2",
+		"prisma": "^6.17.1"
 	}
 }

@@ -5,8 +5,8 @@
 > ⚠️ » _Ergon is still under development, feel free to contribute to this repo and leave a_ ⭐
 
 > ⚠️ » Disclaimer: WhatsApp is replacing phone numbers by lids, so I'm replacing it on DB to prevent
-> sendind msgs problems. Unfortunately, it would be just hard and slow to migrate all users. So you
-> should truncate `users` and `msgs` tables.
+> sendind msgs & duplicated users problems. Unfortunately, it would be just hard and slow to migrate
+> all users. So you should truncate `users` and `msgs` tables.
 
 ---
 

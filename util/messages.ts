@@ -98,6 +98,7 @@ async function deleteMessage(this: Msg | proto.IMessageKey) {
 	return
 }
 
+type StreamMsg = { msg: any }
 // sendOrEdit: send a message or edit it if it was already sent
 // this is used to edit the message while the AI is writing
 async function sendOrEdit(data: StreamMsg, text: str) {

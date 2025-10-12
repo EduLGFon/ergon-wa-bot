@@ -60,14 +60,12 @@ type GoogleFile = {
 	buffer: Buf<ArrayBufferLike> | ArrayBuffer
 	mime: str
 }
-type GeminiArgs = {
+type Gparams = {
 	model?: num
 	input: str
 	user: User
 	chat?: str
-	callBack: Func
-	args: any[]
 	file?: GoogleFile
 }
 
-export { CmdCtx, GeminiArgs, GoogleFile, GroupMsg, MediaMsg, Msg, MsgTypes }
+export { CmdCtx, GoogleFile, Gparams, GroupMsg, MediaMsg, Msg, MsgTypes }

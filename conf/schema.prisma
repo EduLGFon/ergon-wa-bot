@@ -21,35 +21,35 @@ model alarms {
   id     Int    @id @default(autoincrement())
   author Int
   chat   String @db.VarChar()
-  msg    String @db.VarChar(256)
+  msg    String @db.VarChar()
   time   String @db.VarChar()
   status Int    @default(0)
 }
 
 model msgs {
   author Int
-  group  String @db.VarChar(35)
+  group  String @db.VarChar()
   count  Int    @default(1)
 
   @@id([author, group])
 }
 
-model BaileysAuthCreds {
-  sessionId String @id
+model authCreds {
+  session   String @id
   data      Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model BaileysAuthKey {
-  sessionId String
+model authKey {
+  session   String
   category  String
-  keyId     String
+  key       String
   data      Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@id([sessionId, category, keyId])
-  @@index([sessionId, category])
+  @@id([session, category, key])
+  @@index([session, category])
 }

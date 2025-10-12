@@ -46,8 +46,7 @@ export default class extends Cmd {
 
 		async function createSticker(target: Msg, subCmds: str[]) {
 			const media = await getMedia(target)
-			let { buffer, mime, duration, length, width, height } = media!
-			let quality = 1
+			let quality = 10
 
 			const formats = ['full', 'crop']
 			if (args.includes(subCmds[1])) formats.push('rounded')
@@ -57,79 +56,31 @@ export default class extends Cmd {
 
 			const msgTypeWays = {
 				sticker() {
-					send({ image: buffer })
-					return
+					return send({ image: media!.buffer })
 				},
 				async image() {
 					if (!args.includes(subCmds[0])) return
 					// remove image background
-
 					const path = defaults.runner.tempFolder + `/rmsticker_${Date.now()}.webp`
-					await writeFile(path, buffer)
-
+					await writeFile(path, media!.buffer)
 					// create temporary file
 
 					// execute python background remover plugin on
 					await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
 					// a child process
 
-					buffer = await readFile(`${path}.png`) || buffer
+					media!.buffer = await readFile(`${path}.png`) || media!.buffer
 					// read new file
 					return
-				},
-				async video() {
-					// print('mime', mime)
-					// quality = 1 // do not use sharp compression
-					// const path = defaults.runner.tempFolder + `sticker_${Date.now()}.mp4`
-					// const newPath = `${path}.gif`
-					// await writeFile(path, buffer)
-					// // create temporary file
-					// print(`length: ${Number(length) / 1024}kb`)
-					// width = 160
-
-					// // const bitrate = Math.floor((0.49 * 1024 * 1024 * 8) / (duration + 1) / 1000) // calculate bitrate in kbps
-					// // print(`video bitrate: ${bitrate}kbps`)
-					// // await runCode(
-					// 	// 	'zsh',
-					// // 	`ffmpeg -i ${path} -c:v libx264 -b:v ${bitrate}k -r 20 -an ${newPath}`,
-					// // )
-					// await runCode('zsh', `ffmpeg -i ${path} -vf "fps=10,scale=${width}:-1:flags=lanczos,palettegen" ${path}_palette.png`)
-					// await runCode('zsh', `ffmpeg -i ${path} -i ${path}_palette.png -filter_complex "fps=10,scale=${width}:-1:flags=lanczos[x];[x][1:v]paletteuse" ${newPath}`)
-
-					// const newSize = await runCode('zsh', `stat -c %s ${newPath}`)
-					// print(`video new size: ${Number(newSize) / 1024}kb`)
-					// buffer = await readFile(newPath)
-					// return
 				},
 			}
 
 			if (target.type in msgTypeWays) {
 				await msgTypeWays[target.type as keyof typeof msgTypeWays]()
 			}
-			//  async function writeExif(media: Buf, packname?: str) {
-			//   const stringJson = JSON.stringify({
-			// 	"sticker-pack-id": randomBytes(32).toString('hex'),
-			//     "sticker-pack-name": packname || '',
-			//     "sticker-pack-publisher": `=== Ergon Bot ===\n` +
-			// 						`[👑] Autor: ${user.name}\n` +
-			// 						`[📅] Data: ${now('D')}\n` +
-			// 						// `[☃️] Dev: Edu\n` +
-			// 						`[❓] Suporte: dsc.gg/ergon`,
-			//     "emojis": [""]
-			//   });
-			//   const exifAttr = Buffer.from('SUkqAAgAAAABAEFXBwAAAAAAFgAAAA==', 'base64');
-			//   const jsonBuff = Buffer.from(stringJson, "utf8");
-			//   const exif = Buffer.concat([exifAttr, jsonBuff]);
-			//   exif.writeUIntLE(jsonBuff.length, 14, 4);
-
-			//   const img = new webpmux.Image();
-			//   await img.load(media);
-			//   img.exif = exif;
-			//   return img.save(null);
-			// }
 
 			for (const f of formats) {
-				const sticker = await new Sticker(buffer!, {
+				const sticker = await new Sticker(media!.buffer!, {
 					author: '', // sticker metadata
 					pack: `=== Ergon Bot ===\n` +
 						`[👑] Autor: ${user.name}\n` +
@@ -141,12 +92,8 @@ export default class extends Cmd {
 				}).toMessage()
 
 				if (target.type === 'video') send(sticker)
-				else randomDelay().then(async () => send(sticker))
-
-				// if (mediaType === 'video') send({ sticker: await writeExif(buffer) })
-				// else randomDelay().then(async () => send({ sticker: await writeExif(buffer)}))
+				else await randomDelay(1_000, 2_500).then(async () => send(sticker))
 			}
-
 			return
 		}
 	}

@@ -19,7 +19,12 @@ import bot from '../wa.js'
 // getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	const { message, key, pushName } = raw
-	let fakeCtx = {} as CmdCtx
+	const fakeCtx = {} as CmdCtx
+	if (!key) {
+		print('CTX', 'msg without key', 'red')
+		print(raw)
+		return fakeCtx
+	}
 
 	// msg type
 	const types = getMsgType(message!)
