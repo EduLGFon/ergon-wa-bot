@@ -6,9 +6,6 @@ import { getFixedT } from 'i18next'
 
 // messages upsert event
 export default async function (raw: { messages: proto.IWebMessageInfo[] }, event: str) {
-	// raw.messages = []
-	// print(inspect(raw, { depth: null }))
-
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m?.message) continue
