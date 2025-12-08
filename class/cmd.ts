@@ -39,7 +39,7 @@ export default abstract class Cmd {
 		const reactMsg = react.bind(msg)
 		const sendMsg = send.bind(msg.chat)
 
-		const isDev = process.env.DEVS!.includes(user.phone)
+		const isDev = process.env.DEVS!.includes(user.lid)
 		// if a normal user tries to run a only-for-devs cmd
 
 		if (this.access.restrict && !isDev) return reactMsg('prohibited')
