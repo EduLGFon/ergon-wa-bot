@@ -28,15 +28,15 @@
 	},
 	"language": {
 		"usage": "<código do idioma>",
-		"desc": "Altere o idioma do bot",
+		"desc": "Altere o idioma do bot. Opções disponíveis: Português, Inglês, Francês, Espanhol e Alemão",
 		"examples": [
-			"{pt}: Português",
-			"{en}: Inglês",
-			"{fr}: Francês",
-			"{es}: Espanhol",
-			"{de}: Alemão"
+			"pt",
+			"en",
+			"fr",
+			"es",
+			"de"
 		],
-		"changed": "[🌎] - Idioma alterado para *{{lng}}*"
+		"changed": "[🌎] - Idioma alterado para {{lng}}"
 	},
 	"prefix": {
 		"usage": "<prefixo com até 3 dígitos>",
