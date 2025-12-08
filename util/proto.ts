@@ -10,7 +10,7 @@ const now = (format = 'TT') =>
 	DateTime.now()
 		.setZone(defaults.timezone)
 		.setLocale(defaults.lang)
-		.toFormat(format) // TT = HOURS:MINITES:SECONDS
+		.toFormat(format) // TT = HOURS:MINUTES:SECONDS
 
 // Pino Logger
 const logger = pino({
@@ -26,9 +26,8 @@ export { logger, now }
 export default () => {
 	strPrototypes() // add string prototypes
 	numPrototypes() // add number prototypes
+	print('PROTO', 'setted', 'yellow')
 	global.print = print
-
-	return
 }
 
 const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
@@ -41,10 +40,9 @@ function print(...anyArgs: any) {
 	if (brightColors.includes(color)) color += 'Bright'
 
 	console.info(chalk.bold[color as 'red'](
-		`[ ${now('TT.SSS')} |${memory}|${args?.shift()?.align(9)}] - ${args?.shift()}`,
+		`[ ${now('TT.SSS')} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
 		...args,
 	))
-	return
 }
 
 function numPrototypes() {
@@ -63,7 +61,7 @@ function numPrototypes() {
 					number = number / 1024
 				}
 
-				return number.toFixed() + types[type]
+				return number.toFixed(3) + types[type]
 			},
 		},
 		duration: { // convert ms time in short duration str
