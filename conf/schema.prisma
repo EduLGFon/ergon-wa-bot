@@ -34,6 +34,13 @@ model msgs {
   @@id([author, group])
 }
 
+
+model authStorage {
+  key  String @id
+  data Json
+
+}
+
 model authCreds {
   session   String @id
   data      Json
