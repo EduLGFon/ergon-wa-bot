@@ -6,7 +6,7 @@ import chalk from 'chalk'
 import pino from 'pino'
 
 // get 'now' date time formatted
-const now = (format = 'TT') =>
+const now = (format = 'dd/MM TT.SSS') =>
 	DateTime.now()
 		.setZone(defaults.timezone)
 		.setLocale(defaults.lang)
@@ -40,7 +40,7 @@ function print(...anyArgs: any) {
 	if (brightColors.includes(color)) color += 'Bright'
 
 	console.info(chalk.bold[color as 'red'](
-		`[ ${now('TT.SSS')} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
+		`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
 		...args,
 	))
 }
