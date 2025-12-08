@@ -7,7 +7,7 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['d'],
-			cooldown: 10_000,
+			cooldown: 20_000,
 		})
 	}
 
