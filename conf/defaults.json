@@ -18,10 +18,10 @@
 	},
 	"runner": {
 		"tempFolder": "conf/temp",
-		"ytdlp": "conf/venv/bin/yt-dlp",
+		"ytdlp": "conf/gen/python/bin/yt-dlp",
 		"py": {
 			"cmd": [
-				"conf/venv/bin/python3"
+				"conf/gen/python/bin/python3"
 			],
 			"ext": "py"
 		},
