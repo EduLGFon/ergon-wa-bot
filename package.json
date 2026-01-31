@@ -20,9 +20,9 @@
 		"restart": "npx pm2 restart wa --attach",
 		"test": "node build/wa.js",
 		"stop": "npx pm2 delete all",
-		"prisma:push": "npx prisma db push --schema=conf/prisma/schema.prisma",
-		"prisma:gen": "npx prisma generate --schema=conf/prisma/schema.prisma",
-		"prisma:pull": "npx prisma db pull --schema=conf/prisma/schema.prisma",
+		"prisma:push": "npx prisma db push --schema=conf/gen/schema.prisma",
+		"prisma:gen": "npx prisma generate --schema=conf/gen/schema.prisma",
+		"prisma:pull": "npx prisma db pull --schema=conf/gen/schema.prisma",
 		"fmt": "deno fmt ./ --config=conf/deno.jsonc",
 		"dev": "npx pm2 delete wa; deno run --watch -A -c conf/deno.jsonc plugin/copilot.ts",
 		"translate": "npx @parvineyvazov/json-translator locale/pt.json -m google -f pt -t en es fr de"
