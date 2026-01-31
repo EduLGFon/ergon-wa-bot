@@ -17,7 +17,7 @@ export default class extends Cmd {
 
 		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
-		const cliArgs = ['--cookies', 'conf/generated/cookies.txt']
+		const cliArgs = ['--cookies', 'conf/gen/cookies.txt']
 
 		const data = {
 			caption: randomEmoji(),
