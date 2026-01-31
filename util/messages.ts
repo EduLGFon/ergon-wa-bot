@@ -40,7 +40,11 @@ async function startTyping(this: str) {
 }
 
 // simple abstraction to send a msg
-async function send(this: str, text: str | AnyMessageContent, opts?: { user?: User, quoted?: Msg }) {
+async function send(
+	this: str,
+	text: str | AnyMessageContent,
+	opts?: { user?: User; quoted?: Msg },
+) {
 	let content = text
 
 	if (typeof text === 'string') {
@@ -66,7 +70,9 @@ async function send(this: str, text: str | AnyMessageContent, opts?: { user?: Us
 
 	const msg = await bot.sock.sendMessage(
 		!this.includes('@') ? this + '@s.whatsapp.net' : this,
-		content as AnyMessageContent, { quoted: opts?.quoted })
+		content as AnyMessageContent,
+		{ quoted: opts?.quoted },
+	)
 
 	// convert raw msg on cmd context
 	return await getCtx(msg!)

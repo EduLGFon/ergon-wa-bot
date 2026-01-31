@@ -58,7 +58,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		mime,
 		isEdited: !!findKey(message, 'editedMessage'),
 		key,
-		message
+		message,
 	}
 
 	let args: str[] = []

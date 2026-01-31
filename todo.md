@@ -1,4 +1,3 @@
-- Update prisma library to the next major update (7.xx.xx) (https://pris.ly/d/major-version-upgrade)
 - Update pino library to the next major update (10.xx.xx)
 - Add IDs to any Gemini Memory
 - Store group keys before sending msgs

@@ -47,7 +47,9 @@ export default class extends Cmd {
 		}).catch(async (e): Promise<any> => {
 			print('GEMINI', 'Model not available', 'red')
 			print(model, e)
-			send(`> *${model}:* Modelo não disponível. Tente novamente mais tarde ou amanhã.`, { quoted: msg })
+			send(`> *${model}:* Modelo não disponível. Tente novamente mais tarde ou amanhã.`, {
+				quoted: msg,
+			})
 		})
 	}
 }

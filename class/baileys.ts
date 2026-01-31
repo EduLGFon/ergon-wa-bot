@@ -17,7 +17,7 @@ import { logger } from '../util/proto.js'
 export default class Baileys {
 	sock!: WASocket
 	// sock is the real Baileys connection
-	constructor() { }
+	constructor() {}
 
 	async connect() {
 		print('CREDS', 'Initializing new auth state', 'green')
