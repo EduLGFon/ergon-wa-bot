@@ -20,8 +20,7 @@
 		"test",
 		"build",
 		"!plugin/*.ts",
-		"conf/inactive",
 		"plugin/copilot.ts",
-		"conf/temp"
+		"temp"
 	]
 }

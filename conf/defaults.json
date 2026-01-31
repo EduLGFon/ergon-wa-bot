@@ -17,7 +17,7 @@
 		"groupMsgs": 200
 	},
 	"runner": {
-		"tempFolder": "conf/temp",
+		"tempFolder": "conf/gen/temp",
 		"ytdlp": "conf/gen/python/bin/yt-dlp",
 		"py": {
 			"cmd": [
@@ -63,8 +63,8 @@
 		},
 		"cpp": {
 			"cmd": [
-				"g++ -o conf/temp/main ",
-				"./conf/temp/main #"
+				"g++ -o conf/gen/temp/main ",
+				"./conf/gen/temp/main #"
 			],
 			"ext": "cpp",
 			"triggers": [
@@ -84,8 +84,8 @@
 		},
 		"rs": {
 			"cmd": [
-				"rustc -o conf/temp/main",
-				"./conf/temp/main"
+				"rustc -o conf/gen/temp/main",
+				"./conf/gen/temp/main"
 			],
 			"ext": "rs",
 			"triggers": [

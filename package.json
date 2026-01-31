@@ -11,7 +11,7 @@
 		"setup:py": "python3 -m venv conf/gen/python && conf/gen/python/bin/pip install rembg onnxruntime yt-dlp",
 		"update": "git pull origin master; npm update --save; deno upgrade; bun upgrade; npm run update:py; npm run postinstall",
 		"update:py": "conf/gen/python/bin/pip install -U rembg onnxruntime yt-dlp",
-		"reset": "rm -r conf/auth/* conf/cache/* conf/temp/*",
+		"reset": "rm -r conf/gen/auth/* conf/gen/cache/* conf/gen/temp/*",
 		"reset:cache": "rm -r conf/cache/*",
 		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
 		"build": "rm -r conf/gen/build/ & npx tsc",
