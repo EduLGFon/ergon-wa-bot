@@ -25,6 +25,5 @@ export default class extends Cmd {
 		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = media.buffer
 
 		send(msgObj, { quoted: msg })
-		return
 	}
 }

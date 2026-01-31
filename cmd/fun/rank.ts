@@ -12,13 +12,14 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ send, user, group }: CmdCtx) {
+	async run({ send, user, msg, group }: CmdCtx) {
 		group = group!
 		let text = `*[🏆] - Rank de mensagens*\n\n`
 
 		const msgs = await group.getCountedMsgs()
 		const members = group.members.map((m) => m.id)
 
+		let pos = 1
 		for (const i in msgs) {
 			const count = msgs[i].count.toLocaleString(user.lang)
 			// it converts 10000 to 10.000 (10,000 if you're "american")
@@ -26,13 +27,13 @@ export default class extends Cmd {
 			const member = await getUser({ id: msgs[i].author }) as User
 			let name = (member.name || member.phone).trim()
 
-			if (!members.includes(member.lid)) name = `~${name}~`
+			if (!members.includes(member.lid)) continue//name = `~${name}~`
 			// it means user is not a member from this group anymore
 
-			text += `${Number(i) + 1}. ${name}: *${count}*\n`
+			text += `${pos}. ${name}: *${count}*\n`
+			pos++
 		}
 
-		send(text.trim())
-		return
+		send(text.trim(), { quoted: msg })
 	}
 }
