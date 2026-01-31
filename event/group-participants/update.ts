@@ -9,9 +9,6 @@ export default async function (groupEvent: Event) {
 	const group = await getGroup(groupEvent.id)
 	if (!group) return
 	const participant = groupEvent.participants[0]
-	print('group members', group.members, 'yellow')
-	print('participant', participant, 'yellow')
-	print('groupEvent', groupEvent, 'yellow')
 
 	switch (groupEvent.action) {
 		case 'promote': {
