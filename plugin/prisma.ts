@@ -38,7 +38,7 @@ async function getUser(
 		if (data) return data
 		// not on cache, so lets search it on db
 		const dbUser = await prisma.users.findFirst({ where: { lid } })
-			.catch(() => { }) // there is no DB. Let's just ignore it
+			.catch(() => {}) // there is no DB. Let's just ignore it
 
 		if (!dbUser) {
 			// not on db, so it's a new user

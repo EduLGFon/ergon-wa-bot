@@ -45,6 +45,6 @@ history linear.
 
 Copy `conf/.env.example` to `conf/.env` for local secrets and never commit the result. Cookies
 belong in `conf/gen/cookies.txt`, and logs/screenshots should hide QR codes or auth tokens. Use
-`npm run reset` to wipe `conf/gen/auth`, `conf/gen/cache`, and `conf/gen/temp` before sharing artifacts.
-Maintain the background-removal dependencies through `npm run setup:py`, which isolates them inside
-`conf/gen/python/`.
+`npm run reset` to wipe `conf/gen/auth`, `conf/gen/cache`, and `conf/gen/temp` before sharing
+artifacts. Maintain the background-removal dependencies through `npm run setup:py`, which isolates
+them inside `conf/gen/python/`.

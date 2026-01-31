@@ -26,7 +26,7 @@ export default class Baileys {
 		//? await postgresAuthState('0') // save auth creds/keys on db
 		// using postgresAuthState will avoid MANY problems you will
 		// encounter using the file system auth storing
-		//: await useMultiFileAuthState('conf/auth')
+		//: await useMultiFileAuthState('conf/gen/auth')
 		// it is here just bc you may don't have a postgresql db setted.
 
 		print('SOCK', 'Creating new WA Socket', 'green')
