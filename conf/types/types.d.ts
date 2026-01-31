@@ -35,6 +35,8 @@ interface Msg {
 	quoted?: Msg
 	isEdited: bool
 	key: proto.IMessageKey
+	message?: proto.IMessage | null
+	// this null is needed bc Baileys may return it as null or undefined
 }
 
 interface CmdCtx {
@@ -44,7 +46,7 @@ interface CmdCtx {
 	args: str[]
 	cmd: Cmd
 	startTyping(): Promise<void>
-	send(str: str | AnyMessageContent, user?: User): Promise<CmdCtx>
+	send(str: str | AnyMessageContent, opts?: { user?: User, quoted?: Msg }): Promise<CmdCtx>
 	react(emoji: str | ReturnType<typeof emojis>): Promise<void>
 	deleteMsg(): Promise<void>
 	t: TFunction<'translation', undefined>
@@ -61,10 +63,10 @@ type GoogleFile = {
 	mime: str
 }
 type Gparams = {
-	model?: num
+	model: str
 	input: str
 	user: User
-	chat?: str
+	msg?: Msg
 	file?: GoogleFile
 }
 

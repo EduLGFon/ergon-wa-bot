@@ -11,17 +11,16 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ startTyping, send, args, group }: CmdCtx) {
+	async run({ startTyping, send, args, msg, group }: CmdCtx) {
 		await startTyping()
-		await randomDelay()
+		await randomDelay(1_000, 2_000)
 		/** Delay, ok. But why?
 		 * Avoid WA bans.
 		 */
 
 		await send({
-			text: args.join(' ') || '@everyone',
-			mentions: group?.members.map((m) => m.id),
-		})
-		return
+			text: args[0] ? `*@everyone:* "${args.join(' ').encode()}"` : '*@everyone*',
+			mentions: group?.members?.map((m) => m.id)
+		}, { quoted: msg })
 	}
 }

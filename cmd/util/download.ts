@@ -13,7 +13,7 @@ export default class extends Cmd {
 
 	async run({ msg, args, user, startTyping, send }: CmdCtx) {
 		const url = msg.text.getUrl() || msg?.quoted?.text?.getUrl()
-		if (!url) return send('usage.download', user)
+		if (!url) return send('usage.download', { user })
 
 		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
