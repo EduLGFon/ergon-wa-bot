@@ -9,6 +9,7 @@ cookies.txt
 # Builds
 build
 rollback
+generated
 node_modules
 
 # Logs / Lock
