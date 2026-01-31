@@ -10,7 +10,7 @@ export default class extends Cmd {
 	}
 
 	async run({ args, send, user, t }: CmdCtx) {
-		if (!args[1]) return send('usage.translate', user)
+		if (!args[1]) return send('usage.translate', { user })
 
 		const toLang = args.shift() // language to what the text will be translated
 		try {
@@ -23,7 +23,7 @@ export default class extends Cmd {
 			send(text)
 		} catch (e) {
 			print('CMD/TRANSLATE', e, 'red')
-			send('usage.translate', user)
+			send('usage.translate', { user })
 		}
 		return
 	}

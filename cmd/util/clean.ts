@@ -19,7 +19,7 @@ export default class extends Cmd {
 
 		if (amount === 0) return send(t('clean.noAmount'))
 
-		if (!isValidPositiveIntenger(amount)) return send('usage.clean', user)
+		if (!isValidPositiveIntenger(amount)) return send('usage.clean', { user })
 
 		if (group.msgs.size < amount) {
 			disclaimerMsg = await send(t('clean.deleted', { msgsSize: group.msgs.size }))

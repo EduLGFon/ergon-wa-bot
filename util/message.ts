@@ -58,6 +58,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		mime,
 		isEdited: !!findKey(message, 'editedMessage'),
 		key,
+		message,
 	}
 
 	let args: str[] = []
@@ -258,13 +259,13 @@ function msgMeta(
 	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	// @ts-ignore
-	// const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
+	const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
 	// @ts-ignore
 	const key = msg?.key ? msg.key : msg
 
 	if (!chat.includes('@')) chat += '@s.whatsapp.net'
 
-	return { key, text, chat, quote: {} }
+	return { key, text, chat, quote }
 }
 
 export { checkMatch, downloadMedia, getCtx, msgMeta }
