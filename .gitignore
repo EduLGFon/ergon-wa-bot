@@ -1,7 +1,7 @@
 # Settings
 auth
 venv
-conf/cache/*
+cache
 *.env
 test
 cookies.txt
@@ -14,4 +14,4 @@ node_modules
 
 # Logs / Lock
 *.log
-conf/temp/*
+temp

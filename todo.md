@@ -8,5 +8,4 @@
 - Try using Gemini 3 on .gemini
 - Add a cmd to delete reminders (aka remind delete)
 - Add a gotcha cmd
-- Explain cookies.txt needing in README
 - Fix memory increasing bug

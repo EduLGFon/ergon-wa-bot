@@ -44,7 +44,7 @@ history linear.
 ## Security & Configuration Tips
 
 Copy `conf/.env.example` to `conf/.env` for local secrets and never commit the result. Cookies
-belong in `conf/cookies.txt`, and logs/screenshots should hide QR codes or auth tokens. Use
+belong in `conf/generated/cookies.txt`, and logs/screenshots should hide QR codes or auth tokens. Use
 `npm run reset` to wipe `conf/auth`, `conf/cache`, and `conf/temp` before sharing artifacts.
 Maintain the background-removal dependencies through `npm run setup:py`, which isolates them inside
 `conf/venv/`.
