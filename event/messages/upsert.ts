@@ -1,4 +1,4 @@
-import { react, send, startTyping } from '../../util/messages.js'
+import { reactToMsg, sendMsg, startTyping } from '../../util/messages.js'
 import { CmdCtx, delay, getCtx } from '../../map.js'
 import { getUser } from '../../plugin/prisma.js'
 import { type proto } from 'baileys'
@@ -27,8 +27,8 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		if (!cmd) continue
 		// get locales function
 		const t = getFixedT(user.lang)
-		const reactToMsg = react.bind(msg)
-		const sendMsg = send.bind(msg.chat)
+		const react = reactToMsg.bind(msg)
+		const send = sendMsg.bind(msg.chat)
 
 		/* * Cmd permissions checking */
 		const auth = cmd.checkPerms(msg, user, group)
@@ -40,8 +40,8 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 			user,
 			cmd,
 			startTyping: startTyping.bind(msg.chat),
-			send: sendMsg,
-			react: reactToMsg,
+			send,
+			react,
 			msg,
 			t,
 		}
@@ -53,7 +53,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 			const timeout = user.delay - now
 
 			if (timeout < 10_000) {
-				await sendMsg(t('events.cooldown', { time: timeout.duration(true) }))
+				await send(t('events.cooldown', { time: timeout.duration(true) }))
 				// warns user about cooldown
 			}
 
@@ -67,7 +67,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 			cmd.run!(ctx)
 		} catch (e: any) {
 			print(`CMD/${cmd.name}`, e, 'red')
-			sendMsg(`[⚠️] ${e?.message || e}`)
+			send(`[⚠️] ${e?.message || e}`)
 		}
 	}
 }

@@ -1,6 +1,6 @@
 import { randomDelay } from '../util/functions.js'
 import prisma, { getUser } from './prisma.js'
-import { send } from '../util/messages.js'
+import { sendMsg } from '../util/messages.js'
 import { User } from '../map.js'
 
 export { createAlarms, getUserAlarms, sendAlarms }
@@ -30,7 +30,7 @@ async function sendAlarms() {
 
 		try {
 			// send alarm to chat mentioning user
-			await send.bind(a.chat)({
+			await sendMsg.bind(a.chat)({
 				text: `@${user!.phone}\n- 🔔 *Alarme:* \`${a.msg}\` `,
 				mentions: [user!.lid],
 			})

@@ -7,6 +7,8 @@ export default class extends Cmd {
 			access: {
 				groups: true,
 				dm: false,
+				admin: true,
+				botAdmin: true,
 			},
 			subCmds: ['reverse'],
 		})
