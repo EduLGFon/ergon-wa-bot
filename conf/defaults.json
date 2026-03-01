@@ -4,12 +4,10 @@
 	"timezone": "America/Sao_Paulo",
 	"ai": {
 		"gemini_chain": [
-			"gemini-2.0-flash-lite",
-			"gemini-2.0-flash",
 			"gemini-2.5-flash",
-			"gemini-2.5-pro"
+			"gemini-3-flash-preview"
 		],
-		"gemini_pro": "gemini-2.5-pro-preview-05-06"
+		"gemini_pro": "gemini-3-flash-preview"
 	},
 	"cache": {
 		"users": 200,
@@ -18,11 +16,11 @@
 		"groupMsgs": 200
 	},
 	"runner": {
-		"tempFolder": "conf/temp",
-		"ytdlp": "conf/venv/bin/yt-dlp",
+		"tempFolder": "conf/gen/temp",
+		"ytdlp": "conf/gen/python/bin/yt-dlp",
 		"py": {
 			"cmd": [
-				"conf/venv/bin/python3"
+				"conf/gen/python/bin/python3"
 			],
 			"ext": "py"
 		},
@@ -64,35 +62,50 @@
 		},
 		"cpp": {
 			"cmd": [
-				"g++ -o conf/temp/main ",
-				"./conf/temp/main #"
+				"g++ -o conf/gen/temp/main ",
+				"./conf/gen/temp/main #"
 			],
 			"ext": "cpp",
-			"triggers": [{
-				"notIncludes": ["int main"],
-				"template": "int main() { {{code}} }"
-			}, {
-				"notIncludes": ["#include <iostream>"],
-				"template": "#include <iostream>\n#include <string>\n#include <vector>\n#include <map>\n#include <unordered_map>\n#include <set>\n#include <algorithm>\n#include <numeric>\n#include <memory>\n#include <utility>\n#include <fstream>\n#include <sstream>\n#include <iomanip>\n#include <limits>\n#include <stdexcept>\n#include <functional>\n#include <thread>\n#include <mutex>\n#include <chrono>\n#include <filesystem>\n#include <cmath>\n#include <cstdlib>\n{{code}}"
-			}]
+			"triggers": [
+				{
+					"notIncludes": [
+						"int main"
+					],
+					"template": "int main() { {{code}} }"
+				},
+				{
+					"notIncludes": [
+						"#include <iostream>"
+					],
+					"template": "#include <iostream>\n#include <string>\n#include <vector>\n#include <map>\n#include <unordered_map>\n#include <set>\n#include <algorithm>\n#include <numeric>\n#include <memory>\n#include <utility>\n#include <fstream>\n#include <sstream>\n#include <iomanip>\n#include <limits>\n#include <stdexcept>\n#include <functional>\n#include <thread>\n#include <mutex>\n#include <chrono>\n#include <filesystem>\n#include <cmath>\n#include <cstdlib>\n{{code}}"
+				}
+			]
 		},
 		"rs": {
 			"cmd": [
-				"rustc -o conf/temp/main",
-				"./conf/temp/main"
+				"rustc -o conf/gen/temp/main",
+				"./conf/gen/temp/main"
 			],
 			"ext": "rs",
-			"triggers": [{
-				"notIncludes": ["fn main"],
-				"template": "fn main() { {{code}} }"
-			}]
+			"triggers": [
+				{
+					"notIncludes": [
+						"fn main"
+					],
+					"template": "fn main() { {{code}} }"
+				}
+			]
 		},
 		"eval": {
 			"cmd": [],
-			"triggers": [{
-				"includes": ["await"],
-				"template": "(async () => { {{code}} })()"
-			}]
+			"triggers": [
+				{
+					"includes": [
+						"await"
+					],
+					"template": "(async () => { {{code}} })()"
+				}
+			]
 		}
 	}
 }

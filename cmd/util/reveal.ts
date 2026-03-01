@@ -10,20 +10,20 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, send, startTyping, t }: CmdCtx) {
+	async run({ msg, send, t }: CmdCtx) {
 		const media = await getMedia(msg)
-		if (!media) return send(t('sticker.nobuffer'))
-		await startTyping()
-		await randomDelay()
+		if (!media) return send(t('sticker.nobuffer'), { quoted: msg })
+		await randomDelay(1_000, 2_000)
 
 		const msgObj = {
-			caption: media.target.text.encode(),
+			caption: media.target.text
+				? `*View once revealed:* "${media.target.text.encode()}"`
+				: '*View once revealed*',
 		} as AnyMessageContent
 
 		// @ts-ignore send sticker as image
 		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = media.buffer
 
-		send(msgObj)
-		return
+		send(msgObj, { quoted: msg })
 	}
 }

@@ -1,5 +1,6 @@
 import { type CmdCtx, Group, type Msg, type User } from '../map.js'
-import { react, send } from '../util/messages.js'
+import { reactToMsg, sendMsg } from '../util/messages.js'
+import bot from '../wa.js'
 
 export default abstract class Cmd {
 	name: str
@@ -11,6 +12,7 @@ export default abstract class Cmd {
 		dm: bool // cmd can run on DM
 		groups: bool // cmd can run on groups
 		admin: bool // only admins can run the cmd
+		botAdmin: bool // bot can only run the cmd if it's an admin
 		restrict: bool // only devs can run the cmd
 		needsDb: bool // cmd requires database to run.
 	}>
@@ -36,27 +38,33 @@ export default abstract class Cmd {
 	async checkData() {}
 
 	checkPerms(msg: Msg, user: User, group?: Group) {
-		const reactMsg = react.bind(msg)
-		const sendMsg = send.bind(msg.chat)
+		const send = sendMsg.bind(msg.chat)
+		const react = reactToMsg.bind(msg)
 
-		const isDev = process.env.DEVS!.includes(user.phone)
+		const isDev = process.env.DEVS!.includes(user.lid)
 		// if a normal user tries to run a only-for-devs cmd
 
-		if (this.access.restrict && !isDev) return reactMsg('prohibited')
+		if (this.access.restrict && !isDev) return react('prohibited')
 		// restrict means only devs can run this cmd
 
 		if (group) { // if msg chat is a group
-			if (!this.access.groups) return reactMsg('block') // this cmd can't run on groups
+			if (!this.access.groups) return react('block') // this cmd can't run on groups
 
-			const admins = group.members.map((m) => m.admin && m.id) || []
 			// all group admins id
+			const admins = group.members.map((m) => m.admin && m.id) || []
 
+			// this user is not an admin and can't run this cmd
 			if (this.access.admin && (!admins.includes(user.lid) && !isDev)) {
-				return reactMsg('prohibited') // Devs can use admin cmds for security reasons
+				return react('prohibited') // Devs can use admin cmds for security reasons
 			}
-		} else if (!this.access.dm) return reactMsg('block') // this cmd can't run on DMs
 
-		if (this.access.needsDb && !process.env.DATABASE_URL) return sendMsg('events.nodb')
+			// bot is not an admin and can't run this cmd
+			if (this.access.botAdmin && !admins.includes(bot.lid)) {
+				return react('alert')
+			}
+		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
+
+		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb')
 		// there is no DB and cmd can't run without it
 
 		return true

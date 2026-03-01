@@ -32,19 +32,20 @@ async function folderHandler(path: str, handler: Func) {
 }
 
 async function loadCmds() {
-	await folderHandler(`./build/cmd`, (file: str, _category: str, imported: any) => {
+	cache.cmds.clear()
+	await folderHandler(`./conf/gen/build/cmd`, (file: str, _category: str, imported: any) => {
 		const cmd: Cmd = new imported()
 
 		cmd.name = file.slice(0, -3) // remove .ts
 		// Set cmd
 		cache.cmds.set(cmd.name!, cmd)
 	})
-	return
 }
 
 async function loadEvents() {
-	await folderHandler(`./build/event`, (file: str, category: str, imported: any) => {
-		const event = imported
+	cache.events.clear()
+
+	await folderHandler(`./conf/gen/build/event`, (file: str, category: str, event: any) => {
 		const name = `${category}.${file.slice(0, -3)}` as keyof BaileysEventMap
 		// folder+file names are the same of lib events
 		cache.events.set(name, event)
@@ -55,8 +56,7 @@ async function loadEvents() {
 			// It allows to modify events in run time
 			cache.events.get(name)!(...args, name)
 				.catch((e: Error) => print(`EVENT/${name}:`, e, 'red'))
-			// eventFunction(...args, name);
+			// it's the same as eventFunction(...args, name)
 		})
 	})
-	return
 }

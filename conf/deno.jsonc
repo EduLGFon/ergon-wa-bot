@@ -5,15 +5,21 @@
 		"useTabs": true,
 		"semiColons": false,
 		"lineWidth": 100,
-		"exclude": ["../build", "auth/"]
+		"exclude": [
+			"conf/gen/*"
+		]
 	},
 	"lint": { // DENO Lint rules
 		"rules": {
-			"exclude": ["no-explicit-any"] // does not throws at any any
+			"exclude": [
+				"no-explicit-any"
+			] // does not throws at any any
 		}
 	},
 	"imports": {
 		"dax": "https://deno.land/x/dax@0.39.2/mod.ts"
 	},
-	"unstable": ["byonm"] // DENO unstable features
+	"unstable": [
+		"byonm"
+	] // DENO unstable features
 }

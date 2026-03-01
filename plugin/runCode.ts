@@ -3,6 +3,7 @@ import prisma, { getGroup, getUser } from './prisma.js'
 import { readFile, writeFile } from 'node:fs/promises'
 import { randomDelay } from '../util/functions.js'
 import { execSync } from 'node:child_process'
+import { checkMatch } from '../util/message.js'
 import { CmdCtx, delay } from '../map.js'
 import { inspect } from 'node:util'
 import cache from './cache.js'
@@ -35,6 +36,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				writeFile
 				getGroup
 				readFile
+				checkMatch
 				getUser
 				prisma
 				delay

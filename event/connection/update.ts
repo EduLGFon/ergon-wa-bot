@@ -24,7 +24,7 @@ export default async function (event: Partial<ConnectionState>) {
 		case 'open': // bot started
 			// don't show online mark when bot is running
 			// bot.sock.sendPresenceUpdate('unavailable')
-			print('NET', 'Connection stabilized', 'green')
+			print('SOCK', 'Connection stabilized', 'green')
 
 			// let timeout = cache.timeouts.get('cacheAllGroups')
 			// clearInterval(timeout)
@@ -41,7 +41,7 @@ export default async function (event: Partial<ConnectionState>) {
 			return
 
 		case 'connecting':
-			return print('NET', 'Connecting...', 'gray')
+			return print('SOCK', 'Connecting...', 'gray')
 
 		case 'close':
 			print('CLOSED', `Reason (${exitCode}): ${disconnection}`, 'blue')
@@ -51,7 +51,7 @@ export default async function (event: Partial<ConnectionState>) {
 			if (!reconnect) return print('WA', 'Logged out', 'red')
 			// reconnect if it's not a logout
 			if (reconnect === 'wait') {
-				print('NET', 'Waiting a minute to reconnect...', 'gray')
+				print('SESSION', 'Waiting a minute to reconnect...', 'gray')
 				await delay(60_000)
 				await randomDelay()
 			}

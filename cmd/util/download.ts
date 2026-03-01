@@ -7,17 +7,17 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['d'],
-			cooldown: 10_000,
+			cooldown: 20_000,
 		})
 	}
 
 	async run({ msg, args, user, startTyping, send }: CmdCtx) {
 		const url = msg.text.getUrl() || msg?.quoted?.text?.getUrl()
-		if (!url) return send('usage.download', user)
+		if (!url) return send('usage.download', { user })
 
 		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
-		const cliArgs = ['--cookies', 'conf/cookies.txt']
+		const cliArgs = ['--cookies', 'conf/gen/cookies.txt']
 
 		const data = {
 			caption: randomEmoji(),

@@ -26,7 +26,6 @@ export default class extends Cmd {
 		const buffer = await readFile(`${path}.png`) || media.buffer
 		// read new file
 
-		send({ caption: emojis['sparkles'], image: buffer })
-		return
+		send({ caption: emojis['sparkles'], image: buffer }, { quoted: msg })
 	}
 }

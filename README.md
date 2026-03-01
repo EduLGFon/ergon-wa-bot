@@ -144,7 +144,7 @@ npm start
 
 - For using download cmd you should provide session cookies for YouTube, X (Twitter), TikTok,
   Instagram, etc.
-- export your cookies.txt using a browser extension and place it at `conf/cookies.txt`.
+- export your cookies.txt using a browser extension and place it at `conf/gen/cookies.txt`.
 
 ## Random delays
 

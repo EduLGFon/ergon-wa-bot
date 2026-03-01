@@ -9,20 +9,21 @@ import { GoogleFile, Gparams } from '../conf/types/types.js'
 import { randomDelay, randomTime } from './functions.js'
 import { createMemories } from '../plugin/memories.js'
 import { createAlarms } from '../plugin/alarms.js'
-import { defaults, delay, User } from '../map.js'
+import { ThinkingLevel } from '@google/genai'
 import { sendOrEdit } from './messages.js'
+import { delay, User } from '../map.js'
 
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
 
-export default async function gemini({ input, user, chat, file, model = 2 }: Gparams) {
+export default async function gemini({ input, user, msg, file, model }: Gparams) {
 	let upload
 	let interval
-	const msg = {
+	const res = {
 		header: '',
 		text: '',
-		msg: { chat },
+		msg: { chat: msg?.chat },
 	}
-	const callCallback = async () => await sendOrEdit(msg, msg.header + msg.text.trim())
+	const callCallback = async () => await sendOrEdit(res, res.header + res.text.trim(), msg)
 	const startStreaming = async () => {
 		await callCallback()
 		interval = setInterval(
@@ -32,23 +33,23 @@ export default async function gemini({ input, user, chat, file, model = 2 }: Gpa
 		return
 	}
 
-	if (file) upload = await uploadFile(file as GoogleFile, msg)
+	if (file) upload = await uploadFile(file as GoogleFile, res)
 	const message = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
 
 	const gemini = GoogleAI.chats.create({
-		model: defaults.ai.gemini_chain[model],
+		model,
 		config: getModelConfig(user),
 		history: user.gemini,
 	})
 
 	const stream = await gemini.sendMessageStream({ message })
-	msg.header = ''
+	res.header = `- *${model}*:\n`
 
-	for await (const chunk of stream) await handleResponse(chunk, msg, startStreaming)
+	for await (const chunk of stream) await handleResponse(chunk, res, startStreaming)
 	clearInterval(interval!)
 
-	await createMemories(user, msg)
-	await createAlarms(user, msg, chat!)
+	await createMemories(user, res)
+	await createAlarms(user, res, msg?.chat!)
 
 	user.gemini = gemini.getHistory()
 
@@ -79,22 +80,25 @@ async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg, startS
 
 function getModelConfig(user: User) {
 	return {
-		tools: [{ googleSearch: {} }],
-		thinkingConfig: { thinkingBudget: -1 },
+		tools: [
+			// { googleSearch: {} },
+			{ urlContext: {} },
+			// { codeExecution: {} },
+		],
+		thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
 		systemInstruction: [
 			'> Você deve seguir as configurações padrão se o usuário ou uma memória não especificá-las',
-			'- Não use raciocínio, exceto para transcrições',
 			'- Use o máximo de raciocínio para transcrições',
 			'- Gere respostas extremamente curtas e resumidas com no máximo 1 frase',
 			'- Use formatação do WhatsApp',
 			'- Destaque informações importantes do texto com *, _ ou `',
-			'> Escreva uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante',
-			'Modelo de Memória: "{MEMORY:message}"',
-			'Exemplo: "{MEMORY:O nome do usuário é Pedro}"',
-			'Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme com uma mensagem MUITO engraçada',
-			'Use apenas durações relativas: anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s)',
-			'Modelo de Alarme: "{ALARM:text:duration}"',
-			'Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
+			'# Escreva uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante',
+			'# Modelo de Memória: "{MEMORY:message}"',
+			'# Exemplo: "{MEMORY:O nome do usuário é Pedro}"',
+			'# Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme com uma mensagem MUITO engraçada',
+			'# Use apenas durações relativas: anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s)',
+			'# Modelo de Alarme: "{ALARM:text:duration}"',
+			'# Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
 			'Memórias do usuário:',
 			...user.memories,
 		],

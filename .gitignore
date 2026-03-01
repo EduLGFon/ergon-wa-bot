@@ -1,16 +1,22 @@
+# Generated
+conf/gen/auth/*
+conf/gen/build
+conf/gen/cache/*
+conf/gen/log
+conf/gen/prisma/*
+conf/gen/python/*
+conf/gen/temp/*
+cookies.txt
+out.log
+
+
+build
+
+
 # Settings
-auth
-venv
-conf/cache/*
 *.env
 test
-cookies.txt
 
-# Builds
-build
+# Modules
 rollback
 node_modules
-
-# Logs / Lock
-out.log
-conf/temp/*

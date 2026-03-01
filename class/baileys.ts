@@ -11,20 +11,22 @@ import {
 	type WASocket,
 } from 'baileys'
 import postgresAuthState from '../plugin/authState.js'
+import authState from '../plugin/authStorage.js'
 import { logger } from '../util/proto.js'
 
 export default class Baileys {
+	lid: str = ''
 	sock!: WASocket
 	// sock is the real Baileys connection
 	constructor() {}
 
 	async connect() {
 		// Use saved session (otherwise you'll need to log in again every time)
-		const { state, saveCreds } = process.env.DATABASE_URL
-			? await postgresAuthState('0') // save auth creds/keys on db
-			// using postgresAuthState will avoid MANY problems you will
-			// encounter using the file system auth storing
-			: await useMultiFileAuthState('conf/auth')
+		const { state, saveCreds } = await postgresAuthState('0') //process.env.DATABASE_URL
+		//? await postgresAuthState('0') // save auth creds/keys on db
+		// using postgresAuthState will avoid MANY problems you will
+		// encounter using the file system auth storing
+		//: await useMultiFileAuthState('conf/gen/auth')
 		// it is here just bc you may don't have a postgresql db setted.
 
 		this.sock = makeWASocket({
@@ -47,6 +49,8 @@ export default class Baileys {
 
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
-		return
+
+		// set bot lid
+		this.lid = this.sock.user?.lid?.split(':')[0] + '@lid'
 	}
 }

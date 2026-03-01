@@ -1,2 +1,0 @@
-downloaded videos, images for removing background and script files are saved here.
-don't delete this folder.

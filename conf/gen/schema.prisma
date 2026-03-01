@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output = "./prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model users {
@@ -32,6 +32,13 @@ model msgs {
   count  Int    @default(1)
 
   @@id([author, group])
+}
+
+
+model authStorage {
+  key  String @id
+  data Json
+
 }
 
 model authCreds {

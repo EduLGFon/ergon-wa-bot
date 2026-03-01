@@ -12,28 +12,31 @@ export default async function (groupEvent: Event) {
 
 	switch (groupEvent.action) {
 		case 'promote': {
-			const member = group.members.find((m) => m.id === participant)
+			const member = group.members.find((m) => m.id === participant.id)
 			member!.admin = 'admin'
-			return
+			break
 		}
 		case 'demote': {
-			const member = group.members.find((m) => m.id === participant)
+			const member = group.members.find((m) => m.id === participant.id)
 			member!.admin = null
-			return
+			break
 		}
 		case 'add':
-			group.members.push({ id: participant, admin: null })
-			return
+			group.members.push(participant)
+			break
 		case 'remove':
-			group.members = group.members.filter((m) => m.id !== participant)
-			return
+			group.members = group.members.filter((m) => m.id !== participant.id)
+			break
 	}
-	return
 }
 
 interface Event {
 	id: str
 	author: str
-	participants: str[]
+	participants: {
+		id: str
+		phoneNumber: str
+		admin: null | 'admin'
+	}[]
 	action: ParticipantAction
 }

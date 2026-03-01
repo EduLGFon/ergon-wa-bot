@@ -11,7 +11,7 @@ import {
 	User,
 } from '../map.js'
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
-import { getGroup, getUser } from '../plugin/prisma.js'
+import prisma, { getGroup, getUser } from '../plugin/prisma.js'
 import cache from '../plugin/cache.js'
 import { logger } from './proto.js'
 import bot from '../wa.js'
@@ -25,6 +25,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		print(raw)
 		return fakeCtx
 	}
+	// checkMatch(key)
 
 	// msg type
 	const types = getMsgType(message!)
@@ -33,12 +34,8 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	let group = undefined
 	if (key.remoteJid?.includes('@g.us')) group = await getGroup(key.remoteJid)
 
-	let lid = key.fromMe ? bot.sock.user?.id : key.remoteJid!
-	if (key.participant) lid = key.participant!
-	if (lid?.includes(':')) {
-		const splitted = lid.split(':')
-		lid = splitted[0] + '@' + splitted[1].split('@')[1]
-	}
+	let lid = key?.participant
+	if (!lid) lid = key.fromMe ? bot.lid : key.remoteJid!
 
 	if (lid?.endsWith('@g.us')) return fakeCtx
 	let user = await getUser({ lid })
@@ -57,6 +54,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		mime,
 		isEdited: !!findKey(message, 'editedMessage'),
 		key,
+		message,
 	}
 
 	let args: str[] = []
@@ -78,6 +76,50 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		user: user as User,
 		group,
 	} as CmdCtx
+}
+
+async function checkMatch(key: proto.IMessageKey) {
+	const member = key?.participant
+	// @ts-ignore
+	const memberAlt = key?.participantAlt
+
+	if (member?.includes('@lid') && memberAlt?.includes('@s.whatsapp.net')) {
+		const oldUser = await prisma.users.findFirst({ where: { lid: memberAlt } })
+		if (!oldUser) return
+		const newUser = await prisma.users.findFirst({ where: { lid: member } })!
+		const oldMsgs = await prisma.msgs.findMany({ where: { author: oldUser.id } })
+		const newMsgs = await prisma.msgs.findMany({ where: { author: newUser!.id } })
+		print(
+			'MATCH',
+			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser!.id}) has two entries.`,
+			'blue',
+		)
+		print(oldUser, newUser)
+		print(oldMsgs, newMsgs)
+
+		return
+		const author = oldUser!.id
+		for (const m of newMsgs) {
+			const group = m.group
+			await prisma.msgs.upsert({
+				where: {
+					author_group: { author, group },
+				},
+				create: {
+					author,
+					group,
+					count: m.count,
+				},
+				update: {
+					count: { increment: m.count },
+				},
+			})
+		}
+		await prisma.msgs.deleteMany({ where: { author: newUser!.id } })
+		await prisma.users.update({ where: { id: oldUser!.id }, data: { lid: newUser!.lid } })
+		await prisma.users.deleteMany({ where: { id: newUser!.id } })
+	}
+	return
 }
 
 // download msg media
@@ -213,13 +255,13 @@ function msgMeta(
 	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	// @ts-ignore
-	// const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
+	const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
 	// @ts-ignore
 	const key = msg?.key ? msg.key : msg
 
 	if (!chat.includes('@')) chat += '@s.whatsapp.net'
 
-	return { key, text, chat, quote: {} }
+	return { key, text, chat, quote }
 }
 
-export { downloadMedia, getCtx, msgMeta }
+export { checkMatch, downloadMedia, getCtx, msgMeta }
