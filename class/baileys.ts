@@ -20,7 +20,6 @@ export default class Baileys {
 	constructor() {}
 
 	async connect() {
-		print('CREDS', 'Initializing new auth state', 'green')
 		// Use saved session (otherwise you'll need to log in again every time)
 		const { state, saveCreds } = await postgresAuthState('0') //process.env.DATABASE_URL
 		//? await postgresAuthState('0') // save auth creds/keys on db
@@ -29,7 +28,6 @@ export default class Baileys {
 		//: await useMultiFileAuthState('conf/gen/auth')
 		// it is here just bc you may don't have a postgresql db setted.
 
-		print('SOCK', 'Creating new WA Socket', 'green')
 		this.sock = makeWASocket({
 			auth: {
 				creds: state.creds,
@@ -48,7 +46,6 @@ export default class Baileys {
 				isJidMetaAI(jid) || isJidStatusBroadcast(jid),
 		})
 
-		print('EVENTS', 'Loading event creds.update', 'blue')
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
 	}

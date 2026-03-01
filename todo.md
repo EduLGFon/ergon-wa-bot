@@ -9,4 +9,3 @@
 - Add a cmd to delete reminders (aka remind delete)
 - Add a gotcha cmd
 - Fix memory increasing bug
-- fix clean command not cleaning
