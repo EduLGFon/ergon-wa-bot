@@ -1,4 +1,4 @@
-import { deleteMessage, react, send, startTyping } from '../../util/messages.js'
+import { react, send, startTyping } from '../../util/messages.js'
 import { CmdCtx, delay, getCtx } from '../../map.js'
 import { getUser } from '../../plugin/prisma.js'
 import { type proto } from 'baileys'
@@ -42,7 +42,6 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 			startTyping: startTyping.bind(msg.chat),
 			send: sendMsg,
 			react: reactToMsg,
-			deleteMsg: deleteMessage.bind(msg),
 			msg,
 			t,
 		}
@@ -69,8 +68,6 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		} catch (e: any) {
 			print(`CMD/${cmd.name}`, e, 'red')
 			sendMsg(`[⚠️] ${e?.message || e}`)
-			return
 		}
 	}
-	return
 }

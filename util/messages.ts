@@ -6,7 +6,7 @@ import cache from '../plugin/cache.js'
 import { getFixedT } from 'i18next'
 import bot from '../wa.js'
 
-export { deleteMessage, editMsg, getMedia, react, send, sendOrEdit, startTyping }
+export { editMsg, getMedia, react, send, sendOrEdit, startTyping }
 
 async function getMedia(msg: Msg, startTyping?: Func) {
 	const target = msg.media ? msg : msg.quoted
@@ -84,22 +84,12 @@ async function react(this: Msg, emoji: str) {
 	const text = emoji === 'random' ? randomEmoji() : emojis[emoji] || emoji
 
 	await send.bind(this.chat)({ react: { text, key: this.key } })
-	return
 }
 
 // simple abstraction to edit a msg
 async function editMsg(this: Msg, text: str) {
 	const { chat, key } = this
 	return await send.bind(chat)({ edit: key, text })
-}
-
-// simple abstraction to delete a msg
-async function deleteMessage(this: Msg | proto.IMessageKey) {
-	const { chat, key } = msgMeta(this, '')
-	// get msg metadata
-
-	await send.bind(chat)({ delete: key })
-	return
 }
 
 type StreamMsg = { msg: any }
@@ -109,5 +99,4 @@ async function sendOrEdit(data: StreamMsg, text: str, quoted?: Msg) {
 	if (data.msg?.key?.id) {
 		await editMsg.bind(data.msg)(text).catch((e) => print('Failed to edit message', e))
 	} else if (text) data.msg = (await send.bind(data.msg.chat)(text, { quoted })).msg
-	return
 }
