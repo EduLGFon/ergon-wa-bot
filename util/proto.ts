@@ -14,7 +14,7 @@ const now = (format = 'dd/MM TT.SSS') =>
 
 // Pino Logger
 const logger = pino({
-	level: 'error',
+	level: 'silent',
 	transport: {
 		target: 'pino-pretty',
 		options: { ignore: 'pid,hostname' },
@@ -30,7 +30,16 @@ export default () => {
 	global.print = print
 }
 
-const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+const brightColors = [
+	'black',
+	'red',
+	'green',
+	'yellow',
+	'blue',
+	'magenta',
+	'cyan',
+	'white',
+]
 function print(...anyArgs: any) {
 	if (!anyArgs[2]) return console.info(...anyArgs)
 
@@ -39,16 +48,19 @@ function print(...anyArgs: any) {
 	const memory = process.memoryUsage().rss.bytes().align(5)
 	if (brightColors.includes(color)) color += 'Bright'
 
-	console.info(chalk.bold[color as 'red'](
-		`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
-		...args,
-	))
+	console.info(
+		chalk.bold[color as 'red'](
+			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
+			...args,
+		),
+	)
 }
 
 function numPrototypes() {
 	/* Number Prototypes */
 	Object.defineProperties(Number.prototype, {
-		bytes: { // convert bytes to human readable nums
+		bytes: {
+			// convert bytes to human readable nums
 			configurable: true,
 			value: function () {
 				const types = ['B', 'KB', 'MB', 'GB']
@@ -64,9 +76,11 @@ function numPrototypes() {
 				return number.toFixed(3) + types[type]
 			},
 		},
-		duration: { // convert ms time in short duration str
+		duration: {
+			// convert ms time in short duration str
 			configurable: true,
-			value: function (ms?: bool) { // 1000 => 1s
+			value: function (ms?: bool) {
+				// 1000 => 1s
 				const units: Unit[] = ['y', 'd', 'h', 'm', 's']
 				if (ms) units.push('ms')
 
@@ -114,19 +128,22 @@ function strPrototypes() {
 				return this.slice(0, 1).toUpperCase() + this.slice(1)
 			},
 		},
-		encode: { // encode strings
+		encode: {
+			// encode strings
 			configurable: true,
 			value: function () {
 				return !this ? '' : '`' + this.replace('`', '').trim() + '`'
 			},
 		},
-		parsePhone: { // parse wpp id to phone number
+		parsePhone: {
+			// parse wpp id to phone number
 			configurable: true,
 			value: function () {
 				return this.split('@')[0].split(':')[0]
 			},
 		},
-		bold: { // make text bold
+		bold: {
+			// make text bold
 			configurable: true,
 			value: function (this: str) {
 				const chars = this.split('')
@@ -144,20 +161,23 @@ function strPrototypes() {
 				return result
 			},
 		},
-		filterForRegex: { // remove some chars that conflict with regex chars
+		filterForRegex: {
+			// remove some chars that conflict with regex chars
 			configurable: true,
 			value: function () {
 				return this.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
 			},
 		},
-		t: { // get locale
+		t: {
+			// get locale
 			configurable: true,
 			value: function (lang: str, options = {}) {
 				// 'help.menu'.t('en') => 'help menu'
 				return getFixedT(lang)(this, options)
 			},
 		},
-		align: { // align a word between spaces
+		align: {
+			// align a word between spaces
 			configurable: true,
 			// famous left padding
 			value: function (limit: num, char: str = ' ', endPosition?: bool) {
@@ -167,13 +187,15 @@ function strPrototypes() {
 				const start = char.repeat(Math.ceil(ratio))
 				const end = char.repeat(Math.floor(ratio))
 
-				if (endPosition) return (end + this + start)
-				else return (start + this + end)
+				if (endPosition) return end + this + start
+				else return start + this + end
 			},
 		},
-		toMs: { // convert a str on ms
+		toMs: {
+			// convert a str on ms
 			configurable: true,
-			value: function () { // '10s' => 1_000 * 10
+			value: function () {
+				// '10s' => 1_000 * 10
 				const match: str[] = this.match(/(\d+)(y|d|h|m|s|w)/gi) || []
 
 				if (!match[0]) return [0]

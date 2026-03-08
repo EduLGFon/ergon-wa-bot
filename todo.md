@@ -1,4 +1,3 @@
-- Update pino library to the next major update (10.xx.xx)
 - Add IDs to any Gemini Memory
 - Store group keys before sending msgs
 - Store data cache

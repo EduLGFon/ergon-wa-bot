@@ -38,7 +38,7 @@
 		"i18next-fs-backend": "^2.6.1",
 		"luxon": "^3.7.2",
 		"node-webpmux": "^3.2.1",
-		"pino": "^9.14.0",
+		"pino": "^10.3.1",
 		"qrcode": "^1.5.4",
 		"wa-sticker-formatter": "^4.4.4"
 	},
