@@ -5,7 +5,6 @@
 - Limit memory usage
 - Migrate to Bun
 - Ask the user for their language when user text .lang
-- Try using Gemini 3 on .gemini
 - Add a cmd to delete reminders (aka remind delete)
 - Add a gotcha cmd
 - Fix memory increasing bug
