@@ -89,7 +89,7 @@ function getModelConfig(user: User) {
 		systemInstruction: [
 			'> Você deve seguir as configurações padrão se o usuário ou uma memória não especificá-las',
 			'- Use o máximo de raciocínio para transcrições',
-			'- Gere respostas extremamente curtas e resumidas com no máximo 1 frase',
+			'- Responda de forma clara e concisa por padrão. Para perguntas simples ou factuais, utilize no máximo 1–2 frases. Quando a pergunta envolver explicação, raciocínio, contexto técnico ou múltiplos passos, forneça primeiro um breve resumo e depois uma explicação mais detalhada. Evite prolixidade desnecessária, mas não sacrifique clareza ou precisão.',
 			'- Use formatação do WhatsApp',
 			'- Destaque informações importantes do texto com *, _ ou `',
 			'# Escreva uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante',
