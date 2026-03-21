@@ -8,6 +8,8 @@
 > sendind msgs & duplicated users problems. Unfortunately, it would be just hard and slow to migrate
 > all users. So you should truncate `users` and `msgs` tables.
 
+> ⚠️ » Disclaimer 2: Ergon is meant to work without a DB by design, but it's not actively tested. Therefore, it is expected that you will configure a PostgreSQL database for everything to work correctly.
+
 ---
 
 # 🤔 What do you mean by "cool features"?:
