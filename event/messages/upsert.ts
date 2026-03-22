@@ -1,9 +1,9 @@
 import { reactToMsg, sendMsg, startTyping } from '../../util/messages.js'
+import checkGroupAnnouncer from '../../plugin/groupAnnouncer.js'
 import { CmdCtx, delay, getCtx } from '../../map.js'
 import { getUser } from '../../plugin/prisma.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
-import { inspect } from 'node:util'
 
 // messages upsert event
 export default async function (
@@ -13,10 +13,6 @@ export default async function (
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m?.message) continue
-		if (!m?.messageStubParameters) {
-			print('MSG', m.messageStubParameters, 'red')
-			print(inspect(raw, { depth: null }))
-		}
 
 		// get abstract msg obj
 		const { msg, args, cmd, group, user } = await getCtx(m)
@@ -33,11 +29,11 @@ export default async function (
 			}
 		}
 
-		if (msg.text.includes('#todos')) {
-			print(msg.text)
+		if (!cmd) {
+			await checkGroupAnnouncer(msg, user, group)
+			// only non-cmd msgs can be announced
+			continue
 		}
-
-		if (!cmd) continue
 		// get locales function
 		const t = getFixedT(user.lang)
 		const react = reactToMsg.bind(msg)
