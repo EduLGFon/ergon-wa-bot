@@ -12,7 +12,8 @@ import $ from 'dax'
 
 const controller = new AbortController()
 const node_args = ['--expose-gc', '--no-warnings', '--env-file=conf/.env'].join(' ')
-const receipes = { // integrated scripts
+const receipes = {
+	// integrated scripts
 	out: { cmd: 'npm outdated' },
 	up: { cmd: 'npm run update' },
 	gen: { cmd: 'npm run prisma:gen' },
@@ -24,30 +25,34 @@ const receipes = { // integrated scripts
 	pms: { cmd: 'pm2 start conf/ecosystem.config.cjs --attach' },
 }
 
-const cmds = { // like a CLI
-	s(args: string[]) { // start a script
+const cmds = {
+	// like a CLI
+	s(args: string[]) {
+		// start a script
 		console.log('Start:', ...args)
 
-		args.forEach((a) => {
+		args.forEach(a => {
 			if (!receipes[a]) return console.log('not found:', a)
 			//@ts-ignore shut up TypeScript
 			receipes[a].controller = spawn(receipes[a].cmd)
 		})
 	},
-	k(args: string[]) { // kill a script
+	k(args: string[]) {
+		// kill a script
 		console.log('Killing:', ...args)
 
 		//@ts-ignore shut up TypeScript
-		args.forEach((a) => {
+		args.forEach(a => {
 			if (!receipes[a]) return console.log('not found:', a)
 
 			receipes[a].controller.abort()
 		})
 	},
-	r(args: string[]) { // restart a script
+	r(args: string[]) {
+		// restart a script
 		console.log('Restarting:', ...args)
 
-		args.forEach((a) => {
+		args.forEach(a => {
 			const recipe = receipes[a as 'tsc']
 
 			if (!recipe) return console.log('not found:', a)
@@ -56,7 +61,8 @@ const cmds = { // like a CLI
 			recipe.controller = spawn(recipe.cmd) // spawn it
 		})
 	},
-	c() { // clear terminal
+	c() {
+		// clear terminal
 		console.clear()
 	},
 }

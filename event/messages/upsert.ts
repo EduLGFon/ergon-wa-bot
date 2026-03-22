@@ -3,12 +3,20 @@ import { CmdCtx, delay, getCtx } from '../../map.js'
 import { getUser } from '../../plugin/prisma.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
+import { inspect } from 'node:util'
 
 // messages upsert event
-export default async function (raw: { messages: proto.IWebMessageInfo[] }, event: str) {
+export default async function (
+	raw: { messages: proto.IWebMessageInfo[] },
+	_event: str,
+) {
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m?.message) continue
+		if (!m?.messageStubParameters) {
+			print('MSG', m.messageStubParameters, 'red')
+			print(inspect(raw, { depth: null }))
+		}
 
 		// get abstract msg obj
 		const { msg, args, cmd, group, user } = await getCtx(m)
@@ -18,10 +26,15 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		if (!msg.isEdited) {
 			// count msgs with valid types for group msgs rank cmd
 			if (group) group.countMsg(msg)
-			else { // store msgs for searching images on sticker cmd
+			else {
 				const chat = await getUser({ lid: msg.chat })
+				// store msgs for searching images on sticker cmd
 				chat!.msgs.add(msg.key.id!, msg)
 			}
+		}
+
+		if (msg.text.includes('#todos')) {
+			print(msg.text)
 		}
 
 		if (!cmd) continue

@@ -8,13 +8,16 @@ import baileys, {
 } from 'baileys'
 import prisma from './prisma.js'
 
-const authState = async (): Promise<
-	{ state: AuthenticationState; saveCreds: () => Promise<void> }
-> => {
+const authState = async (): Promise<{
+	state: AuthenticationState
+	saveCreds: () => Promise<void>
+}> => {
 	// Database operations replacing file operations with BufferJSON conversions
 	const getData = async (key: string): Promise<any | null> => {
 		const record = await prisma.authStorage.findUnique({ where: { key } })
-		return record ? JSON.parse(JSON.stringify(record.data), BufferJSON.reviver) : null
+		return record
+			? JSON.parse(JSON.stringify(record.data), BufferJSON.reviver)
+			: null
 	}
 
 	const setData = async (key: string, data: any): Promise<void> => {
@@ -31,8 +34,7 @@ const authState = async (): Promise<
 	}
 
 	const credsKey = 'creds'
-	let creds: AuthenticationCreds = (await getData(credsKey)) ||
-		initAuthCreds()
+	let creds: AuthenticationCreds = (await getData(credsKey)) || initAuthCreds()
 	if (!(await getData(credsKey))) {
 		await setData(credsKey, creds)
 	}
@@ -46,28 +48,28 @@ const authState = async (): Promise<
 						[_: string]: SignalDataTypeMap[typeof type]
 					} = {}
 					await Promise.all(
-						ids.map(async (id) => {
+						ids.map(async id => {
 							const key = `${type}-${id}`
 							let value = await getData(key)
 							if (type === 'app-state-sync-key' && value) {
-								value = proto.Message.AppStateSyncKeyData
-									.fromObject(value)
+								value =
+									proto.Message.AppStateSyncKeyData.fromObject(
+										value,
+									)
 							}
 							data[id] = value
 						}),
 					)
 					return data
 				},
-				set: async (data) => {
+				set: async data => {
 					const tasks: Promise<void>[] = []
 					for (const category in data) {
 						const catData = data[category as keyof SignalDataTypeMap]
 						for (const id in catData!) {
 							const key = `${category}-${id}`
 							const value = catData[id]
-							tasks.push(
-								value ? setData(key, value) : removeData(key),
-							)
+							tasks.push(value ? setData(key, value) : removeData(key))
 						}
 					}
 					await Promise.all(tasks)

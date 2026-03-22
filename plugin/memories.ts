@@ -3,7 +3,8 @@ import { prisma, User } from '../map.js'
 export { cleanMemories, createMemories }
 const memoryRegex = /{MEMORY:.+}/gi
 
-async function createMemories(user: User, msg: AIMsg) { // add memories to user
+async function createMemories(user: User, msg: AIMsg) {
+	// add memories to user
 	const matches = msg.text.match(memoryRegex)
 	if (!matches) return msg.text // no memories found
 
@@ -24,7 +25,8 @@ async function createMemories(user: User, msg: AIMsg) { // add memories to user
 	}
 
 	if (!process.env.DATABASE_URL) return
-	await prisma.users.update({ // update user memories in database
+	await prisma.users.update({
+		// update user memories in database
 		where: { id: user.id },
 		data: { memories: JSON.stringify(user.memories) },
 	})
@@ -35,7 +37,8 @@ async function cleanMemories(user: User) {
 	user.memories = [] // delete all memories
 
 	if (!process.env.DATABASE_URL) return
-	await prisma.users.update({ // delete it also on DB
+	await prisma.users.update({
+		// delete it also on DB
 		where: { id: user.id },
 		data: { memories: '' },
 	})

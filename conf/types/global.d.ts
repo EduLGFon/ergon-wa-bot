@@ -24,7 +24,8 @@ interface Number {
 	duration(ms?: bool): str
 }
 
-type UserSchema = { // user db typescript schema
+type UserDB = {
+	// user db typescript schema
 	id: num
 	lid: str
 	name: str | null
@@ -34,7 +35,8 @@ type UserSchema = { // user db typescript schema
 	memories: str | null
 }
 
-type Alarm = { // alarm db schema
+type Alarm = {
+	// alarm db schema
 	id: num
 	author: num
 	chat: str
@@ -63,5 +65,15 @@ interface MediaMsg {
 
 type AIMsg = { header: str; text: str }
 
-type Lang = 'py' | 'lua' | 'rs' | 'node' | 'deno' | 'bun' | 'bash' | 'zsh' | 'cpp' | 'eval'
+type Lang =
+	| 'py'
+	| 'lua'
+	| 'rs'
+	| 'node'
+	| 'deno'
+	| 'bun'
+	| 'bash'
+	| 'zsh'
+	| 'cpp'
+	| 'eval'
 // supported programming languages

@@ -26,7 +26,9 @@ export default class extends Cmd {
 		// the bot can only delete up to 200 msgs bc thats the max msgs that can be cached
 		if (group.msgs.size < amount) {
 			// send a disclaimer msg that only x msgs can be deleted
-			disclaimerMsgCtx = await send(t('clean.deleted', { msgsSize: group.msgs.size }))
+			disclaimerMsgCtx = await send(
+				t('clean.deleted', { msgsSize: group.msgs.size }),
+			)
 		}
 
 		let msgs = group.msgs
@@ -47,8 +49,11 @@ export default class extends Cmd {
 			await delay(500)
 		}
 
-		if (disclaimerMsgCtx) { // delete disclaimer msg
-			await send.bind(disclaimerMsgCtx.msg)({ delete: disclaimerMsgCtx.msg.key })
+		if (disclaimerMsgCtx) {
+			// delete disclaimer msg
+			await send.bind(disclaimerMsgCtx.msg)({
+				delete: disclaimerMsgCtx.msg.key,
+			})
 			group.msgs.delete(disclaimerMsgCtx.msg.key.id!)
 		}
 

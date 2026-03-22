@@ -18,9 +18,14 @@ export default class extends Cmd {
 		 * Avoid WA bans.
 		 */
 
-		await send({
-			text: args[0] ? `*@everyone:* "${args.join(' ').encode()}"` : '*@everyone*',
-			mentions: group?.members?.map((m) => m.id),
-		}, { quoted: msg })
+		await send(
+			{
+				text: args[0]
+					? `*@everyone:* "${args.join(' ').encode()}"`
+					: '*@everyone*',
+				mentions: group?.members?.map(m => m.id),
+			},
+			{ quoted: msg },
+		)
 	}
 }

@@ -2,5 +2,10 @@
 	"tabWidth": 4,
 	"useTabs": true,
 	"singleQuote": true,
-	"semi": false
+	"semi": false,
+	"printWidth": 85,
+	"proseWrap": "preserve",
+	"objectWrap": "preserve",
+	"bracketSameLine": true,
+	"arrowParens": "avoid"
 }

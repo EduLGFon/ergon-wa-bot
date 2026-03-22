@@ -201,7 +201,7 @@ function strPrototypes() {
 				if (!match[0]) return [0]
 
 				const ms = match
-					.map((m) => {
+					.map(m => {
 						const quantity = parseInt(m, 10)
 						const unit = m.replace(String(quantity), '')
 

@@ -88,7 +88,9 @@ async function checkMatch(key: proto.IMessageKey) {
 		if (!oldUser) return
 		const newUser = await prisma.users.findFirst({ where: { lid: member } })!
 		const oldMsgs = await prisma.msgs.findMany({ where: { author: oldUser.id } })
-		const newMsgs = await prisma.msgs.findMany({ where: { author: newUser!.id } })
+		const newMsgs = await prisma.msgs.findMany({
+			where: { author: newUser!.id },
+		})
 		print(
 			'MATCH',
 			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser!.id}) has two entries.`,
@@ -116,7 +118,10 @@ async function checkMatch(key: proto.IMessageKey) {
 			})
 		}
 		await prisma.msgs.deleteMany({ where: { author: newUser!.id } })
-		await prisma.users.update({ where: { id: oldUser!.id }, data: { lid: newUser!.lid } })
+		await prisma.users.update({
+			where: { id: oldUser!.id },
+			data: { lid: newUser!.lid },
+		})
 		await prisma.users.deleteMany({ where: { id: newUser!.id } })
 	}
 	return
@@ -147,7 +152,8 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 
 	if (!buffer) return
 
-	cache.media.add(msg.url, { // cache media
+	// media cache
+	cache.media.add(msg.url, {
 		buffer,
 		url: msg.url,
 		mime: msg.mimetype,
@@ -167,8 +173,7 @@ function getInput(msg: Msg, prefix: str) {
 
 	let args: str[] = msg.text.replace(prefix, '').trim().split(' ')
 	const callCmd = args.shift()!.toLowerCase() // cmd name on msg | .help => 'help' === callCmd
-	const cmd = cache.cmds
-		.find((c) => c.name === callCmd || c.alias.includes(callCmd))
+	const cmd = cache.cmds.find(c => c.name === callCmd || c.alias.includes(callCmd))
 	// search command by name or by aliases
 
 	const first = args[0]?.toLowerCase() // first arg
@@ -188,11 +193,7 @@ function getInput(msg: Msg, prefix: str) {
 		msg.text = text
 	}
 
-	return {
-		msg,
-		args,
-		cmd,
-	}
+	return { msg, args, cmd }
 }
 
 // getQuoted: get the quoted msg of a raw msg
@@ -200,11 +201,15 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const m = raw.message!
 
 	//@ts-ignore 'quotedMessage' is missing on lib types
-	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(m, 'quotedMessage')
+	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(
+		m,
+		'quotedMessage',
+	)
 
 	if (!quotedRaw) return
 	const types = getMsgType(quotedRaw) // quoted message type
-	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
+	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2')
+		quotedRaw = quotedRaw.viewOnceMessageV2!
 
 	let quoted = {
 		type: types[0], // msg type
@@ -214,12 +219,13 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg
 
-	let cachedMsg = chat.msgs.find((m) =>
-		// compare quoted msg with cached msgs
-		quoted?.type === m.type &&
-		quoted?.media === m.media &&
-		quoted?.text === m.text &&
-		quoted?.mime === m.mime
+	let cachedMsg = chat.msgs.find(
+		m =>
+			// compare quoted msg with cached msgs
+			quoted?.type === m.type &&
+			quoted?.media === m.media &&
+			quoted?.text === m.text &&
+			quoted?.mime === m.mime,
 	)
 
 	return quoted || cachedMsg
@@ -254,8 +260,12 @@ function msgMeta(
 	// @ts-ignore
 	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
-	// @ts-ignore
-	const quote = reply ? { quoted: reply } : typeof msg === 'string' ? {} : { quoted: msg?.raw }
+	const quote = reply
+		? { quoted: reply }
+		: typeof msg === 'string'
+			? {}
+			: // @ts-ignore
+				{ quoted: msg?.raw }
 	// @ts-ignore
 	const key = msg?.key ? msg.key : msg
 

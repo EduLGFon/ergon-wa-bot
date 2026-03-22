@@ -21,6 +21,5 @@ export default class extends Cmd {
 		const text = `\`$ ${duration}/${RAM}\`\n` + output
 
 		send(text)
-		return
 	}
 }

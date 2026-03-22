@@ -23,7 +23,8 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 		text: '',
 		msg: { chat: msg?.chat },
 	}
-	const callCallback = async () => await sendOrEdit(res, res.header + res.text.trim(), msg)
+	const callCallback = async () =>
+		await sendOrEdit(res, res.header + res.text.trim(), msg)
 	const startStreaming = async () => {
 		await callCallback()
 		interval = setInterval(
@@ -34,7 +35,9 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	}
 
 	if (file) upload = await uploadFile(file as GoogleFile, res)
-	const message = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
+	const message = upload
+		? [createPartFromUri(upload.uri!, upload.mimeType!), input]
+		: input
 
 	const gemini = GoogleAI.chats.create({
 		model,
@@ -45,7 +48,8 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	const stream = await gemini.sendMessageStream({ message })
 	res.header = `- *${model}*:\n`
 
-	for await (const chunk of stream) await handleResponse(chunk, res, startStreaming)
+	for await (const chunk of stream)
+		await handleResponse(chunk, res, startStreaming)
 	clearInterval(interval!)
 
 	await createMemories(user, res)
@@ -57,15 +61,23 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	return await callCallback()
 }
 
-async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg, startStreaming: Func) {
+async function handleResponse(
+	chunk: GenerateContentResponse,
+	msg: AIMsg,
+	startStreaming: Func,
+) {
 	if (chunk?.candidates) {
 		let web = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
 		if (web) {
 			let searches = ''
 			if (web.length > 3) {
-				searches = web.slice(0, 3).map((s) => s.encode()).join(', ') + ', `...`'
+				searches =
+					web
+						.slice(0, 3)
+						.map(s => s.encode())
+						.join(', ') + ', `...`'
 			} else {
-				searches = web.map((s) => s.encode()).join(', ')
+				searches = web.map(s => s.encode()).join(', ')
 			}
 			msg.header += `- 🔍 ${searches}\n`
 		}
@@ -118,7 +130,8 @@ async function uploadFile(file: GoogleFile, msg: AIMsg) {
 	})
 
 	upload = await GoogleAI.files.get({ name: upload.name! }) // fetch its info
-	while (upload.state === FileState.PROCESSING) { // media still processing
+	while (upload.state === FileState.PROCESSING) {
+		// media still processing
 		// Sleep until it gets done
 		await delay(2_000)
 		// Fetch the file from the API again
@@ -126,6 +139,7 @@ async function uploadFile(file: GoogleFile, msg: AIMsg) {
 	}
 
 	// media upload failed
-	if (upload.state === FileState.FAILED) throw new Error('Google server processing failed.')
+	if (upload.state === FileState.FAILED)
+		throw new Error('Google server processing failed.')
 	return upload // return the file info
 }

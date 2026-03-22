@@ -49,7 +49,7 @@ async function sendAlarms() {
 	}
 
 	const nextAlarm = alarms
-		.filter((a) => !a.status)
+		.filter(a => !a.status)
 		.sort((a, b) => Number(a.time) - Number(b.time))[0]
 	if (!nextAlarm) {
 		clearTimeout(alarmTimeout)
@@ -63,9 +63,11 @@ async function sendAlarms() {
 	return
 }
 
-function scheduleAlarmCheck(time: num) { // set timeout for the next alarm check
+function scheduleAlarmCheck(time: num) {
+	// set timeout for the next alarm check
 	let duration = time - Date.now()
-	if (duration > 2147483647) { // bruh moment
+	if (duration > 2147483647) {
+		// bruh moment
 		/** setTimeout() only accepts 32 bit signed integers as duration
 		 * but this timeout duration exploted the limit (-2^31 to 2^31 - 1)
 		 * what it means is that the timeout duration is too big (more than 24 days 21 hours)
@@ -116,13 +118,17 @@ async function createAlarms(user: User, msg: AIMsg, chat: str) {
 	return
 }
 
-async function getUserAlarms(user: User) { // get all alarms created by the user
+async function getUserAlarms(user: User) {
+	// get all alarms created by the user
 	if (!process.env.DATABASE_URL) return ['Nenhum alarme.']
-	const alarms: Alarm[] = await prisma.alarms.findMany({ where: { author: user.id } })
+	const alarms: Alarm[] = await prisma.alarms.findMany({
+		where: { author: user.id },
+	})
 
 	if (!alarms[0]) return ['Nenhum alarme.']
 
-	return alarms.map((r) =>
-		`MESSAGE: "${r.msg}". TIME: "${new Date(r.time).toLocaleString(user.lang)}"`
+	return alarms.map(
+		r =>
+			`MESSAGE: "${r.msg}". TIME: "${new Date(r.time).toLocaleString(user.lang)}"`,
 	)
 }
