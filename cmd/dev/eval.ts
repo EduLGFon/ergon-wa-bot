@@ -11,7 +11,9 @@ export default class extends Cmd {
 	}
 
 	async run(ctx: CmdCtx) {
-		const lang = langs.includes(ctx.args[0]) ? ctx.args.shift() as Lang : 'eval'
+		const lang = langs.includes(ctx.args[0])
+			? (ctx.args.shift() as Lang)
+			: 'eval'
 		// code language. can be py (python), rs (rust), cpp (C++), etc.
 
 		const startTime = Date.now() // start time for execution duration
@@ -21,7 +23,8 @@ export default class extends Cmd {
 		const duration = (Date.now() - startTime!).duration(true)
 		const RAM = process.memoryUsage().rss.bytes() // current RAM usage
 
-		const text = `\`$ ${duration}/${RAM}\`` + // msg header
+		const text =
+			`\`$ ${duration}/${RAM}\`` + // msg header
 			(output === 'undefined' ? '' : '\n' + output.trim()) // delete 'undefined' outputs
 
 		ctx.send(text)

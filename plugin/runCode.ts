@@ -18,12 +18,18 @@ interface LangInstructions {
 	triggers?: trigger[]
 }
 
-export default async function runCode(lang: Lang, code = '', file = '', ctx?: CmdCtx) {
+export default async function runCode(
+	lang: Lang,
+	code = '',
+	file = '',
+	ctx?: CmdCtx,
+) {
 	let data: LangInstructions
 	const cli: str[] = []
 
 	try {
-		if (!file) { // it's a dev-introduced code. not a file already created.
+		if (!file) {
+			// it's a dev-introduced code. not a file already created.
 			data = defaults.runner[lang] // lang instructions
 			if (data.triggers) code = testTriggers(data.triggers, code)
 			// when a trigger triggers, a template is pasted in code
@@ -50,13 +56,15 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 
 			await writeFile(file, code) // write file
 			code = '' // clean the code bc it will be on CLI if (file)
-		} else { // it's a already created file
+		} else {
+			// it's a already created file
 			lang = file.split('.')[1] as Lang // get file extension
 			data = defaults.runner[lang] // get language instruction
 		}
 
 		let output = ''
-		for (const i in data.cmd) { // cmd is a shell cmd script to run the code
+		for (const i in data.cmd) {
+			// cmd is a shell cmd script to run the code
 			// you didn't see the cli? it's here => cli: str[] = []
 			cli[i] = `${data.cmd[i]} ${file} ${code}`
 			// place every cmd into the cli list
@@ -79,7 +87,8 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 
 function testTriggers(triggers: trigger[], code: str) {
 	for (let t of triggers) {
-		if (Object.hasOwn(t, 'includes')) { // it's a 'includes' trigger
+		if (Object.hasOwn(t, 'includes')) {
+			// it's a 'includes' trigger
 			t = t as triggerIncludes
 			for (const i of t.includes) {
 				if (code.includes(i)) {
@@ -87,7 +96,8 @@ function testTriggers(triggers: trigger[], code: str) {
 					break
 				}
 			}
-		} else if (Object.hasOwn(t, 'notIncludes')) { // it's a 'not includes' trigger
+		} else if (Object.hasOwn(t, 'notIncludes')) {
+			// it's a 'not includes' trigger
 			t = t as triggerNotIncludes
 			for (const i of t.notIncludes) {
 				if (!code.includes(i)) {

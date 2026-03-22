@@ -17,7 +17,12 @@ export default class extends Cmd {
 
 		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
-		const cliArgs = ['--cookies', 'conf/gen/cookies.txt']
+		const cliArgs = [
+			'--cookies',
+			'conf/gen/cookies.txt',
+			'--remote-components',
+			'ejs:github',
+		]
 
 		const data = {
 			caption: randomEmoji(),
@@ -43,7 +48,10 @@ export default class extends Cmd {
 		let output = ''
 		try {
 			await startTyping()
-			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
+			output = await runCode(
+				'bash',
+				`${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`,
+			)
 
 			Object.setPrototypeOf(data, {
 				[type]: readFileSync(path),
@@ -54,8 +62,9 @@ export default class extends Cmd {
 
 			send(data as AnyMessageContent)
 		} catch (e: any) {
-			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
+			send(
+				`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`,
+			)
 		}
-		return
 	}
 }

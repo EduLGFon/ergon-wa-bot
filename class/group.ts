@@ -42,22 +42,23 @@ export default class Group {
 		this.msgs.iterate(data?.msgs) // retrieve cached msgs on startup (if exists)
 	}
 
-	async countMsg(msg: Msg) { // +1 to group member msgs count
+	async countMsg(msg: Msg) {
+		// +1 to group member msgs count
 		this.msgs.add(msg.key.id!, msg) // add it to cache
 		if (!process.env.DATABASE_URL || msg.isBot) return
 
-		await prisma.msgs.upsert({ // save it on db
+		await prisma.msgs.upsert({
+			// save it on db
 			where: {
-				author_group: {
-					author: msg.author,
-					group: this.id.parsePhone(),
-				},
+				author_group: { author: msg.author, group: this.id.parsePhone() },
 			},
-			create: { // create user counter
+			create: {
+				// create user counter
 				author: msg.author,
 				group: this.id.parsePhone(),
 			},
-			update: { // or add 1  to count
+			update: {
+				// or add 1  to count
 				count: { increment: 1 },
 			},
 		})
@@ -68,12 +69,8 @@ export default class Group {
 		if (!process.env.DATABASE_URL) return []
 
 		const msgs = await prisma.msgs.findMany({
-			where: {
-				group: this.id.parsePhone(),
-			},
-			orderBy: {
-				count: 'desc',
-			},
+			where: { group: this.id.parsePhone() },
+			orderBy: { count: 'desc' },
 		})
 
 		return msgs

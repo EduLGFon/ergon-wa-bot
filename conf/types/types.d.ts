@@ -46,7 +46,10 @@ interface CmdCtx {
 	args: str[]
 	cmd: Cmd
 	startTyping(): Promise<void>
-	send(str: str | AnyMessageContent, opts?: { user?: User; quoted?: Msg }): Promise<CmdCtx>
+	send(
+		str: str | AnyMessageContent,
+		opts?: { user?: User; quoted?: Msg },
+	): Promise<CmdCtx>
 	react(emoji: str | ReturnType<typeof emojis>): Promise<void>
 	t: TFunction<'translation', undefined>
 }

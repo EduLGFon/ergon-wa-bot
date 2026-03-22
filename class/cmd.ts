@@ -23,13 +23,17 @@ export default abstract class Cmd {
 		// default cooldown is 3 seconds; allow explicit 0 to disable
 		this.cooldown = c.cooldown === 0 ? 0 : c.cooldown || 3_000
 		this.subCmds = c.subCmds || []
-		this.access = Object.assign({
-			dm: true,
-			groups: true,
-			admin: false,
-			restrict: false,
-			needsDb: false,
-		}, c.access) // Compare command permissions
+		this.access = Object.assign(
+			{
+				dm: true,
+				groups: true,
+				admin: false,
+				restrict: false,
+				needsDb: false,
+			},
+			c.access,
+		)
+		// Compare command permissions
 		// with this default setting
 	}
 
@@ -47,14 +51,15 @@ export default abstract class Cmd {
 		if (this.access.restrict && !isDev) return react('prohibited')
 		// restrict means only devs can run this cmd
 
-		if (group) { // if msg chat is a group
+		if (group) {
+			// if msg chat is a group
 			if (!this.access.groups) return react('block') // this cmd can't run on groups
 
 			// all group admins id
-			const admins = group.members.map((m) => m.admin && m.id) || []
+			const admins = group.members.map(m => m.admin && m.id) || []
 
 			// this user is not an admin and can't run this cmd
-			if (this.access.admin && (!admins.includes(user.lid) && !isDev)) {
+			if (this.access.admin && !admins.includes(user.lid) && !isDev) {
 				return react('prohibited') // Devs can use admin cmds for security reasons
 			}
 
@@ -64,7 +69,8 @@ export default abstract class Cmd {
 			}
 		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
 
-		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb')
+		if (this.access.needsDb && !process.env.DATABASE_URL)
+			return send('events.nodb')
 		// there is no DB and cmd can't run without it
 
 		return true

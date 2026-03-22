@@ -54,12 +54,18 @@ async function sendMsg(
 			// it's a template string, so we can use user's lang
 			const t = getFixedT(opts.user.lang)
 
-			if (text.startsWith('usage.')) { // it's a cmd usage
+			if (text.startsWith('usage.')) {
+				// it's a cmd usage
 				text = text.replace('usage.', '')
 
-				cache.cmds.get('help')!.run(
-					{ args: [text], send: sendMsg.bind(this), user: opts?.user, t } as CmdCtx,
-				)
+				cache.cmds
+					.get('help')!
+					.run({
+						args: [text],
+						send: sendMsg.bind(this),
+						user: opts?.user,
+						t,
+					} as CmdCtx)
 				// run help cmd to get cmd usage
 				return {} as CmdCtx
 			}
@@ -97,6 +103,9 @@ type StreamMsg = { msg: any }
 // this is used to edit the message while the AI is writing
 async function sendOrEdit(data: StreamMsg, text: str, quoted?: Msg) {
 	if (data.msg?.key?.id) {
-		await editMsg.bind(data.msg)(text).catch((e) => print('Failed to edit message', e))
-	} else if (text) data.msg = (await sendMsg.bind(data.msg.chat)(text, { quoted })).msg
+		await editMsg
+			.bind(data.msg)(text)
+			.catch(e => print('Failed to edit message', e))
+	} else if (text)
+		data.msg = (await sendMsg.bind(data.msg.chat)(text, { quoted })).msg
 }

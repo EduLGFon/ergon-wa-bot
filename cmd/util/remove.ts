@@ -13,7 +13,8 @@ export default class extends Cmd {
 	async run({ msg, startTyping, send, t }: CmdCtx) {
 		let media = await getMedia(msg)
 
-		if (!media || !media.mime.includes('image')) return send(t('sticker.nobuffer'))
+		if (!media || !media.mime.includes('image'))
+			return send(t('sticker.nobuffer'))
 		await startTyping()
 
 		const path = defaults.runner.tempFolder + `/rm_${Date.now()}.webp`
@@ -23,7 +24,7 @@ export default class extends Cmd {
 		// execute python background remover plugin on
 		// a child process
 
-		const buffer = await readFile(`${path}.png`) || media.buffer
+		const buffer = (await readFile(`${path}.png`)) || media.buffer
 		// read new file
 
 		send({ caption: emojis['sparkles'], image: buffer }, { quoted: msg })

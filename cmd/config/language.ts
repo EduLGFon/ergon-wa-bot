@@ -2,9 +2,7 @@ import { Cmd, CmdCtx, languages } from '../../map.js'
 
 export default class extends Cmd {
 	constructor() {
-		super({
-			alias: ['lang'],
-		})
+		super({ alias: ['lang'] })
 	}
 
 	async run({ t, args, send, user }: CmdCtx) {
@@ -14,6 +12,5 @@ export default class extends Cmd {
 		user.lang = args[0] // setter lang() will also change it on DB, if there is one
 
 		send(t('language.changed', { lng: user.lang.encode() }))
-		return
 	}
 }

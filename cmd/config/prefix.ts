@@ -11,6 +11,5 @@ export default class extends Cmd {
 		user.prefix = args[0] // setter prefix() will also change it on DB, if there is one
 
 		send(t('prefix.changed', { prefix: user.prefix.encode() }))
-		return
 	}
 }

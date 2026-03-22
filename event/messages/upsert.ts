@@ -1,11 +1,15 @@
 import { reactToMsg, sendMsg, startTyping } from '../../util/messages.js'
+import checkGroupAnnouncer from '../../plugin/groupAnnouncer.js'
 import { CmdCtx, delay, getCtx } from '../../map.js'
 import { getUser } from '../../plugin/prisma.js'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
 
 // messages upsert event
-export default async function (raw: { messages: proto.IWebMessageInfo[] }, event: str) {
+export default async function (
+	raw: { messages: proto.IWebMessageInfo[] },
+	_event: str,
+) {
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m?.message) continue
@@ -18,13 +22,18 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, event
 		if (!msg.isEdited) {
 			// count msgs with valid types for group msgs rank cmd
 			if (group) group.countMsg(msg)
-			else { // store msgs for searching images on sticker cmd
+			else {
 				const chat = await getUser({ lid: msg.chat })
+				// store msgs for searching images on sticker cmd
 				chat!.msgs.add(msg.key.id!, msg)
 			}
 		}
 
-		if (!cmd) continue
+		if (!cmd) {
+			await checkGroupAnnouncer(msg, user, group)
+			// only non-cmd msgs can be announced
+			continue
+		}
 		// get locales function
 		const t = getFixedT(user.lang)
 		const react = reactToMsg.bind(msg)

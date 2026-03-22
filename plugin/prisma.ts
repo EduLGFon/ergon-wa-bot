@@ -15,7 +15,8 @@ async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User
 	let id = Number(lid.parsePhone())
 	if (process.env.DATABASE_URL) {
 		const data = await P('users', 'create', {
-			data: { // create user on DB if there is one
+			data: {
+				// create user on DB if there is one
 				lid,
 				name,
 			},
@@ -29,15 +30,22 @@ async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User
 	return user
 }
 
-async function getUser(
-	{ id, lid, name }: { id?: num; lid?: str; name?: str },
-): Promise<User | undefined> {
+async function getUser({
+	id,
+	lid,
+	name,
+}: {
+	id?: num
+	lid?: str
+	name?: str
+}): Promise<User | undefined> {
 	if (lid) {
 		// search by lid on cache
-		const data = cache.users.find((u) => u.lid === lid)
+		const data = cache.users.find(u => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users.findFirst({ where: { lid } })
+		const dbUser = await prisma.users
+			.findFirst({ where: { lid } })
 			.catch(() => {}) // there is no DB. Let's just ignore it
 
 		if (!dbUser) {
@@ -52,7 +60,7 @@ async function getUser(
 		return user
 	}
 	// no lid provided, so lets search by id on cache
-	const data = cache.users.find((u) => u.id === id)
+	const data = cache.users.find(u => u.id === id)
 	if (data) return data
 
 	// not on cache, so lets search on db

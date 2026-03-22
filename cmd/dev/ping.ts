@@ -14,7 +14,9 @@ export default class extends Cmd {
 		text += createStr('🌐', '.WhatsApp_', WAPing)
 
 		// Calculate DB Ping by searching for this user's id
-		const DbPing = await measurePing(prisma.users.findUnique, { where: { id: user.id } })
+		const DbPing = await measurePing(prisma.users.findUnique, {
+			where: { id: user.id },
+		})
 		text += createStr('🥜', '..Database_', DbPing)
 
 		send(text)
@@ -22,12 +24,11 @@ export default class extends Cmd {
 	}
 }
 function createStr(emoji: str, name: str, ping: num) {
-	return `[${emoji}]` + name.bold() + '|' +
-		`${ping}ms`.align(8).bold() + '\n'
+	return `[${emoji}]` + name.bold() + '|' + `${ping}ms`.align(8).bold() + '\n'
 }
 
 async function measurePing(func: Func, ...args: any): Promise<number> {
-	return await new Promise(async (res) => {
+	return await new Promise(async res => {
 		let ping
 
 		try {

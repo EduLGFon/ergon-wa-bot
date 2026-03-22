@@ -49,7 +49,12 @@ export { Cmd, Collection, Group, prisma, User }
 
 // Functions
 import { getCtx, msgMeta } from './util/message.js'
-import { delay, findKey, isEmpty, isValidPositiveIntenger } from './util/functions.js'
+import {
+	delay,
+	findKey,
+	isEmpty,
+	isValidPositiveIntenger,
+} from './util/functions.js'
 import locale, { languages } from './util/locale.js'
 import CacheManager from './plugin/cache.js'
 import runCode from './plugin/runCode.js'

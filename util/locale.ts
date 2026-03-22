@@ -2,8 +2,7 @@ import translationBackend from 'i18next-fs-backend'
 import { readdirSync } from 'node:fs'
 import i18next from 'i18next'
 
-export const languages = readdirSync('locale/')
-	.map((l) => l.split('.')[0]) // get file names
+export const languages = readdirSync('locale/').map(l => l.split('.')[0]) // get file names
 
 export default async function () {
 	try {

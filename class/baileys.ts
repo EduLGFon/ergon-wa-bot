@@ -43,8 +43,10 @@ export default class Baileys {
 			// ignore useless msgs
 			shouldIgnoreJid: (jid: str) =>
 				isJidBot(jid) ||
-				isJidBroadcast(jid) || isJidNewsletter(jid) ||
-				isJidMetaAI(jid) || isJidStatusBroadcast(jid),
+				isJidBroadcast(jid) ||
+				isJidNewsletter(jid) ||
+				isJidMetaAI(jid) ||
+				isJidStatusBroadcast(jid),
 		})
 
 		// save login creds

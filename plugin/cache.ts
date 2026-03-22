@@ -61,8 +61,9 @@ class CacheManager {
 				continue
 			}
 
-			const cache = await readFile(`conf/cache/${category}.json`, { encoding: 'utf8' })
-				.catch(() => {})
+			const cache = await readFile(`conf/cache/${category}.json`, {
+				encoding: 'utf8',
+			}).catch(() => {})
 			// read file
 
 			if (!cache) {

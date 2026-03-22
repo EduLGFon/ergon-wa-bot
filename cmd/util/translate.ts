@@ -16,7 +16,8 @@ export default class extends Cmd {
 		try {
 			const output = await translate(args.join(' '), { to: toLang })
 
-			const text = `*[🌐] - ${t('translate.desc')}*\n` + // Google translate title
+			const text =
+				`*[🌐] - ${t('translate.desc')}*\n` + // Google translate title
 				`*${output?.from.language.iso}  ➟  ${toLang}*\n` + // lang identify
 				output?.text.encode() // translation
 
@@ -25,6 +26,5 @@ export default class extends Cmd {
 			print('CMD/TRANSLATE', e, 'red')
 			send('usage.translate', { user })
 		}
-		return
 	}
 }

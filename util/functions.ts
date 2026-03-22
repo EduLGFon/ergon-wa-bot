@@ -1,11 +1,15 @@
 // Delay: make the code wait for some time
-const delay = async (time: num) => await new Promise((r) => setTimeout(() => r(true), time))
+const delay = async (time: num) =>
+	await new Promise(r => setTimeout(() => r(true), time))
 
-const randomDelay = async (min = 2_000, max = 5_000) => delay(min + Math.floor(Math.random() * max))
-const randomTime = (min = 1_000, max = 3_000) => min + Math.floor(Math.random() * max)
+const randomDelay = async (min = 2_000, max = 5_000) =>
+	delay(min + Math.floor(Math.random() * max))
+const randomTime = (min = 1_000, max = 3_000) =>
+	min + Math.floor(Math.random() * max)
 
 // isValidPositiveIntenger: validate a number
-const isValidPositiveIntenger = (num: num) => !Number.isNaN(num) && num > 0 && Number.isInteger(num)
+const isValidPositiveIntenger = (num: num) =>
+	!Number.isNaN(num) && num > 0 && Number.isInteger(num)
 
 // findKey: Search for a key inside an object
 function findKey(obj: any, key: str): any {
@@ -33,15 +37,20 @@ function findKey(obj: any, key: str): any {
 }
 
 // Validate whether a variable actually has a useful value
-function isEmpty(value: unknown): bool { // check if a array/obj is empty
+function isEmpty(value: unknown): bool {
+	// check if a array/obj is empty
 	if (!value) return true
 
 	if (Array.isArray(value)) {
-		return value.length === 0 ||
-			value.some((item) => item === undefined || isEmpty(item))
+		return (
+			value.length === 0 ||
+			value.some(item => item === undefined || isEmpty(item))
+		)
 	} else if (typeof value === 'object') {
-		return Object.keys(value!).length === 0 ||
-			!Object.values(value!).some((item) => item !== undefined && item !== null)
+		return (
+			Object.keys(value!).length === 0 ||
+			!Object.values(value!).some(item => item !== undefined && item !== null)
+		)
 	}
 
 	return true
