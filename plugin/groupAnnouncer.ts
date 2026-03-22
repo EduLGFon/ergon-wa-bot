@@ -58,7 +58,7 @@ async function sendAnnouncements() {
 	// until the queue is empty
 
 	for (const g of msgQueue[0].chats) {
-		await randomDelay()
+		await randomDelay(1_000, 2_500)
 		// a random delay is required to Meta not flag us as
 		// a spam bot. random delays and different msgs looks
 		//  like real users
