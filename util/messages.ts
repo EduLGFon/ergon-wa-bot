@@ -1,10 +1,10 @@
-import { type CmdCtx, emojis, getCtx, type Msg, msgMeta, User } from '../map.js'
+import { type CmdCtx, emojis, getCtx, type Msg, msgMeta, User } from '../map.ts'
 import type { AnyMessageContent } from 'baileys'
-import { downloadMedia } from './message.js'
-import { randomEmoji } from './emojis.js'
-import cache from '../plugin/cache.js'
+import { downloadMedia } from './message.ts'
+import { randomEmoji } from './emojis.ts'
+import cache from '../plugin/cache.ts'
 import { getFixedT } from 'i18next'
-import bot from '../wa.js'
+import bot from '../wa.ts'
 
 export { editMsg, getMedia, reactToMsg, sendMsg, sendOrEdit, startTyping }
 
@@ -58,14 +58,12 @@ async function sendMsg(
 				// it's a cmd usage
 				text = text.replace('usage.', '')
 
-				cache.cmds
-					.get('help')!
-					.run({
-						args: [text],
-						send: sendMsg.bind(this),
-						user: opts?.user,
-						t,
-					} as CmdCtx)
+				cache.cmds.get('help')!.run({
+					args: [text],
+					send: sendMsg.bind(this),
+					user: opts?.user,
+					t,
+				} as CmdCtx)
 				// run help cmd to get cmd usage
 				return {} as CmdCtx
 			}
@@ -106,6 +104,5 @@ async function sendOrEdit(data: StreamMsg, text: str, quoted?: Msg) {
 		await editMsg
 			.bind(data.msg)(text)
 			.catch(e => print('Failed to edit message', e))
-	} else if (text)
-		data.msg = (await sendMsg.bind(data.msg.chat)(text, { quoted })).msg
+	} else if (text) data.msg = (await sendMsg.bind(data.msg.chat)(text, { quoted })).msg
 }

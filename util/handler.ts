@@ -1,9 +1,9 @@
-import type { BaileysEventMap } from 'baileys'
-import cache from '../plugin/cache.js'
+import { type BaileysEventMap } from 'baileys'
+import cache from '../plugin/cache.ts'
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { Cmd } from '../map.js'
-import bot from '../wa.js'
+import { Cmd } from '../map.ts'
+import bot from '../wa.ts'
 
 export { loadCmds, loadEvents }
 
@@ -23,47 +23,37 @@ async function folderHandler(path: str, handler: Func) {
 		}
 	}
 
-	print(
-		'HANDLER',
-		`${count} ${path.includes('event') ? 'events' : 'cmds'} loaded`,
-		'yellow',
-	)
+	print('HANDLER', `${count} ${path.includes('event') ? 'events' : 'cmds'} loaded`, 'yellow')
 	return
 }
 
 async function loadCmds() {
 	cache.cmds.clear()
-	await folderHandler(
-		`./conf/gen/build/cmd`,
-		(file: str, _category: str, imported: any) => {
-			const cmd: Cmd = new imported()
+	await folderHandler(`./cmd`, (file: str, _category: str, imported: any) => {
+		const cmd: Cmd = new imported()
 
-			cmd.name = file.slice(0, -3) // remove .ts
-			// Set cmd
-			cache.cmds.set(cmd.name!, cmd)
-		},
-	)
+		cmd.name = file.slice(0, -3) // remove .ts
+		// Set cmd
+		cache.cmds.set(cmd.name!, cmd)
+	})
 }
 
 async function loadEvents() {
 	cache.events.clear()
 
-	await folderHandler(
-		`./conf/gen/build/event`,
-		(file: str, category: str, event: any) => {
-			const name = `${category}.${file.slice(0, -3)}` as keyof BaileysEventMap
-			// folder+file names are the same of lib events
-			cache.events.set(name, event)
+	await folderHandler(`./event`, (file: str, category: str, event: any) => {
+		const name = `${category}.${file.slice(0, -3)}` as keyof BaileysEventMap
+		// folder+file names are the same of lib events
+		cache.events.set(name, event)
 
-			bot.sock.ev.removeAllListeners(name)
-			// Listen to the event here
-			bot.sock.ev.on(name, (...args) => {
-				// It allows to modify events in run time
-				cache.events.get(name)!(...args, name).catch((e: Error) =>
-					print(`EVENT/${name}:`, e, 'red'),
-				)
-				// it's the same as eventFunction(...args, name)
-			})
-		},
-	)
+		bot.sock.ev.removeAllListeners(name)
+		// Listen to the event here
+		bot.sock.ev.on(name, (...args) => {
+			// It allows to modify events in run time
+			cache.events.get(name)!(...args, name).catch((e: Error) =>
+				print(`EVENT/${name}:`, e, 'red'),
+			)
+			// it's the same as eventFunction(...args, name)
+		})
+	})
 }

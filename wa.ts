@@ -1,8 +1,8 @@
-import { loadCmds, loadEvents } from './util/handler.js'
-import { locale, proto } from './map.js'
-// import cache from './plugin/cache.js'
-import Baileys from './class/baileys.js'
-import { scheduleURMenuMsg } from './util/menuScrapping.js'
+import { scheduleURMenuMsg } from './util/menuScrapping.ts'
+import { loadCmds, loadEvents } from './util/handler.ts'
+import { locale, proto } from './map.ts'
+// import cache from './plugin/cache.ts'
+import Baileys from './class/baileys.ts'
 
 proto() // load prototypes
 locale() // load locales
@@ -19,7 +19,7 @@ async function start() {
 
 export default bot
 process // "anti-crash" to handle lib instabilities
-	// .on('SIGINT', async (_e) => await cache.save()) // save cache before exit
-	.on('uncaughtException', e => print(`Uncaught Excep.:`, e, 'red'))
-	.on('unhandledRejection', (e: Error) => print(`Unhandled Rej:`, e, 'red'))
-	.on('uncaughtExceptionMonitor', e => print(`Uncaught Excep.M.:`, e, 'red'))
+// .on('SIGINT', async (_e) => await cache.save()) // save cache before exit
+// .on('uncaughtException', e => print(`Uncaught Excep.:`, e, 'red'))
+// .on('unhandledRejection', (e: Error) => print(`Unhandled Rej:`, e, 'red'))
+// .on('uncaughtExceptionMonitor', e => print(`Uncaught Excep.M.:`, e, 'red'))

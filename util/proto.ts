@@ -1,16 +1,13 @@
 import humanizeDuration, { type Unit } from 'humanize-duration'
 import { DateTime, Duration } from 'luxon'
 import { getFixedT } from 'i18next'
-import { defaults } from '../map.js'
+import { defaults } from '../map.ts'
 import chalk from 'chalk'
 import pino from 'pino'
 
 // get 'now' date time formatted
 const now = (format = 'dd/MM TT.SSS') =>
-	DateTime.now()
-		.setZone(defaults.timezone)
-		.setLocale(defaults.lang)
-		.toFormat(format) // TT = HOURS:MINUTES:SECONDS
+	DateTime.now().setZone(defaults.timezone).setLocale(defaults.lang).toFormat(format) // TT = HOURS:MINUTES:SECONDS
 
 // Pino Logger
 const logger = pino({
@@ -30,16 +27,7 @@ export default () => {
 	global.print = print
 }
 
-const brightColors = [
-	'black',
-	'red',
-	'green',
-	'yellow',
-	'blue',
-	'magenta',
-	'cyan',
-	'white',
-]
+const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
 function print(...anyArgs: any) {
 	if (!anyArgs[2]) return console.info(...anyArgs)
 

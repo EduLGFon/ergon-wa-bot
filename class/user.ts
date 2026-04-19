@@ -1,4 +1,4 @@
-import { Collection, defaults, type Msg, prisma } from '../map.js'
+import { Collection, defaults, type Msg, prisma } from '../map.ts'
 import type { Content } from '@google/genai'
 
 export default class User {

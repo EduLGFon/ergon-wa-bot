@@ -1,4 +1,4 @@
-import { Cmd, CmdCtx, defaults, runCode } from '../../map.js'
+import { Cmd, type CmdCtx, defaults, runCode } from '../../map.ts'
 const langs = Object.keys(defaults.runner)
 
 export default class extends Cmd {
@@ -11,9 +11,7 @@ export default class extends Cmd {
 	}
 
 	async run(ctx: CmdCtx) {
-		const lang = langs.includes(ctx.args[0])
-			? (ctx.args.shift() as Lang)
-			: 'eval'
+		const lang = langs.includes(ctx.args[0]) ? (ctx.args.shift() as Lang) : 'eval'
 		// code language. can be py (python), rs (rust), cpp (C++), etc.
 
 		const startTime = Date.now() // start time for execution duration

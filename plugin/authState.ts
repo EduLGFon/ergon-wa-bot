@@ -6,8 +6,7 @@ import {
 	proto,
 	type SignalDataTypeMap,
 } from 'baileys'
-import type { PrismaPromise } from '@prisma/client'
-import prisma from './prisma.js'
+import prisma from './prisma.ts'
 
 /** PostgreSQL auth strategy
  * it is used if you setted 'DATABASE_URL' env var
@@ -15,8 +14,7 @@ import prisma from './prisma.js'
  * will be used instead
  */
 
-const toStorableJson = (value: unknown) =>
-	JSON.parse(JSON.stringify(value, BufferJSON.replacer))
+const toStorableJson = (value: unknown) => JSON.parse(JSON.stringify(value, BufferJSON.replacer))
 
 const fromStorableJson = <T = any>(value: unknown | null): T | null => {
 	if (value == null) return null
@@ -68,12 +66,10 @@ const postgresAuthState = async (
 					await Promise.all(
 						ids.map(async id => {
 							let value = fromStorableJson(
-								rows.find(r => r.key === id && r.category === type)
-									?.data,
+								rows.find(r => r.key === id && r.category === type)?.data,
 							)
 							if (type === 'app-state-sync-key' && value) {
-								value =
-									proto.Message.AppStateSyncKeyData.create(value)
+								value = proto.Message.AppStateSyncKeyData.create(value)
 							}
 							data[id] = value
 						}),
@@ -82,7 +78,7 @@ const postgresAuthState = async (
 					return data
 				},
 				set: async data => {
-					const tasks: PrismaPromise<any>[] = []
+					const tasks: any[] = []
 
 					for (const category in data) {
 						const catData = data[category as keyof SignalDataTypeMap]

@@ -1,12 +1,12 @@
-import baileys, {
-	AuthenticationCreds,
-	AuthenticationState,
+import {
+	type AuthenticationCreds,
+	type AuthenticationState,
 	BufferJSON,
 	initAuthCreds,
 	proto,
-	SignalDataTypeMap,
+	type SignalDataTypeMap,
 } from 'baileys'
-import prisma from './prisma.js'
+import prisma from './prisma.ts'
 
 const authState = async (): Promise<{
 	state: AuthenticationState
@@ -15,9 +15,7 @@ const authState = async (): Promise<{
 	// Database operations replacing file operations with BufferJSON conversions
 	const getData = async (key: string): Promise<any | null> => {
 		const record = await prisma.authStorage.findUnique({ where: { key } })
-		return record
-			? JSON.parse(JSON.stringify(record.data), BufferJSON.reviver)
-			: null
+		return record ? JSON.parse(JSON.stringify(record.data), BufferJSON.reviver) : null
 	}
 
 	const setData = async (key: string, data: any): Promise<void> => {
@@ -52,10 +50,7 @@ const authState = async (): Promise<{
 							const key = `${type}-${id}`
 							let value = await getData(key)
 							if (type === 'app-state-sync-key' && value) {
-								value =
-									proto.Message.AppStateSyncKeyData.fromObject(
-										value,
-									)
+								value = proto.Message.AppStateSyncKeyData.fromObject(value)
 							}
 							data[id] = value
 						}),

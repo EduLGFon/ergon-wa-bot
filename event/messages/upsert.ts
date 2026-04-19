@@ -1,15 +1,12 @@
-import { reactToMsg, sendMsg, startTyping } from '../../util/messages.js'
-import checkGroupAnnouncer from '../../plugin/groupAnnouncer.js'
-import { CmdCtx, delay, getCtx } from '../../map.js'
-import { getUser } from '../../plugin/prisma.js'
+import { reactToMsg, sendMsg, startTyping } from '../../util/messages.ts'
+import checkGroupAnnouncer from '../../plugin/groupAnnouncer.ts'
+import { type CmdCtx, delay, getCtx } from '../../map.ts'
+import { getUser } from '../../plugin/prisma.ts'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
 
 // messages upsert event
-export default async function (
-	raw: { messages: proto.IWebMessageInfo[] },
-	_event: str,
-) {
+export default async function (raw: { messages: proto.IWebMessageInfo[] }, _event: str) {
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m?.message) continue

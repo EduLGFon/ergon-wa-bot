@@ -9,12 +9,12 @@ import {
 	type Msg,
 	type MsgTypes,
 	User,
-} from '../map.js'
+} from '../map.ts'
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
-import prisma, { getGroup, getUser } from '../plugin/prisma.js'
-import cache from '../plugin/cache.js'
-import { logger } from './proto.js'
-import bot from '../wa.js'
+import prisma, { getGroup, getUser } from '../plugin/prisma.ts'
+import cache from '../plugin/cache.ts'
+import { logger } from './proto.ts'
+import bot from '../wa.ts'
 
 // getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
@@ -201,15 +201,11 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const m = raw.message!
 
 	//@ts-ignore 'quotedMessage' is missing on lib types
-	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(
-		m,
-		'quotedMessage',
-	)
+	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(m, 'quotedMessage')
 
 	if (!quotedRaw) return
 	const types = getMsgType(quotedRaw) // quoted message type
-	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2')
-		quotedRaw = quotedRaw.viewOnceMessageV2!
+	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
 	let quoted = {
 		type: types[0], // msg type

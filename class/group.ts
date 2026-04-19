@@ -1,4 +1,4 @@
-import { Collection, defaults, type Msg, prisma, User } from '../map.js'
+import { Collection, defaults, type Msg, prisma } from '../map.ts'
 import type { GroupMetadata, GroupParticipant } from 'baileys'
 
 export default class Group {

@@ -1,7 +1,6 @@
-import { Baileys, Cmd, emojis, Group, User } from '../../map.ts'
-import { ChatSession } from '@google/generative-ai'
-import { AnyMessageContent, proto } from 'baileys'
-import { TFunction } from 'i18next'
+import type { Cmd, emojis, Group, User } from '../../map.ts'
+import type { AnyMessageContent, proto } from 'baileys'
+import type { TFunction } from 'i18next'
 
 type MsgTypes =
 	| 'text'
@@ -46,10 +45,7 @@ interface CmdCtx {
 	args: str[]
 	cmd: Cmd
 	startTyping(): Promise<void>
-	send(
-		str: str | AnyMessageContent,
-		opts?: { user?: User; quoted?: Msg },
-	): Promise<CmdCtx>
+	send(str: str | AnyMessageContent, opts?: { user?: User; quoted?: Msg }): Promise<CmdCtx>
 	react(emoji: str | ReturnType<typeof emojis>): Promise<void>
 	t: TFunction<'translation', undefined>
 }
@@ -61,7 +57,7 @@ interface GroupMsg {
 }
 
 type GoogleFile = {
-	buffer: Buf<ArrayBufferLike> | ArrayBuffer
+	buffer: Buffer<ArrayBufferLike> | ArrayBuffer
 	mime: str
 }
 type Gparams = {
@@ -72,4 +68,4 @@ type Gparams = {
 	file?: GoogleFile
 }
 
-export { CmdCtx, GoogleFile, Gparams, GroupMsg, MediaMsg, Msg, MsgTypes }
+export type { CmdCtx, GoogleFile, Gparams, GroupMsg, Msg, MsgTypes }

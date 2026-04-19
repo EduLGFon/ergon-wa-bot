@@ -1,17 +1,17 @@
 import {
 	createPartFromUri,
 	FileState,
-	GenerateContentConfig,
-	GenerateContentResponse,
+	type GenerateContentConfig,
+	type GenerateContentResponse,
 	GoogleGenAI,
 } from '@google/genai'
-import { GoogleFile, Gparams } from '../conf/types/types.js'
-import { randomDelay, randomTime } from './functions.js'
-import { createMemories } from '../plugin/memories.js'
-import { createAlarms } from '../plugin/alarms.js'
+import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
+import { randomDelay, randomTime } from './functions.ts'
+import { createMemories } from '../plugin/memories.ts'
+import { createAlarms } from '../plugin/alarms.ts'
 import { ThinkingLevel } from '@google/genai'
-import { sendOrEdit } from './messages.js'
-import { delay, User } from '../map.js'
+import { sendOrEdit } from './messages.ts'
+import { delay, User } from '../map.ts'
 
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
 
@@ -23,21 +23,15 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 		text: '',
 		msg: { chat: msg?.chat },
 	}
-	const callCallback = async () =>
-		await sendOrEdit(res, res.header + res.text.trim(), msg)
+	const callCallback = async () => await sendOrEdit(res, res.header + res.text.trim(), msg)
 	const startStreaming = async () => {
 		await callCallback()
-		interval = setInterval(
-			async () => await callCallback(),
-			randomTime(1_500, 2_400),
-		)
+		interval = setInterval(async () => await callCallback(), randomTime(1_500, 2_400))
 		return
 	}
 
 	if (file) upload = await uploadFile(file as GoogleFile, res)
-	const message = upload
-		? [createPartFromUri(upload.uri!, upload.mimeType!), input]
-		: input
+	const message = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
 
 	const gemini = GoogleAI.chats.create({
 		model,
@@ -48,8 +42,7 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	const stream = await gemini.sendMessageStream({ message })
 	res.header = `- *${model}*:\n`
 
-	for await (const chunk of stream)
-		await handleResponse(chunk, res, startStreaming)
+	for await (const chunk of stream) await handleResponse(chunk, res, startStreaming)
 	clearInterval(interval!)
 
 	await createMemories(user, res)
@@ -61,11 +54,7 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	return await callCallback()
 }
 
-async function handleResponse(
-	chunk: GenerateContentResponse,
-	msg: AIMsg,
-	startStreaming: Func,
-) {
+async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg, startStreaming: Func) {
 	if (chunk?.candidates) {
 		let web = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
 		if (web) {
@@ -139,7 +128,6 @@ async function uploadFile(file: GoogleFile, msg: AIMsg) {
 	}
 
 	// media upload failed
-	if (upload.state === FileState.FAILED)
-		throw new Error('Google server processing failed.')
+	if (upload.state === FileState.FAILED) throw new Error('Google server processing failed.')
 	return upload // return the file info
 }

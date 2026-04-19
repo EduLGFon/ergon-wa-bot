@@ -1,6 +1,6 @@
-import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
-import { Cmd, Collection, defaults, Group, User } from '../map.js'
-import { existsSync } from 'fs'
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
+import { Cmd, Collection, defaults, Group, User } from '../map.ts'
+import { existsSync } from 'node:fs'
 
 /** Cache manager:
  * It controls, limit and save

@@ -1,5 +1,5 @@
-import { Chat, Contact, WAMessage } from 'baileys'
-// import { getUser } from '../../util/prisma.js'
+import type { Chat, Contact, WAMessage } from 'baileys'
+// import { getUser } from '../../util/prisma.ts'
 // import { appendFile } from 'fs/promises'
 
 interface Event {

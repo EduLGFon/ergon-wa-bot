@@ -1,5 +1,5 @@
-import { getGroup } from '../../plugin/prisma.js'
-import { ParticipantAction } from 'baileys'
+import { getGroup } from '../../plugin/prisma.ts'
+import { type ParticipantAction } from 'baileys'
 
 /** group-participants.update:
  * This event will update members cache when a group member

@@ -1,6 +1,6 @@
-import { allowedTags } from '../plugin/groupAnnouncer.js'
-import { delay, randomDelay } from './functions.js'
-import { sendMsg } from './messages.js'
+import { allowedTags } from '../plugin/groupAnnouncer.ts'
+import { delay, randomDelay } from './functions.ts'
+import { sendMsg } from './messages.ts'
 
 const titles = [
 	// menu titles

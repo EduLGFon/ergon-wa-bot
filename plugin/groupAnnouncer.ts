@@ -1,7 +1,7 @@
-import { getMedia, reactToMsg, sendMsg } from '../util/messages.js'
-import { randomDelay } from '../util/functions.js'
-import { Group, Msg, User } from '../map.js'
-import { AnyMessageContent } from 'baileys'
+import { getMedia, reactToMsg, sendMsg } from '../util/messages.ts'
+import { randomDelay } from '../util/functions.ts'
+import { Group, type Msg, User } from '../map.ts'
+import type { AnyMessageContent } from 'baileys'
 type Announcement = { text?: str; caption?: str; groups?: str[]; tag?: str; msg?: Msg }
 // Announcement = simple text msg or media msg (replace text by caption)
 

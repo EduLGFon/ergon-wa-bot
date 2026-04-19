@@ -1,12 +1,12 @@
 {
-	"module": "conf/gen/build/wa.js",
+	"module": "wa.ts",
 	"type": "module",
-	"exports": "./conf/gen/build/wa.js",
+	"exports": "./wa.ts",
 	"engines": {
 		"node": ">=25"
 	},
 	"scripts": {
-		"presetup": "npm install -g typescript pm2 prisma",
+		"presetup": "npm install -g pm2 prisma",
 		"setup": "npm run presetup && npm install && npm run setup:py; npm start",
 		"setup:full": "npm run prisma:push && npm run setup",
 		"setup:py": "python3 -m venv conf/gen/python && conf/gen/python/bin/pip install rembg onnxruntime yt-dlp[default,curl-cffi]",
@@ -14,12 +14,9 @@
 		"update:py": "conf/gen/python/bin/pip install -U rembg onnxruntime yt-dlp",
 		"reset": "rm -r conf/gen/auth/* conf/gen/cache/* conf/gen/temp/*",
 		"reset:cache": "rm -r conf/cache/*",
-		"postinstall": "rm package-lock.json & npm run prisma:gen && npm run build",
-		"build": "rm -r conf/gen/build/ & npx tsc",
-		"tscw": "npx tsc --watch",
+		"postinstall": "rm package-lock.json & npm run prisma:gen",
 		"start": "npx pm2 start conf/ecosystem.config.cjs --attach",
 		"restart": "npx pm2 restart wa --attach",
-		"test": "node conf/gen/build/wa.js",
 		"stop": "npx pm2 delete all",
 		"prisma:push": "npx prisma db push --schema=conf/gen/schema.prisma",
 		"prisma:gen": "npx prisma generate --schema=conf/gen/schema.prisma",
@@ -31,7 +28,7 @@
 	"dependencies": {
 		"@google/genai": "^1.50.1",
 		"@prisma/client": "^7.7.0",
-		"baileys": "github:WhiskeySockets/Baileys",
+		"baileys": "github:whiskeysockets/Baileys",
 		"chalk": "^5.6.2",
 		"google-translate-api-x": "^10.7.2",
 		"humanize-duration": "^3.33.2",

@@ -1,4 +1,4 @@
-import { Cmd, CmdCtx, prisma } from '../../map.js'
+import { Cmd, type CmdCtx, prisma } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {

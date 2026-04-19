@@ -1,10 +1,10 @@
-import { Cmd, CmdCtx, defaults, isVisual, Msg, runCode } from '../../map.js'
+import { Cmd, type CmdCtx, defaults, isVisual, type Msg, runCode } from '../../map.ts'
 import { readFile, writeFile } from 'node:fs/promises'
-import { randomDelay } from '../../util/functions.js'
-import { getMedia } from '../../util/messages.js'
+import { randomDelay } from '../../util/functions.ts'
+import { getMedia } from '../../util/messages.ts'
 import { Sticker } from 'wa-sticker-formatter'
-import { now } from '../../util/proto.js'
-import cache from '../../plugin/cache.js'
+import { now } from '../../util/proto.ts'
+import cache from '../../plugin/cache.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -22,13 +22,13 @@ export default class extends Cmd {
 		if (!media || !isVisual(media.target.type)) {
 			// this logic will create a sticker for each media sent by
 			// the user until a msg is not from them
-			const chat = group || cache.users.find((u) => u.lid === msg.chat)!
+			const chat = group || cache.users.find(u => u.lid === msg.chat)!
 			const msgs = chat.msgs.reverse().slice(1)
 			// Sorts msgs from newest to oldest and ignores the cmd msg
 
 			// Find the index of the first msg that is not from the same author or is not valid
-			const invalidIndex = msgs.findIndex((m) =>
-				m.author !== msg.author || !isVisual(m.type) || m.type === 'sticker'
+			const invalidIndex = msgs.findIndex(
+				m => m.author !== msg.author || !isVisual(m.type) || m.type === 'sticker',
 			)
 
 			const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
@@ -69,7 +69,7 @@ export default class extends Cmd {
 					await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
 					// a child process
 
-					media!.buffer = await readFile(`${path}.png`) || media!.buffer
+					media!.buffer = (await readFile(`${path}.png`)) || media!.buffer
 					// read new file
 					return
 				},
@@ -82,7 +82,8 @@ export default class extends Cmd {
 			for (const f of formats) {
 				const sticker = await new Sticker(media!.buffer!, {
 					author: '', // sticker metadata
-					pack: `=== Ergon Bot ===\n` +
+					pack:
+						`=== Ergon Bot ===\n` +
 						`[👑] Autor: ${user.name}\n` +
 						`[📅] Data: ${now('D')}\n` +
 						// `[☃️] Dev: Edu\n` +

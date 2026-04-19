@@ -14,8 +14,8 @@ import {
 	mediaTypes,
 	textTypes,
 	visualTypes,
-} from './conf/types/msgs.js'
-import type { CmdCtx, GroupMsg, Msg, MsgTypes } from './conf/types/types.js'
+} from './conf/types/msgs.ts'
+import type { CmdCtx, GroupMsg, Msg, MsgTypes } from './conf/types/types.ts'
 
 export {
 	allMsgTypes,
@@ -34,26 +34,26 @@ export {
 
 // Config files
 import defaults from './conf/defaults.json' with { type: 'json' }
-import emojis from './util/emojis.js'
+import emojis from './util/emojis.ts'
 
 export { defaults, emojis }
 
 // Classes
-import Collection from './class/collection.js'
-import prisma from './plugin/prisma.js'
-import Group from './class/group.js'
-import User from './class/user.js'
-import Cmd from './class/cmd.js'
+import Collection from './class/collection.ts'
+import prisma from './plugin/prisma.ts'
+import Group from './class/group.ts'
+import User from './class/user.ts'
+import Cmd from './class/cmd.ts'
 
 export { Cmd, Collection, Group, prisma, User }
 
 // Functions
-import { getCtx, msgMeta } from './util/message.js'
-import { delay, findKey, isEmpty, isValidPositiveIntenger } from './util/functions.js'
-import locale from './util/locale.js'
-import CacheManager from './plugin/cache.js'
-import runCode from './plugin/runCode.js'
-import proto from './util/proto.js'
+import { delay, findKey, isEmpty, isValidPositiveIntenger } from './util/functions.ts'
+import { getCtx, msgMeta } from './util/message.ts'
+import CacheManager from './plugin/cache.ts'
+import runCode from './plugin/runCode.ts'
+import locale from './util/locale.ts'
+import proto from './util/proto.ts'
 
 export {
 	CacheManager,

@@ -1,6 +1,6 @@
-import { type CmdCtx, Group, type Msg, type User } from '../map.js'
-import { reactToMsg, sendMsg } from '../util/messages.js'
-import bot from '../wa.js'
+import { type CmdCtx, Group, type Msg, type User } from '../map.ts'
+import { reactToMsg, sendMsg } from '../util/messages.ts'
+import bot from '../wa.ts'
 
 export default abstract class Cmd {
 	name: str
@@ -69,8 +69,7 @@ export default abstract class Cmd {
 			}
 		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
 
-		if (this.access.needsDb && !process.env.DATABASE_URL)
-			return send('events.nodb')
+		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb')
 		// there is no DB and cmd can't run without it
 
 		return true

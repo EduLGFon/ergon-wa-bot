@@ -1,13 +1,14 @@
-import { Cmd, CmdCtx, defaults, runCode } from '../../map.js'
-import emojis, { randomEmoji } from '../../util/emojis.js'
-import { AnyMessageContent } from 'baileys'
+import { Cmd, type CmdCtx, defaults, runCode } from '../../map.ts'
+import { randomDelay } from '../../util/functions.ts'
+import type { AnyMessageContent } from 'baileys'
+import emojis from '../../util/emojis.ts'
 import { readFileSync } from 'node:fs'
 
 export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['d'],
-			cooldown: 20_000,
+			cooldown: 30_000,
 		})
 	}
 
@@ -17,15 +18,9 @@ export default class extends Cmd {
 
 		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
-		const cliArgs = [
-			'--cookies',
-			'conf/gen/cookies.txt',
-			'--remote-components',
-			'ejs:github',
-		]
+		const cliArgs = ['--cookies', 'conf/gen/cookies.txt', '--remote-components', 'ejs:github']
 
 		const data = {
-			caption: randomEmoji(),
 			fileName: `download_${Date.now()}.`,
 			mimetype: '',
 		}
@@ -47,11 +42,9 @@ export default class extends Cmd {
 
 		let output = ''
 		try {
+			await randomDelay(250, 700)
 			await startTyping()
-			output = await runCode(
-				'bash',
-				`${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`,
-			)
+			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
 			Object.setPrototypeOf(data, {
 				[type]: readFileSync(path),
@@ -62,9 +55,7 @@ export default class extends Cmd {
 
 			send(data as AnyMessageContent)
 		} catch (e: any) {
-			send(
-				`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`,
-			)
+			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
 		}
 	}
 }

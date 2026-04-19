@@ -1,7 +1,7 @@
-import { randomDelay } from '../../util/functions.js'
-import { getMedia } from '../../util/messages.js'
-import { AnyMessageContent } from 'baileys'
-import { Cmd, CmdCtx } from '../../map.js'
+import { randomDelay } from '../../util/functions.ts'
+import { getMedia } from '../../util/messages.ts'
+import { type AnyMessageContent } from 'baileys'
+import { Cmd, type CmdCtx } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -22,8 +22,7 @@ export default class extends Cmd {
 		} as AnyMessageContent
 
 		// @ts-ignore send sticker as image
-		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] =
-			media.buffer
+		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] = media.buffer
 
 		send(msgObj, { quoted: msg })
 	}

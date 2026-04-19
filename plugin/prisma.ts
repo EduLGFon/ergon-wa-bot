@@ -1,9 +1,9 @@
-import { PrismaClient } from '../conf/gen/prisma/client.js'
+import { PrismaClient } from '../conf/gen/prisma/client.ts'
 import { PrismaPg } from '@prisma/adapter-pg'
-import Group from '../class/group.js'
-import User from '../class/user.js'
-import cache from './cache.js'
-import bot from '../wa.js'
+import Group from '../class/group.ts'
+import User from '../class/user.ts'
+import cache from './cache.ts'
+import bot from '../wa.ts'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
@@ -44,9 +44,7 @@ async function getUser({
 		const data = cache.users.find(u => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users
-			.findFirst({ where: { lid } })
-			.catch(() => {}) // there is no DB. Let's just ignore it
+		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(() => {}) // there is no DB. Let's just ignore it
 
 		if (!dbUser) {
 			// not on db, so it's a new user

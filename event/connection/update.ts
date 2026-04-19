@@ -1,9 +1,9 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
-import { loadEvents } from '../../util/handler.js'
-import { Collection, delay } from '../../map.js'
-import bot from '../../wa.js'
+import { randomDelay } from '../../util/functions.ts'
+import { loadEvents } from '../../util/handler.ts'
+import { Collection, delay } from '../../map.ts'
+import bot from '../../wa.ts'
 import QRCode from 'qrcode'
-import { randomDelay } from '../../util/functions.js'
 
 const MAX_LOGINS_IN_MINUTE = 3
 // Keep last logins DateTime to avoid reconecting too fast
@@ -69,8 +69,7 @@ function shouldReconnect(code: num) {
 	if (isLogout) return false
 	// does not try to reconnect if session was logged out
 
-	const loginsAvarageDate =
-		lastLogins.reduce((prev, crt) => prev + crt) / MAX_LOGINS_IN_MINUTE
+	const loginsAvarageDate = lastLogins.reduce((prev, crt) => prev + crt) / MAX_LOGINS_IN_MINUTE
 	const oneMinuteAgo = Date.now() - 60_000
 
 	if (loginsAvarageDate > oneMinuteAgo) return 'wait'
