@@ -9,7 +9,7 @@
 	"cache": {
 		"users": 200,
 		"groups": 200,
-		"dmMsgs": 10,
+		"dmMsgs": 60,
 		"groupMsgs": 200
 	},
 	"runner": {

@@ -1,12 +1,11 @@
-import { getMedia, sendMsg } from '../util/messages.js'
+import { getMedia, reactToMsg, sendMsg } from '../util/messages.js'
 import { randomDelay } from '../util/functions.js'
 import { Group, Msg, User } from '../map.js'
 import { AnyMessageContent } from 'baileys'
-type Announcement = { text: str; chats: str[] } | { caption: str; chats: str[] }
-// simple text msg | media msg
+import { getUser } from './prisma.js'
+type Announcement = { text?: str; caption?: str; chats: str[]; tag?: str }
+// Announcement = simple text msg or media msg (replace text by caption)
 
-let isSending = false
-const msgQueue: Announcement[] = []
 /** How does this shit work?
  * every new msg will be pushed to the end of the queue.
  * bot will send the FIRST msg to all chats
@@ -20,17 +19,42 @@ const msgQueue: Announcement[] = []
  * chaottic if sendAnnouncement() got called two times in a row
  */
 
+let isSending = false
+const msgQueue: Announcement[] = []
+const allowedTags = {
+	'#diurno': process.env.GROUPS1!.split('|'),
+	'#noturno': process.env.GROUPS2!.split('|'),
+	'#todos': [''],
+}
+allowedTags['#todos'] = [...allowedTags['#diurno'], ...allowedTags['#noturno']]
+
 export default checkGroupAnnouncer
 async function checkGroupAnnouncer(msg: Msg, user: User, group?: Group) {
-	if (!msg.text.toLowerCase().includes('#todos') || msg.isBot) return
-	// ignore msgs that not contain '#todos' or was sent by the bot
-	if (!group || !process.env.ANNOUNCER!.includes(group.id)) return
-	// ignore msgs from DMs or other groups
+	if (!group || !allowedTags['#todos'].includes(group.id) || msg.isBot) return
+	// ignore msgs from DMs, from other groups or that was sent by the bot
 
-	let announceMsg: Announcement = {
-		// simple text msg
-		text: `[${group.name}]\n*${user.name}:* ${msg.text}`,
-		chats: [], // all chats to send the msg
+	let announceMsg: Announcement = { chats: [] }
+	const lowText = msg.text.toLowerCase()
+	for (const [key, value] of Object.entries(allowedTags)) {
+		if (lowText.includes(key))
+			announceMsg = {
+				tag: key, // tag trigger
+				chats: value.filter(g => g !== group.id),
+				// all groups that wasn't the group the msg was sent
+			}
+	}
+
+	// ignore msgs that not contain any tag
+	if (!announceMsg.tag || (lowText === announceMsg.tag && !msg.media)) {
+		randomDelay(500, 1_500).then(() => reactToMsg.bind(msg)('question'))
+		// ignore no empty content msgs (only tag msgs)
+		return
+	}
+
+	announceMsg.text = `[${announceMsg.tag.toUpperCase()}] *${user.name}:*\n${msg.text}`
+	if (msg.quoted) {
+		const quoteAuthor = await getUser({ id: msg.quoted.author })
+		announceMsg.text = `> *${quoteAuthor?.name || 'usuário'}:* ${msg.quoted.text}\n${announceMsg.text}`
 	}
 
 	if (msg.media) {
@@ -38,12 +62,10 @@ async function checkGroupAnnouncer(msg: Msg, user: User, group?: Group) {
 		announceMsg = {
 			caption: announceMsg.text,
 			[msg.type]: media!.buffer,
-			chats: [],
+			chats: announceMsg.chats,
 		}
 	}
 
-	announceMsg.chats = process.env.ANNOUNCER!.split('|').filter(g => g !== group.id)
-	// all chats to send the msg, except the chat in which the msg was sent.
 	msgQueue.push(announceMsg)
 	// push the announcement to the end of the queue
 
@@ -56,6 +78,7 @@ async function sendAnnouncements() {
 	// if (isSending === true) return // containment measure to stop the hell
 	isSending = true // now, sendAnnouncements() won't be called again
 	// until the queue is empty
+	randomDelay().then(() => reactToMsg.bind(msgQueue[0] as any)('check'))
 
 	for (const g of msgQueue[0].chats) {
 		await randomDelay(1_000, 2_500)

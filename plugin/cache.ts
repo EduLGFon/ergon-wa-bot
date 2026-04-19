@@ -1,5 +1,5 @@
 import { mkdir, readFile, unlink, writeFile } from 'fs/promises'
-import { Cmd, Collection, Group, User } from '../map.js'
+import { Cmd, Collection, defaults, Group, User } from '../map.js'
 import { existsSync } from 'fs'
 
 /** Cache manager:
@@ -28,7 +28,7 @@ class CacheManager {
 		// Cmds collection
 		this.cmds = new Collection(0, 'name')
 		// Users collection
-		this.users = new Collection(100)
+		this.users = new Collection(defaults.cache.users)
 		// Media collection
 		// It stores media data like images, videos, etc.
 		// It uses URL as key to avoid duplicates
