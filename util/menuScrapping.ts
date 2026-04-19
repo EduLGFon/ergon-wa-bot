@@ -26,13 +26,10 @@ const numPadding = (n: number) => (n < 10 ? '0' + n : n.toString()) // 4 => 04
 export function scheduleURMenuMsg() {
 	const now = new Date()
 	const nextRun = new Date()
-	nextRun.setHours(9, 30, 0, 0)
+	nextRun.setHours(9, 0, 0, 0)
 
-	console.log(now, nextRun)
 	if (nextRun <= now) nextRun.setDate(nextRun.getDate() + 1)
 	const delay = nextRun.getTime() - now.getTime()
-	console.log(now, nextRun)
-	console.log(delay)
 
 	setTimeout(sendURMenu, delay)
 }
