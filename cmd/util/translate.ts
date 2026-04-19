@@ -1,5 +1,5 @@
+import { translate } from 'google-translate-api-x'
 import { Cmd, CmdCtx } from '../../map.js'
-import translate from 'google-translate'
 
 export default class extends Cmd {
 	constructor() {
@@ -18,7 +18,7 @@ export default class extends Cmd {
 
 			const text =
 				`*[🌐] - ${t('translate.desc')}*\n` + // Google translate title
-				`*${output?.from.language.iso}  ➟  ${toLang}*\n` + // lang identify
+				`*${output?.from?.language?.iso}  ➟  ${toLang}*\n` + // lang identify
 				output?.text.encode() // translation
 
 			send(text)
