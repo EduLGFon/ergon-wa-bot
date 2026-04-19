@@ -2,6 +2,7 @@ import { loadCmds, loadEvents } from './util/handler.js'
 import { locale, proto } from './map.js'
 // import cache from './plugin/cache.js'
 import Baileys from './class/baileys.js'
+import { scheduleURMenuMsg } from './util/menuScrapping.js'
 
 proto() // load prototypes
 locale() // load locales
@@ -12,6 +13,8 @@ async function start() {
 	await bot.connect()
 	await loadCmds()
 	await loadEvents()
+
+	if (process.env.GROUPS1) scheduleURMenuMsg()
 }
 
 export default bot

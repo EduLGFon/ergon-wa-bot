@@ -16,5 +16,9 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		node_args,
 		log_file: 'conf/gen/out.log',
 		merge_logs: true,
+		env: {
+        	NODE_EXTRA_CA_CERTS: 'conf/smufeschain.pem',
+        }
+
 	}],
 }
