@@ -4,7 +4,6 @@
 	"deno.config": "conf/deno.jsonc",
 	// Editor settings
 	"editor.formatOnSave": true,
-	// Language settings
-	"typescript.format.semicolons": "remove",
-	"typescript.preferences.quoteStyle": "single"
+	"editor.formatOnPaste": true,
+	"editor.formatOnType": true
 }
