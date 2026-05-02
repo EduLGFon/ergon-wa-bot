@@ -7,7 +7,7 @@ import pino from 'pino'
 
 // get 'now' date time formatted
 const now = (format = 'dd/MM TT.SSS') =>
-	DateTime.now().setZone(defaults.timezone).setLocale(defaults.lang).toFormat(format) // TT = HOURS:MINUTES:SECONDS
+	DateTime.now().setZone(process.env.TZ).setLocale(defaults.lang).toFormat(format) // TT = HOURS:MINUTES:SECONDS
 
 // Pino Logger
 const logger = pino({

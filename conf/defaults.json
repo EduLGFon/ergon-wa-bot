@@ -1,7 +1,6 @@
 {
 	"lang": "pt",
 	"prefix": ".",
-	"timezone": "America/Sao_Paulo",
 	"ai": {
 		"gemini_chain": ["gemini-2.5-flash", "gemini-3-flash-preview"],
 		"gemini_pro": "gemini-3-flash-preview"

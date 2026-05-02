@@ -92,7 +92,6 @@ You can also set default configuration:
 {
 	"lang": "pt", // bot default language
 	"prefix": ".", // bot default prefix
-	"timezone": "America/Sao_Paulo", // logs timezone
 	"cache": {
 		"users": 200, // max users in cache
 		"groups": 200, // max groups in cache

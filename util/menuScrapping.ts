@@ -1,36 +1,28 @@
 import { allowedTags } from '../plugin/groupAnnouncer.ts'
 import { delay, randomDelay } from './functions.ts'
 import { sendMsg } from './messages.ts'
+import cron from 'node-cron'
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 // temporary solution to fix the CA Cert problem
 
-// schedule msg sending to 9 AM UTM-0
-// it's 6 AM UTM -3
+// schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
-	const now = new Date()
-	const nextRun = new Date() // set date to now
-	nextRun.setHours(9, 0, 0, 0) // set date to 9AM of today
-
-	// set date to tomorrow at 9AM
-	if (nextRun <= now) nextRun.setDate(nextRun.getDate() + 1)
-		
-	const gapTime = nextRun.getTime() - now.getTime()
-	setTimeout(sendURMenu, gapTime)
+	cron.schedule('0 6 * * 1-5', sendURMenu, {
+		timezone: process.env.TZ,
+	})
 }
 
-// send the Menu Msg to all groups saveds by the "#all" tag
+// send the Menu Msg to all groups saveds by the "#all" tag + some others
 async function sendURMenu() {
 	const menu = await scrapURMenu()
-	if (!menu) return scheduleURMenuMsg()
+	if (!menu) return
 
-	for (const g of allowedTags['#todos']) {
+	const groups = allowedTags['#todos'].concat('5527997014112-1491836324@g.us')
+	for (const g of groups) {
 		await sendMsg.bind(g)(menu)
 		await randomDelay()
 	}
-
-	scheduleURMenuMsg()
-	// if everything was ok, schedule the tomorrow's msg
 }
 
 // regex to parse HTML data
@@ -46,7 +38,7 @@ export default async function scrapURMenu() {
 		)
 		if (!res.ok) return null
 		const txt = await res.text()
-		
+
 		let msg = ''
 		for (const match of txt.matchAll(regexFood)) {
 			msg += parseMenuData(match)
@@ -61,8 +53,7 @@ export default async function scrapURMenu() {
 			)
 		return null
 	} catch (e) {
-		print('MENUSCRAP', 'Error fetching menu', 'red')
-		print(e)
+		print('MENUSCRAP', 'Error fetching menu', 'red', e)
 		await delay(60_000)
 		await randomDelay()
 		return await scrapURMenu()
