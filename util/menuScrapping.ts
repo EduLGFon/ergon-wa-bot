@@ -6,7 +6,14 @@ import cron from 'node-cron'
 // schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
 	cron.schedule('0 6 * * 1-5', sendURMenu, {
+		// cron time explanation
+		// 0 = minute
+		// 6 = hour
+		// * = any day of the month
+		// * = any month
+		// 1-5 = mon-fri
 		timezone: process.env.TZ,
+		// timezone like: America/Sao_Paulo
 	})
 }
 
