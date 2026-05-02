@@ -21,8 +21,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	const { message, key, pushName } = raw
 	const fakeCtx = {} as CmdCtx
 	if (!key) {
-		print('CTX', 'msg without key', 'red')
-		print(raw)
+		print('CTX', 'msg without key', 'red', raw)
 		return fakeCtx
 	}
 	// checkMatch(key)

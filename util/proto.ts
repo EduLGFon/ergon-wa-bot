@@ -23,20 +23,48 @@ export { logger, now }
 export default () => {
 	strPrototypes() // add string prototypes
 	numPrototypes() // add number prototypes
-	print('PROTO', 'setted', 'yellow')
 	global.print = print
+	console.info = print
+	print('PROTO', 'setted', 'yellow')
+}
+
+function isSessionEntryLike(value: any) {
+	return (
+		!!value &&
+		typeof value === 'object' &&
+		(value.constructor?.name === 'SessionEntry' ||
+			'indexInfo' in value ||
+			'currentRatchet' in value ||
+			'pendingPreKey' in value)
+	)
+}
+
+const warn = console.warn.bind(console)
+console.warn = (...args) => {
+	if (
+		typeof args[0] === 'string' &&
+		args[0].includes('Session already closed') &&
+		args.slice(1).some(isSessionEntryLike)
+	)
+		return
+	return warn(...args)
 }
 
 const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
-function print(...anyArgs: any) {
-	if (!anyArgs[2]) return console.info(...anyArgs)
+function print(...args: any) {
+	if (
+		typeof args[0] === 'string' &&
+		args[0].includes('Closing session') &&
+		args.slice(1).some(isSessionEntryLike)
+	)
+		return
+	if (typeof args[2] !== 'string') return console.log(...args)
 
-	const args = [...anyArgs]
 	let color = args.pop()
 	const memory = process.memoryUsage().rss.bytes().align(5)
 	if (brightColors.includes(color)) color += 'Bright'
 
-	console.info(
+	console.log(
 		chalk.bold[color as 'red'](
 			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
 			...args,

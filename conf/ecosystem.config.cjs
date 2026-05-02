@@ -6,6 +6,7 @@
 const runtime_args = [
 	'--expose-gc',
 	'--env-file=conf/.env',
+	'--trace-warnings',
 	// '--hot',
 	// '--hmr',
 	// '--max-old-space-size=16384',
