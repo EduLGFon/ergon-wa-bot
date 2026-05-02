@@ -3,9 +3,6 @@ import { delay, randomDelay } from './functions.ts'
 import { sendMsg } from './messages.ts'
 import cron from 'node-cron'
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-// temporary solution to fix the CA Cert problem
-
 // schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
 	cron.schedule('0 6 * * 1-5', sendURMenu, {
