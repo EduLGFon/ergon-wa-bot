@@ -54,7 +54,7 @@ const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cya
 function print(...args: any) {
 	if (
 		typeof args[0] === 'string' &&
-		args[0].includes('Closing session') &&
+		(args[0].includes('Closing session') || args[0].includes('Removing old closed session')) &&
 		args.slice(1).some(isSessionEntryLike)
 	)
 		return
