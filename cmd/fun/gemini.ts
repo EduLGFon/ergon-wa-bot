@@ -48,8 +48,6 @@ export default class extends Cmd {
 			msg, // this message
 			file: await getMedia(msg),
 		}).catch(async (e): Promise<any> => {
-			print('GEMINI', 'Model not available', 'red')
-			print(model, e)
 			send(`> *${model}:* Modelo não disponível. Tente novamente mais tarde ou amanhã.`, {
 				quoted: msg,
 			})

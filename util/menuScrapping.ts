@@ -56,8 +56,8 @@ export default async function scrapURMenu() {
 				'\n*O cardápio poderá sofrer alterações sem comunicação prévia'
 			)
 		return null
-	} catch (e) {
-		print('MENUSCRAP', 'Error fetching menu', 'red', e)
+	} catch (e: any) {
+		print('MENUSCRAP', 'Error scraping menu', 'red', e?.stack)
 		await delay(60_000)
 		await randomDelay()
 		return await scrapURMenu()

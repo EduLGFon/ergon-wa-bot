@@ -10,8 +10,8 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, send, t }: CmdCtx) {
-		const media = await getMedia(msg)
+	async run({ msg, send, react, t }: CmdCtx) {
+		const media = await getMedia(msg).catch(e => react('x'))
 		if (!media) return send(t('sticker.nobuffer'), { quoted: msg })
 		await randomDelay(1_000, 2_000)
 

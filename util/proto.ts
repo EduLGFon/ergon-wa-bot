@@ -51,6 +51,12 @@ console.warn = (...args) => {
 }
 
 const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+const colorize = (color: 'red', ...args: any) => {
+	if (brightColors.includes(color)) color += 'Bright'
+
+	const func = chalk?.bold[color]
+	return func ? func(...args) : args
+}
 function print(...args: any) {
 	if (
 		typeof args[0] === 'string' &&
@@ -62,10 +68,10 @@ function print(...args: any) {
 
 	let color = args.pop()
 	const memory = process.memoryUsage().rss.bytes().align(5)
-	if (brightColors.includes(color)) color += 'Bright'
 
 	console.log(
-		chalk.bold[color as 'red'](
+		colorize(
+			color,
 			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
 			...args,
 		),
