@@ -51,7 +51,7 @@ async function loadEvents() {
 		bot.sock.ev.on(name, (...args) => {
 			// It allows to modify events in run time
 			cache.events.get(name)!(...args, name).catch((e: Error) =>
-				print(`EVENT/${name}:`, e, 'red', e.stack),
+				print(`EVENT/${name}:`, e, e.stack, 'red'),
 			)
 			// it's the same as eventFunction(...args, name)
 		})

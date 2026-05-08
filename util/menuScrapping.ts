@@ -57,7 +57,7 @@ export default async function scrapURMenu() {
 			)
 		return null
 	} catch (e: any) {
-		print('MENUSCRAP', 'Error scraping menu', 'red', e?.stack)
+		print('MENUSCRAP', 'Error scraping menu', e?.stack, 'red')
 		await delay(60_000)
 		await randomDelay()
 		return await scrapURMenu()

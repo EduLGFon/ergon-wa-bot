@@ -103,6 +103,6 @@ async function sendOrEdit(data: StreamMsg, text: str, quoted?: Msg) {
 	if (data.msg?.key?.id) {
 		await editMsg
 			.bind(data.msg)(text)
-			.catch(e => print('Failed to edit message', e))
+			.catch(e => print('ERROR', 'Failed to edit message', e, e.stack, 'red'))
 	} else if (text) data.msg = (await sendMsg.bind(data.msg.chat)(text, { quoted })).msg
 }

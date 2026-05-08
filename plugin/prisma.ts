@@ -90,7 +90,6 @@ async function getGroup(id: str): Promise<Group> {
 
 async function P(model: 'users', action: 'create', data: any) {
 	return await prisma[model][action](data).catch(() => {
-		print(`PRISMA`, `${model}.${action}()`, 'red')
-		print(data)
+		print(`PRISMA`, `${model}.${action}()`, data, 'red')
 	})
 }

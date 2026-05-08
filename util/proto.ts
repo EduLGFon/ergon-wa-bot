@@ -55,7 +55,7 @@ const colorize = (color: 'red', ...args: any) => {
 	if (brightColors.includes(color)) color += 'Bright'
 
 	const func = chalk?.bold[color]
-	return func ? func(...args) : args
+	return func ? [func(...args)] : args
 }
 function print(...args: any) {
 	if (
@@ -70,7 +70,7 @@ function print(...args: any) {
 	const memory = process.memoryUsage().rss.bytes().align(5)
 
 	console.log(
-		colorize(
+		...colorize(
 			color,
 			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
 			...args,
