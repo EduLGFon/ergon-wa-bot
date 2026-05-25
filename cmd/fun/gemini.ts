@@ -1,5 +1,6 @@
 import { Cmd, type CmdCtx, defaults } from '../../map.ts'
 import { cleanMemories } from '../../plugin/memories.ts'
+import { randomDelay } from '../../util/functions.ts'
 import { getMedia } from '../../util/messages.ts'
 import gemini from '../../util/geminiApi.ts'
 
@@ -39,7 +40,7 @@ export default class extends Cmd {
 			model = defaults.ai.gemini_pro
 			args.shift()
 		}
-		await startTyping()
+		randomDelay(1000, 2_000).then(() => startTyping()) // add a random delay to start typing
 
 		gemini({
 			model,

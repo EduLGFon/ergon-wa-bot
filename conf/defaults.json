@@ -2,7 +2,7 @@
 	"lang": "pt",
 	"prefix": ".",
 	"ai": {
-		"gemini_chain": ["gemini-2.5-flash", "gemini-3-flash-preview"],
+		"gemini_chain": ["gemini-2.5-flash", "gemini-3.5-flash"],
 		"gemini_pro": "gemini-3-flash-preview"
 	},
 	"cache": {

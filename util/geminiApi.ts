@@ -6,32 +6,23 @@ import {
 	GoogleGenAI,
 } from '@google/genai'
 import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
-import { randomDelay, randomTime } from './functions.ts'
 import { createMemories } from '../plugin/memories.ts'
 import { createAlarms } from '../plugin/alarms.ts'
 import { ThinkingLevel } from '@google/genai'
-import { sendOrEdit } from './messages.ts'
+import { sendMsg } from './messages.ts'
 import { delay, User } from '../map.ts'
 
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
 
 export default async function gemini({ input, user, msg, file, model }: Gparams) {
-	let upload
-	let interval
-	const res = {
+	const resBody = {
 		header: '',
 		text: '',
-		msg: { chat: msg?.chat },
-	}
-	const callCallback = async () => await sendOrEdit(res, res.header + res.text.trim(), msg)
-	const startStreaming = async () => {
-		await callCallback()
-		interval = setInterval(async () => await callCallback(), randomTime(1_500, 2_400))
-		return
 	}
 
-	if (file) upload = await uploadFile(file as GoogleFile, res)
-	const message = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
+	let upload
+	if (file) upload = await uploadFile(file as GoogleFile)
+	const prompt = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
 
 	const gemini = GoogleAI.chats.create({
 		model,
@@ -39,22 +30,21 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 		history: user.gemini,
 	})
 
-	const stream = await gemini.sendMessageStream({ message })
-	res.header = `- *${model}*:\n`
+	const output = await gemini.sendMessage({ message: prompt })
+	resBody.header = `- *${model}*:\n`
 
-	for await (const chunk of stream) await handleResponse(chunk, res, startStreaming)
-	clearInterval(interval!)
-
-	await createMemories(user, res)
-	await createAlarms(user, res, msg?.chat!)
+	await handleResponse(output, resBody)
+	await createMemories(user, resBody)
+	await createAlarms(user, resBody, msg!.chat)
 
 	user.gemini = gemini.getHistory()
 
-	await randomDelay(1_500, 2_500)
-	return await callCallback()
+	return await sendMsg.bind(msg!.chat)(resBody.header + resBody.text.trim(), {
+		quoted: msg
+	})
 }
 
-async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg, startStreaming: Func) {
+async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
 	if (chunk?.candidates) {
 		let web = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
 		if (web) {
@@ -71,12 +61,7 @@ async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg, startS
 			msg.header += `- 🔍 ${searches}\n`
 		}
 	}
-	if (chunk.text) {
-		if (!msg.text) {
-			msg.text += chunk.text
-			await startStreaming()
-		} else msg.text += chunk.text
-	}
+	if (chunk.text) msg.text += chunk.text
 }
 
 function getModelConfig(user: User) {
@@ -106,7 +91,7 @@ function getModelConfig(user: User) {
 	} as GenerateContentConfig
 }
 
-async function uploadFile(file: GoogleFile, msg: AIMsg) {
+async function uploadFile(file: GoogleFile) {
 	/** Uploading file to Google File API (it's free)
 	 * File API lets you store up to 20GB of files per project
 	 * Limit: 2GB for each one
