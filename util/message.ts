@@ -138,7 +138,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 		thumbnailDirectPath: msg.thumbnailDirectPath,
 	}
 
-	if (cache.media.has(msg.url)) return keyObj // return metadata to download it later
+	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
 	const buffer = await downloadMediaMessage(
 		raw.message ? raw : { message: raw },
 		'buffer',
@@ -147,7 +147,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	)
+	).catch(e => print('DOWNLOAD', 'Error downloading media', e.stack, 'red'))
 
 	if (!buffer) return
 
