@@ -4,14 +4,15 @@ import {
 	type GenerateContentConfig,
 	type GenerateContentResponse,
 	GoogleGenAI,
+	ThinkingLevel,
 } from '@google/genai'
 import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
 import { createMemories } from '../plugin/memories.ts'
 import { createAlarms } from '../plugin/alarms.ts'
-import { ThinkingLevel } from '@google/genai'
 import { sendMsg } from './messages.ts'
 import { delay, User } from '../map.ts'
 
+// Initialize the Gemini client with the Studio API key.
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
 
 export default async function gemini({ input, user, msg, file, model }: Gparams) {
@@ -93,26 +94,26 @@ function getModelConfig(user: User) {
 
 async function uploadFile(file: GoogleFile) {
 	/** Uploading file to Google File API (it's free)
-	 * File API lets you store up to 20GB of files per project
-	 * Limit: 2GB for each one
-	 * Expiration: 48h
-	 * Media cannot be downloaded from the API, only uploaded
+	 * File API lets you store up to 20GB of files per project.
+	 * Limit: 2GB for each one.
+	 * Expiration: 48h.
+	 * Media cannot be downloaded from the API, only uploaded.
 	 */
 	let upload = await GoogleAI.files.upload({
 		file: new Blob([file.buffer as ArrayBuffer]),
 		config: { mimeType: file.mime },
 	})
 
-	upload = await GoogleAI.files.get({ name: upload.name! }) // fetch its info
+	// The v2 SDK exposes `files.get` for metadata polling.
+	upload = await GoogleAI.files.get({ name: upload.name! })
 	while (upload.state === FileState.PROCESSING) {
-		// media still processing
-		// Sleep until it gets done
 		await delay(2_000)
-		// Fetch the file from the API again
 		upload = await GoogleAI.files.get({ name: upload.name! })
 	}
 
-	// media upload failed
-	if (upload.state === FileState.FAILED) throw new Error('Google server processing failed.')
-	return upload // return the file info
+	if (upload.state === FileState.FAILED) {
+		throw new Error('Google server processing failed.')
+	}
+
+	return upload
 }
