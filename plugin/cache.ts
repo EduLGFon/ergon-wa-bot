@@ -1,4 +1,4 @@
-import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { Cmd, Collection, defaults, Group, User } from '../map.ts'
 import { existsSync } from 'node:fs'
 
@@ -6,9 +6,9 @@ import { existsSync } from 'node:fs'
  * It controls, limit and save
  * user/group cache.
  *
- * Cache saved on conf/cache/*.json
+ * Cache saved on conf/gen/cache/*.json
  */
-const cachedData = ['users', 'groups']
+const cachedData: ('media' | 'metrics')[] = ['metrics', 'media']
 
 class CacheManager {
 	// Collections (Stored data)
@@ -18,6 +18,7 @@ class CacheManager {
 	events: Map<str, Func>
 	media: Collection<str, Media>
 	groups: Collection<str, Group>
+	metrics: { msg: any; cmd: any }
 	timeouts: Map<str, NodeJS.Timeout>
 
 	constructor() {
@@ -35,58 +36,76 @@ class CacheManager {
 		this.media = new Collection(100, 'url')
 		// Groups collection
 		this.groups = new Collection(100)
+		// Metrics
+		this.metrics = { msg: {}, cmd: {} }
 		// Timeouts
 		this.timeouts = new Map()
 	}
 
 	async save() {
-		if (!existsSync('conf/cache')) await mkdir('conf/cache')
+		if (!existsSync('conf/gen/cache')) await mkdir('conf/gen/cache')
 
-		for (const category of cachedData) {
-			const collection = this[category as 'cmds']
-			const str = JSON.stringify(collection.toJSON()) // converts data to String
-			await writeFile(`conf/cache/${category}.json`, str) // write cache
+		for (const cat of cachedData) {
+			// @ts-ignore just ignore toJson doesn't exist on all possible types
+			const json = this[cat].toJSON ? this[cat].toJSON() : this[cat]
+			await writeFile(`conf/gen/cache/${cat}.json`, JSON.stringify(json)) // write cache
 		}
-		return
+		print('CACHE', 'Metrics and media saved', 'yellow')
 	}
 
 	async resume() {
-		for (const category of cachedData) {
+		for (const cat of cachedData) {
 			// if --rm-cache is passed, remove cache files
 			if (process.argv.includes('--rm-cache')) {
-				await unlink(`conf/cache/${category}.json`)
+				await unlink(`conf/gen/cache/${cat}.json`)
 				// remove cache files
 
-				print('CACHE', `No ${category} cache`, 'blue')
+				print('CACHE', `Removing ${cat} cache`, 'blue')
 				continue
 			}
 
-			const cache = await readFile(`conf/cache/${category}.json`, {
+			const cache = await readFile(`conf/gen/cache/${cat}.json`, {
 				encoding: 'utf8',
 			}).catch(() => {})
 			// read file
 
 			if (!cache) {
-				print('CACHE', `No ${category} cache`, 'blue')
+				print('CACHE', `No ${cat} cache`, 'blue')
 				continue
 			}
 			const json = JSON.parse(cache)
 			// parse cache
 
 			for (const [k, v] of Object.entries(json)) {
-				const place = this[category as 'groups']
-				// @ts-ignore
-				// const value = await new place.base!(v).checkData(this.bot)
+				const collection = this[cat]
 
-				// place.set(k, value)
-				// save it
+				// @ts-ignore ignore isCollection checking
+				if (collection?.add) {
+					;(collection as Collection<any, any>).add(k, v)
+				} else
+					(
+						collection as {
+							msg: any
+							cmd: any
+						}
+					)[k as 'msg'] = v
 			}
-			print('CACHE', `${category} cache resumed`, 'blue')
+			print('CACHE', `${cat} cache resumed`, 'blue')
 		}
-		return
 	}
 }
 
 const cache = new CacheManager()
-// cache.resume()
 export default cache
+
+export async function cleanTemp() {
+	const files = await readdir('conf/gen/temp')
+	let i = 0
+	for (const f of files) {
+		if (f === 'disclaimer.txt') continue
+
+		await unlink(`conf/gen/temp/${f}`)
+		i++
+	}
+	print('TEMP', `${i} temp files cleaned`, 'blue')
+}
