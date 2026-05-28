@@ -25,6 +25,7 @@ export default () => {
 	numPrototypes() // add number prototypes
 	global.print = print
 	console.info = print
+	if (process.env.DEV) print('DEV', 'Development mode enabled', 'blue')
 	print('PROTO', 'setted', 'yellow')
 }
 
@@ -147,7 +148,7 @@ function strPrototypes() {
 		toPascalCase: {
 			configurable: true,
 			value: function () {
-				return this.slice(0, 1).toUpperCase() + this.slice(1)
+				return this.slice(0, 1).toUpperCase() + this.slice(1).toLowerCase()
 			},
 		},
 		encode: {

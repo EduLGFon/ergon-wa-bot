@@ -19,8 +19,8 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		interpreter: 'node',
 		interpreter_args: runtime_args,
 		env: {
-        	NODE_EXTRA_CA_CERTS: 'conf/smufesrootca.pem',
-        },
+			NODE_EXTRA_CA_CERTS: 'conf/smufesrootca.pem',
+		},
 		log_file: 'conf/gen/out.log',
 		merge_logs: true,
 	}],

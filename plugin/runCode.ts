@@ -4,6 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { randomDelay } from '../util/functions.ts'
 import { checkMatch } from '../util/message.ts'
 import { type CmdCtx, delay } from '../map.ts'
+import { sendURMenu } from './menuScraping.ts'
 import { execSync } from 'node:child_process'
 import { inspect } from 'node:util'
 import cache from './cache.ts'
@@ -42,6 +43,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				prisma
 				delay
 				cache
+				sendURMenu
 				bot
 				return inspect(await eval(code))
 			}

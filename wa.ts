@@ -1,4 +1,4 @@
-import { scheduleURMenuMsg } from './util/menuScrapping.ts'
+import { scheduleURMenuMsg } from './plugin/menuScraping.ts'
 import { loadCmds, loadEvents } from './util/handler.ts'
 import { locale, proto } from './map.ts'
 // import cache from './plugin/cache.ts'

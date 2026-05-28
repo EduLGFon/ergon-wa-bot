@@ -1,7 +1,9 @@
-import { allowedTags } from '../plugin/groupAnnouncer.ts'
-import { delay, randomDelay } from './functions.ts'
-import { sendMsg } from './messages.ts'
+import { delay, randomDelay } from '../util/functions.ts'
+import { readFile, writeFile } from 'node:fs/promises'
+import { allowedTags } from './groupAnnouncer.ts'
+import { sendMsg } from '../util/messages.ts'
 import cron from 'node-cron'
+import bot from '../wa.ts'
 
 // schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
@@ -15,16 +17,41 @@ export function scheduleURMenuMsg() {
 		timezone: process.env.TZ,
 		// timezone like: America/Sao_Paulo
 	})
+
+	// schedule checking for updates
+	cron.schedule('*/15 7-19 * * 1-5', checkForUpdates, {
+		timezone: process.env.TZ
+	})
 }
 
-// send the Menu Msg to all groups saveds by the "#all" tag + some others
-async function sendURMenu() {
+let oldMenu = ''
+async function checkForUpdates() {
+	await randomDelay()
 	const menu = await scrapURMenu()
 	if (!menu) return
 
-	const groups = allowedTags['#todos'].concat('5527997014112-1491836324@g.us')
+	oldMenu = await readFile('conf/gen/temp/menu.txt', { encoding: 'utf-8' })
+		.catch(() => '')
+
+	if (oldMenu === menu) return
+	print('MENUSCRAPING', 'Menu updated', 'blue')
+	sendURMenu()
+	await writeFile('conf/gen/temp/menu.txt', menu)
+}
+
+// send the Menu Msg to all groups saveds by the "#all" tag + some others
+export async function sendURMenu() {
+	await randomDelay()
+	const menu = await scrapURMenu()
+	if (!menu) return
+	await writeFile('conf/gen/temp/menu.txt', menu)
+
+	const groups = process.env.DEV ? [process.env.GROUPS0!] : allowedTags['#todos'].concat('5527997014112-1491836324@g.us')
+
 	for (const g of groups) {
-		await sendMsg.bind(g)(menu)
+		const msgCtx = await sendMsg.bind(g)(menu)
+		await randomDelay()
+		await bot.sock.sendMessage(g, { pin: msgCtx.msg.key, time: 86_400, type: 1 })
 		await randomDelay()
 	}
 }
@@ -34,7 +61,7 @@ const regexFood =
 	/(CAFÉ DA MANHÃ|ALMOÇO|JANTAR)[\s\S]*?<div class="field-content">([\s\S]*?)<\/div>/gi
 const regexTags = /<[^>]*>?/gm
 // scrap university's restaurant menu
-export default async function scrapURMenu() {
+export default async function scrapURMenu(updated = 0) {
 	const { day, month, year } = getDate()
 	try {
 		const res = await fetch(
@@ -49,12 +76,10 @@ export default async function scrapURMenu() {
 		}
 		msg = msg.trim()
 
-		if (msg)
-			return (
-				`*Cardápio RU - ${day}/${month}*\n` +
-				msg +
-				'\n*O cardápio poderá sofrer alterações sem comunicação prévia'
-			)
+		if (msg) {			
+			return `*Planejamento RU - ${day}/${month}*\n` +
+				msg + '\n*Atualizações neste planejamento serão avisadas, mas o RU pode trocar as opções de última hora'
+		}
 		return null
 	} catch (e: any) {
 		print('MENUSCRAP', 'Error scraping menu', e?.stack, 'red')
@@ -89,10 +114,16 @@ const titles = [
 	'Suco',
 	'Café',
 ]
-
+const Hours = {
+	'CAFÉ DA MANHÃ': '7h-8h',
+	'ALMOÇO': '11h-13h30',
+	'JANTAR': '17h-19h',
+}
 function parseMenuData(match: str[]) {
+	const meal = match[1] as keyof typeof Hours
+	
 	return (
-		`\n> *${match[1]}*\n` +
+		`\n> *${meal.toPascalCase()} ${Hours[meal]}*\n` +
 		match[2]
 			.replace(regexTags, '\n')
 			.split('\n')
