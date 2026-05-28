@@ -1,4 +1,4 @@
-import { type CmdCtx, emojis, getCtx, type Msg, msgMeta, User } from '../map.ts'
+import { type CmdCtx, emojis, getCtx, type Msg, User } from '../map.ts'
 import type { AnyMessageContent } from 'baileys'
 import { downloadMedia } from './message.ts'
 import { randomEmoji } from './emojis.ts'

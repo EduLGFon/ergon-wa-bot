@@ -3,11 +3,15 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { allowedTags } from './groupAnnouncer.ts'
 import { sendMsg } from '../util/messages.ts'
 import cron from 'node-cron'
-import bot from '../wa.ts'
 
+let day = '',
+	month = '',
+	year = ''
+const numPadding = (n: number) => (n < 10 ? '0' + n : n.toString()) // 4 => 04
+updateDate()
 // schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
-	cron.schedule('0 6 * * 1-5', sendURMenu, {
+	cron.schedule('0 6 * * 1-5', () => sendURMenu(), {
 		// cron time explanation
 		// 0 = minute
 		// 6 = hour
@@ -20,7 +24,7 @@ export function scheduleURMenuMsg() {
 
 	// schedule checking for updates
 	cron.schedule('*/15 7-19 * * 1-5', checkForUpdates, {
-		timezone: process.env.TZ
+		timezone: process.env.TZ,
 	})
 }
 
@@ -30,30 +34,37 @@ async function checkForUpdates() {
 	const menu = await scrapURMenu()
 	if (!menu) return
 
-	oldMenu = await readFile('conf/gen/temp/menu.txt', { encoding: 'utf-8' })
-		.catch(() => '')
+	oldMenu =
+		oldMenu ||
+		(await readFile('conf/gen/cache/menu.txt', { encoding: 'utf-8' }).catch(() => ''))
 
 	if (oldMenu === menu) return
-	print('MENUSCRAPING', 'Menu updated', 'blue')
-	sendURMenu()
-	await writeFile('conf/gen/temp/menu.txt', menu)
+	print('MENUSCRAP', 'Menu updated', 'blue')
+	sendURMenu(menu, 1)
 }
 
 // send the Menu Msg to all groups saveds by the "#all" tag + some others
-export async function sendURMenu() {
+export async function sendURMenu(menuStr = '', updated = 0) {
 	await randomDelay()
-	const menu = await scrapURMenu()
+	const menu = menuStr || (await scrapURMenu())
 	if (!menu) return
-	await writeFile('conf/gen/temp/menu.txt', menu)
 
-	const groups = process.env.DEV ? [process.env.GROUPS0!] : allowedTags['#todos'].concat('5527997014112-1491836324@g.us')
+	let msg = `RU - ${day}/${month}*\n${menu}`
+	if (updated) msg = `*ATUALIZAÇÃO ${msg}`
+	else msg = `*Planejamento ${msg}`
+
+	const groups = process.env.DEV
+		? [process.env.GROUPS0!]
+		: allowedTags['#todos'].concat('5527997014112-1491836324@g.us')
 
 	for (const g of groups) {
-		const msgCtx = await sendMsg.bind(g)(menu)
+		const msgCtx = await sendMsg.bind(g)(msg)
 		await randomDelay()
-		await bot.sock.sendMessage(g, { pin: msgCtx.msg.key, time: 86_400, type: 1 })
+		await sendMsg.bind(g)({ pin: msgCtx.msg.key, time: 86_400, type: 1 })
 		await randomDelay()
 	}
+	await writeFile('conf/gen/cache/menu.txt', menu)
+	oldMenu = menu
 }
 
 // regex to parse HTML data
@@ -61,8 +72,8 @@ const regexFood =
 	/(CAFÉ DA MANHÃ|ALMOÇO|JANTAR)[\s\S]*?<div class="field-content">([\s\S]*?)<\/div>/gi
 const regexTags = /<[^>]*>?/gm
 // scrap university's restaurant menu
-export default async function scrapURMenu(updated = 0) {
-	const { day, month, year } = getDate()
+export default async function scrapURMenu() {
+	updateDate()
 	try {
 		const res = await fetch(
 			`https://restaurante.saomateus.ufes.br/cardapio/${year}-${month}-${day}`,
@@ -74,13 +85,8 @@ export default async function scrapURMenu(updated = 0) {
 		for (const match of txt.matchAll(regexFood)) {
 			msg += parseMenuData(match)
 		}
-		msg = msg.trim()
 
-		if (msg) {			
-			return `*Planejamento RU - ${day}/${month}*\n` +
-				msg + '\n*Atualizações neste planejamento serão avisadas, mas o RU pode trocar as opções de última hora'
-		}
-		return null
+		return msg.trim()
 	} catch (e: any) {
 		print('MENUSCRAP', 'Error scraping menu', e?.stack, 'red')
 		await delay(60_000)
@@ -89,14 +95,11 @@ export default async function scrapURMenu(updated = 0) {
 	}
 }
 
-const numPadding = (n: number) => (n < 10 ? '0' + n : n.toString()) // 4 => 04
-function getDate() {
+function updateDate() {
 	const date = new Date()
-	const day = numPadding(date.getDate())
-	const month = numPadding(date.getMonth() + 1)
-	const year = date.getFullYear()
-
-	return { day, month, year }
+	day = numPadding(date.getDate())
+	month = numPadding(date.getMonth() + 1)
+	year = date.getFullYear().toString()
 }
 
 const titles = [
@@ -116,12 +119,12 @@ const titles = [
 ]
 const Hours = {
 	'CAFÉ DA MANHÃ': '7h-8h',
-	'ALMOÇO': '11h-13h30',
-	'JANTAR': '17h-19h',
+	ALMOÇO: '11h-13h30',
+	JANTAR: '17h-19h',
 }
 function parseMenuData(match: str[]) {
 	const meal = match[1] as keyof typeof Hours
-	
+
 	return (
 		`\n> *${meal.toPascalCase()} ${Hours[meal]}*\n` +
 		match[2]

@@ -123,7 +123,6 @@ async function checkMatch(key: proto.IMessageKey) {
 		})
 		await prisma.users.deleteMany({ where: { id: newUser!.id } })
 	}
-	return
 }
 
 // download msg media
@@ -147,7 +146,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	).catch(e => print('DOWNLOAD', 'Error downloading media', e.stack, 'red'))
+	).catch(e => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
 
 	if (!buffer) return
 
