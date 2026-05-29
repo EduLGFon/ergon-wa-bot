@@ -1,4 +1,4 @@
-import { getMedia, reactToMsg, sendMsg } from '../util/messages.ts'
+import { getMedia, reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
 import { randomDelay } from '../util/functions.ts'
 import { Group, type Msg, User } from '../map.ts'
 import type { AnyMessageContent } from 'baileys'

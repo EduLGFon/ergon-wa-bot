@@ -1,5 +1,5 @@
+import { getMedia } from '../../util/msgAbstractions.ts'
 import { randomDelay } from '../../util/functions.ts'
-import { getMedia } from '../../util/messages.ts'
 import { type AnyMessageContent } from 'baileys'
 import { Cmd, type CmdCtx } from '../../map.ts'
 

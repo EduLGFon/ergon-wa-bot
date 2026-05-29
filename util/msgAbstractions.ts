@@ -1,6 +1,6 @@
 import { type CmdCtx, emojis, getCtx, type Msg, User } from '../map.ts'
 import type { AnyMessageContent } from 'baileys'
-import { downloadMedia } from './message.ts'
+import { downloadMedia } from './msgTools.ts'
 import { randomEmoji } from './emojis.ts'
 import cache from '../plugin/cache.ts'
 import { getFixedT } from 'i18next'

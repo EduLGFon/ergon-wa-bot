@@ -1,4 +1,4 @@
-import { reactToMsg, sendMsg, startTyping } from '../../util/messages.ts'
+import { reactToMsg, sendMsg, startTyping } from '../../util/msgAbstractions.ts'
 import checkGroupAnnouncer from '../../plugin/groupAnnouncer.ts'
 import { type CmdCtx, delay, getCtx } from '../../map.ts'
 import { getUser } from '../../plugin/prisma.ts'
@@ -20,7 +20,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 
 		// poorly way to count globally msgs received by day
 		const today = new Date().getDate()
-		cache.metrics.msg[today] = !cache.metrics.msg[today] ? 1 : cache.metrics.msg[today] + 1 
+		cache.metrics.msg[today] = !cache.metrics.msg[today] ? 1 : cache.metrics.msg[today] + 1
 
 		/* * Messages counting & storing */
 		if (!msg.isEdited) {
@@ -39,7 +39,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 			continue
 		}
 		// poorly way to count globally msgs received by day
-		cache.metrics.cmd[today] = !cache.metrics.cmd[today] ? 1 : cache.metrics.cmd[today] + 1 
+		cache.metrics.cmd[today] = !cache.metrics.cmd[today] ? 1 : cache.metrics.cmd[today] + 1
 
 		// get locales function
 		const t = getFixedT(user.lang)

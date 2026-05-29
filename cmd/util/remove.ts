@@ -1,5 +1,5 @@
 import { Cmd, type CmdCtx, defaults, emojis, runCode } from '../../map.ts'
-import { getMedia } from '../../util/messages.ts'
+import { getMedia } from '../../util/msgAbstractions.ts'
 import { readFile, writeFile } from 'node:fs/promises'
 
 export default class extends Cmd {

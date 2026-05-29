@@ -1,7 +1,8 @@
 import { delay, randomDelay } from '../util/functions.ts'
 import { readFile, writeFile } from 'node:fs/promises'
+import { sendMsg } from '../util/msgAbstractions.ts'
 import { allowedTags } from './groupAnnouncer.ts'
-import { sendMsg } from '../util/messages.ts'
+import cache from './cache.ts'
 import cron from 'node-cron'
 
 let day = '',
@@ -41,6 +42,7 @@ async function checkForUpdates() {
 	if (oldMenu === menu) return
 	print('MENUSCRAP', 'Menu updated', 'blue')
 	sendURMenu(menu, 1)
+	await cache.save()
 }
 
 // send the Menu Msg to all groups saveds by the "#all" tag + some others

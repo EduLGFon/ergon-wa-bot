@@ -9,7 +9,7 @@ import {
 import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
 import { createMemories } from '../plugin/memories.ts'
 import { createAlarms } from '../plugin/alarms.ts'
-import { sendMsg } from './messages.ts'
+import { sendMsg } from './msgAbstractions.ts'
 import { delay, User } from '../map.ts'
 
 // Initialize the Gemini client with the Studio API key.
@@ -41,7 +41,7 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	user.gemini = gemini.getHistory()
 
 	return await sendMsg.bind(msg!.chat)(resBody.header + resBody.text.trim(), {
-		quoted: msg
+		quoted: msg,
 	})
 }
 

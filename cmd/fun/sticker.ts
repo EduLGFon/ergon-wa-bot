@@ -1,7 +1,7 @@
 import { Cmd, type CmdCtx, defaults, isVisual, type Msg, runCode } from '../../map.ts'
+import { getMedia } from '../../util/msgAbstractions.ts'
 import { readFile, writeFile } from 'node:fs/promises'
 import { randomDelay } from '../../util/functions.ts'
-import { getMedia } from '../../util/messages.ts'
 import { Sticker } from 'wa-sticker-formatter'
 import { now } from '../../util/proto.ts'
 import cache from '../../plugin/cache.ts'

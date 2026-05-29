@@ -2,7 +2,7 @@ import defaults from '../conf/defaults.json' with { type: 'json' }
 import prisma, { getGroup, getUser } from './prisma.ts'
 import { readFile, writeFile } from 'node:fs/promises'
 import { randomDelay } from '../util/functions.ts'
-import { checkMatch } from '../util/message.ts'
+import { checkMatch } from '../util/msgTools.ts'
 import { type CmdCtx, delay } from '../map.ts'
 import { sendURMenu } from './menuScraping.ts'
 import { execSync } from 'node:child_process'

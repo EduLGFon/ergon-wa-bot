@@ -1,5 +1,5 @@
 import { type CmdCtx, Group, type Msg, type User } from '../map.ts'
-import { reactToMsg, sendMsg } from '../util/messages.ts'
+import { reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
 import bot from '../wa.ts'
 
 export default abstract class Cmd {

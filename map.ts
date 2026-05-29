@@ -49,7 +49,7 @@ export { Cmd, Collection, Group, prisma, User }
 
 // Functions
 import { delay, findKey, isEmpty, isValidPositiveIntenger } from './util/functions.ts'
-import { getCtx, msgMeta } from './util/message.ts'
+import { getCtx, msgMeta } from './util/msgTools.ts'
 import CacheManager from './plugin/cache.ts'
 import runCode from './plugin/runCode.ts'
 import locale from './util/locale.ts'
