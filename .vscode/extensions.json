@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "denoland.vscode-deno", // deno formatter
+        "meganrogge.template-string-converter" // replace " by ` when you open a ${}
+    ]
+}

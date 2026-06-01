@@ -155,7 +155,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 		buffer,
 		url: msg.url,
 		mime: msg.mimetype,
-		length: msg.fileLength.low,
+		length: msg.fileLength?.low,
 		duration: msg.seconds || 0, // for audio and video
 		type: types[0],
 		height: msg.height || 0,
