@@ -39,14 +39,13 @@ export default class User {
 	public set name(value: str) {
 		// update user name
 		this._name = value // on cache
-		;(async () =>
-			process.env.DATABASE_URL && // if there is a DB
-			(await prisma.users.update({
-				// update it on DB too
+		if (process.env.DATABASE_URL) {
+			// update it on DB too
+			prisma.users.update({
 				where: { id: this.id },
 				data: { name: value },
-			})))()
-		return
+			}).catch(() => {})
+		}
 	}
 
 	public get lang() {
@@ -75,14 +74,13 @@ export default class User {
 	set prefix(value: str) {
 		// update user db
 		this._prefix = value // on cache
-		;(async () =>
-			process.env.DATABASE_URL && // if there is a DB
-			(await prisma.users.update({
-				// update it on DB too
+		if (process.env.DATABASE_URL) {
+			// update it on DB too
+			prisma.users.update({
 				where: { id: this.id },
 				data: { prefix: value },
-			})))()
-		return
+			}).catch(() => {})
+		}
 	}
 
 	async addCmd() {
