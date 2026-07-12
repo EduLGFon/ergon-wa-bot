@@ -6,7 +6,7 @@ import cache from '../plugin/cache.ts'
 import { getFixedT } from 'i18next'
 import bot from '../wa.ts'
 
-export { editMsg, getMedia, reactToMsg, sendMsg, sendOrEdit, startTyping }
+export { editMsg, getMedia, reactToMsg, sendMsg, startTyping }
 
 async function getMedia(msg: Msg, startTyping?: Func) {
 	const target = msg.media ? msg : msg.quoted
@@ -94,15 +94,4 @@ async function reactToMsg(this: Msg, emoji: str) {
 async function editMsg(this: Msg, text: str) {
 	const { chat, key } = this
 	return await sendMsg.bind(chat)({ edit: key, text })
-}
-
-type StreamMsg = { msg: any }
-// sendOrEdit: send a message or edit it if it was already sent
-// this is used to edit the message while the AI is writing
-async function sendOrEdit(data: StreamMsg, text: str, quoted?: Msg) {
-	if (data.msg?.key?.id) {
-		await editMsg
-			.bind(data.msg)(text)
-			.catch(e => print('ERROR', 'Failed to edit message', e, e.stack, 'red'))
-	} else if (text) data.msg = (await sendMsg.bind(data.msg.chat)(text, { quoted })).msg
 }
