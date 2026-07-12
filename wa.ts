@@ -20,8 +20,4 @@ async function start() {
 }
 
 export default bot
-process
-	.on('SIGINT', async (_e) => await cache.save()) // save cache before exit
-// .on('uncaughtException', e => print(`Uncaught Excep.:`, e, e.stack, 'red'))
-// .on('unhandledRejection', (e: Error) => print(`Unhandled Rej:`, e, e.stack, 'red'))
-// .on('uncaughtExceptionMonitor', e => print(`Uncaught Excep.M.:`, e, e.stack, 'red'))
+process.on('SIGINT', async (_e) => await cache.save()) // save cache before exit
