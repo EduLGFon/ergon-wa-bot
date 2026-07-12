@@ -22,22 +22,7 @@ export default async function (event: Partial<ConnectionState>) {
 
 	switch (event.connection) {
 		case 'open': // bot started
-			// don't show online mark when bot is running
-			// bot.sock.sendPresenceUpdate('unavailable')
 			print('SOCK', 'Connection stabilized', 'green')
-
-			// let timeout = cache.timeouts.get('cacheAllGroups')
-			// clearInterval(timeout)
-
-			// timeout = setTimeout(() => cacheAllGroups(), 15_000)
-			// cache.timeouts.set('cacheAllGroups', timeout)
-			/** Why did I do that?
-			 * Cuz connection could reconnect several times and this event
-			 * will be triggered several times too. So, all groups will
-			 * be cached several times... You know what I'm doing here.
-			 * Just avoiding rate-overlimit by stopping old timeouts and keeping
-			 * only one of them.
-			 */
 			return
 
 		case 'connecting':
