@@ -24,7 +24,6 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		print('CTX', 'msg without key', raw, 'red')
 		return fakeCtx
 	}
-	// checkMatch(key)
 
 	// msg type
 	const types = getMsgType(message!)
@@ -85,21 +84,22 @@ async function checkMatch(key: proto.IMessageKey) {
 	if (member?.includes('@lid') && memberAlt?.includes('@s.whatsapp.net')) {
 		const oldUser = await prisma.users.findFirst({ where: { lid: memberAlt } })
 		if (!oldUser) return
-		const newUser = await prisma.users.findFirst({ where: { lid: member } })!
+		const newUser = await prisma.users.findFirst({ where: { lid: member } })
+		if (!newUser) return
+
 		const oldMsgs = await prisma.msgs.findMany({ where: { author: oldUser.id } })
 		const newMsgs = await prisma.msgs.findMany({
-			where: { author: newUser!.id },
+			where: { author: newUser.id },
 		})
 		print(
 			'MATCH',
-			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser!.id}) has two entries.`,
+			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser.id}) has two entries.`,
 			'blue',
 		)
 		print(oldUser, newUser)
 		print(oldMsgs, newMsgs)
 
-		return
-		const author = oldUser!.id
+		const author = oldUser.id
 		for (const m of newMsgs) {
 			const group = m.group
 			await prisma.msgs.upsert({
@@ -116,12 +116,12 @@ async function checkMatch(key: proto.IMessageKey) {
 				},
 			})
 		}
-		await prisma.msgs.deleteMany({ where: { author: newUser!.id } })
+		await prisma.msgs.deleteMany({ where: { author: newUser.id } })
 		await prisma.users.update({
-			where: { id: oldUser!.id },
-			data: { lid: newUser!.lid },
+			where: { id: oldUser.id },
+			data: { lid: newUser.lid },
 		})
-		await prisma.users.deleteMany({ where: { id: newUser!.id } })
+		await prisma.users.deleteMany({ where: { id: newUser.id } })
 	}
 }
 
