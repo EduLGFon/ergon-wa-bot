@@ -15,7 +15,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		// get abstract msg obj
 		const { msg, args, cmd, group, user } = await getCtx(m)
 		if (!user || !msg) continue
-		if (process.env.SHOW_GROUP_IDS) console.log(user.name, msg.text, group?.id || msg.chat, msg)
+		if (process.env.SHOW_IDS) console.log(user.name, msg.text, group?.id || msg.chat, msg)
 		// this is for dev purpouses like getting a group ID
 
 		// poorly way to count globally msgs received by day
