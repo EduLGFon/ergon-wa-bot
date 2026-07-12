@@ -77,10 +77,6 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 			.replace(new RegExp(regex, 'gi'), '') // remove cli from error msg
 	}
 }
-//    ___
-//   (o o)        linksyyy pass here
-//   ( V )        'reri' also pass here
-///--m - m---------\
 
 function testTriggers(triggers: trigger[], code: str) {
 	for (let t of triggers) {
