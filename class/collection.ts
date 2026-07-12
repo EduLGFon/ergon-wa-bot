@@ -100,8 +100,7 @@ export default class Collection<K, V> extends Map<K, V> {
 	toJSON() {
 		const json: Record<string, unknown> = {}
 
-		// @ts-ignore json obj does not have a type
-		for (const [k, v] of this.entries()) json[k] = v
+		for (const [k, v] of this.entries()) json[String(k)] = v
 
 		return json
 	}
