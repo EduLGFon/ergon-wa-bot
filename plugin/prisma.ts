@@ -22,7 +22,7 @@ async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User
 					name,
 				},
 			})
-			.catch(() => {})
+			.catch(e => print('PRISMA', `Failed to create user ${lid}:`, e, 'red'))
 		if (data) id = data.id
 	}
 
@@ -46,7 +46,7 @@ async function getUser({
 		const data = cache.users.find(u => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(() => {}) // there is no DB. Let's just ignore it
+		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(e => print('PRISMA', `Failed to find user ${lid}:`, e, 'red'))
 
 		if (!dbUser) {
 			// not on db, so it's a new user
