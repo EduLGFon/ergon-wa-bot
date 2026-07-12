@@ -14,7 +14,7 @@
 
 # 🤔 What do you mean by "cool features"?:
 
-- [x] Talk to Gemini AI with searching, memories and alarms;
+- [x] Talk to Gemini AI with searching and memories;
 - [x] Translate text;
 - [x] Speak in 5 languages;
 - [x] Reveal view once messages;
@@ -44,7 +44,7 @@
 > 🪧 » _Recommended version: 16 or higher_
 
 > ⚠️ » You may notice some auth creds/keys storing issues if you don't set a DB, but Ergon will
-> still work well. Also, some cmds may require a database to work (e.g. rank/alarm) or setting
+> still work well. Also, some cmds may require a database to work (e.g. rank) or setting
 > user-level language/prefix permanently.
 
 - FFMPEG (for video stickers)

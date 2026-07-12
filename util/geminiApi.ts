@@ -8,7 +8,7 @@ import {
 } from '@google/genai'
 import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
 import { createMemories } from '../plugin/memories.ts'
-import { createAlarms } from '../plugin/alarms.ts'
+// import { createAlarms } from '../plugin/alarms.ts'
 import { sendMsg } from './msgAbstractions.ts'
 import { delay, User } from '../map.ts'
 
@@ -36,7 +36,7 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 
 	await handleResponse(output, resBody)
 	await createMemories(user, resBody)
-	await createAlarms(user, resBody, msg!.chat)
+	// await createAlarms(user, resBody, msg!.chat)
 
 	user.gemini = gemini.getHistory()
 
@@ -82,10 +82,10 @@ function getModelConfig(user: User) {
 			'# Escreva uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante',
 			'# Modelo de Memória: "{MEMORY:message}"',
 			'# Exemplo: "{MEMORY:O nome do usuário é Pedro}"',
-			'# Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme com uma mensagem MUITO engraçada',
-			'# Use apenas durações relativas: anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s)',
-			'# Modelo de Alarme: "{ALARM:text:duration}"',
-			'# Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
+			// '# Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme com uma mensagem MUITO engraçada',
+			// '# Use apenas durações relativas: anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s)',
+			// '# Modelo de Alarme: "{ALARM:text:duration}"',
+			// '# Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
 			'Memórias do usuário:',
 			...user.memories,
 		],

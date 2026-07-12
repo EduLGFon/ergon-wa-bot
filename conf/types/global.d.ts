@@ -35,15 +35,15 @@ type UserDB = {
 	memories: str | null
 }
 
-type Alarm = {
-	// alarm db schema
-	id: num
-	author: num
-	chat: str
-	msg: str
-	time: str
-	status: int
-}
+// type Alarm = {
+// 	// alarm db schema
+// 	id: num
+// 	author: num
+// 	chat: str
+// 	msg: str
+// 	time: str
+// 	status: int
+// }
 
 interface Media {
 	buffer: Buff<ArrayBufferLike>
