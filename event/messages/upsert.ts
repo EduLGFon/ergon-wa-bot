@@ -80,7 +80,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		user.addCmd() // 1+ on user personal cmds counter
 
 		try {
-			cmd.run!(ctx)
+			await cmd.run!(ctx)
 		} catch (e: any) {
 			print(`CMD/${cmd.name}`, e, 'red')
 			send(`[⚠️] ${e?.message || e}`)
