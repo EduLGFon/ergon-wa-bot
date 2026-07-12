@@ -49,11 +49,11 @@ function isEmpty(value: unknown): bool {
 	} else if (typeof value === 'object') {
 		return (
 			Object.keys(value!).length === 0 ||
-			!Object.values(value!).some(item => item !== undefined && item !== null)
+			Object.values(value!).every(item => item === undefined || item === null)
 		)
 	}
 
-	return true
+	return false
 }
 
 export { delay, findKey, isEmpty, isValidPositiveIntenger, randomDelay, randomTime }
