@@ -115,9 +115,6 @@ const postgresAuthState = async (
 						}
 					}
 					await Promise.all(tasks)
-					// if (tasks.length) {
-					// 	await prisma.$transaction(tasks)
-					// }
 					return
 				},
 			},
