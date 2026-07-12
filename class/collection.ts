@@ -69,13 +69,23 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	// Reduce: same as Array#reduce
-	reduce(func: (preValue: V, nextValue: V) => V, initialValue: any = 0): any {
+	reduce(func: (preValue: V, nextValue: V) => V, initialValue?: V): V {
 		const items = this.values()
-		let next
-		let previous = initialValue || items.next().value
+		let next = items.next()
+		let previous: V
 
-		while ((next = items.next().value) !== undefined) {
-			previous = func(previous, next)
+		if (initialValue !== undefined) {
+			previous = initialValue
+		} else if (next.value !== undefined) {
+			previous = next.value
+			next = items.next()
+		} else {
+			throw new TypeError('Reduce of empty collection with no initial value')
+		}
+
+		while (next.value !== undefined) {
+			previous = func(previous, next.value)
+			next = items.next()
 		}
 
 		return previous
@@ -83,7 +93,7 @@ export default class Collection<K, V> extends Map<K, V> {
 
 	// Reverse: reverse items on a array
 	reverse(): V[] {
-		return this.map(i => i).reverse()
+		return Array.from(this.values()).reverse()
 	}
 
 	// toJSON: Returns a JSON object containing the id: value pairs
