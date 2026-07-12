@@ -18,23 +18,20 @@ export default class Group {
 
 	constructor(data: Group | GroupMetadata) {
 		this.id = data.id
-		// @ts-ignore Shut up TypeScript
-		this.name = data.subject || data.name
-		//@ts-ignore
-		this.nameTimestamp = data?.subjectTime || data?.nameTimestamp
+		this.name = (data as GroupMetadata).subject || (data as Group).name
+		this.nameTimestamp = (data as GroupMetadata).subjectTime || (data as Group).nameTimestamp
 		this.creation = data.creation
 		this.restrict = data.restrict
 		this.announce = data.announce
-		// @ts-ignore
-		this.members = data?.participants || data?.members
+		this.members = (data as GroupMetadata).participants || (data as Group).members
 		this.size = data.size || this.members.length
-		// @ts-ignore
-		this.invite = data.inviteCode || data.invite
+		this.invite = (data as GroupMetadata).inviteCode || (data as Group).invite
 		this.author = data.author
 		this.msgs = new Collection(defaults.cache.groupMsgs)
 
-		// @ts-ignore
-		this.msgs.iterate(data?.msgs) // retrieve cached msgs on startup (if exists)
+		if ('msgs' in data && data.msgs) {
+			this.msgs.iterate(data.msgs)
+		}
 	}
 
 	async countMsg(msg: Msg) {
