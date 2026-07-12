@@ -14,14 +14,16 @@ export { createUser, getGroup, getUser }
 async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
 	let id = Number(lid.parsePhone())
 	if (process.env.DATABASE_URL) {
-		const data = await P('users', 'create', {
-			data: {
-				// create user on DB if there is one
-				lid,
-				name,
-			},
-		})
-		id = data!.id
+		const data = await prisma.users
+			.create({
+				data: {
+					// create user on DB if there is one
+					lid,
+					name,
+				},
+			})
+			.catch(() => {})
+		if (data) id = data.id
 	}
 
 	const user = new User({ id, lid, name })
@@ -80,16 +82,8 @@ async function getGroup(id: str): Promise<Group> {
 	if (group) return group
 	// not on cache, so lets search on WA
 	const data = await bot.sock.groupMetadata(id)
-	// if (!data) return
-	// group does not exist on WA, so return undefined
 
 	group = new Group(data)
 	cache.groups.add(group.id, group)
 	return group
-}
-
-async function P(model: 'users', action: 'create', data: any) {
-	return await prisma[model][action](data).catch(() => {
-		print(`PRISMA`, `${model}.${action}()`, data, 'red')
-	})
 }
