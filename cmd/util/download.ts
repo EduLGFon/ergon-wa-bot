@@ -50,8 +50,8 @@ export default class extends Cmd {
 				[type]: readFileSync(path),
 			})
 
-			//@ts-ignore
-			delete data.fileName
+			;(data as any).fileName = undefined
+			delete (data as any).fileName
 
 			send(data as AnyMessageContent)
 		} catch (e: any) {
