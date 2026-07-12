@@ -78,8 +78,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 
 async function checkMatch(key: proto.IMessageKey) {
 	const member = key?.participant
-	// @ts-ignore
-	const memberAlt = key?.participantAlt
+	const memberAlt = (key as any)?.participantAlt
 
 	if (member?.includes('@lid') && memberAlt?.includes('@s.whatsapp.net')) {
 		const oldUser = await prisma.users.findFirst({ where: { lid: memberAlt } })
@@ -198,8 +197,7 @@ function getInput(msg: Msg, prefix: str) {
 async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const m = raw.message!
 
-	//@ts-ignore 'quotedMessage' is missing on lib types
-	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(m, 'quotedMessage')
+	let quotedRaw: any = findKey(m, 'quotedMessage')
 
 	if (!quotedRaw) return
 	const types = getMsgType(quotedRaw) // quoted message type
@@ -208,8 +206,7 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	let quoted = {
 		type: types[0], // msg type
 		media: await downloadMedia(quotedRaw, types),
-		//@ts-ignore
-		text: getMsgText(quotedRaw),
+		text: getMsgText(quotedRaw as proto.IMessage),
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg
 
@@ -251,19 +248,16 @@ function msgMeta(
 	body: str | AnyMessageContent,
 	reply?: proto.IWebMessageInfo,
 ) {
-	// @ts-ignore
-	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
+	let chat = typeof msg === 'string' ? msg : (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	const quote = reply
 		? { quoted: reply }
 		: typeof msg === 'string'
 			? {}
-			: // @ts-ignore
-				{ quoted: msg?.raw }
-	// @ts-ignore
-	const key = msg?.key ? msg.key : msg
+			: { quoted: (msg as Msg).message }
+	const key = (msg as Msg).key ? (msg as Msg).key : msg as proto.IMessageKey
 
-	if (!chat.includes('@')) chat += '@s.whatsapp.net'
+	if (chat && !chat.includes('@')) chat += '@s.whatsapp.net'
 
 	return { key, text, chat, quote }
 }
