@@ -42,7 +42,7 @@ export default class extends Cmd {
 		}
 		randomDelay(1000, 2_000).then(() => startTyping()) // add a random delay to start typing
 
-		gemini({
+		await gemini({
 			model,
 			input: args.join(' '),
 			user,
