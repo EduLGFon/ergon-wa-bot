@@ -46,8 +46,8 @@ class CacheManager {
 		if (!existsSync('conf/gen/cache')) await mkdir('conf/gen/cache')
 
 		for (const cat of cachedData) {
-			// @ts-ignore just ignore toJson doesn't exist on all possible types
-			const json = this[cat].toJSON ? this[cat].toJSON() : this[cat]
+			const collection = this[cat] as any
+			const json = collection.toJSON ? collection.toJSON() : collection
 			await writeFile(`conf/gen/cache/${cat}.json`, JSON.stringify(json)) // write cache
 		}
 		print('CACHE', 'Metrics and media saved', 'yellow')
@@ -77,18 +77,13 @@ class CacheManager {
 			// parse cache
 
 			for (const [k, v] of Object.entries(json)) {
-				const collection = this[cat]
+				const collection = this[cat] as any
 
-				// @ts-ignore ignore isCollection checking
 				if (collection?.add) {
 					;(collection as Collection<any, any>).add(k, v)
-				} else
-					(
-						collection as {
-							msg: any
-							cmd: any
-						}
-					)[k as 'msg'] = v
+				} else {
+					collection[k] = v
+				}
 			}
 			print('CACHE', `${cat} cache resumed`, 'blue')
 		}
