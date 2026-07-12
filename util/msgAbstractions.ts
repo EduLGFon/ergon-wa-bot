@@ -84,8 +84,7 @@ async function sendMsg(
 
 // simple abstraction to react to a msg
 async function reactToMsg(this: Msg, emoji: str) {
-	// @ts-ignore find emojis by name | 'ok' => '✅'
-	const text = emoji === 'random' ? randomEmoji() : emojis[emoji] || emoji
+	const text = emoji === 'random' ? randomEmoji() : (emojis as any)[emoji] || emoji
 
 	await sendMsg.bind(this.chat)({ react: { text, key: this.key } })
 }
