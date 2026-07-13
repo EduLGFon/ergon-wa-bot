@@ -69,23 +69,13 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	// Reduce: same as Array#reduce
-	reduce(func: (preValue: V, nextValue: V) => V, initialValue?: V): V {
+	reduce(func: (preValue: V, nextValue: V) => V, initialValue: any = 0): any {
 		const items = this.values()
-		let next = items.next()
-		let previous: V
+		let next
+		let previous = initialValue || items.next().value
 
-		if (initialValue !== undefined) {
-			previous = initialValue
-		} else if (next.value !== undefined) {
-			previous = next.value
-			next = items.next()
-		} else {
-			throw new TypeError('Reduce of empty collection with no initial value')
-		}
-
-		while (next.value !== undefined) {
-			previous = func(previous, next.value)
-			next = items.next()
+		while ((next = items.next().value) !== undefined) {
+			previous = func(previous, next)
 		}
 
 		return previous
