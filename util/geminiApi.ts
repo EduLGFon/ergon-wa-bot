@@ -106,13 +106,16 @@ async function uploadFile(file: GoogleFile) {
 
 	// The v2 SDK exposes `files.get` for metadata polling.
 	upload = await GoogleAI.files.get({ name: upload.name! })
-	while (upload.state === FileState.PROCESSING) {
+	let polls = 0
+	const MAX_POLLS = 30 // 30 × 2s = 60s max wait
+	while (upload.state === FileState.PROCESSING && polls < MAX_POLLS) {
 		await delay(2_000)
 		upload = await GoogleAI.files.get({ name: upload.name! })
+		polls++
 	}
 
-	if (upload.state === FileState.FAILED) {
-		throw new Error('Google server processing failed.')
+	if (upload.state === FileState.FAILED || upload.state === FileState.PROCESSING) {
+		throw new Error('Google server processing failed or timed out.')
 	}
 
 	return upload
