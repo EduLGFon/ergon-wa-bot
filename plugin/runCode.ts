@@ -6,6 +6,7 @@ import { checkMatch } from '../util/msgTools.ts'
 import { type CmdCtx, delay } from '../map.ts'
 import { sendURMenu } from './menuScraping.ts'
 import { execSync } from 'node:child_process'
+import { extname } from 'node:path'
 import { inspect } from 'node:util'
 import cache from './cache.ts'
 import bot from '../wa.ts'
@@ -55,7 +56,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 			code = '' // clean the code bc it will be on CLI if (file)
 		} else {
 			// it's a already created file
-			lang = file.split('.')[1] as Lang // get file extension
+			lang = extname(file).slice(1) as Lang // get file extension (e.g. '.rs' => 'rs')
 			data = defaults.runner[lang] // get language instruction
 		}
 
@@ -66,7 +67,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 			cli[i] = `${data.cmd[i]} ${file} ${code}`
 			// place every cmd into the cli list
 
-			output += execSync(cli[i]) + ' ' // run the cmd
+			output += execSync(cli[i], { timeout: 30_000 }) + ' ' // run with 30s timeout
 		}
 		return output.trim()
 	} catch (e: any) {
