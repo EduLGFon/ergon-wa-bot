@@ -39,7 +39,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	let user = await getUser({ lid })
 
 	const mime = findKey(message, 'mimetype') // media mimetype like image/png
-	const isBot = Boolean(key.fromMe && !Object.keys(key).includes('participant')) // if it's baileys client
+	const isBot = Boolean(key.fromMe && !Object.prototype.hasOwnProperty.call(key, 'participant')) // if it's baileys client
 
 	let msg: Msg = {
 		chat: key?.remoteJid!, // msg chat id
@@ -65,6 +65,8 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		// you can reply it with `.g` and search it
 		args = input.args
 		cmd = input.cmd
+	} else {
+		print('CTX', `No user found for lid: ${msg.chat}`, 'red')
 	}
 
 	return {
