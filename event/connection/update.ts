@@ -28,7 +28,7 @@ export default async function (event: Partial<ConnectionState>) {
 		case 'connecting':
 			return print('SOCK', 'Connecting...', 'gray')
 
-		case 'close':
+		case 'close': {
 			print('CLOSED', `Reason (${exitCode}): ${disconnection}`, 'blue')
 
 			const reconnect = shouldReconnect(exitCode)
@@ -44,8 +44,9 @@ export default async function (event: Partial<ConnectionState>) {
 			const now = Date.now()
 			lastLogins.add(now, now)
 			await bot.connect()
-			loadEvents()
+			loadEvents().catch((e: Error) => print('HANDLER', 'loadEvents failed:', e.stack, 'red'))
 			return
+		}
 	}
 }
 
