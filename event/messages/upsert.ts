@@ -25,7 +25,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		/* * Messages counting & storing */
 		if (!msg.isEdited) {
 			// count msgs with valid types for group msgs rank cmd
-			if (group) group.countMsg(msg)
+			if (group) group.countMsg(msg).catch((e: Error) => print('UPSERT/countMsg', e.message, 'red'))
 			else {
 				const chat = await getUser({ lid: msg.chat })
 				// store msgs for searching images on sticker cmd
@@ -65,7 +65,8 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		/* * Cooldown checking */
 		const now = Date.now()
 		if (user.delay > now) {
-			user.delay += cmd.cooldown
+			user.delay = Math.min(user.delay + cmd.cooldown, now + cmd.cooldown * 10)
+			// cap at 10 queued commands to prevent runaway delay accumulation
 			const timeout = user.delay - now
 
 			if (timeout < 10_000) {
