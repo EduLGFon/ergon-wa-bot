@@ -46,7 +46,7 @@ type UserDB = {
 // }
 
 interface Media {
-	buffer: Buff<ArrayBufferLike>
+	buffer: Buf
 	url: str
 	mime: str
 	length: num
