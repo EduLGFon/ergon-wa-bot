@@ -52,6 +52,7 @@ export default class Baileys {
 		this.sock.ev.on('creds.update', saveCreds)
 
 		// set bot lid
-		this.lid = this.sock.user?.lid?.split(':')[0] + '@lid'
+		const rawLid = this.sock.user?.lid
+		this.lid = rawLid ? rawLid.split(':')[0] + '@lid' : ''
 	}
 }
