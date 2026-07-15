@@ -17,6 +17,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		if (!user || !msg) continue
 		if (process.env.SHOW_IDS) console.log(user.name, msg.text, group?.id || msg.chat, msg)
 		// this is for dev purpouses like getting a group ID
+		if (process.env.DEV && !process.env.DEVS!.includes(user.lid)) continue
 
 		// poorly way to count globally msgs received by day
 		const today = new Date().getDate()
