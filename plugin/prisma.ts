@@ -46,7 +46,8 @@ async function getUser({
 		const data = cache.users.find(u => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(e => print('PRISMA', `Failed to find user ${lid}:`, e, 'red'))
+		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(() => { })
+		// no need to handle errors here because ergon should be able to work without a db
 
 		if (!dbUser) {
 			// not on db, so it's a new user

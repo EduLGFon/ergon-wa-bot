@@ -65,8 +65,6 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		// you can reply it with `.g` and search it
 		args = input.args
 		cmd = input.cmd
-	} else {
-		print('CTX', `No user found for lid: ${msg.chat}`, 'red')
 	}
 
 	return {
