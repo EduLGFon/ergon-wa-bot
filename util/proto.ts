@@ -155,7 +155,7 @@ function strPrototypes() {
 			// encode strings
 			configurable: true,
 			value: function () {
-				return !this ? '' : '`' + this.replace('`', '').trim() + '`'
+				return !this ? '' : '`' + this.replace(/`/g, '').trim() + '`'
 			},
 		},
 		parsePhone: {
