@@ -1,5 +1,5 @@
-import { getUser } from '../../plugin/prisma.js'
-import { Cmd, CmdCtx, User } from '../../map.js'
+import { getUser } from '../../plugin/prisma.ts'
+import { Cmd, type CmdCtx, User } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -17,14 +17,14 @@ export default class extends Cmd {
 		let text = `*[🏆] - Rank de mensagens*\n\n`
 
 		const msgs = await group.getCountedMsgs()
-		const members = group.members.map((m) => m.id)
+		const members = group.members.map(m => m.id)
 
 		let pos = 1
 		for (const i in msgs) {
 			const count = msgs[i].count.toLocaleString(user.lang)
 			// it converts 10000 to 10.000 (10,000 if you're "american")
 
-			const member = await getUser({ id: msgs[i].author }) as User
+			const member = (await getUser({ id: msgs[i].author })) as User
 			let name = (member.name || member.phone).trim()
 
 			if (!members.includes(member.lid)) continue //name = `~${name}~`

@@ -3,9 +3,9 @@ const delay = async (time: num) =>
 	await new Promise(r => setTimeout(() => r(true), time))
 
 const randomDelay = async (min = 2_000, max = 5_000) =>
-	delay(min + Math.floor(Math.random() * max))
+	delay(min + Math.floor(Math.random() * (max - min)))
 const randomTime = (min = 1_000, max = 3_000) =>
-	min + Math.floor(Math.random() * max)
+	min + Math.floor(Math.random() * (max - min))
 
 // isValidPositiveIntenger: validate a number
 const isValidPositiveIntenger = (num: num) =>
@@ -14,7 +14,7 @@ const isValidPositiveIntenger = (num: num) =>
 // findKey: Search for a key inside an object
 function findKey(obj: any, key: str): any {
 	// if the obj has this key, then return it
-	if (obj?.hasOwnProperty(key)) return obj[key]
+	if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key]
 
 	// search the key on all objs inside the main obj
 	for (const property of Object.getOwnPropertyNames(obj)) {
@@ -49,11 +49,11 @@ function isEmpty(value: unknown): bool {
 	} else if (typeof value === 'object') {
 		return (
 			Object.keys(value!).length === 0 ||
-			!Object.values(value!).some(item => item !== undefined && item !== null)
+			Object.values(value!).every(item => item === undefined || item === null)
 		)
 	}
 
-	return true
+	return false
 }
 
 export { delay, findKey, isEmpty, isValidPositiveIntenger, randomDelay, randomTime }

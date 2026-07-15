@@ -1,12 +1,10 @@
-import { getMedia, sendMsg } from '../util/messages.js'
-import { randomDelay } from '../util/functions.js'
-import { Group, Msg, User } from '../map.js'
-import { AnyMessageContent } from 'baileys'
-type Announcement = { text: str; chats: str[] } | { caption: str; chats: str[] }
-// simple text msg | media msg
+import { getMedia, reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
+import { randomDelay } from '../util/functions.ts'
+import { Group, type Msg, User } from '../map.ts'
+import type { AnyMessageContent } from 'baileys'
+type Announcement = { text?: str; caption?: str; groups?: str[]; tag?: str; msg?: Msg }
+// Announcement = simple text msg or media msg (replace text by caption)
 
-let isSending = false
-const msgQueue: Announcement[] = []
 /** How does this shit work?
  * every new msg will be pushed to the end of the queue.
  * bot will send the FIRST msg to all chats
@@ -20,30 +18,66 @@ const msgQueue: Announcement[] = []
  * chaottic if sendAnnouncement() got called two times in a row
  */
 
+let isSending = false
+const msgQueue: Announcement[] = []
+
+function getAllowedTags() {
+	const groups1 = process.env.GROUPS1?.split('|') ?? []
+	const groups2 = process.env.GROUPS2?.split('|') ?? []
+	return {
+		'#diurno': groups1,
+		'#noturno': groups2,
+		'#todos': [...groups1, ...groups2],
+	}
+}
+
+// Exported for external use (e.g. menuScraping.ts)
+export function getAllowedTagsList() {
+	return getAllowedTags()['#todos']
+}
+export { getAllowedTags as allowedTags }
 export default checkGroupAnnouncer
 async function checkGroupAnnouncer(msg: Msg, user: User, group?: Group) {
-	if (!msg.text.toLowerCase().includes('#todos') || msg.isBot) return
-	// ignore msgs that not contain '#todos' or was sent by the bot
-	if (!group || !process.env.ANNOUNCER!.includes(group.id)) return
-	// ignore msgs from DMs or other groups
+	const allowedTags = getAllowedTags()
+	if (!group || !allowedTags['#todos'].includes(group.id) || msg.isBot) return
+	// ignore msgs from DMs, from other groups or that was sent by the bot
 
-	let announceMsg: Announcement = {
-		// simple text msg
-		text: `[${group.name}]\n*${user.name}:* ${msg.text}`,
-		chats: [], // all chats to send the msg
+	let announceMsg: Announcement = {}
+	const lowText = msg.text.toLowerCase()
+	for (const [key, value] of Object.entries(allowedTags)) {
+		if (lowText.includes(key))
+			announceMsg = {
+				tag: key, // tag trigger
+				groups: value.filter(g => g !== group.id),
+				// all groups that wasn't the group the msg was sent
+			}
 	}
 
-	if (msg.media) {
+	// ignore msgs that not contain any tag
+	if (!announceMsg.tag) return
+	// ignore msgs equals to just '#todos'
+	if (lowText === announceMsg.tag && !msg.media && !msg.quoted?.media) {
+		randomDelay(500, 1_500).then(() => reactToMsg.bind(msg)('question'))
+		// ignore no empty content msgs (only tag msgs)
+		return
+	}
+
+	announceMsg.text = `*${user.name}:* ${msg.text}`
+	if (msg.quoted) {
+		announceMsg.text = `> ${msg.quoted.text}\n${announceMsg.text}`
+	}
+
+	if (msg.media || msg.quoted?.media) {
 		const media = await getMedia(msg)
+		const type = msg.media ? msg.type : msg.quoted?.type!
 		announceMsg = {
 			caption: announceMsg.text,
-			[msg.type]: media!.buffer,
-			chats: [],
+			[type]: media!.buffer,
+			groups: announceMsg.groups,
 		}
 	}
 
-	announceMsg.chats = process.env.ANNOUNCER!.split('|').filter(g => g !== group.id)
-	// all chats to send the msg, except the chat in which the msg was sent.
+	announceMsg.msg = msg
 	msgQueue.push(announceMsg)
 	// push the announcement to the end of the queue
 
@@ -57,7 +91,11 @@ async function sendAnnouncements() {
 	isSending = true // now, sendAnnouncements() won't be called again
 	// until the queue is empty
 
-	for (const g of msgQueue[0].chats) {
+	const msg = msgQueue[0].msg!
+	// it is important bc msgQueue[0] will be deleted soon
+	randomDelay().then(() => reactToMsg.bind(msg)('ok'))
+
+	for (const g of msgQueue[0].groups!) {
 		await randomDelay(1_000, 2_500)
 		// a random delay is required to Meta not flag us as
 		// a spam bot. random delays and different msgs looks
@@ -67,7 +105,7 @@ async function sendAnnouncements() {
 
 	msgQueue.shift() // removes the first element
 	// and goes to the next if it exists
-	if (msgQueue[0]) sendAnnouncements()
+	if (msgQueue[0]) await sendAnnouncements()
 	else isSending = false
 	// if not, all the work has been done
 }

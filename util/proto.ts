@@ -1,16 +1,13 @@
+import defaults from '../conf/defaults.json' with { type: 'json' }
 import humanizeDuration, { type Unit } from 'humanize-duration'
 import { DateTime, Duration } from 'luxon'
 import { getFixedT } from 'i18next'
-import { defaults } from '../map.js'
 import chalk from 'chalk'
 import pino from 'pino'
 
 // get 'now' date time formatted
 const now = (format = 'dd/MM TT.SSS') =>
-	DateTime.now()
-		.setZone(defaults.timezone)
-		.setLocale(defaults.lang)
-		.toFormat(format) // TT = HOURS:MINUTES:SECONDS
+	DateTime.now().setZone(process.env.TZ).setLocale(defaults.lang).toFormat(format) // TT = HOURS:MINUTES:SECONDS
 
 // Pino Logger
 const logger = pino({
@@ -26,30 +23,56 @@ export { logger, now }
 export default () => {
 	strPrototypes() // add string prototypes
 	numPrototypes() // add number prototypes
-	print('PROTO', 'setted', 'yellow')
 	global.print = print
+	console.info = print
+	if (process.env.DEV) print('DEV', 'Development mode enabled', 'blue')
+	print('PROTO', 'setted', 'yellow')
 }
 
-const brightColors = [
-	'black',
-	'red',
-	'green',
-	'yellow',
-	'blue',
-	'magenta',
-	'cyan',
-	'white',
-]
-function print(...anyArgs: any) {
-	if (!anyArgs[2]) return console.info(...anyArgs)
+function isSessionEntryLike(value: any) {
+	return (
+		!!value &&
+		typeof value === 'object' &&
+		(value.constructor?.name === 'SessionEntry' ||
+			'indexInfo' in value ||
+			'currentRatchet' in value ||
+			'pendingPreKey' in value)
+	)
+}
 
-	const args = [...anyArgs]
-	let color = args.pop()
-	const memory = process.memoryUsage().rss.bytes().align(5)
+const warn = console.warn.bind(console)
+console.warn = (...args) => {
+	if (
+		typeof args[0] === 'string' &&
+		args[0].includes('Session already closed') &&
+		args.slice(1).some(isSessionEntryLike)
+	)
+		return
+	return warn(...args)
+}
+
+const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+const colorize = (color: 'red', ...args: any) => {
 	if (brightColors.includes(color)) color += 'Bright'
 
-	console.info(
-		chalk.bold[color as 'red'](
+	const func = chalk?.bold[color]
+	return func ? [func(...args)] : args
+}
+function print(...args: any) {
+	if (
+		typeof args[0] === 'string' &&
+		(args[0].includes('Closing session') || args[0].includes('Removing old closed session')) &&
+		args.slice(1).some(isSessionEntryLike)
+	)
+		return
+	if (typeof args[2] !== 'string') return console.log(...args)
+
+	let color = args.pop()
+	const memory = process.memoryUsage().rss.bytes().align(5)
+
+	console.log(
+		...colorize(
+			color,
 			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
 			...args,
 		),
@@ -125,14 +148,14 @@ function strPrototypes() {
 		toPascalCase: {
 			configurable: true,
 			value: function () {
-				return this.slice(0, 1).toUpperCase() + this.slice(1)
+				return this.slice(0, 1).toUpperCase() + this.slice(1).toLowerCase()
 			},
 		},
 		encode: {
 			// encode strings
 			configurable: true,
 			value: function () {
-				return !this ? '' : '`' + this.replace('`', '').trim() + '`'
+				return !this ? '' : '`' + this.replace(/`/g, '').trim() + '`'
 			},
 		},
 		parsePhone: {

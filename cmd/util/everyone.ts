@@ -1,5 +1,5 @@
-import { randomDelay } from '../../util/functions.js'
-import { Cmd, CmdCtx } from '../../map.js'
+import { randomDelay } from '../../util/functions.ts'
+import { Cmd, type CmdCtx } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -20,9 +20,7 @@ export default class extends Cmd {
 
 		await send(
 			{
-				text: args[0]
-					? `*@everyone:* "${args.join(' ').encode()}"`
-					: '*@everyone*',
+				text: args[0] ? `*@everyone:* "${args.join(' ').encode()}"` : '*@everyone*',
 				mentions: group?.members?.map(m => m.id),
 			},
 			{ quoted: msg },

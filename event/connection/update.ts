@@ -1,9 +1,9 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
-import { loadEvents } from '../../util/handler.js'
-import { Collection, delay } from '../../map.js'
-import bot from '../../wa.js'
+import { randomDelay } from '../../util/functions.ts'
+import { loadEvents } from '../../util/handler.ts'
+import { Collection, delay } from '../../map.ts'
+import bot from '../../wa.ts'
 import QRCode from 'qrcode'
-import { randomDelay } from '../../util/functions.js'
 
 const MAX_LOGINS_IN_MINUTE = 3
 // Keep last logins DateTime to avoid reconecting too fast
@@ -22,28 +22,13 @@ export default async function (event: Partial<ConnectionState>) {
 
 	switch (event.connection) {
 		case 'open': // bot started
-			// don't show online mark when bot is running
-			// bot.sock.sendPresenceUpdate('unavailable')
 			print('SOCK', 'Connection stabilized', 'green')
-
-			// let timeout = cache.timeouts.get('cacheAllGroups')
-			// clearInterval(timeout)
-
-			// timeout = setTimeout(() => cacheAllGroups(), 15_000)
-			// cache.timeouts.set('cacheAllGroups', timeout)
-			/** Why did I do that?
-			 * Cuz connection could reconnect several times and this event
-			 * will be triggered several times too. So, all groups will
-			 * be cached several times... You know what I'm doing here.
-			 * Just avoiding rate-overlimit by stopping old timeouts and keeping
-			 * only one of them.
-			 */
 			return
 
 		case 'connecting':
 			return print('SOCK', 'Connecting...', 'gray')
 
-		case 'close':
+		case 'close': {
 			print('CLOSED', `Reason (${exitCode}): ${disconnection}`, 'blue')
 
 			const reconnect = shouldReconnect(exitCode)
@@ -59,8 +44,9 @@ export default async function (event: Partial<ConnectionState>) {
 			const now = Date.now()
 			lastLogins.add(now, now)
 			await bot.connect()
-			loadEvents()
+			loadEvents().catch((e: Error) => print('HANDLER', 'loadEvents failed:', e.stack, 'red'))
 			return
+		}
 	}
 }
 
@@ -69,8 +55,7 @@ function shouldReconnect(code: num) {
 	if (isLogout) return false
 	// does not try to reconnect if session was logged out
 
-	const loginsAvarageDate =
-		lastLogins.reduce((prev, crt) => prev + crt) / MAX_LOGINS_IN_MINUTE
+	const loginsAvarageDate = lastLogins.reduce((prev, crt) => prev + crt) / MAX_LOGINS_IN_MINUTE
 	const oneMinuteAgo = Date.now() - 60_000
 
 	if (loginsAvarageDate > oneMinuteAgo) return 'wait'

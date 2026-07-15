@@ -3,7 +3,7 @@
 	"useTabs": true,
 	"singleQuote": true,
 	"semi": false,
-	"printWidth": 85,
+	"printWidth": 100,
 	"proseWrap": "preserve",
 	"objectWrap": "preserve",
 	"bracketSameLine": true,

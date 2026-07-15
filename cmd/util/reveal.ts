@@ -1,7 +1,7 @@
-import { randomDelay } from '../../util/functions.js'
-import { getMedia } from '../../util/messages.js'
-import { AnyMessageContent } from 'baileys'
-import { Cmd, CmdCtx } from '../../map.js'
+import { getMedia } from '../../util/msgAbstractions.ts'
+import { randomDelay } from '../../util/functions.ts'
+import { type AnyMessageContent } from 'baileys'
+import { Cmd, type CmdCtx } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -10,8 +10,8 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, send, t }: CmdCtx) {
-		const media = await getMedia(msg)
+	async run({ msg, send, react, t }: CmdCtx) {
+		const media = await getMedia(msg).catch(e => react('x'))
 		if (!media) return send(t('sticker.nobuffer'), { quoted: msg })
 		await randomDelay(1_000, 2_000)
 
@@ -21,9 +21,7 @@ export default class extends Cmd {
 				: '*View once revealed*',
 		} as AnyMessageContent
 
-		// @ts-ignore send sticker as image
-		msgObj[media.target.type === 'sticker' ? 'image' : media.target.type] =
-			media.buffer
+		;(msgObj as any)[media.target.type === 'sticker' ? 'image' : media.target.type] = media.buffer
 
 		send(msgObj, { quoted: msg })
 	}

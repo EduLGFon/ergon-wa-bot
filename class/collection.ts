@@ -13,7 +13,7 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	// Add: adds a value to the collection
-	async add(key: K, value?: V | object, extra: any[] = []): Promise<V> {
+	async add(key: K, value?: V | object): Promise<V> {
 		if (!key) throw new Error('Missing object key')
 
 		if (!value) {
@@ -24,7 +24,8 @@ export default class Collection<K, V> extends Map<K, V> {
 		const existing = this.get(key)
 		if (existing) {
 			if (!value) return existing as V
-			value = Object.assign(value, existing) as V
+			// Merge: existing fields take priority over new ones
+			value = Object.assign({}, value, existing) as V
 		}
 
 		this.set(key, value as V)
@@ -71,11 +72,11 @@ export default class Collection<K, V> extends Map<K, V> {
 	// Reduce: same as Array#reduce
 	reduce(func: (preValue: V, nextValue: V) => V, initialValue: any = 0): any {
 		const items = this.values()
-		let next
-		let previous = initialValue || items.next().value
+		let previous = initialValue !== 0 ? initialValue : (items.next().value as V)
+		let nextResult: IteratorResult<V>
 
-		while ((next = items.next().value) !== undefined) {
-			previous = func(previous, next)
+		while (!(nextResult = items.next()).done) {
+			previous = func(previous, nextResult.value)
 		}
 
 		return previous
@@ -83,15 +84,14 @@ export default class Collection<K, V> extends Map<K, V> {
 
 	// Reverse: reverse items on a array
 	reverse(): V[] {
-		return this.map(i => i).reverse()
+		return Array.from(this.values()).reverse()
 	}
 
 	// toJSON: Returns a JSON object containing the id: value pairs
 	toJSON() {
 		const json: Record<string, unknown> = {}
 
-		// @ts-ignore json obj does not have a type
-		for (const [k, v] of this.entries()) json[k] = v
+		for (const [k, v] of this.entries()) json[String(k)] = v
 
 		return json
 	}

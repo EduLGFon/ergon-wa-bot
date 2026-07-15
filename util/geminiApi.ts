@@ -1,43 +1,29 @@
 import {
 	createPartFromUri,
 	FileState,
-	GenerateContentConfig,
-	GenerateContentResponse,
+	type GenerateContentConfig,
+	type GenerateContentResponse,
 	GoogleGenAI,
+	ThinkingLevel,
 } from '@google/genai'
-import { GoogleFile, Gparams } from '../conf/types/types.js'
-import { randomDelay, randomTime } from './functions.js'
-import { createMemories } from '../plugin/memories.js'
-import { createAlarms } from '../plugin/alarms.js'
-import { ThinkingLevel } from '@google/genai'
-import { sendOrEdit } from './messages.js'
-import { delay, User } from '../map.js'
+import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
+import { createMemories } from '../plugin/memories.ts'
+// import { createAlarms } from '../plugin/alarms.ts'
+import { sendMsg } from './msgAbstractions.ts'
+import { delay, User } from '../map.ts'
 
+// Initialize the Gemini client with the Studio API key.
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
 
 export default async function gemini({ input, user, msg, file, model }: Gparams) {
-	let upload
-	let interval
-	const res = {
+	const resBody = {
 		header: '',
 		text: '',
-		msg: { chat: msg?.chat },
-	}
-	const callCallback = async () =>
-		await sendOrEdit(res, res.header + res.text.trim(), msg)
-	const startStreaming = async () => {
-		await callCallback()
-		interval = setInterval(
-			async () => await callCallback(),
-			randomTime(1_500, 2_400),
-		)
-		return
 	}
 
-	if (file) upload = await uploadFile(file as GoogleFile, res)
-	const message = upload
-		? [createPartFromUri(upload.uri!, upload.mimeType!), input]
-		: input
+	let upload
+	if (file) upload = await uploadFile(file as GoogleFile)
+	const prompt = upload ? [createPartFromUri(upload.uri!, upload.mimeType!), input] : input
 
 	const gemini = GoogleAI.chats.create({
 		model,
@@ -45,27 +31,21 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 		history: user.gemini,
 	})
 
-	const stream = await gemini.sendMessageStream({ message })
-	res.header = `- *${model}*:\n`
+	const output = await gemini.sendMessage({ message: prompt })
+	resBody.header = `- *${model}*:\n`
 
-	for await (const chunk of stream)
-		await handleResponse(chunk, res, startStreaming)
-	clearInterval(interval!)
-
-	await createMemories(user, res)
-	await createAlarms(user, res, msg?.chat!)
+	await handleResponse(output, resBody)
+	await createMemories(user, resBody)
+	// await createAlarms(user, resBody, msg!.chat)
 
 	user.gemini = gemini.getHistory()
 
-	await randomDelay(1_500, 2_500)
-	return await callCallback()
+	return await sendMsg.bind(msg!.chat)(resBody.header + resBody.text.trim(), {
+		quoted: msg,
+	})
 }
 
-async function handleResponse(
-	chunk: GenerateContentResponse,
-	msg: AIMsg,
-	startStreaming: Func,
-) {
+async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
 	if (chunk?.candidates) {
 		let web = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
 		if (web) {
@@ -82,12 +62,7 @@ async function handleResponse(
 			msg.header += `- 🔍 ${searches}\n`
 		}
 	}
-	if (chunk.text) {
-		if (!msg.text) {
-			msg.text += chunk.text
-			await startStreaming()
-		} else msg.text += chunk.text
-	}
+	if (chunk.text) msg.text += chunk.text
 }
 
 function getModelConfig(user: User) {
@@ -107,39 +82,41 @@ function getModelConfig(user: User) {
 			'# Escreva uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante',
 			'# Modelo de Memória: "{MEMORY:message}"',
 			'# Exemplo: "{MEMORY:O nome do usuário é Pedro}"',
-			'# Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme com uma mensagem MUITO engraçada',
-			'# Use apenas durações relativas: anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s)',
-			'# Modelo de Alarme: "{ALARM:text:duration}"',
-			'# Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
+			// '# Se um usuário pedir para que você o lembre de algo daqui a algum tempo, você deve criar um alarme com uma mensagem MUITO engraçada',
+			// '# Use apenas durações relativas: anos (y), meses (mo), semanas (w), dias (d), horas (h), minutos (m) ou segundos (s)',
+			// '# Modelo de Alarme: "{ALARM:text:duration}"',
+			// '# Exemplo: "{ALARM:Desliga o forno senão vai explodir:1h}"',
 			'Memórias do usuário:',
 			...user.memories,
 		],
 	} as GenerateContentConfig
 }
 
-async function uploadFile(file: GoogleFile, msg: AIMsg) {
+async function uploadFile(file: GoogleFile) {
 	/** Uploading file to Google File API (it's free)
-	 * File API lets you store up to 20GB of files per project
-	 * Limit: 2GB for each one
-	 * Expiration: 48h
-	 * Media cannot be downloaded from the API, only uploaded
+	 * File API lets you store up to 20GB of files per project.
+	 * Limit: 2GB for each one.
+	 * Expiration: 48h.
+	 * Media cannot be downloaded from the API, only uploaded.
 	 */
 	let upload = await GoogleAI.files.upload({
 		file: new Blob([file.buffer as ArrayBuffer]),
 		config: { mimeType: file.mime },
 	})
 
-	upload = await GoogleAI.files.get({ name: upload.name! }) // fetch its info
-	while (upload.state === FileState.PROCESSING) {
-		// media still processing
-		// Sleep until it gets done
+	// The v2 SDK exposes `files.get` for metadata polling.
+	upload = await GoogleAI.files.get({ name: upload.name! })
+	let polls = 0
+	const MAX_POLLS = 30 // 30 × 2s = 60s max wait
+	while (upload.state === FileState.PROCESSING && polls < MAX_POLLS) {
 		await delay(2_000)
-		// Fetch the file from the API again
 		upload = await GoogleAI.files.get({ name: upload.name! })
+		polls++
 	}
 
-	// media upload failed
-	if (upload.state === FileState.FAILED)
-		throw new Error('Google server processing failed.')
-	return upload // return the file info
+	if (upload.state === FileState.FAILED || upload.state === FileState.PROCESSING) {
+		throw new Error('Google server processing failed or timed out.')
+	}
+
+	return upload
 }

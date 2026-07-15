@@ -1,4 +1,5 @@
-import { Cmd, CmdCtx, languages } from '../../map.js'
+import { languages } from '../../util/locale.ts'
+import { Cmd, type CmdCtx } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {

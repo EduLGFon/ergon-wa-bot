@@ -1,13 +1,15 @@
 import defaults from '../conf/defaults.json' with { type: 'json' }
-import prisma, { getGroup, getUser } from './prisma.js'
+import prisma, { getGroup, getUser } from './prisma.ts'
 import { readFile, writeFile } from 'node:fs/promises'
-import { randomDelay } from '../util/functions.js'
+import { randomDelay } from '../util/functions.ts'
+import { checkMatch } from '../util/msgTools.ts'
+import { type CmdCtx, delay } from '../map.ts'
+import { sendURMenu } from './menuScraping.ts'
 import { execSync } from 'node:child_process'
-import { checkMatch } from '../util/message.js'
-import { CmdCtx, delay } from '../map.js'
+import { extname } from 'node:path'
 import { inspect } from 'node:util'
-import cache from './cache.js'
-import bot from '../wa.js'
+import cache from './cache.ts'
+import bot from '../wa.ts'
 
 type triggerIncludes = { includes: str[]; template: str }
 type triggerNotIncludes = { notIncludes: str[]; template: str }
@@ -18,12 +20,7 @@ interface LangInstructions {
 	triggers?: trigger[]
 }
 
-export default async function runCode(
-	lang: Lang,
-	code = '',
-	file = '',
-	ctx?: CmdCtx,
-) {
+export default async function runCode(lang: Lang, code = '', file = '', ctx?: CmdCtx) {
 	let data: LangInstructions
 	const cli: str[] = []
 
@@ -47,6 +44,7 @@ export default async function runCode(
 				prisma
 				delay
 				cache
+				sendURMenu
 				bot
 				return inspect(await eval(code))
 			}
@@ -58,7 +56,7 @@ export default async function runCode(
 			code = '' // clean the code bc it will be on CLI if (file)
 		} else {
 			// it's a already created file
-			lang = file.split('.')[1] as Lang // get file extension
+			lang = extname(file).slice(1) as Lang // get file extension (e.g. '.rs' => 'rs')
 			data = defaults.runner[lang] // get language instruction
 		}
 
@@ -69,7 +67,7 @@ export default async function runCode(
 			cli[i] = `${data.cmd[i]} ${file} ${code}`
 			// place every cmd into the cli list
 
-			output += execSync(cli[i]) + ' ' // run the cmd
+			output += execSync(cli[i], { timeout: 30_000 }) + ' ' // run with 30s timeout
 		}
 		return output.trim()
 	} catch (e: any) {
@@ -80,10 +78,6 @@ export default async function runCode(
 			.replace(new RegExp(regex, 'gi'), '') // remove cli from error msg
 	}
 }
-//    ___
-//   (o o)        linksyyy pass here
-//   ( V )        'reri' also pass here
-///--m - m---------\
 
 function testTriggers(triggers: trigger[], code: str) {
 	for (let t of triggers) {

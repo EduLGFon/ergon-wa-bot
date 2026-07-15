@@ -17,15 +17,6 @@ model users {
   cmds     Int?
 }
 
-model alarms {
-  id     Int    @id @default(autoincrement())
-  author Int
-  chat   String @db.VarChar()
-  msg    String @db.VarChar()
-  time   String @db.VarChar()
-  status Int    @default(0)
-}
-
 model msgs {
   author Int
   group  String @db.VarChar()

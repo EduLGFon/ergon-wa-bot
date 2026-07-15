@@ -1,4 +1,4 @@
-import { Cmd, CmdCtx, prisma } from '../../map.js'
+import { Cmd, type CmdCtx, prisma } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -28,17 +28,11 @@ function createStr(emoji: str, name: str, ping: num) {
 }
 
 async function measurePing(func: Func, ...args: any): Promise<number> {
-	return await new Promise(async res => {
-		let ping
-
-		try {
-			const startTime = Date.now()
-			await func(...args)
-			ping = Date.now() - startTime
-		} catch (_e: any) {
-			ping = -1 // it is needed if you don't have a DB
-		}
-
-		return res(ping)
-	})
+	try {
+		const startTime = Date.now()
+		await func(...args)
+		return Date.now() - startTime
+	} catch {
+		return -1 // it is needed if you don't have a DB
+	}
 }

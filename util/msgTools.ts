@@ -9,23 +9,21 @@ import {
 	type Msg,
 	type MsgTypes,
 	User,
-} from '../map.js'
+} from '../map.ts'
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
-import prisma, { getGroup, getUser } from '../plugin/prisma.js'
-import cache from '../plugin/cache.js'
-import { logger } from './proto.js'
-import bot from '../wa.js'
+import prisma, { getGroup, getUser } from '../plugin/prisma.ts'
+import cache from '../plugin/cache.ts'
+import { logger } from './proto.ts'
+import bot from '../wa.ts'
 
 // getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	const { message, key, pushName } = raw
 	const fakeCtx = {} as CmdCtx
 	if (!key) {
-		print('CTX', 'msg without key', 'red')
-		print(raw)
+		print('CTX', 'msg without key', raw, 'red')
 		return fakeCtx
 	}
-	// checkMatch(key)
 
 	// msg type
 	const types = getMsgType(message!)
@@ -41,7 +39,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	let user = await getUser({ lid })
 
 	const mime = findKey(message, 'mimetype') // media mimetype like image/png
-	const isBot = Boolean(key.fromMe && !Object.keys(key).includes('participant')) // if it's baileys client
+	const isBot = Boolean(key.fromMe && !Object.prototype.hasOwnProperty.call(key, 'participant')) // if it's baileys client
 
 	let msg: Msg = {
 		chat: key?.remoteJid!, // msg chat id
@@ -80,27 +78,27 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 
 async function checkMatch(key: proto.IMessageKey) {
 	const member = key?.participant
-	// @ts-ignore
-	const memberAlt = key?.participantAlt
+	const memberAlt = (key as any)?.participantAlt
 
 	if (member?.includes('@lid') && memberAlt?.includes('@s.whatsapp.net')) {
 		const oldUser = await prisma.users.findFirst({ where: { lid: memberAlt } })
 		if (!oldUser) return
-		const newUser = await prisma.users.findFirst({ where: { lid: member } })!
+		const newUser = await prisma.users.findFirst({ where: { lid: member } })
+		if (!newUser) return
+
 		const oldMsgs = await prisma.msgs.findMany({ where: { author: oldUser.id } })
 		const newMsgs = await prisma.msgs.findMany({
-			where: { author: newUser!.id },
+			where: { author: newUser.id },
 		})
 		print(
 			'MATCH',
-			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser!.id}) has two entries.`,
+			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser.id}) has two entries.`,
 			'blue',
 		)
 		print(oldUser, newUser)
 		print(oldMsgs, newMsgs)
 
-		return
-		const author = oldUser!.id
+		const author = oldUser.id
 		for (const m of newMsgs) {
 			const group = m.group
 			await prisma.msgs.upsert({
@@ -117,14 +115,13 @@ async function checkMatch(key: proto.IMessageKey) {
 				},
 			})
 		}
-		await prisma.msgs.deleteMany({ where: { author: newUser!.id } })
+		await prisma.msgs.deleteMany({ where: { author: newUser.id } })
 		await prisma.users.update({
-			where: { id: oldUser!.id },
-			data: { lid: newUser!.lid },
+			where: { id: oldUser.id },
+			data: { lid: newUser.lid },
 		})
-		await prisma.users.deleteMany({ where: { id: newUser!.id } })
+		await prisma.users.deleteMany({ where: { id: newUser.id } })
 	}
-	return
 }
 
 // download msg media
@@ -139,7 +136,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 		thumbnailDirectPath: msg.thumbnailDirectPath,
 	}
 
-	if (cache.media.has(msg.url)) return keyObj // return metadata to download it later
+	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
 	const buffer = await downloadMediaMessage(
 		raw.message ? raw : { message: raw },
 		'buffer',
@@ -148,7 +145,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	)
+	).catch(e => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
 
 	if (!buffer) return
 
@@ -157,7 +154,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 		buffer,
 		url: msg.url,
 		mime: msg.mimetype,
-		length: msg.fileLength.low,
+		length: msg.fileLength?.low,
 		duration: msg.seconds || 0, // for audio and video
 		type: types[0],
 		height: msg.height || 0,
@@ -200,22 +197,16 @@ function getInput(msg: Msg, prefix: str) {
 async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const m = raw.message!
 
-	//@ts-ignore 'quotedMessage' is missing on lib types
-	let quotedRaw: Partial<proto.IMessage | IFutureProofMessage> = findKey(
-		m,
-		'quotedMessage',
-	)
+	let quotedRaw: any = findKey(m, 'quotedMessage')
 
 	if (!quotedRaw) return
 	const types = getMsgType(quotedRaw) // quoted message type
-	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2')
-		quotedRaw = quotedRaw.viewOnceMessageV2!
+	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
 	let quoted = {
 		type: types[0], // msg type
 		media: await downloadMedia(quotedRaw, types),
-		//@ts-ignore
-		text: getMsgText(quotedRaw),
+		text: getMsgText(quotedRaw as proto.IMessage),
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg
 
@@ -257,19 +248,16 @@ function msgMeta(
 	body: str | AnyMessageContent,
 	reply?: proto.IWebMessageInfo,
 ) {
-	// @ts-ignore
-	let chat = typeof msg === 'string' ? msg : msg.chat || msg.remoteJid
+	let chat = typeof msg === 'string' ? msg : (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	const quote = reply
 		? { quoted: reply }
 		: typeof msg === 'string'
 			? {}
-			: // @ts-ignore
-				{ quoted: msg?.raw }
-	// @ts-ignore
-	const key = msg?.key ? msg.key : msg
+			: { quoted: (msg as Msg).message }
+	const key = (msg as Msg).key ? (msg as Msg).key : msg as proto.IMessageKey
 
-	if (!chat.includes('@')) chat += '@s.whatsapp.net'
+	if (chat && !chat.includes('@')) chat += '@s.whatsapp.net'
 
 	return { key, text, chat, quote }
 }

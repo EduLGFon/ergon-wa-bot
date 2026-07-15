@@ -1,6 +1,6 @@
-import { Cmd, CmdCtx, defaults, emojis, runCode } from '../../map.js'
-import { getMedia } from '../../util/messages.js'
-import { readFile, writeFile } from 'fs/promises'
+import { Cmd, type CmdCtx, defaults, emojis, runCode } from '../../map.ts'
+import { getMedia } from '../../util/msgAbstractions.ts'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 
 export default class extends Cmd {
 	constructor() {
@@ -13,8 +13,7 @@ export default class extends Cmd {
 	async run({ msg, startTyping, send, t }: CmdCtx) {
 		let media = await getMedia(msg)
 
-		if (!media || !media.mime.includes('image'))
-			return send(t('sticker.nobuffer'))
+		if (!media || !media.mime.includes('image')) return send(t('sticker.nobuffer'))
 		await startTyping()
 
 		const path = defaults.runner.tempFolder + `/rm_${Date.now()}.webp`
@@ -25,7 +24,9 @@ export default class extends Cmd {
 		// a child process
 
 		const buffer = (await readFile(`${path}.png`)) || media.buffer
-		// read new file
+		// read new file, then cleanup temp files
+		await unlink(path).catch(() => {})
+		await unlink(`${path}.png`).catch(() => {})
 
 		send({ caption: emojis['sparkles'], image: buffer }, { quoted: msg })
 	}

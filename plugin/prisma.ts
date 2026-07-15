@@ -1,9 +1,9 @@
-import { PrismaClient } from '../conf/gen/prisma/client.js'
+import { PrismaClient } from '../conf/gen/prisma/client.ts'
 import { PrismaPg } from '@prisma/adapter-pg'
-import Group from '../class/group.js'
-import User from '../class/user.js'
-import cache from './cache.js'
-import bot from '../wa.js'
+import Group from '../class/group.ts'
+import User from '../class/user.ts'
+import cache from './cache.ts'
+import bot from '../wa.ts'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
@@ -14,14 +14,16 @@ export { createUser, getGroup, getUser }
 async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
 	let id = Number(lid.parsePhone())
 	if (process.env.DATABASE_URL) {
-		const data = await P('users', 'create', {
-			data: {
-				// create user on DB if there is one
-				lid,
-				name,
-			},
-		})
-		id = data!.id
+		const data = await prisma.users
+			.create({
+				data: {
+					// create user on DB if there is one
+					lid,
+					name,
+				},
+			})
+			.catch(e => print('PRISMA', `Failed to create user ${lid}:`, e, 'red'))
+		if (data) id = data.id
 	}
 
 	const user = new User({ id, lid, name })
@@ -44,9 +46,8 @@ async function getUser({
 		const data = cache.users.find(u => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users
-			.findFirst({ where: { lid } })
-			.catch(() => {}) // there is no DB. Let's just ignore it
+		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(() => { })
+		// no need to handle errors here because ergon should be able to work without a db
 
 		if (!dbUser) {
 			// not on db, so it's a new user
@@ -82,17 +83,8 @@ async function getGroup(id: str): Promise<Group> {
 	if (group) return group
 	// not on cache, so lets search on WA
 	const data = await bot.sock.groupMetadata(id)
-	// if (!data) return
-	// group does not exist on WA, so return undefined
 
 	group = new Group(data)
 	cache.groups.add(group.id, group)
 	return group
-}
-
-async function P(model: 'users', action: 'create', data: any) {
-	return await prisma[model][action](data).catch(() => {
-		print(`PRISMA`, `${model}.${action}()`, 'red')
-		print(data)
-	})
 }

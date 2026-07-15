@@ -1,7 +1,7 @@
-import { randomDelay } from '../util/functions.js'
-import prisma, { getUser } from './prisma.js'
-import { sendMsg } from '../util/messages.js'
-import { User } from '../map.js'
+import { sendMsg } from '../util/msgAbstractions.ts'
+import { randomDelay } from '../util/functions.ts'
+import prisma, { getUser } from './prisma.ts'
+import { User } from '../map.ts'
 
 export { createAlarms, getUserAlarms, sendAlarms }
 
@@ -49,7 +49,7 @@ async function sendAlarms() {
 	}
 
 	const nextAlarm = alarms
-		.filter(a => !a.status)
+		.filter((a) => !a.status)
 		.sort((a, b) => Number(a.time) - Number(b.time))[0]
 	if (!nextAlarm) {
 		clearTimeout(alarmTimeout)
@@ -128,7 +128,6 @@ async function getUserAlarms(user: User) {
 	if (!alarms[0]) return ['Nenhum alarme.']
 
 	return alarms.map(
-		r =>
-			`MESSAGE: "${r.msg}". TIME: "${new Date(r.time).toLocaleString(user.lang)}"`,
+		(r) => `MESSAGE: "${r.msg}". TIME: "${new Date(r.time).toLocaleString(user.lang)}"`,
 	)
 }

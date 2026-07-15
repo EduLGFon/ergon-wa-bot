@@ -1,5 +1,5 @@
-import { getGroup } from '../../plugin/prisma.js'
-import { ParticipantAction } from 'baileys'
+import { getGroup } from '../../plugin/prisma.ts'
+import { type ParticipantAction } from 'baileys'
 
 /** group-participants.update:
  * This event will update members cache when a group member
@@ -13,12 +13,12 @@ export default async function (groupEvent: Event) {
 	switch (groupEvent.action) {
 		case 'promote': {
 			const member = group.members.find(m => m.id === participant.id)
-			member!.admin = 'admin'
+			if (member) member.admin = 'admin'
 			break
 		}
 		case 'demote': {
 			const member = group.members.find(m => m.id === participant.id)
-			member!.admin = null
+			if (member) member.admin = null
 			break
 		}
 		case 'add':

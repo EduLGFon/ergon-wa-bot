@@ -1,4 +1,4 @@
-import { Cmd, CmdCtx, delay, isValidPositiveIntenger } from '../../map.js'
+import { Cmd, type CmdCtx, delay, isValidPositiveIntenger } from '../../map.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -26,9 +26,7 @@ export default class extends Cmd {
 		// the bot can only delete up to 200 msgs bc thats the max msgs that can be cached
 		if (group.msgs.size < amount) {
 			// send a disclaimer msg that only x msgs can be deleted
-			disclaimerMsgCtx = await send(
-				t('clean.deleted', { msgsSize: group.msgs.size }),
-			)
+			disclaimerMsgCtx = await send(t('clean.deleted', { msgsSize: group.msgs.size }))
 		}
 
 		let msgs = group.msgs

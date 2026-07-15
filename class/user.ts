@@ -1,4 +1,4 @@
-import { Collection, defaults, type Msg, prisma } from '../map.js'
+import { Collection, defaults, type Msg, prisma } from '../map.ts'
 import type { Content } from '@google/genai'
 
 export default class User {
@@ -39,14 +39,13 @@ export default class User {
 	public set name(value: str) {
 		// update user name
 		this._name = value // on cache
-		;(async () =>
-			process.env.DATABASE_URL && // if there is a DB
-			(await prisma.users.update({
-				// update it on DB too
+		if (process.env.DATABASE_URL) {
+			// update it on DB too
+			prisma.users.update({
 				where: { id: this.id },
 				data: { name: value },
-			})))()
-		return
+			}).catch(e => print('USER', `Failed to update name for user ${this.id}:`, e, 'red'))
+		}
 	}
 
 	public get lang() {
@@ -57,14 +56,13 @@ export default class User {
 	public set lang(value: str) {
 		// update user language
 		this._lang = value // on cache
-		;(async () =>
-			process.env.DATABASE_URL && // if there is a DB
-			(await prisma.users.update({
-				// update it on DB too
+		if (process.env.DATABASE_URL) {
+			// update it on DB too
+			prisma.users.update({
 				where: { id: this.id },
 				data: { lang: value },
-			})))()
-		return
+			}).catch(e => print('USER', `Failed to update lang for user ${this.id}:`, e, 'red'))
+		}
 	}
 
 	get prefix() {
@@ -75,14 +73,13 @@ export default class User {
 	set prefix(value: str) {
 		// update user db
 		this._prefix = value // on cache
-		;(async () =>
-			process.env.DATABASE_URL && // if there is a DB
-			(await prisma.users.update({
-				// update it on DB too
+		if (process.env.DATABASE_URL) {
+			// update it on DB too
+			prisma.users.update({
 				where: { id: this.id },
 				data: { prefix: value },
-			})))()
-		return
+			}).catch(e => print('USER', `Failed to update prefix for user ${this.id}:`, e, 'red'))
+		}
 	}
 
 	async addCmd() {
