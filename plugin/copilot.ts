@@ -20,8 +20,8 @@ const receipes = {
 	pull: { cmd: 'npm run prisma:pull' },
 	tsc: { cmd: 'tsc --watch', controller },
 	wa: { cmd: `node ${node_args} build/main.js` },
-	ru: { cmd: `node ${node_args} build/plugin/runner.js}` },
-	re: { cmd: `node ${node_args} build/plugin/reminder.js}` },
+	ru: { cmd: `node ${node_args} build/plugin/runner.js` },
+	re: { cmd: `node ${node_args} build/plugin/reminder.js` },
 	pms: { cmd: 'pm2 start conf/ecosystem.config.cjs --attach' },
 }
 
@@ -45,7 +45,9 @@ const cmds = {
 		args.forEach(a => {
 			if (!receipes[a]) return console.log('not found:', a)
 
-			receipes[a].controller.abort()
+			const ctrl = receipes[a].controller
+			if (ctrl) ctrl.abort()
+			else console.log('not running:', a)
 		})
 	},
 	r(args: string[]) {
@@ -87,7 +89,8 @@ async function ask() {
 // spawn: spawn child processes
 function spawn(cmd: string | string[]) {
 	if (Array.isArray(cmd)) {
-		for (const c of cmd) return run(c)
+		for (const c of cmd) run(c) // process all items, not just the first
+		return
 	} else return run(cmd)
 
 	function run(c: string) {
