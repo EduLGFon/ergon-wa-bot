@@ -25,7 +25,8 @@ export default class Collection<K, V> extends Map<K, V> {
 		if (existing) {
 			if (!value) return existing as V
 			// Merge: existing fields take priority over new ones
-			value = Object.assign({}, value, existing) as V
+			// Object.assign(value, existing) mutates value and preserves its prototype
+			value = Object.assign(value, existing) as V
 		}
 
 		this.set(key, value as V)
