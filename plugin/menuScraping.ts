@@ -1,7 +1,7 @@
 import { delay, randomDelay } from '../util/functions.ts'
 import { readFile, writeFile } from 'node:fs/promises'
 import { sendMsg } from '../util/msgAbstractions.ts'
-import { allowedTags } from './groupAnnouncer.ts'
+import { getAllowedTagsList } from './groupAnnouncer.ts'
 import cache from './cache.ts'
 import cron from 'node-cron'
 
@@ -57,7 +57,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 
 	const groups = process.env.DEV
 		? [process.env.GROUPS0!]
-		: allowedTags['#todos'].concat('5527997014112-1491836324@g.us')
+		: getAllowedTagsList().concat('5527997014112-1491836324@g.us')
 
 	for (const g of groups) {
 		const msgCtx = await sendMsg.bind(g)(msg)
@@ -74,7 +74,7 @@ const regexFood =
 	/(CAFÉ DA MANHÃ|ALMOÇO|JANTAR)[\s\S]*?<div class="field-content">([\s\S]*?)<\/div>/gi
 const regexTags = /<[^>]*>?/gm
 // scrap university's restaurant menu
-export default async function scrapURMenu() {
+export default async function scrapURMenu(retries = 0): Promise<string | null> {
 	updateDate()
 	try {
 		const res = await fetch(
@@ -91,9 +91,13 @@ export default async function scrapURMenu() {
 		return msg.trim()
 	} catch (e: any) {
 		print('MENUSCRAP', 'Error scraping menu', e?.stack, 'red')
+		if (retries >= 3) {
+			print('MENUSCRAP', 'Max retries reached, giving up', 'red')
+			return null
+		}
 		await delay(60_000)
 		await randomDelay()
-		return await scrapURMenu()
+		return await scrapURMenu(retries + 1)
 	}
 }
 
