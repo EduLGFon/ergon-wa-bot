@@ -13,12 +13,12 @@ export default async function (groupEvent: Event) {
 	switch (groupEvent.action) {
 		case 'promote': {
 			const member = group.members.find(m => m.id === participant.id)
-			member!.admin = 'admin'
+			if (member) member.admin = 'admin'
 			break
 		}
 		case 'demote': {
 			const member = group.members.find(m => m.id === participant.id)
-			member!.admin = null
+			if (member) member.admin = null
 			break
 		}
 		case 'add':
