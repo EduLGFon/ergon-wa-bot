@@ -66,7 +66,7 @@ class CacheManager {
 
 			const cache = await readFile(`conf/gen/cache/${cat}.json`, {
 				encoding: 'utf8',
-			}).catch(() => {})
+			}).catch(() => null)
 			// read file
 
 			if (!cache) {
@@ -94,12 +94,12 @@ const cache = new CacheManager()
 export default cache
 
 export async function cleanTemp() {
-	const files = await readdir('conf/gen/temp')
+	const files = await readdir('conf/gen/temp').catch(() => [] as string[])
 	let i = 0
 	for (const f of files) {
 		if (f === 'disclaimer.txt') continue
 
-		await unlink(`conf/gen/temp/${f}`)
+		await unlink(`conf/gen/temp/${f}`).catch(() => {})
 		i++
 	}
 	print('TEMP', `${i} temp files cleaned`, 'blue')
