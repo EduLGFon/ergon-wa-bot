@@ -1,8 +1,8 @@
 import { Cmd, type CmdCtx, defaults, runCode } from '../../map.ts'
 import { randomDelay } from '../../util/functions.ts'
+import { readFile, unlink } from 'node:fs/promises'
 import type { AnyMessageContent } from 'baileys'
 import emojis from '../../util/emojis.ts'
-import { readFileSync } from 'node:fs'
 
 export default class extends Cmd {
 	constructor() {
@@ -47,13 +47,14 @@ export default class extends Cmd {
 			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
 			Object.setPrototypeOf(data, {
-				[type]: readFileSync(path),
+				[type]: await readFile(path),
 			})
 
 			;(data as any).fileName = undefined
 			delete (data as any).fileName
 
-			send(data as AnyMessageContent)
+			await send(data as AnyMessageContent)
+			await unlink(path) // cleanup temp file
 		} catch (e: any) {
 			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
 		}
