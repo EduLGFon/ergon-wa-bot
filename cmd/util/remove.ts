@@ -1,6 +1,6 @@
 import { Cmd, type CmdCtx, defaults, emojis, runCode } from '../../map.ts'
 import { getMedia } from '../../util/msgAbstractions.ts'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 
 export default class extends Cmd {
 	constructor() {
@@ -24,7 +24,9 @@ export default class extends Cmd {
 		// a child process
 
 		const buffer = (await readFile(`${path}.png`)) || media.buffer
-		// read new file
+		// read new file, then cleanup temp files
+		await unlink(path).catch(() => {})
+		await unlink(`${path}.png`).catch(() => {})
 
 		send({ caption: emojis['sparkles'], image: buffer }, { quoted: msg })
 	}
