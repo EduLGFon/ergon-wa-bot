@@ -20,4 +20,10 @@ async function start() {
 }
 
 export default bot
-process.on('SIGINT', async (_e) => await cache.save()) // save cache before exit
+// Save cache on both SIGINT (Ctrl+C) and SIGTERM (PM2 stop/restart)
+const onExit = async () => {
+	await cache.save()
+	process.exit(0)
+}
+process.on('SIGINT', onExit)
+process.on('SIGTERM', onExit)
