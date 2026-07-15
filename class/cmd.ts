@@ -45,7 +45,7 @@ export default abstract class Cmd {
 		const send = sendMsg.bind(msg.chat)
 		const react = reactToMsg.bind(msg)
 
-		const isDev = process.env.DEVS!.includes(user.lid)
+		const isDev = !!process.env.DEVS?.includes(user.lid)
 		// if a normal user tries to run a only-for-devs cmd
 
 		if (this.access.restrict && !isDev) return react('prohibited')
@@ -56,7 +56,7 @@ export default abstract class Cmd {
 			if (!this.access.groups) return react('block') // this cmd can't run on groups
 
 			// all group admins id
-			const admins = group.members.map(m => m.admin && m.id) || []
+			const admins = group.members.filter(m => m.admin).map(m => m.id)
 
 			// this user is not an admin and can't run this cmd
 			if (this.access.admin && !admins.includes(user.lid) && !isDev) {
