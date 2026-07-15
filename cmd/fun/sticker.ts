@@ -1,8 +1,8 @@
-import { Cmd, type CmdCtx, defaults, isVisual, type Msg, runCode } from '../../map.ts'
+import { createStickers, type StickerFormat } from '../../plugin/sticker/index.ts'
+import { Cmd, type CmdCtx, defaults, isVisual, runCode } from '../../map.ts'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { getMedia } from '../../util/msgAbstractions.ts'
-import { readFile, writeFile } from 'node:fs/promises'
 import { randomDelay } from '../../util/functions.ts'
-import { Sticker } from 'wa-sticker-formatter'
 import { now } from '../../util/proto.ts'
 import cache from '../../plugin/cache.ts'
 
@@ -17,85 +17,96 @@ export default class extends Cmd {
 
 	async run({ msg, args, user, group, send, react }: CmdCtx) {
 		const media = await getMedia(msg)
+		const formats = this.parseFormats(args)
+		const quality = Number(args[0]) || undefined
+		const metadata = {
+			pack:
+				`=== Ergon Bot ===\n` +
+				`[👑] Autor: ${user.name}\n` +
+				`[📅] Data: ${now('D')}\n` +
+				`[❓] Suporte: dsc.gg/ergon`,
+			author: '',
+		}
 
-		// if there is no media or msg type is not visual
+		// ── No usable media → batch-create from recent cached messages ──
 		if (!media || !isVisual(media.target.type)) {
-			// this logic will create a sticker for each media sent by
-			// the user until a msg is not from them
 			const chat = group || cache.users.find(u => u.lid === msg.chat)!
 			const msgs = chat.msgs.reverse().slice(1)
-			// Sorts msgs from newest to oldest and ignores the cmd msg
 
-			// Find the index of the first msg that is not from the same author or is not valid
-			const invalidIndex = msgs.findIndex(
+			const firstInvalid = msgs.findIndex(
 				m => m.author !== msg.author || !isVisual(m.type) || m.type === 'sticker',
 			)
-
-			const validMsgs = invalidIndex === -1 ? msgs : msgs.slice(0, invalidIndex)
+			const validMsgs = firstInvalid === -1 ? msgs : msgs.slice(0, firstInvalid)
 
 			if (!validMsgs.length) return send('usage.sticker', { user })
 			randomDelay(69, 500).then(() => react('random'))
 
-			for (const m of validMsgs) await createSticker(m, this.subCmds)
+			for (const m of validMsgs) {
+				const cached = await getMedia(m)
+				if (!cached) continue
+				await this.processAndSend(
+					cached.buffer, m.type === 'video', formats, metadata, quality, send,
+				)
+			}
 			return
 		}
 
 		randomDelay(69, 500).then(() => react('random'))
-		createSticker(media.target, this.subCmds)
-		return
 
-		async function createSticker(target: Msg, subCmds: str[]) {
-			const media = await getMedia(target)
-			let quality = 10
-
-			const formats = ['full', 'crop']
-			if (args.includes(subCmds[1])) formats.push('rounded')
-			if (args.includes(subCmds[2])) formats.push('circle')
-			if (args.includes(subCmds[3])) formats.push('default')
-			// add other sticker formats
-
-			const msgTypeWays = {
-				sticker() {
-					return send({ image: media!.buffer })
-				},
-				async image() {
-					if (!args.includes(subCmds[0])) return
-					// remove image background
-					const path = defaults.runner.tempFolder + `/rmsticker_${Date.now()}.webp`
-					await writeFile(path, media!.buffer)
-					// create temporary file
-
-					// execute python background remover plugin on
-					await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
-					// a child process
-
-					media!.buffer = (await readFile(`${path}.png`)) || media!.buffer
-					// read new file
-					return
-				},
-			}
-
-			if (target.type in msgTypeWays) {
-				await msgTypeWays[target.type as keyof typeof msgTypeWays]()
-			}
-
-			for (const f of formats) {
-				const sticker = await new Sticker(media!.buffer!, {
-					author: '', // sticker metadata
-					pack:
-						`=== Ergon Bot ===\n` +
-						`[👑] Autor: ${user.name}\n` +
-						`[📅] Data: ${now('D')}\n` +
-						// `[☃️] Dev: Edu\n` +
-						`[❓] Suporte: dsc.gg/ergon`,
-					type: f,
-					quality: Number(args[0]) || quality,
-				}).toMessage()
-
-				if (target.type === 'video') send(sticker)
-				else await randomDelay(1_000, 2_500).then(async () => send(sticker))
-			}
-			return
+		// ── Sticker received → reveal as plain image ────────────────────
+		if (media.target.type === 'sticker') {
+			return send({ image: media.buffer })
 		}
+
+		// ── Optional: remove background before creating sticker ─────────
+		let buffer = media.buffer
+		if (args.includes(this.subCmds[0]) && media.target.type === 'image') {
+			buffer = await this.removeBg(buffer)
+		}
+
+		await this.processAndSend(
+			buffer, media.target.type === 'video', formats, metadata, quality, send,
+		)
+	}
+
+	// ── helpers ──────────────────────────────────────────────────────────
+
+	/** Determine which sticker formats to generate from user args. */
+	private parseFormats(args: str[]): StickerFormat[] {
+		const formats: StickerFormat[] = ['full', 'crop']
+		if (args.includes(this.subCmds[1])) formats.push('rounded')
+		if (args.includes(this.subCmds[2])) formats.push('circle')
+		return formats
+	}
+
+	/** Create stickers from a buffer and send them one by one. */
+	private async processAndSend(
+		buffer: Buffer,
+		isVideo: boolean,
+		formats: StickerFormat[],
+		metadata: { pack: string; author: string },
+		quality: number | undefined,
+		send: CmdCtx['send'],
+	): Promise<void> {
+		const stickers = await createStickers({
+			buffer, isVideo, formats, metadata, quality,
+		})
+
+		for (const s of stickers) {
+			if (!isVideo) await randomDelay(1_000, 2_500)
+			await send({ sticker: s.buffer })
+		}
+	}
+
+	/** Remove image background using the Python rembg plugin. */
+	private async removeBg(buffer: Buffer): Promise<Buffer> {
+		const path = `${defaults.runner.tempFolder}/rmsticker_${Date.now()}.webp`
+		await writeFile(path, buffer)
+		await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
+
+		const result = await readFile(`${path}.png`).catch(() => buffer)
+		await unlink(path).catch(() => {})
+		await unlink(`${path}.png`).catch(() => {})
+		return result
 	}
 }
