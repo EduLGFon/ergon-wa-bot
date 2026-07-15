@@ -20,16 +20,25 @@ type Announcement = { text?: str; caption?: str; groups?: str[]; tag?: str; msg?
 
 let isSending = false
 const msgQueue: Announcement[] = []
-const allowedTags = {
-	'#diurno': process.env.GROUPS1!.split('|'),
-	'#noturno': process.env.GROUPS2!.split('|'),
-	'#todos': [''],
-}
-allowedTags['#todos'] = [...allowedTags['#diurno'], ...allowedTags['#noturno']]
 
-export { allowedTags }
+function getAllowedTags() {
+	const groups1 = process.env.GROUPS1?.split('|') ?? []
+	const groups2 = process.env.GROUPS2?.split('|') ?? []
+	return {
+		'#diurno': groups1,
+		'#noturno': groups2,
+		'#todos': [...groups1, ...groups2],
+	}
+}
+
+// Exported for external use (e.g. menuScraping.ts)
+export function getAllowedTagsList() {
+	return getAllowedTags()['#todos']
+}
+export { getAllowedTags as allowedTags }
 export default checkGroupAnnouncer
 async function checkGroupAnnouncer(msg: Msg, user: User, group?: Group) {
+	const allowedTags = getAllowedTags()
 	if (!group || !allowedTags['#todos'].includes(group.id) || msg.isBot) return
 	// ignore msgs from DMs, from other groups or that was sent by the bot
 
@@ -96,7 +105,7 @@ async function sendAnnouncements() {
 
 	msgQueue.shift() // removes the first element
 	// and goes to the next if it exists
-	if (msgQueue[0]) sendAnnouncements()
+	if (msgQueue[0]) await sendAnnouncements()
 	else isSending = false
 	// if not, all the work has been done
 }
