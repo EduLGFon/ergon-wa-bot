@@ -49,7 +49,7 @@ async function sendAlarms() {
 	}
 
 	const nextAlarm = alarms
-		.filter(a => !a.status)
+		.filter((a) => !a.status)
 		.sort((a, b) => Number(a.time) - Number(b.time))[0]
 	if (!nextAlarm) {
 		clearTimeout(alarmTimeout)
@@ -128,6 +128,6 @@ async function getUserAlarms(user: User) {
 	if (!alarms[0]) return ['Nenhum alarme.']
 
 	return alarms.map(
-		r => `MESSAGE: "${r.msg}". TIME: "${new Date(r.time).toLocaleString(user.lang)}"`,
+		(r) => `MESSAGE: "${r.msg}". TIME: "${new Date(r.time).toLocaleString(user.lang)}"`,
 	)
 }
