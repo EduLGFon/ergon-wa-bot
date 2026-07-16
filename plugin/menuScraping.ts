@@ -1,7 +1,9 @@
 import { delay, randomDelay } from '../util/functions.ts'
+import { updateCalendarCache } from './calendarParser.ts'
+import { getAllowedTagsList } from './groupAnnouncer.ts'
 import { readFile, writeFile } from 'node:fs/promises'
 import { sendMsg } from '../util/msgAbstractions.ts'
-import { getAllowedTagsList } from './groupAnnouncer.ts'
+import { existsSync } from 'node:fs'
 import cache from './cache.ts'
 import cron from 'node-cron'
 
@@ -12,13 +14,13 @@ const numPadding = (n: number) => (n < 10 ? '0' + n : n.toString()) // 4 => 04
 updateDate()
 // schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
-	cron.schedule('0 6 * * 1-5', () => sendURMenu(), {
+	cron.schedule('0 6 * * *', () => sendURMenu(), {
 		// cron time explanation
 		// 0 = minute
 		// 6 = hour
 		// * = any day of the month
 		// * = any month
-		// 1-5 = mon-fri
+		// * = any day of the week
 		timezone: process.env.TZ,
 		// timezone like: America/Sao_Paulo
 	})
@@ -27,6 +29,19 @@ export function scheduleURMenuMsg() {
 	cron.schedule('*/15 7-19 * * 1-5', checkForUpdates, {
 		timezone: process.env.TZ,
 	})
+
+	// schedule calendar update every Sunday at 3 AM
+	cron.schedule('0 3 * * 0', async () => {
+		try {
+			await updateCalendarCache()
+			print('MENUSCRAP', 'Calendar cache updated', 'green')
+		} catch (e) {
+			print('MENUSCRAP', 'Failed to update calendar cache', e, 'red')
+		}
+	}, { timezone: process.env.TZ })
+
+	// run once on startup
+	updateCalendarCache().catch(() => null)
 }
 
 let oldMenu = ''
@@ -35,9 +50,10 @@ async function checkForUpdates() {
 	const menu = await scrapURMenu()
 	if (!menu) return
 
-	oldMenu =
-		oldMenu ||
-		(await readFile('conf/gen/cache/menu.txt', { encoding: 'utf-8' }).catch(() => ''))
+	oldMenu = oldMenu ||
+		(await readFile('conf/gen/cache/menu.txt', { encoding: 'utf-8' }).catch(
+			() => '',
+		))
 
 	if (oldMenu === menu) return
 	print('MENUSCRAP', 'Menu updated', 'blue')
@@ -49,11 +65,69 @@ async function checkForUpdates() {
 export async function sendURMenu(menuStr = '', updated = 0) {
 	await randomDelay()
 	const menu = menuStr || (await scrapURMenu())
-	if (!menu) return
 
-	let msg = `RU - ${day}/${month}*\n${menu}`
-	if (updated) msg = `*ATUALIZAÇÃO ${msg}`
-	else msg = `*Planejamento ${msg}`
+	let calendarEventsStr = ''
+	let hasCalendarEvents = false
+	try {
+		const calendarPath = `conf/gen/cache/calendar_${year}.json`
+		if (!existsSync(calendarPath)) {
+			print('MENUSCRAP', 'Calendar cache missing. Fetching now...', 'yellow')
+			await updateCalendarCache().catch((e) =>
+				print('MENUSCRAP', 'Error initializing calendar cache', e, 'red')
+			)
+		}
+
+		if (existsSync(calendarPath)) {
+			const events: Record<string, any[]> = JSON.parse(
+				await readFile(calendarPath, 'utf-8'),
+			)
+			const todayEvents = events[`${day}/${month}/${year}`]
+			if (todayEvents && todayEvents.length > 0) {
+				hasCalendarEvents = true
+				let outStr = `🎓 *Calendário Acadêmico:*\n`
+
+				const eventsByPeriod: Record<string, any[]> = {}
+				for (const e of todayEvents) {
+					const p = e.periodo || 'GERAL'
+					if (!eventsByPeriod[p]) eventsByPeriod[p] = []
+					eventsByPeriod[p].push(e)
+				}
+
+				for (const p in eventsByPeriod) {
+					outStr += `\n*[${p}]*\n`
+					for (const e of eventsByPeriod[p]) {
+						let prefix = ''
+						if (e.grupo || e.responsavel) {
+							const g = e.grupo ? e.grupo : ''
+							const r = e.responsavel ? ` (${e.responsavel})` : ''
+							prefix = `${g}${r}: `
+						}
+						let range = ''
+						if (e.dateRange) {
+							range = ` (${e.dateRange})`
+						}
+						outStr += ` 🔸 ${prefix}${e.atividade}${range}\n`
+					}
+				}
+
+				calendarEventsStr = outStr + `\n`
+			}
+		}
+	} catch (e: any) {
+		print('MENUSCRAP', 'Error reading calendar cache', e.stack, 'red')
+	}
+
+	if (!menu && !hasCalendarEvents) return
+
+	let msg = ''
+	if (menu) {
+		msg = updated ? `🔄 *ATUALIZAÇÃO DO CARDÁPIO*` : `🍽️ *CARDÁPIO DO RU*`
+		msg += ` - *${day}/${month}*\n\n`
+		msg += calendarEventsStr + menu
+	} else {
+		msg = `📅 *HOJE NA UFES* - *${day}/${month}*\n\n`
+		msg += calendarEventsStr.trim()
+	}
 
 	const groups = process.env.DEV
 		? [process.env.GROUPS0!]
@@ -65,8 +139,10 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 		await sendMsg.bind(g)({ pin: msgCtx.msg.key, time: 86_400, type: 1 })
 		await randomDelay()
 	}
-	await writeFile('conf/gen/cache/menu.txt', menu)
-	oldMenu = menu
+	if (menu) {
+		await writeFile('conf/gen/cache/menu.txt', menu)
+		oldMenu = menu
+	}
 }
 
 // regex to parse HTML data
@@ -103,7 +179,7 @@ export default async function scrapURMenu(retries = 0): Promise<string | null> {
 
 function updateDate() {
 	const date = new Date()
-	day = numPadding(date.getDate())
+	day = global.menuDay || numPadding(date.getDate())
 	month = numPadding(date.getMonth() + 1)
 	year = date.getFullYear().toString()
 }
@@ -128,17 +204,22 @@ const Hours = {
 	ALMOÇO: '11h-13h30',
 	JANTAR: '17h-19h',
 }
+const MealEmojis = {
+	'CAFÉ DA MANHÃ': '☕',
+	ALMOÇO: '🍛',
+	JANTAR: '🍲',
+}
 function parseMenuData(match: str[]) {
 	const meal = match[1] as keyof typeof Hours
 
 	return (
-		`\n> *${meal.toPascalCase()} ${Hours[meal]}*\n` +
+		`\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n` +
 		match[2]
 			.replace(regexTags, '\n')
 			.split('\n')
-			.map(item => item.trim())
-			.filter(item => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
-			.map(v => (titles.includes(v) ? `*${v}:* ` : v + '\n'))
+			.map((item) => item.trim())
+			.filter((item) => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
+			.map((v) => (titles.includes(v) ? `*${v}:* ` : v + '\n'))
 			.join('')
 	)
 }
