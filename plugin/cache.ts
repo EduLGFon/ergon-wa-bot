@@ -73,7 +73,12 @@ class CacheManager {
 				print('CACHE', `No ${cat} cache`, 'blue')
 				continue
 			}
-			const json = JSON.parse(cache)
+			const json = JSON.parse(cache, (key, value) => {
+				if (value !== null && typeof value === 'object' && value.type === 'Buffer' && Array.isArray(value.data)) {
+					return Buffer.from(value.data)
+				}
+				return value
+			})
 			// parse cache
 
 			for (const [k, v] of Object.entries(json)) {
