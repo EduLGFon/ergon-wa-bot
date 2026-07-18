@@ -27,35 +27,19 @@ function buildExifBlob(metadata: StickerMetadata): Buffer {
 			'sticker-pack-id': 'com.ergon.bot',
 			'sticker-pack-name': metadata.pack,
 			'sticker-pack-publisher': metadata.author,
-			'android-app-store-link': '',
-			'ios-app-store-link': '',
+			'emojis': [],
 		}),
+		'utf-8'
 	)
 
-	const HEADER = 26
-	const buf = Buffer.alloc(HEADER + json.length)
+	const header = Buffer.from([
+		0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x16, 0x00, 0x00, 0x00
+	])
+	
+	header.writeUInt32LE(json.length, 14)
 
-	// TIFF header
-	buf.write('II', 0)                  // little-endian
-	buf.writeUInt16LE(0x002a, 2)        // magic
-	buf.writeUInt32LE(8, 4)             // IFD0 offset
-
-	// IFD0: 1 entry
-	buf.writeUInt16LE(1, 8)
-
-	// IFD entry → sticker JSON
-	buf.writeUInt16LE(0x0041, 10)       // tag
-	buf.writeUInt16LE(0x0007, 12)       // type: UNDEFINED
-	buf.writeUInt32LE(json.length, 14)  // data length
-	buf.writeUInt32LE(HEADER, 18)       // offset to data
-
-	// end of IFD chain
-	buf.writeUInt32LE(0, 22)
-
-	// payload
-	json.copy(buf, HEADER)
-
-	return buf
+	return Buffer.concat([header, json])
 }
 
 /**
