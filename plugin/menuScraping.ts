@@ -95,6 +95,19 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 
 				for (const p in eventsByPeriod) {
 					outStr += `\n*[${p}]*\n`
+					
+					eventsByPeriod[p].sort((a, b) => {
+						const rA = (a.responsavel || '').trim().toLowerCase()
+						const rB = (b.responsavel || '').trim().toLowerCase()
+						
+						const getScore = (r: string) => {
+							if (r === 'estudante' || r === 'estudantes') return 1
+							if (r.includes('estudante') && r.includes('professor')) return 2
+							return 3
+						}
+						return getScore(rA) - getScore(rB)
+					})
+
 					for (const e of eventsByPeriod[p]) {
 						let prefix = ''
 						if (e.grupo || e.responsavel) {
@@ -106,7 +119,15 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 						if (e.dateRange) {
 							range = ` (${e.dateRange})`
 						}
-						outStr += ` 🔸 ${prefix}${e.atividade}${range}\n`
+						
+						let eventLine = `${prefix}${e.atividade}${range}`
+						const isEstudante = (e.responsavel || '').trim().toLowerCase() === 'estudante'
+						
+						if (isEstudante) {
+							outStr += ` 🔸 *${eventLine}*\n`
+						} else {
+							outStr += ` 🔸 ${eventLine}\n`
+						}
 					}
 				}
 
