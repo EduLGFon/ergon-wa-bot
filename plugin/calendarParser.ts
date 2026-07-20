@@ -113,14 +113,25 @@ export async function fetchCalendarLinks(
 			const linkMatch = p.match(/<a[^>]*href="([^"]+)"/i)
 			if (linkMatch) {
 				let link = linkMatch[1]
-				if (link.startsWith('/')) link = 'https://prograd.ufes.br' + link
-				resolutions.push(link)
+				// Only accept PDF files, ignore Google Calendar or external links
+				if (link.toLowerCase().includes('.pdf')) {
+					if (link.startsWith('/')) link = 'https://prograd.ufes.br' + link
+					resolutions.push(link)
+				}
 			}
 		} else if (
 			p.trim().length > 0 && !p.includes('rteindent1') && !p.includes('<br')
 		) {
 			const textContent = p.replace(/<[^>]+>/g, '').trim()
-			if (textContent.length > 5) break
+			// Stop if we hit a header, a new year's calendar, or another category
+			if (
+				textContent.length > 5 || 
+				p.includes('<h') || 
+				p.includes('Cursos EAD') || 
+				p.includes('Anteriores:')
+			) {
+				break
+			}
 		}
 	}
 
