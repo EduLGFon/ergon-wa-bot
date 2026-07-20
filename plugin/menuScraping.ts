@@ -143,8 +143,8 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 	let msg = ''
 	if (menu) {
 		msg = updated ? `🔄 *ATUALIZAÇÃO DO CARDÁPIO*` : `🍽️ *CARDÁPIO DO RU*`
-		msg += ` - *${day}/${month}*\n\n`
-		msg += menu + (calendarEventsStr ? '\n' + calendarEventsStr : '')
+		msg += ` - *${day}/${month}*\n`
+		msg += menu.trimEnd() + (calendarEventsStr ? '\n\n' + calendarEventsStr : '')
 	} else {
 		msg = `📅 *HOJE NA UFES* - *${day}/${month}*\n\n`
 		msg += calendarEventsStr.trim()
@@ -249,7 +249,12 @@ function parseMenuData(match: str[]) {
 				if (currentTitle === 'Fruta' || currentTitle === 'Suco') {
 					items.push(`*${currentTitle}:* ${line}`)
 				} else if (currentTitle === 'Café' || currentTitle === 'Leite') {
-					items.push(`${currentTitle} ${line.toLowerCase()}`)
+					const lowerLine = line.toLowerCase()
+					if (lowerLine.includes(currentTitle.toLowerCase())) {
+						items.push(line)
+					} else {
+						items.push(`${currentTitle} ${lowerLine}`)
+					}
 				} else {
 					items.push(line)
 				}
