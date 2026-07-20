@@ -14,7 +14,7 @@ import { readFileSync, unlinkSync } from 'node:fs'
 import type { StickerFormat } from './types.ts'
 
 const SIZE = 512
-const MAX_DURATION = 7
+const MAX_DURATION = 11
 const TIMEOUT_MS = 60_000
 
 /**
