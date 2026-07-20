@@ -233,14 +233,33 @@ const MealEmojis = {
 function parseMenuData(match: str[]) {
 	const meal = match[1] as keyof typeof Hours
 
+	let lines = match[2]
+		.replace(regexTags, '\n')
+		.split('\n')
+		.map((item) => item.trim())
+		.filter((item) => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
+
+	if (meal === 'CAFÉ DA MANHÃ') {
+		const items: string[] = []
+		let currentTitle = ''
+		for (const line of lines) {
+			if (titles.includes(line)) {
+				currentTitle = line
+			} else {
+				if (currentTitle === 'Fruta' || currentTitle === 'Suco') {
+					items.push(`*${currentTitle}:* ${line}`)
+				} else if (currentTitle === 'Café' || currentTitle === 'Leite') {
+					items.push(`${currentTitle} ${line.toLowerCase()}`)
+				} else {
+					items.push(line)
+				}
+			}
+		}
+		return `\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n- ${items.join(', ')}\n`
+	}
+
 	return (
 		`\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n` +
-		match[2]
-			.replace(regexTags, '\n')
-			.split('\n')
-			.map((item) => item.trim())
-			.filter((item) => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
-			.map((v) => (titles.includes(v) ? `*${v}:* ` : v + '\n'))
-			.join('')
+		lines.map((v) => (titles.includes(v) ? `*${v}:* ` : v + '\n')).join('')
 	)
 }
