@@ -123,7 +123,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 	if (menu) {
 		msg = updated ? `🔄 *ATUALIZAÇÃO DO CARDÁPIO*` : `🍽️ *CARDÁPIO DO RU*`
 		msg += ` - *${day}/${month}*\n\n`
-		msg += calendarEventsStr + menu
+		msg += menu + (calendarEventsStr ? '\n' + calendarEventsStr : '')
 	} else {
 		msg = `📅 *HOJE NA UFES* - *${day}/${month}*\n\n`
 		msg += calendarEventsStr.trim()
