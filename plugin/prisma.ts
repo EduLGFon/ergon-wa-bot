@@ -12,7 +12,7 @@ export default prisma
 export { createUser, getGroup, getUser }
 
 async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
-	let id = Number(lid.parsePhone())
+	let id = Number(lid.parsePhone()) || Date.now()
 	if (process.env.DATABASE_URL) {
 		const data = await prisma.users
 			.create({

@@ -95,6 +95,19 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 
 				for (const p in eventsByPeriod) {
 					outStr += `\n*[${p}]*\n`
+					
+					eventsByPeriod[p].sort((a, b) => {
+						const rA = (a.responsavel || '').trim().toLowerCase()
+						const rB = (b.responsavel || '').trim().toLowerCase()
+						
+						const getScore = (r: string) => {
+							if (r === 'estudante' || r === 'estudantes') return 1
+							if (r.includes('estudante') && r.includes('professor')) return 2
+							return 3
+						}
+						return getScore(rA) - getScore(rB)
+					})
+
 					for (const e of eventsByPeriod[p]) {
 						let prefix = ''
 						if (e.grupo || e.responsavel) {
@@ -106,7 +119,15 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 						if (e.dateRange) {
 							range = ` (${e.dateRange})`
 						}
-						outStr += ` 🔸 ${prefix}${e.atividade}${range}\n`
+						
+						let eventLine = `${prefix}${e.atividade}${range}`
+						const isEstudante = (e.responsavel || '').trim().toLowerCase() === 'estudante'
+						
+						if (isEstudante) {
+							outStr += ` 🔸 *${eventLine}*\n`
+						} else {
+							outStr += ` 🔸 ${eventLine}\n`
+						}
 					}
 				}
 
@@ -122,8 +143,8 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 	let msg = ''
 	if (menu) {
 		msg = updated ? `🔄 *ATUALIZAÇÃO DO CARDÁPIO*` : `🍽️ *CARDÁPIO DO RU*`
-		msg += ` - *${day}/${month}*\n\n`
-		msg += calendarEventsStr + menu
+		msg += ` - *${day}/${month}*\n`
+		msg += menu.trimEnd() + (calendarEventsStr ? '\n\n' + calendarEventsStr : '')
 	} else {
 		msg = `📅 *HOJE NA UFES* - *${day}/${month}*\n\n`
 		msg += calendarEventsStr.trim()
@@ -212,14 +233,38 @@ const MealEmojis = {
 function parseMenuData(match: str[]) {
 	const meal = match[1] as keyof typeof Hours
 
+	let lines = match[2]
+		.replace(regexTags, '\n')
+		.split('\n')
+		.map((item) => item.trim())
+		.filter((item) => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
+
+	if (meal === 'CAFÉ DA MANHÃ') {
+		const items: string[] = []
+		let currentTitle = ''
+		for (const line of lines) {
+			if (titles.includes(line)) {
+				currentTitle = line
+			} else {
+				if (currentTitle === 'Fruta' || currentTitle === 'Suco') {
+					items.push(`*${currentTitle}:* ${line}`)
+				} else if (currentTitle === 'Café' || currentTitle === 'Leite') {
+					const lowerLine = line.toLowerCase()
+					if (lowerLine.includes(currentTitle.toLowerCase())) {
+						items.push(line)
+					} else {
+						items.push(`${currentTitle} ${lowerLine}`)
+					}
+				} else {
+					items.push(line)
+				}
+			}
+		}
+		return `\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n- ${items.join(', ')}\n`
+	}
+
 	return (
 		`\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n` +
-		match[2]
-			.replace(regexTags, '\n')
-			.split('\n')
-			.map((item) => item.trim())
-			.filter((item) => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
-			.map((v) => (titles.includes(v) ? `*${v}:* ` : v + '\n'))
-			.join('')
+		lines.map((v) => (titles.includes(v) ? `*${v}:* ` : v + '\n')).join('')
 	)
 }

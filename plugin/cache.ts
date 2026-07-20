@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs'
  *
  * Cache saved on conf/gen/cache/*.json
  */
-const cachedData: ('media' | 'metrics')[] = ['metrics', 'media']
+const cachedData: ('metrics')[] = ['metrics']
 
 class CacheManager {
 	// Collections (Stored data)
