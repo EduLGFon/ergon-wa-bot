@@ -54,7 +54,6 @@ export default class Group {
 				count: { increment: 1 },
 			},
 		})
-		return
 	}
 
 	async getCountedMsgs() {
