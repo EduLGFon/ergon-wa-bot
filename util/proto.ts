@@ -46,8 +46,9 @@ console.warn = (...args) => {
 		typeof args[0] === 'string' &&
 		args[0].includes('Session already closed') &&
 		args.slice(1).some(isSessionEntryLike)
-	)
+	) {
 		return
+	}
 	return warn(...args)
 }
 
@@ -63,8 +64,9 @@ function print(...args: any) {
 		typeof args[0] === 'string' &&
 		(args[0].includes('Closing session') || args[0].includes('Removing old closed session')) &&
 		args.slice(1).some(isSessionEntryLike)
-	)
+	) {
 		return
+	}
 	if (typeof args[2] !== 'string') return console.log(...args)
 
 	let color = args.pop()
@@ -224,7 +226,7 @@ function strPrototypes() {
 				if (!match[0]) return [0]
 
 				const ms = match
-					.map(m => {
+					.map((m) => {
 						const quantity = parseInt(m, 10)
 						const unit = m.replace(String(quantity), '')
 

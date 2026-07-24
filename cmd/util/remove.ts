@@ -1,4 +1,8 @@
-import { Cmd, type CmdCtx, defaults, emojis, runCode } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import emojis from '@util/emojis.ts'
+import runCode from '@plugin/runCode.ts'
 import { getMedia } from '../../util/msgAbstractions.ts'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 

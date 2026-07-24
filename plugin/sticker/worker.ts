@@ -7,15 +7,17 @@
  * to keep blocking work off the main event loop.
  */
 import { parentPort } from 'node:worker_threads'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { encodeVideo, cleanup } from './ffmpeg.ts'
+import { cleanup, encodeVideo } from './ffmpeg.ts'
 import type { WorkerRequest, WorkerResponse } from './types.ts'
 
 const TEMP_DIR = 'conf/gen/temp'
 
 // Ensure temp directory exists (no-op if it already does)
-try { mkdirSync(TEMP_DIR, { recursive: true }) } catch { /* exists */ }
+try {
+	mkdirSync(TEMP_DIR, { recursive: true })
+} catch { /* exists */ }
 
 parentPort!.on('message', (req: WorkerRequest) => {
 	const prefix = `stk_${req.id}_${Date.now()}`
@@ -25,12 +27,16 @@ parentPort!.on('message', (req: WorkerRequest) => {
 		writeFileSync(inputPath, req.buffer)
 
 		const results = encodeVideo(
-			inputPath, TEMP_DIR, prefix, req.formats, req.maxSize,
+			inputPath,
+			TEMP_DIR,
+			prefix,
+			req.formats,
+			req.maxSize,
 		)
 
 		const response: WorkerResponse = {
 			id: req.id,
-			results: results.map(r => ({
+			results: results.map((r) => ({
 				format: r.format,
 				buffer: r.buffer,
 			})),

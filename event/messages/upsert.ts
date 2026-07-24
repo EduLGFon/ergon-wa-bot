@@ -1,6 +1,8 @@
 import { reactToMsg, sendMsg, startTyping } from '../../util/msgAbstractions.ts'
 import checkGroupAnnouncer from '../../plugin/groupAnnouncer.ts'
-import { type CmdCtx, delay, getCtx } from '../../map.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import { delay } from '@util/functions.ts'
+import { getCtx } from '@util/msgTools.ts'
 import { getUser } from '../../plugin/prisma.ts'
 import cache from '../../plugin/cache.ts'
 import { type proto } from 'baileys'
@@ -26,8 +28,9 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		/* * Messages counting & storing */
 		if (!msg.isEdited) {
 			// count msgs with valid types for group msgs rank cmd
-			if (group) group.countMsg(msg).catch((e: Error) => print('UPSERT/countMsg', e.message, 'red'))
-			else {
+			if (group) {
+				group.countMsg(msg).catch((e: Error) => print('UPSERT/countMsg', e.message, 'red'))
+			} else {
 				const chat = await getUser({ lid: msg.chat })
 				// store msgs for searching images on sticker cmd
 				chat!.msgs.add(msg.key.id!, msg)

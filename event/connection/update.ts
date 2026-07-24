@@ -1,7 +1,8 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
 import { randomDelay } from '../../util/functions.ts'
 import { loadEvents } from '../../util/handler.ts'
-import { Collection, delay } from '../../map.ts'
+import Collection from '@class/collection.ts'
+import { delay } from '@util/functions.ts'
 import bot from '../../wa.ts'
 import QRCode from 'qrcode'
 

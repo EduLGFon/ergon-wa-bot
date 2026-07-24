@@ -1,4 +1,5 @@
-import { prisma, User } from '../map.ts'
+import prisma from '@prisma'
+import User from '@class/user.ts'
 
 export { cleanMemories, createMemories }
 const memoryRegex = /{MEMORY:.+}/gi

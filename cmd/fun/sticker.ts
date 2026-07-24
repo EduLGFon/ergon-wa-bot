@@ -1,5 +1,9 @@
 import { createStickers, type StickerFormat } from '../../plugin/sticker/index.ts'
-import { Cmd, type CmdCtx, defaults, isVisual, runCode } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import { isVisual } from '@conf/types/msgs.ts'
+import runCode from '@plugin/runCode.ts'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { getMedia } from '../../util/msgAbstractions.ts'
 import { randomDelay } from '../../util/functions.ts'
@@ -20,8 +24,7 @@ export default class extends Cmd {
 		const formats = this.parseFormats(args)
 		const quality = Number(args[0]) || undefined
 		const metadata = {
-			pack:
-				`=== Ergon Bot ===\n` +
+			pack: `=== Ergon Bot ===\n` +
 				`[👑] Autor: ${user.name}\n` +
 				`[📅] Data: ${now('D')}\n` +
 				`[❓] Suporte: dsc.gg/ergon`,
@@ -30,11 +33,11 @@ export default class extends Cmd {
 
 		// ── No usable media → batch-create from recent cached messages ──
 		if (!media || !isVisual(media.target.type)) {
-			const chat = group || cache.users.find(u => u.lid === msg.chat)!
+			const chat = group || cache.users.find((u) => u.lid === msg.chat)!
 			const msgs = chat.msgs.reverse().slice(1)
 
 			const firstInvalid = msgs.findIndex(
-				m => m.author !== msg.author || !isVisual(m.type) || m.type === 'sticker',
+				(m) => m.author !== msg.author || !isVisual(m.type) || m.type === 'sticker',
 			)
 			const validMsgs = firstInvalid === -1 ? msgs : msgs.slice(0, firstInvalid)
 
@@ -45,7 +48,12 @@ export default class extends Cmd {
 				const cached = await getMedia(m)
 				if (!cached) continue
 				await this.processAndSend(
-					cached.buffer, m.type === 'video', formats, metadata, quality, send,
+					cached.buffer,
+					m.type === 'video',
+					formats,
+					metadata,
+					quality,
+					send,
 				)
 			}
 			return
@@ -65,7 +73,12 @@ export default class extends Cmd {
 		}
 
 		await this.processAndSend(
-			buffer, media.target.type === 'video', formats, metadata, quality, send,
+			buffer,
+			media.target.type === 'video',
+			formats,
+			metadata,
+			quality,
+			send,
 		)
 	}
 
@@ -89,7 +102,11 @@ export default class extends Cmd {
 		send: CmdCtx['send'],
 	): Promise<void> {
 		const stickers = await createStickers({
-			buffer, isVideo, formats, metadata, quality,
+			buffer,
+			isVideo,
+			formats,
+			metadata,
+			quality,
 		})
 
 		for (const s of stickers) {

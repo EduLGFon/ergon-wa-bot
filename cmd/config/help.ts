@@ -1,4 +1,5 @@
-import { Cmd, type CmdCtx } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
 import cache from '../../plugin/cache.ts'
 
 export default class extends Cmd {
@@ -9,7 +10,7 @@ export default class extends Cmd {
 	async run({ args, send, user, t }: CmdCtx) {
 		if (args[0]) {
 			// the user is searching for cmd-specific help info
-			const cmd = cache.cmds.find(c => c.name === args[0] || c.alias.includes(args[0]))
+			const cmd = cache.cmds.find((c) => c.name === args[0] || c.alias.includes(args[0]))
 			// search cmd by name or alias
 
 			if (!cmd) return send('Comando não encontrado.')
@@ -48,12 +49,11 @@ export default class extends Cmd {
 		const cmdsList = cache.cmds
 			.filter((c: Cmd) => !c.access.restrict) // ignore dev cmds
 			.sort((a, b) => a.name.localeCompare(b.name)) // sort by name
-			.map(c => `➥ *${user.prefix}${c.name}*: ${t(`${c.name}.desc`)}`)
+			.map((c) => `➥ *${user.prefix}${c.name}*: ${t(`${c.name}.desc`)}`)
 			// cmd description locales
 			.join('\n')
 
-		let text =
-			t('help.title') +
+		let text = t('help.title') +
 			'\n\n' + // help menu title
 			cmdsList // cmds list
 

@@ -1,4 +1,7 @@
-import { Collection, defaults, type Msg, prisma } from '../map.ts'
+import Collection from '@class/collection.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import { type Msg } from '@conf/types/types.d.ts'
+import prisma from '@prisma'
 import type { Content } from '@google/genai'
 
 export default class User {
@@ -44,7 +47,7 @@ export default class User {
 			prisma.users.update({
 				where: { id: this.id },
 				data: { name: value },
-			}).catch(e => print('USER', `Failed to update name for user ${this.id}:`, e, 'red'))
+			}).catch((e) => print('USER', `Failed to update name for user ${this.id}:`, e, 'red'))
 		}
 	}
 
@@ -61,7 +64,7 @@ export default class User {
 			prisma.users.update({
 				where: { id: this.id },
 				data: { lang: value },
-			}).catch(e => print('USER', `Failed to update lang for user ${this.id}:`, e, 'red'))
+			}).catch((e) => print('USER', `Failed to update lang for user ${this.id}:`, e, 'red'))
 		}
 	}
 
@@ -78,7 +81,7 @@ export default class User {
 			prisma.users.update({
 				where: { id: this.id },
 				data: { prefix: value },
-			}).catch(e => print('USER', `Failed to update prefix for user ${this.id}:`, e, 'red'))
+			}).catch((e) => print('USER', `Failed to update prefix for user ${this.id}:`, e, 'red'))
 		}
 	}
 

@@ -1,15 +1,9 @@
-import {
-	allMsgTypes,
-	Cmd,
-	type CmdCtx,
-	coolValues,
-	findKey,
-	Group,
-	isMedia,
-	type Msg,
-	type MsgTypes,
-	User,
-} from '../map.ts'
+import { allMsgTypes, coolValues, isMedia } from '@conf/types/msgs.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx, type Msg, type MsgTypes } from '@conf/types/types.d.ts'
+import { findKey } from '@util/functions.ts'
+import Group from '@class/group.ts'
+import User from '@class/user.ts'
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
 import prisma, { getGroup, getUser } from '../plugin/prisma.ts'
 import cache from '../plugin/cache.ts'
@@ -145,7 +139,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	).catch(e => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
+	).catch((e) => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
 
 	if (!buffer) return
 
@@ -170,7 +164,7 @@ function getInput(msg: Msg, prefix: str) {
 
 	let args: str[] = msg.text.replace(prefix, '').trim().split(' ')
 	const callCmd = args.shift()!.toLowerCase() // cmd name on msg | .help => 'help' === callCmd
-	const cmd = cache.cmds.find(c => c.name === callCmd || c.alias.includes(callCmd))
+	const cmd = cache.cmds.find((c) => c.name === callCmd || c.alias.includes(callCmd))
 	// search command by name or by aliases
 
 	const first = args[0]?.toLowerCase() // first arg
@@ -211,7 +205,7 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	} as Msg
 
 	let cachedMsg = chat.msgs.find(
-		m =>
+		(m) =>
 			// compare quoted msg with cached msgs
 			quoted?.type === m.type &&
 			quoted?.media === m.media &&
@@ -248,13 +242,15 @@ function msgMeta(
 	body: str | AnyMessageContent,
 	reply?: proto.IWebMessageInfo,
 ) {
-	let chat = typeof msg === 'string' ? msg : (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
+	let chat = typeof msg === 'string'
+		? msg
+		: (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	const quote = reply
 		? { quoted: reply }
 		: typeof msg === 'string'
-			? {}
-			: { quoted: (msg as Msg).message }
+		? {}
+		: { quoted: (msg as Msg).message }
 	const key = (msg as Msg).key ? (msg as Msg).key : msg as proto.IMessageKey
 
 	if (chat && !chat.includes('@')) chat += '@s.whatsapp.net'

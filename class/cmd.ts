@@ -1,4 +1,6 @@
-import { type CmdCtx, Group, type Msg, type User } from '../map.ts'
+import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
+import Group from '@class/group.ts'
+import { type default as User } from '@class/user.ts'
 import { reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
 import bot from '../wa.ts'
 
@@ -56,7 +58,7 @@ export default abstract class Cmd {
 			if (!this.access.groups) return react('block') // this cmd can't run on groups
 
 			// all group admins id
-			const admins = group.members.filter(m => m.admin).map(m => m.id)
+			const admins = group.members.filter((m) => m.admin).map((m) => m.id)
 
 			// this user is not an admin and can't run this cmd
 			if (this.access.admin && !admins.includes(user.lid) && !isDev) {

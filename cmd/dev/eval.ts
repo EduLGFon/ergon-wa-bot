@@ -1,4 +1,7 @@
-import { Cmd, type CmdCtx, defaults, runCode } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import runCode from '@plugin/runCode.ts'
 const langs = Object.keys(defaults.runner)
 
 export default class extends Cmd {
@@ -21,8 +24,7 @@ export default class extends Cmd {
 		const duration = (Date.now() - startTime!).duration(true)
 		const RAM = process.memoryUsage().rss.bytes() // current RAM usage
 
-		const text =
-			`\`$ ${duration}/${RAM}\`` + // msg header
+		const text = `\`$ ${duration}/${RAM}\`` + // msg header
 			(output === 'undefined' ? '' : '\n' + output.trim()) // delete 'undefined' outputs
 
 		ctx.send(text)

@@ -1,4 +1,6 @@
-import { Cmd, type CmdCtx, prisma } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import prisma from '@prisma'
 
 export default class extends Cmd {
 	constructor() {

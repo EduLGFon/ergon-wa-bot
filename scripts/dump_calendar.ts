@@ -40,17 +40,19 @@ async function run() {
 
 			for (const p in eventsByPeriod) {
 				console.log(`\n*[${p}]*`)
-				for (const e of eventsByPeriod[p].sort((a, b) => {
-					const rA = (a.responsavel || '').trim().toLowerCase()
-					const rB = (b.responsavel || '').trim().toLowerCase()
-					
-					const getScore = (r: string) => {
-						if (r === 'estudante' || r === 'estudantes') return 1
-						if (r === 'professor' || r === 'professores') return 3
-						return 4
-					}
-					return getScore(rA) - getScore(rB)
-				})) {
+				for (
+					const e of eventsByPeriod[p].sort((a, b) => {
+						const rA = (a.responsavel || '').trim().toLowerCase()
+						const rB = (b.responsavel || '').trim().toLowerCase()
+
+						const getScore = (r: string) => {
+							if (r === 'estudante' || r === 'estudantes') return 1
+							if (r === 'professor' || r === 'professores') return 3
+							return 4
+						}
+						return getScore(rA) - getScore(rB)
+					})
+				) {
 					let prefix = ''
 					if (e.grupo || e.responsavel) {
 						const g = e.grupo ? e.grupo : ''
@@ -63,7 +65,7 @@ async function run() {
 					let eventLine = `${prefix}${e.atividade}${range}`
 					const resp = (e.responsavel || '').trim().toLowerCase()
 					const isEstudante = resp === 'estudante' || resp === 'estudantes'
-					
+
 					if (isEstudante) {
 						console.log(` 🚨 *${eventLine}*`)
 					} else {

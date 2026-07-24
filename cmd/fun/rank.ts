@@ -1,5 +1,7 @@
 import { getUser } from '../../plugin/prisma.ts'
-import { Cmd, type CmdCtx, User } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import User from '@class/user.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -17,7 +19,7 @@ export default class extends Cmd {
 		let text = `*[🏆] - Rank de mensagens*\n\n`
 
 		const msgs = await group.getCountedMsgs()
-		const members = group.members.map(m => m.id)
+		const members = group.members.map((m) => m.id)
 
 		let pos = 1
 		for (const i in msgs) {

@@ -31,7 +31,7 @@ const cmds = {
 		// start a script
 		console.log('Start:', ...args)
 
-		args.forEach(a => {
+		args.forEach((a) => {
 			if (!receipes[a]) return console.log('not found:', a)
 			//@ts-ignore shut up TypeScript
 			receipes[a].controller = spawn(receipes[a].cmd)
@@ -42,7 +42,7 @@ const cmds = {
 		console.log('Killing:', ...args)
 
 		//@ts-ignore shut up TypeScript
-		args.forEach(a => {
+		args.forEach((a) => {
 			if (!receipes[a]) return console.log('not found:', a)
 
 			const ctrl = receipes[a].controller
@@ -54,7 +54,7 @@ const cmds = {
 		// restart a script
 		console.log('Restarting:', ...args)
 
-		args.forEach(a => {
+		args.forEach((a) => {
 			const recipe = receipes[a as 'tsc']
 
 			if (!recipe) return console.log('not found:', a)

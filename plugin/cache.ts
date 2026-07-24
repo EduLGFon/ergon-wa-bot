@@ -1,5 +1,9 @@
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises'
-import { Cmd, Collection, defaults, Group, User } from '../map.ts'
+import Cmd from '@class/cmd.ts'
+import Collection from '@class/collection.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import Group from '@class/group.ts'
+import User from '@class/user.ts'
 import { existsSync } from 'node:fs'
 
 /** Cache manager:
@@ -74,7 +78,10 @@ class CacheManager {
 				continue
 			}
 			const json = JSON.parse(cache, (key, value) => {
-				if (value !== null && typeof value === 'object' && value.type === 'Buffer' && Array.isArray(value.data)) {
+				if (
+					value !== null && typeof value === 'object' && value.type === 'Buffer' &&
+					Array.isArray(value.data)
+				) {
 					return Buffer.from(value.data)
 				}
 				return value

@@ -43,8 +43,8 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 	if (isVideo) {
 		// Video formats: only full/crop supported in ffmpeg pipeline
 		// circle/rounded silently fall back to crop (no mask overlay in ffmpeg)
-		const videoFormats = formats.map(f =>
-			f === 'circle' || f === 'rounded' ? 'crop' as const : f,
+		const videoFormats = formats.map((f) =>
+			f === 'circle' || f === 'rounded' ? 'crop' as const : f
 		)
 		// deduplicate (e.g. if user asked for crop + circle → two crops)
 		const unique = [...new Set(videoFormats)]
@@ -53,7 +53,7 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 	} else {
 		// Images: process all formats in parallel on the main thread
 		results = await Promise.all(
-			formats.map(async format => ({
+			formats.map(async (format) => ({
 				format,
 				buffer: await processImage(buffer, format, quality),
 			})),
@@ -62,7 +62,7 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 
 	// Inject EXIF metadata (pack name, author) into every sticker
 	return Promise.all(
-		results.map(async r => ({
+		results.map(async (r) => ({
 			format: r.format,
 			buffer: await injectExif(r.buffer, metadata),
 		})),

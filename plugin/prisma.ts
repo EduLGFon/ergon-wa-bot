@@ -22,7 +22,7 @@ async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User
 					name,
 				},
 			})
-			.catch(e => print('PRISMA', `Failed to create user ${lid}:`, e, 'red'))
+			.catch((e) => print('PRISMA', `Failed to create user ${lid}:`, e, 'red'))
 		if (data) id = data.id
 	}
 
@@ -43,10 +43,10 @@ async function getUser({
 }): Promise<User | undefined> {
 	if (lid) {
 		// search by lid on cache
-		const data = cache.users.find(u => u.lid === lid)
+		const data = cache.users.find((u) => u.lid === lid)
 		if (data) return data
 		// not on cache, so lets search it on db
-		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(() => { })
+		const dbUser = await prisma.users.findFirst({ where: { lid } }).catch(() => {})
 		// no need to handle errors here because ergon should be able to work without a db
 
 		if (!dbUser) {
@@ -61,7 +61,7 @@ async function getUser({
 		return user
 	}
 	// no lid provided, so lets search by id on cache
-	const data = cache.users.find(u => u.id === id)
+	const data = cache.users.find((u) => u.id === id)
 	if (data) return data
 
 	// not on cache, so lets search on db

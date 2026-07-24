@@ -1,4 +1,7 @@
-import { Collection, defaults, type Msg, prisma } from '../map.ts'
+import Collection from '@class/collection.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import { type Msg } from '@conf/types/types.d.ts'
+import prisma from '@prisma'
 import type { GroupMetadata, GroupParticipant } from 'baileys'
 
 export default class Group {

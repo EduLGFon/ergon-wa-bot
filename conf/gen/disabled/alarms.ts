@@ -1,7 +1,7 @@
 import { sendMsg } from '../util/msgAbstractions.ts'
 import { randomDelay } from '../util/functions.ts'
 import prisma, { getUser } from './prisma.ts'
-import { User } from '../map.ts'
+import User from '@class/user.ts'
 
 export { createAlarms, getUserAlarms, sendAlarms }
 

@@ -33,8 +33,7 @@ function getBlocks(
 				}
 
 				const firstChar = text.trim()[0]
-				const prevEndsWithContinuation =
-					prevText.trim().match(/[-–,\/]$/) ||
+				const prevEndsWithContinuation = prevText.trim().match(/[-–,\/]$/) ||
 					prevText.trim().match(/\b(de|da|do|e|ou|para|com|em)\s*$/i)
 
 				if (
@@ -50,8 +49,7 @@ function getBlocks(
 
 		if (isNewBlock) {
 			if (currentBlock) {
-				currentBlock.centerIdx =
-					(currentBlock.startIdx + currentBlock.endIdx) /
+				currentBlock.centerIdx = (currentBlock.startIdx + currentBlock.endIdx) /
 					2
 				blocks.push(currentBlock)
 			}
@@ -125,9 +123,9 @@ export async function fetchCalendarLinks(
 			const textContent = p.replace(/<[^>]+>/g, '').trim()
 			// Stop if we hit a header, a new year's calendar, or another category
 			if (
-				textContent.length > 5 || 
-				p.includes('<h') || 
-				p.includes('Cursos EAD') || 
+				textContent.length > 5 ||
+				p.includes('<h') ||
+				p.includes('Cursos EAD') ||
 				p.includes('Anteriores:')
 			) {
 				break
@@ -194,8 +192,7 @@ export function parseBaseCalendarText(
 				for (let j = i + 1; j < tableLines.length; j++) {
 					if (tableLines[j].dPart) {
 						const center = Math.floor((i + j) / 2)
-						tableLines[center].dPart =
-							tableLines[i].dPart.replace(/a$/, ' a ') +
+						tableLines[center].dPart = tableLines[i].dPart.replace(/a$/, ' a ') +
 							tableLines[j].dPart
 						if (center !== i) tableLines[i].dPart = ''
 						if (center !== j) tableLines[j].dPart = ''
@@ -245,18 +242,14 @@ export function parseBaseCalendarText(
 				tableLines[Math.floor(b.centerIdx)].periodo === currentP
 			)
 			if (validG.length > 0) {
-				validG.sort((a, b) =>
-					Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c)
-				)
+				validG.sort((a, b) => Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c))
 				if (
 					validG.length > 1 &&
 					Math.abs(validG[0].centerIdx - c) ===
 						Math.abs(validG[1].centerIdx - c)
 				) {
 					assignments[c].g.push(
-						validG[1].centerIdx < validG[0].centerIdx
-							? validG[1]
-							: validG[0],
+						validG[1].centerIdx < validG[0].centerIdx ? validG[1] : validG[0],
 					)
 				} else {
 					assignments[c].g.push(validG[0])
@@ -267,18 +260,14 @@ export function parseBaseCalendarText(
 				tableLines[Math.floor(b.centerIdx)].periodo === currentP
 			)
 			if (validR.length > 0) {
-				validR.sort((a, b) =>
-					Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c)
-				)
+				validR.sort((a, b) => Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c))
 				if (
 					validR.length > 1 &&
 					Math.abs(validR[0].centerIdx - c) ===
 						Math.abs(validR[1].centerIdx - c)
 				) {
 					assignments[c].r.push(
-						validR[1].centerIdx < validR[0].centerIdx
-							? validR[1]
-							: validR[0],
+						validR[1].centerIdx < validR[0].centerIdx ? validR[1] : validR[0],
 					)
 				} else {
 					assignments[c].r.push(validR[0])
@@ -624,7 +613,7 @@ function addEvent(
 	if (clearExisting) events[key] = []
 
 	if (isExclusion) {
-		events[key] = events[key].filter(e => {
+		events[key] = events[key].filter((e) => {
 			const cleanA = e.atividade.toLowerCase().replace(/[^a-z0-9]/g, '')
 			const cleanB = ev.atividade.toLowerCase().replace(/[^a-z0-9]/g, '')
 			return !cleanA.includes(cleanB) && !cleanB.includes(cleanA)

@@ -2,7 +2,7 @@ import { type BaileysEventMap } from 'baileys'
 import cache from '../plugin/cache.ts'
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { Cmd } from '../map.ts'
+import Cmd from '@class/cmd.ts'
 import bot from '../wa.ts'
 
 export { loadCmds, loadEvents }
@@ -51,7 +51,8 @@ async function loadEvents() {
 		bot.sock.ev.on(name, (...args) => {
 			// It allows to modify events in run time
 			cache.events.get(name)!(...args, name).catch((e: Error) =>
-				print(`EVENT/${name}:`, e, e.stack, 'red'))
+				print(`EVENT/${name}:`, e, e.stack, 'red')
+			)
 			// it's the same as eventFunction(...args, name)
 		})
 	})

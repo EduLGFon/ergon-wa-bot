@@ -10,7 +10,8 @@ import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
 import { createMemories } from '../plugin/memories.ts'
 // import { createAlarms } from '../plugin/alarms.ts'
 import { sendMsg } from './msgAbstractions.ts'
-import { delay, User } from '../map.ts'
+import { delay } from '@util/functions.ts'
+import User from '@class/user.ts'
 
 // Initialize the Gemini client with the Studio API key.
 const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
@@ -51,13 +52,12 @@ async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
 		if (web) {
 			let searches = ''
 			if (web.length > 3) {
-				searches =
-					web
-						.slice(0, 3)
-						.map(s => s.encode())
-						.join(', ') + ', `...`'
+				searches = web
+					.slice(0, 3)
+					.map((s) => s.encode())
+					.join(', ') + ', `...`'
 			} else {
-				searches = web.map(s => s.encode()).join(', ')
+				searches = web.map((s) => s.encode()).join(', ')
 			}
 			msg.header += `- 🔍 ${searches}\n`
 		}

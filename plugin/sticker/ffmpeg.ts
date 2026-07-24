@@ -51,7 +51,7 @@ export function encodeVideo(
 ): FfmpegResult[] {
 	for (const level of LEVELS) {
 		const results = runFfmpeg(inputPath, outputDir, prefix, formats, level)
-		if (results.every(r => r.size <= maxSize)) return results
+		if (results.every((r) => r.size <= maxSize)) return results
 
 		// too big — clean outputs and retry with lower settings
 		cleanOutputs(outputDir, prefix, formats)
@@ -68,7 +68,9 @@ export function cleanup(
 	prefix: string,
 	formats: StickerFormat[],
 ): void {
-	try { unlinkSync(inputPath) } catch { /* already gone */ }
+	try {
+		unlinkSync(inputPath)
+	} catch { /* already gone */ }
 	cleanOutputs(outputDir, prefix, formats)
 }
 
@@ -83,14 +85,21 @@ function runFfmpeg(
 	level: { quality: number; fps: number },
 ): FfmpegResult[] {
 	const { filter, maps } = buildFilterGraph(
-		formats, level.quality, level.fps, outputDir, prefix,
+		formats,
+		level.quality,
+		level.fps,
+		outputDir,
+		prefix,
 	)
 
 	const args = [
-		'-y',                       // overwrite
-		'-t', String(MAX_DURATION), // cap input duration
-		'-i', inputPath,
-		'-filter_complex', filter,
+		'-y', // overwrite
+		'-t',
+		String(MAX_DURATION), // cap input duration
+		'-i',
+		inputPath,
+		'-filter_complex',
+		filter,
 		...maps,
 	]
 
@@ -124,19 +133,25 @@ function buildFilterGraph(
 	const maps: string[] = []
 
 	const codecArgs = (q: number) => [
-		'-c:v', 'libwebp',
-		'-loop', '0',
+		'-c:v',
+		'libwebp',
+		'-loop',
+		'0',
 		'-an',
-		'-quality', String(q),
-		'-compression_level', '4',
-		'-preset', 'icon',
+		'-quality',
+		String(q),
+		'-compression_level',
+		'4',
+		'-preset',
+		'icon',
 	]
 
 	if (formats.length === 1) {
 		const f = formats[0]
 		filters.push(`[0:v]fps=${fps},${scaleFilter(f)}[${f}]`)
 		maps.push(
-			'-map', `[${f}]`,
+			'-map',
+			`[${f}]`,
 			...codecArgs(quality),
 			outPath(outputDir, prefix, f),
 		)
@@ -149,7 +164,8 @@ function buildFilterGraph(
 			const f = formats[i]
 			filters.push(`[s${i}]${scaleFilter(f)}[${f}]`)
 			maps.push(
-				'-map', `[${f}]`,
+				'-map',
+				`[${f}]`,
 				...codecArgs(quality),
 				outPath(outputDir, prefix, f),
 			)
@@ -188,7 +204,7 @@ function readOutputs(
 	prefix: string,
 	formats: StickerFormat[],
 ): FfmpegResult[] {
-	return formats.map(f => {
+	return formats.map((f) => {
 		const buf = readFileSync(outPath(dir, prefix, f))
 		return { format: f, buffer: buf, size: buf.length }
 	})
@@ -196,6 +212,8 @@ function readOutputs(
 
 function cleanOutputs(dir: string, prefix: string, formats: StickerFormat[]): void {
 	for (const f of formats) {
-		try { unlinkSync(outPath(dir, prefix, f)) } catch { /* already gone */ }
+		try {
+			unlinkSync(outPath(dir, prefix, f))
+		} catch { /* already gone */ }
 	}
 }

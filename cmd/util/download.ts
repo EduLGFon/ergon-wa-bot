@@ -1,4 +1,7 @@
-import { Cmd, type CmdCtx, defaults, runCode } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import runCode from '@plugin/runCode.ts'
 import { randomDelay } from '../../util/functions.ts'
 import { readFile, unlink } from 'node:fs/promises'
 import type { AnyMessageContent } from 'baileys'
@@ -49,7 +52,6 @@ export default class extends Cmd {
 			Object.setPrototypeOf(data, {
 				[type]: await readFile(path),
 			})
-
 			;(data as any).fileName = undefined
 			delete (data as any).fileName
 

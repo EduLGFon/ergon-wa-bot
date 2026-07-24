@@ -95,11 +95,11 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 
 				for (const p in eventsByPeriod) {
 					outStr += `\n*[${p}]*\n`
-					
+
 					eventsByPeriod[p].sort((a, b) => {
 						const rA = (a.responsavel || '').trim().toLowerCase()
 						const rB = (b.responsavel || '').trim().toLowerCase()
-						
+
 						const getScore = (r: string) => {
 							if (r === 'estudante' || r === 'estudantes') return 1
 							if (r === 'professor' || r === 'professores') return 3
@@ -119,11 +119,11 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 						if (e.dateRange) {
 							range = ` (${e.dateRange})`
 						}
-						
+
 						let eventLine = `${prefix}${e.atividade}${range}`
 						const resp = (e.responsavel || '').trim().toLowerCase()
 						const isEstudante = resp === 'estudante' || resp === 'estudantes'
-						
+
 						if (isEstudante) {
 							outStr += ` 🚨 *${eventLine}*\n`
 						} else {
@@ -261,7 +261,9 @@ function parseMenuData(match: str[]) {
 				}
 			}
 		}
-		return `\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n- ${items.join(', ')}\n`
+		return `\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n- ${
+			items.join(', ')
+		}\n`
 	}
 
 	return (

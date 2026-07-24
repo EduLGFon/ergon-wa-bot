@@ -1,4 +1,6 @@
-import { Cmd, type CmdCtx, runCode } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import runCode from '@plugin/runCode.ts'
 
 export default class extends Cmd {
 	constructor() {

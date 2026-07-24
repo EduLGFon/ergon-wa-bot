@@ -6,12 +6,7 @@
  * Crashed workers are automatically respawned.
  */
 import { Worker } from 'node:worker_threads'
-import type {
-	StickerFormat,
-	StickerResult,
-	WorkerRequest,
-	WorkerResponse,
-} from './types.ts'
+import type { StickerFormat, StickerResult, WorkerRequest, WorkerResponse } from './types.ts'
 
 // ── types ───────────────────────────────────────────────────────────
 
@@ -55,7 +50,7 @@ export class StickerPool {
 		maxSize: number
 	}): Promise<StickerResult[]> {
 		return new Promise((resolve, reject) => {
-			const idle = this.workers.find(w => !w.busy)
+			const idle = this.workers.find((w) => !w.busy)
 
 			if (idle) {
 				this.dispatch(idle, job, resolve, reject)
@@ -67,7 +62,7 @@ export class StickerPool {
 
 	/** Terminate every worker. Call on process shutdown. */
 	async terminate(): Promise<void> {
-		await Promise.all(this.workers.map(w => w.instance.terminate()))
+		await Promise.all(this.workers.map((w) => w.instance.terminate()))
 	}
 
 	// ── internals ───────────────────────────────────────────────────
@@ -88,7 +83,7 @@ export class StickerPool {
 				pending.reject(new Error(res.error))
 			} else {
 				pending.resolve(
-					(res.results ?? []).map(r => ({
+					(res.results ?? []).map((r) => ({
 						format: r.format,
 						buffer: Buffer.from(r.buffer),
 					})),
@@ -138,7 +133,7 @@ export class StickerPool {
 	/** Send queued jobs to any idle workers. */
 	private drain(): void {
 		while (this.queue.length > 0) {
-			const idle = this.workers.find(w => !w.busy)
+			const idle = this.workers.find((w) => !w.busy)
 			if (!idle) return
 
 			const { resolve, reject, ...job } = this.queue.shift()!

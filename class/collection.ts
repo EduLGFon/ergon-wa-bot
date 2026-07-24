@@ -8,7 +8,7 @@ export default class Collection<K, V> extends Map<K, V> {
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
 	}
 
-	get(key: K): V | undefined {
+	override get(key: K): V | undefined {
 		return super.get(key)
 	}
 
