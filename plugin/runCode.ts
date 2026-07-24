@@ -5,11 +5,14 @@ import { randomDelay } from '../util/functions.ts'
 import { checkMatch } from '../util/msgTools.ts'
 import { type CmdCtx, delay } from '../map.ts'
 import { sendURMenu } from './menuScraping.ts'
-import { execSync } from 'node:child_process'
+import { exec } from 'node:child_process'
+import { promisify } from 'node:util'
 import { extname } from 'node:path'
 import { inspect } from 'node:util'
 import cache from './cache.ts'
 import bot from '../wa.ts'
+
+const execAsync = promisify(exec)
 
 type triggerIncludes = { includes: str[]; template: str }
 type triggerNotIncludes = { notIncludes: str[]; template: str }
@@ -67,7 +70,8 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 			cli[i] = `${data.cmd[i]} ${file} ${code}`
 			// place every cmd into the cli list
 
-			output += execSync(cli[i], { timeout: 30_000 }) + ' ' // run with 30s timeout
+			const res = await execAsync(cli[i], { timeout: 120_000 }) // run with 120s timeout
+			output += res.stdout + ' '
 		}
 		return output.trim()
 	} catch (e: any) {
