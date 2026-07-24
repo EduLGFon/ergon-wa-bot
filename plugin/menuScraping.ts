@@ -102,8 +102,8 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 						
 						const getScore = (r: string) => {
 							if (r === 'estudante' || r === 'estudantes') return 1
-							if (r.includes('estudante') && r.includes('professor')) return 2
-							return 3
+							if (r === 'professor' || r === 'professores') return 3
+							return 4
 						}
 						return getScore(rA) - getScore(rB)
 					})
@@ -121,10 +121,11 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 						}
 						
 						let eventLine = `${prefix}${e.atividade}${range}`
-						const isEstudante = (e.responsavel || '').trim().toLowerCase() === 'estudante'
+						const resp = (e.responsavel || '').trim().toLowerCase()
+						const isEstudante = resp === 'estudante' || resp === 'estudantes'
 						
 						if (isEstudante) {
-							outStr += ` 🔸 *${eventLine}*\n`
+							outStr += ` 🚨 *${eventLine}*\n`
 						} else {
 							outStr += ` 🔸 ${eventLine}\n`
 						}
