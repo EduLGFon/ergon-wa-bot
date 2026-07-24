@@ -478,8 +478,22 @@ export function parseResolutionText(
 						atividade: ativ,
 					},
 					baseEvents,
-					true,
+					false,
 					baseYear,
+				)
+			} else {
+				expandDates(
+					dateRaw,
+					{
+						periodo: '',
+						grupo: '',
+						responsavel: '',
+						atividade: ativ,
+					},
+					baseEvents,
+					false,
+					baseYear,
+					true,
 				)
 			}
 		}
@@ -530,6 +544,7 @@ function expandDates(
 	events: Record<string, CalendarEvent[]>,
 	clearExisting = false,
 	eventYear: number,
+	isExclusion = false,
 ) {
 	const originalDateRaw = dateRaw.replace(/\s*a\s*/g, ' a ').replace(
 		/\s*e\s*/g,
@@ -569,7 +584,7 @@ function expandDates(
 	for (const p of parsedSegments) {
 		if (p.type === 'single' && p.d) {
 			ev.dateRange = originalDateRaw
-			addEvent(p.d, ev, events, clearExisting, eventYear)
+			addEvent(p.d, ev, events, clearExisting, eventYear, isExclusion)
 		} else if (p.type === 'range' && p.start && p.end) {
 			const startD = new Date(eventYear, p.start.month - 1, p.start.day)
 			const endD = new Date(eventYear, p.end.month - 1, p.end.day)
@@ -581,6 +596,7 @@ function expandDates(
 					events,
 					clearExisting,
 					eventYear,
+					isExclusion,
 				)
 			}
 		}
@@ -599,12 +615,22 @@ function addEvent(
 	events: Record<string, CalendarEvent[]>,
 	clearExisting: boolean,
 	year: number,
+	isExclusion = false,
 ) {
 	const key = `${d.day.toString().padStart(2, '0')}/${
 		d.month.toString().padStart(2, '0')
 	}/${year}`
 	if (!events[key]) events[key] = []
 	if (clearExisting) events[key] = []
+
+	if (isExclusion) {
+		events[key] = events[key].filter(e => {
+			const cleanA = e.atividade.toLowerCase().replace(/[^a-z0-9]/g, '')
+			const cleanB = ev.atividade.toLowerCase().replace(/[^a-z0-9]/g, '')
+			return !cleanA.includes(cleanB) && !cleanB.includes(cleanA)
+		})
+		return
+	}
 
 	const exists = events[key].some((e) => e.atividade === ev.atividade)
 	if (!exists) {

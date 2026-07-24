@@ -28,7 +28,7 @@ async function run() {
 		const todayEvents = events[key]
 		if (todayEvents && todayEvents.length > 0) {
 			console.log(`\n===========================================`)
-			console.log(`📅 HOJE NA UFES - ${day}/${month}`)
+			console.log(`🎓 Calendário Acadêmico - ${day}/${month}`)
 			console.log(`===========================================`)
 
 			const eventsByPeriod: Record<string, any[]> = {}

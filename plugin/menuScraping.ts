@@ -146,7 +146,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 		msg += ` - *${day}/${month}*\n`
 		msg += menu.trimEnd() + (calendarEventsStr ? '\n\n' + calendarEventsStr : '')
 	} else {
-		msg = `📅 *HOJE NA UFES* - *${day}/${month}*\n\n`
+		msg = `🎓 *Calendário Acadêmico* - *${day}/${month}*\n\n`
 		msg += calendarEventsStr.trim()
 	}
 
