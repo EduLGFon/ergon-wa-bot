@@ -20,27 +20,35 @@ export default class extends Cmd {
 
 		const type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
-		const cliArgs = ['--cookies', 'conf/gen/cookies.txt', '--remote-components', 'ejs:github']
+		const cliArgs = [
+			'--cookies conf/gen/cookies.txt',
+			'--remote-components ejs:github',
+			'--no-playlist', // don't download whole playlists
+			'--geo-bypass', // bypass geo blocks
+			'--socket-timeout 15', // prevent hanging
+		]
 
 		const data = {
-			fileName: `download_${Date.now()}.`,
 			mimetype: '',
 		}
+		const fileName = `download_${Date.now()}`
 
 		if (type === 'video') {
-			cliArgs.push('-t mp4')
+			cliArgs.push('-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"')
+			cliArgs.push('-S "res:1080,ext:mp4:m4a"') // cap resolution at 1080p
+			cliArgs.push('--recode-video mp4') // guarantee mp4 format
 
-			data.fileName += 'mp4'
 			data.mimetype = 'video/mp4'
+			cliArgs.push(`-o "${defaults.runner.tempFolder}/${fileName}.mp4"`)
 		} else {
-			cliArgs.push('-t mp3')
+			cliArgs.push('-f "ba/bestaudio/best"')
+			cliArgs.push('-x --audio-format mp3') // extract audio and convert to mp3
 
-			data.fileName += 'mp3'
 			data.mimetype = 'audio/mpeg'
+			cliArgs.push(`-o "${defaults.runner.tempFolder}/${fileName}.mp3"`)
 		}
 
-		const path = `${defaults.runner.tempFolder}/${data.fileName}`
-		cliArgs.push(`-o ${path}`)
+		const path = `${defaults.runner.tempFolder}/${fileName}.${type === 'video' ? 'mp4' : 'mp3'}`
 
 		let output = ''
 		try {
