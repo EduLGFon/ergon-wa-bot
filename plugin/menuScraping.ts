@@ -19,7 +19,7 @@ export function scheduleURMenuMsg() {
 	Deno.cron('Check for Menu Updates', '*/15 10-22 * * 1-5', checkForUpdates)
 
 	// schedule calendar update every Sunday at 3 AM UTC-3 (6 AM UTC)
-	Deno.cron('Update Calendar Cache', '0 6 * * 0', async () => {
+	Deno.cron('Update Calendar Cache', '0 6 * * 7', async () => {
 		try {
 			await updateCalendarCache()
 			print('MENUSCRAP', 'Calendar cache updated', 'green')
