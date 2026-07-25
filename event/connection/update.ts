@@ -3,8 +3,8 @@ import { randomDelay } from '@util/functions.ts'
 import { loadEvents } from '@util/handler.ts'
 import Collection from '@class/collection.ts'
 import { delay } from '@util/functions.ts'
+import { qrcode } from '@libs/qrcode'
 import bot from '@plugin/bot.ts'
-import QRCode from 'qrcode'
 
 const MAX_LOGINS_IN_MINUTE = 3
 // Keep last logins DateTime to avoid reconecting too fast
@@ -18,7 +18,7 @@ export default async function (event: Partial<ConnectionState>) {
 
 	if (event.qr) {
 		print('QR', 'Scan this QR code to login:', 'yellow')
-		print(await QRCode.toString(event.qr, { type: 'terminal' }))
+		qrcode(event.qr, { output: 'console' })
 	}
 
 	switch (event.connection) {

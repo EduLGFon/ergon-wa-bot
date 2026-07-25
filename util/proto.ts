@@ -1,22 +1,37 @@
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import humanizeDuration, { type Unit } from 'humanize-duration'
-import { DateTime, Duration } from 'luxon'
 import { getFixedT } from 'i18next'
-import chalk from 'chalk'
-import pino from 'pino'
 
 // get 'now' date time formatted
-const now = (format = 'dd/MM TT.SSS') =>
-	DateTime.now().setZone(process.env.TZ).setLocale(defaults.lang).toFormat(format) // TT = HOURS:MINUTES:SECONDS
+const now = () => {
+	const d = new Date()
+	try {
+		return new Intl.DateTimeFormat(defaults.lang, {
+			timeZone: process.env.TZ,
+			day: '2-digit',
+			month: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			fractionalSecondDigits: 3,
+			hour12: false,
+		}).format(d).replace(',', '')
+	} catch {
+		return d.toISOString()
+	}
+}
 
-// Pino Logger
-const logger = pino({
+// Dummy Logger for Baileys
+const logger: any = {
 	level: 'silent',
-	transport: {
-		target: 'pino-pretty',
-		options: { ignore: 'pid,hostname' },
-	},
-})
+	child: () => logger,
+	trace: () => {},
+	debug: () => {},
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	fatal: () => {},
+}
 
 export { logger, now }
 
@@ -53,11 +68,9 @@ console.warn = (...args) => {
 }
 
 const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
-const colorize = (color: 'red', ...args: any) => {
-	if (brightColors.includes(color)) color += 'Bright'
-
-	const func = chalk?.bold[color]
-	return func ? [func(...args)] : args
+const colorize = (color: string, ...args: any) => {
+	const text = args.map((a: any) => typeof a === 'string' ? a : Deno.inspect(a)).join(' ')
+	return [`%c${text}`, `color: ${color}; font-weight: bold;`]
 }
 function print(...args: any) {
 	if (
@@ -75,7 +88,7 @@ function print(...args: any) {
 	console.log(
 		...colorize(
 			color,
-			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] - ${args?.shift()}`,
+			`[ ${now()} |${memory}|${args?.shift()?.align(11)}] -`,
 			...args,
 		),
 	)
@@ -225,23 +238,21 @@ function strPrototypes() {
 
 				if (!match[0]) return [0]
 
+				const multipliers: Record<string, number> = {
+					s: 1000,
+					m: 60 * 1000,
+					h: 60 * 60 * 1000,
+					d: 24 * 60 * 60 * 1000,
+					w: 7 * 24 * 60 * 60 * 1000,
+					mo: 30 * 24 * 60 * 60 * 1000,
+					y: 365 * 24 * 60 * 60 * 1000,
+				}
+
 				const ms = match
 					.map((m) => {
 						const quantity = parseInt(m, 10)
 						const unit = m.replace(String(quantity), '')
-
-						const duration = Duration.fromObject({
-							years: unit === 'y' ? quantity : 0,
-							months: unit === 'mo' ? quantity : 0, // Convert 'd' to 'days'
-							days: unit === 'd' ? quantity : 0, // Convert 'd' to 'days'
-							hours: unit === 'h' ? quantity : 0,
-							minutes: unit === 'm' ? quantity : 0,
-							seconds: unit === 's' ? quantity : 0,
-							weeks: unit === 'w' ? quantity : 0,
-							quarters: 0,
-							milliseconds: 0,
-						})
-						return duration.as('milliseconds')
+						return quantity * (multipliers[unit] || 0)
 					})
 					.reduce((prev, crt) => prev + crt)
 

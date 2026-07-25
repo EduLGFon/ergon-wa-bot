@@ -4,40 +4,29 @@ import { getAllowedTagsList } from '@plugin/groupAnnouncer.ts'
 import { existsSync } from 'jsr:@std/fs'
 import { sendMsg } from '@util/msgAbstractions.ts'
 import cache from '@plugin/cache.ts'
-import cron from 'node-cron'
 
 let day = '',
 	month = '',
 	year = ''
 const numPadding = (n: number) => (n < 10 ? '0' + n : n.toString()) // 4 => 04
 updateDate()
-// schedule msg sending to 6 AM UTC-3
 export function scheduleURMenuMsg() {
-	cron.schedule('0 6 * * *', () => sendURMenu(), {
-		// cron time explanation
-		// 0 = minute
-		// 6 = hour
-		// * = any day of the month
-		// * = any month
-		// * = any day of the week
-		timezone: process.env.TZ,
-		// timezone like: America/Sao_Paulo
-	})
+	// Deno.cron runs in UTC, so we translate UTC-3 (America/Sao_Paulo) to UTC
+	// 6 AM UTC-3 = 9 AM UTC
+	Deno.cron('Send UR Menu', '0 9 * * *', () => sendURMenu())
 
-	// schedule checking for updates
-	cron.schedule('*/15 7-19 * * 1-5', checkForUpdates, {
-		timezone: process.env.TZ,
-	})
+	// schedule checking for updates (7 AM - 7 PM UTC-3 = 10 AM - 10 PM UTC)
+	Deno.cron('Check for Menu Updates', '*/15 10-22 * * 1-5', checkForUpdates)
 
-	// schedule calendar update every Sunday at 3 AM
-	cron.schedule('0 3 * * 0', async () => {
+	// schedule calendar update every Sunday at 3 AM UTC-3 (6 AM UTC)
+	Deno.cron('Update Calendar Cache', '0 6 * * 0', async () => {
 		try {
 			await updateCalendarCache()
 			print('MENUSCRAP', 'Calendar cache updated', 'green')
 		} catch (e) {
 			print('MENUSCRAP', 'Failed to update calendar cache', e, 'red')
 		}
-	}, { timezone: process.env.TZ })
+	})
 
 	// run once on startup
 	updateCalendarCache().catch(() => null)
@@ -148,7 +137,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 	} else {
 		msg = calendarEventsStr.replace(
 			'🎓 *Calendário Acadêmico:*',
-			`🎓 *Calendário Acadêmico* - *${day}/${month}*`
+			`🎓 *Calendário Acadêmico* - *${day}/${month}*`,
 		).trim()
 	}
 
