@@ -10,8 +10,8 @@ import {
 	useMultiFileAuthState,
 	type WASocket,
 } from 'baileys'
-import postgresAuthState from '../plugin/authState.ts'
-import { logger } from '../util/proto.ts'
+import postgresAuthState from '@plugin/authState.ts'
+import { logger } from '@util/proto.ts'
 
 export default class Baileys {
 	lid: str = ''

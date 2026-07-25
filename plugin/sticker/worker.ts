@@ -8,8 +8,8 @@
  * to keep blocking work off the main event loop.
  */
 import { join } from 'jsr:@std/path'
-import { cleanup, encodeVideo } from './ffmpeg.ts'
-import type { WorkerRequest, WorkerResponse } from './types.ts'
+import { cleanup, encodeVideo } from '@plugin/sticker/ffmpeg.ts'
+import type { WorkerRequest, WorkerResponse } from '@plugin/sticker/types.ts'
 
 const TEMP_DIR = 'conf/gen/temp'
 

@@ -7,7 +7,7 @@
  */
 import webpmux from 'node-webpmux'
 const { Image } = webpmux
-import type { StickerMetadata } from './types.ts'
+import type { StickerMetadata } from '@plugin/sticker/types.ts'
 
 /**
  * Build the binary EXIF blob that WhatsApp reads for sticker metadata.

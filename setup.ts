@@ -1,4 +1,4 @@
-import { join, basename } from 'jsr:@std/path'
+import { basename, join } from 'jsr:@std/path'
 import { existsSync } from 'jsr:@std/fs'
 
 const isWin = Deno.build.os === 'windows'
@@ -25,12 +25,16 @@ function runCmd(command: string, args: string[], env: Record<string, string> = {
 // Helper to get python command name without shell: true
 function getPythonCommand(): string {
 	const testCmd = isWin ? 'python' : 'python3'
-	try { const testPy = new Deno.Command(testCmd, { args: ['--version'] }).outputSync()
-	if (testPy.success) return testCmd } catch (_e) { /* noop */ }
+	try {
+		const testPy = new Deno.Command(testCmd, { args: ['--version'] }).outputSync()
+		if (testPy.success) return testCmd
+	} catch (_e) { /* noop */ }
 
 	if (!isWin) {
-		try { const testPyNo3 = new Deno.Command('python', { args: ['--version'] }).outputSync()
-		if (testPyNo3.success) return 'python' } catch (_e) { /* noop */ }
+		try {
+			const testPyNo3 = new Deno.Command('python', { args: ['--version'] }).outputSync()
+			if (testPyNo3.success) return 'python'
+		} catch (_e) { /* noop */ }
 	}
 
 	throw new Error('Python is not installed or not in PATH.')
@@ -96,9 +100,7 @@ async function runMediumSetup() {
 			return false
 		}
 
-		const pipPath = isWin
-			? join(venvPath, 'Scripts', 'pip')
-			: join(venvPath, 'bin', 'pip')
+		const pipPath = isWin ? join(venvPath, 'Scripts', 'pip') : join(venvPath, 'bin', 'pip')
 
 		console.log('Installing pip dependencies (rembg, onnxruntime, yt-dlp)...')
 		runCmd(pipPath, ['install', 'rembg', 'onnxruntime', 'yt-dlp[default,curl-cffi]'])
@@ -138,10 +140,8 @@ function configureEnv(_rl: any) {
 	let languages: string[] = ['pt', 'en', 'es', 'fr', 'de']
 	try {
 		if (existsSync(localesDir)) {
-			const files = Array.from(Deno.readDirSync(localesDir)).map(f => f.name)
-			languages = files.filter((f) => f.endsWith('.json')).map((f) =>
-				basename(f, '.json')
-			)
+			const files = Array.from(Deno.readDirSync(localesDir)).map((f) => f.name)
+			languages = files.filter((f) => f.endsWith('.json')).map((f) => basename(f, '.json'))
 		}
 	} catch (_e) {
 		// Keep defaults
@@ -304,7 +304,7 @@ function runStartForeground() {
 		stderr: 'inherit',
 		env: { ...Deno.env.toObject(), ...envExtra },
 	})
-	
+
 	const child = cmd.spawn()
 	return child.status.then((status) => {
 		console.log(`\nBot process exited with code ${status.code}`)
@@ -320,7 +320,7 @@ function runStartBackground() {
 		const checkPM2 = new Deno.Command(pm2Cmd, { args: ['describe', 'wa'] }).outputSync()
 		isPM2Running = checkPM2.success
 	} catch (_e) { /* noop */ }
-	
+
 	if (isPM2Running) {
 		console.log('Bot is already running in PM2. Restarting it...')
 		runCmd('pm2', ['restart', 'wa'])
@@ -378,7 +378,7 @@ async function runResetStrong() {
 	try {
 		console.log('Loading Prisma Client...')
 		// Import generated client
-		const { PrismaClient } = await import('./conf/gen/prisma/client.ts')
+		const { PrismaClient } = await import('@conf/gen/prisma/client.ts')
 		let prisma: any
 
 		try {
@@ -423,7 +423,6 @@ async function runResetStrong() {
 // MAIN WIZARD LOOP
 async function main() {
 	loadEnv()
-
 
 	// If .env doesn't exist, force configuration first
 	if (!existsSync(join('conf', '.env'))) {
@@ -501,7 +500,6 @@ async function main() {
 		}
 	}
 
-	
 	console.log('\nGoodbye!')
 }
 

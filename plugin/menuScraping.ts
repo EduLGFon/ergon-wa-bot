@@ -1,10 +1,9 @@
-import { delay, randomDelay } from '../util/functions.ts'
-import { updateCalendarCache } from './calendarParser.ts'
-import { getAllowedTagsList } from './groupAnnouncer.ts'
+import { delay, randomDelay } from '@util/functions.ts'
+import { updateCalendarCache } from '@plugin/calendarParser.ts'
+import { getAllowedTagsList } from '@plugin/groupAnnouncer.ts'
 import { existsSync } from 'jsr:@std/fs'
-import { sendMsg } from '../util/msgAbstractions.ts'
-import { _scheduleJob } from 'npm:node-schedule'
-import cache from './cache.ts'
+import { sendMsg } from '@util/msgAbstractions.ts'
+import cache from '@plugin/cache.ts'
 import cron from 'node-cron'
 
 let day = '',

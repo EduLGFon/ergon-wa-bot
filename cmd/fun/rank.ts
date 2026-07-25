@@ -1,4 +1,4 @@
-import { getUser } from '../../plugin/prisma.ts'
+import { getUser } from '@prisma'
 import Cmd from '@class/cmd.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import User from '@class/user.ts'

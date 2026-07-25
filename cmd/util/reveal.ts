@@ -1,5 +1,5 @@
-import { getMedia } from '../../util/msgAbstractions.ts'
-import { randomDelay } from '../../util/functions.ts'
+import { getMedia } from '@util/msgAbstractions.ts'
+import { randomDelay } from '@util/functions.ts'
 import { type AnyMessageContent } from 'baileys'
 import Cmd from '@class/cmd.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'

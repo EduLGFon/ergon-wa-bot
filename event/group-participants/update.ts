@@ -1,4 +1,4 @@
-import { getGroup } from '../../plugin/prisma.ts'
+import { getGroup } from '@prisma'
 import { type ParticipantAction } from 'baileys'
 
 /** group-participants.update:

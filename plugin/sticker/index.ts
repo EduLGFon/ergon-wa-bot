@@ -6,10 +6,10 @@
  *   • Videos  → worker thread pool running ffmpeg (non-blocking)
  *   • All outputs get EXIF metadata injected before being returned
  */
-import type { StickerOptions, StickerResult } from './types.ts'
-import { processImage } from './image.ts'
-import { injectExif } from './exif.ts'
-import { StickerPool } from './pool.ts'
+import type { StickerOptions, StickerResult } from '@plugin/sticker/types.ts'
+import { processImage } from '@plugin/sticker/image.ts'
+import { injectExif } from '@plugin/sticker/exif.ts'
+import { StickerPool } from '@plugin/sticker/pool.ts'
 
 const DEFAULT_MAX_SIZE = 1_000_000 // 1 MB — WhatsApp won't load larger stickers
 const POOL_SIZE = 2
@@ -69,4 +69,4 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 	)
 }
 
-export type { StickerFormat, StickerMetadata, StickerResult } from './types.ts'
+export type { StickerFormat, StickerMetadata, StickerResult } from '@plugin/sticker/types.ts'

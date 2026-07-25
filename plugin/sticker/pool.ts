@@ -6,7 +6,12 @@
  * Crashed workers are automatically respawned.
  */
 // removed node:worker_threads
-import type { StickerFormat, StickerResult, WorkerRequest, WorkerResponse } from './types.ts'
+import type {
+	StickerFormat,
+	StickerResult,
+	WorkerRequest,
+	WorkerResponse,
+} from '@plugin/sticker/types.ts'
 
 // ── types ───────────────────────────────────────────────────────────
 
@@ -70,7 +75,7 @@ export class StickerPool {
 	private spawn(): PoolWorker {
 		const instance = new Worker(
 			new URL('./worker.ts', import.meta.url).href,
-			{ type: 'module' }
+			{ type: 'module' },
 		)
 		const pw: PoolWorker = { instance, busy: false }
 

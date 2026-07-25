@@ -1,7 +1,7 @@
-import { randomDelay } from '../../util/functions.ts'
-import { getGroup } from '../../plugin/prisma.ts'
+import { randomDelay } from '@util/functions.ts'
+import { getGroup } from '@prisma'
 import { type GroupMetadata } from 'baileys'
-import cache from '../../plugin/cache.ts'
+import cache from '@plugin/cache.ts'
 
 // group update event
 export default async function (groups: Partial<GroupMetadata>[]) {

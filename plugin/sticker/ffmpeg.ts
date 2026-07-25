@@ -10,7 +10,7 @@
  *   • Temp files are namespaced per job to prevent collisions between workers
  */
 // node imports removed
-import type { StickerFormat } from './types.ts'
+import type { StickerFormat } from '@plugin/sticker/types.ts'
 
 const SIZE = 512
 const MAX_DURATION = 11

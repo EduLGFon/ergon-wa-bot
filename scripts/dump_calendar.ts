@@ -1,4 +1,4 @@
-import { updateCalendarCache } from '../plugin/calendarParser.ts'
+import { updateCalendarCache } from '@plugin/calendarParser.ts'
 import { existsSync } from 'jsr:@std/fs'
 
 async function run() {

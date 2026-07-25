@@ -46,7 +46,7 @@ const cmds = {
 		args.forEach((a) => {
 			const recipe = receipes[a as keyof typeof receipes]
 			if (!recipe) return console.log('not found:', a)
-			
+
 			// @ts-ignore
 			const ctrl = recipe.controller as AbortController
 			if (ctrl) ctrl.abort()

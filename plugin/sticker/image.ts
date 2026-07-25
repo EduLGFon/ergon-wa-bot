@@ -6,7 +6,7 @@
  * offloading is needed for single images.
  */
 import sharp from 'sharp'
-import type { StickerFormat } from './types.ts'
+import type { StickerFormat } from '@plugin/sticker/types.ts'
 
 const SIZE = 512
 

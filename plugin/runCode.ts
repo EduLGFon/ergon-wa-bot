@@ -3,11 +3,11 @@ import { type CmdCtx } from '@conf/types/types.d.ts'
 import prisma, { getGroup, getUser } from '@prisma'
 import { randomDelay } from '@util/functions.ts'
 import { checkMatch } from '@util/msgTools.ts'
-import { sendURMenu } from './menuScraping.ts'
+import { sendURMenu } from '@plugin/menuScraping.ts'
 import { delay } from '@util/functions.ts'
 import { extname } from 'jsr:@std/path'
 import bot from '@plugin/bot.ts'
-import cache from './cache.ts'
+import cache from '@plugin/cache.ts'
 
 // removed execAsync
 

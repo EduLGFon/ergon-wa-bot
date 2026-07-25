@@ -1,5 +1,5 @@
-import { getMedia, reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
-import { randomDelay } from '../util/functions.ts'
+import { getMedia, reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
+import { randomDelay } from '@util/functions.ts'
 import Group from '@class/group.ts'
 import { type Msg } from '@conf/types/types.d.ts'
 import User from '@class/user.ts'

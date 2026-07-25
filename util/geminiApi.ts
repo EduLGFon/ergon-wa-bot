@@ -6,10 +6,10 @@ import {
 	GoogleGenAI,
 	ThinkingLevel,
 } from '@google/genai'
-import type { GoogleFile, Gparams } from '../conf/types/types.d.ts'
-import { createMemories } from '../plugin/memories.ts'
-// import { createAlarms } from '../plugin/alarms.ts'
-import { sendMsg } from './msgAbstractions.ts'
+import type { GoogleFile, Gparams } from '@conf/types/types.d.ts'
+import { createMemories } from '@plugin/memories.ts'
+// import { createAlarms } from '@plugin/alarms.ts'
+import { sendMsg } from '@util/msgAbstractions.ts'
 import { delay } from '@util/functions.ts'
 import User from '@class/user.ts'
 

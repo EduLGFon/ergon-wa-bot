@@ -1,10 +1,10 @@
 import Cmd from '@class/cmd.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import { cleanMemories } from '../../plugin/memories.ts'
-import { getMedia } from '../../util/msgAbstractions.ts'
-import { randomDelay } from '../../util/functions.ts'
-import gemini from '../../util/geminiApi.ts'
+import { cleanMemories } from '@plugin/memories.ts'
+import { getMedia } from '@util/msgAbstractions.ts'
+import { randomDelay } from '@util/functions.ts'
+import gemini from '@util/geminiApi.ts'
 
 export default class extends Cmd {
 	constructor() {

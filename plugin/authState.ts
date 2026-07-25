@@ -5,7 +5,7 @@ import {
 	proto,
 	type SignalDataTypeMap,
 } from 'baileys'
-import prisma from './prisma.ts'
+import prisma from '@prisma'
 
 /** PostgreSQL auth strategy
  * it is used if you setted 'DATABASE_URL' env var

@@ -71,7 +71,7 @@ export default abstract class Cmd {
 			}
 		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
 
-		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb')
+		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb', { user })
 		// there is no DB and cmd can't run without it
 
 		return true

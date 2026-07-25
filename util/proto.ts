@@ -1,4 +1,4 @@
-import defaults from '../conf/defaults.json' with { type: 'json' }
+import defaults from '@conf/defaults.json' with { type: 'json' }
 import humanizeDuration, { type Unit } from 'humanize-duration'
 import { DateTime, Duration } from 'luxon'
 import { getFixedT } from 'i18next'

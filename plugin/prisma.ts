@@ -2,7 +2,7 @@ import { PrismaClient } from '@conf/gen/prisma/client.ts'
 import { PrismaPg } from '@prisma/adapter-pg'
 import Group from '@class/group.ts'
 import User from '@class/user.ts'
-import cache from './cache.ts'
+import cache from '@plugin/cache.ts'
 import bot from '@plugin/bot.ts'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })

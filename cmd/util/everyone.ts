@@ -1,4 +1,4 @@
-import { randomDelay } from '../../util/functions.ts'
+import { randomDelay } from '@util/functions.ts'
 import Cmd from '@class/cmd.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 

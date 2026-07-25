@@ -1,4 +1,4 @@
-import { languages } from '../../util/locale.ts'
+import { languages } from '@util/locale.ts'
 import Cmd from '@class/cmd.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 
