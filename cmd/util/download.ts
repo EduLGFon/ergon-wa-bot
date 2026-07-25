@@ -4,6 +4,7 @@ import type { AnyMessageContent } from 'baileys'
 import { randomDelay } from '@util/functions.ts'
 import runCode from '@plugin/runCode.ts'
 import emojis from '@util/emojis.ts'
+import { Buffer } from 'node:buffer'
 import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
@@ -56,7 +57,7 @@ export default class extends Cmd {
 			await startTyping()
 			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
-			const buffer = await Deno.readFile(path)
+			const buffer = Buffer.from(await Deno.readFile(path))
 			const mediaMessage = {
 				[type]: buffer,
 				mimetype: data.mimetype,
@@ -65,7 +66,11 @@ export default class extends Cmd {
 			await send(mediaMessage)
 			await Deno.remove(path) // cleanup temp file
 		} catch (_e: any) {
-			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
+			send(
+				`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}\n\n*_Erro:_* ${
+					_e?.stack || _e?.message || _e
+				}`,
+			)
 		}
 	}
 }
