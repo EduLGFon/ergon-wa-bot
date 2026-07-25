@@ -1,8 +1,8 @@
 import { spawn, spawnSync } from 'node:child_process'
-import readline from 'readline/promises'
+import readline from 'node:readline/promises'
 import path from 'node:path'
 import fs from 'node:fs'
-import os from 'os'
+import os from 'node:os'
 
 const isWin = os.platform() === 'win32'
 
@@ -62,7 +62,7 @@ function loadEnv() {
 }
 
 // 1. Setup options
-async function runLightSetup() {
+function runLightSetup() {
 	console.log('\n--- Running Light Setup ---')
 	console.log('Installing global tools (prisma, pm2) with scripts allowed...')
 	runCmd('deno', ['task', 'presetup'])
@@ -142,7 +142,7 @@ async function configureEnv(rl: readline.Interface) {
 				path.basename(f, '.json')
 			)
 		}
-	} catch (e) {
+	} catch (_e) {
 		// Keep defaults
 	}
 
@@ -224,7 +224,7 @@ GROUPS2=''
 	if (fs.existsSync(defaultsPath)) {
 		try {
 			defaults = JSON.parse(fs.readFileSync(defaultsPath, 'utf-8'))
-		} catch (e) {
+		} catch (_e) {
 			console.warn('Could not parse existing defaults.json. Recreating...')
 		}
 	}
@@ -252,7 +252,7 @@ GROUPS2=''
 }
 
 // 3. Update bot
-async function runUpdate() {
+function runUpdate() {
 	console.log('\n--- Running Update ---')
 	console.log('Pulling latest code changes...')
 	const gitPulled = runCmd('git', ['pull', 'origin', 'master'])
@@ -286,7 +286,7 @@ async function runUpdate() {
 }
 
 // 4. Start/Restart bot
-async function runStartForeground() {
+function runStartForeground() {
 	console.log('\n=========================================')
 	console.log('     Starting Bot in Foreground          ')
 	console.log('=========================================')
@@ -309,7 +309,7 @@ async function runStartForeground() {
 	})
 }
 
-async function runStartBackground() {
+function runStartBackground() {
 	console.log('\n--- Starting in Background (PM2) ---')
 	// Check if process wa is already in PM2 list
 	const pm2Cmd = isWin ? 'pm2.cmd' : 'pm2'
@@ -325,7 +325,7 @@ async function runStartBackground() {
 }
 
 // 5. Stop bot
-async function runStop() {
+function runStop() {
 	console.log('\n--- Stopping PM2 Process ---')
 	runCmd('pm2', ['delete', 'wa'])
 	console.log('Bot process stopped/deleted from PM2.')
@@ -350,7 +350,7 @@ function cleanFolderContents(dirPath: string) {
 	}
 }
 
-async function runResetLight() {
+function runResetLight() {
 	console.log('\n--- Cleaning Temporary and Auth folders ---')
 	cleanFolderContents(path.join('conf', 'gen', 'auth'))
 	cleanFolderContents(path.join('conf', 'gen', 'cache'))
@@ -379,7 +379,7 @@ async function runResetStrong() {
 			const { PrismaPg } = await import('@prisma/adapter-pg')
 			const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 			prisma = new PrismaClient({ adapter })
-		} catch (e) {
+		} catch (_e) {
 			//@ts-ignore Fallback to standard PrismaClient
 			prisma = new PrismaClient()
 		}

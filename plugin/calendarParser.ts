@@ -74,9 +74,6 @@ function getBlocks(
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
-import { existsSync } from 'node:fs'
-
 const execAsync = promisify(exec)
 
 export async function fetchCalendarLinks(
@@ -159,7 +156,7 @@ export function parseBaseCalendarText(
 	const events: Record<string, CalendarEvent[]> = {}
 
 	let inTable = false
-	let gIdx = -1, rIdx = -1, dIdx = -1, aIdx = -1
+	let _gIdx = -1, rIdx = -1, dIdx = -1, aIdx = -1
 
 	let currentPeriodo = ''
 	let currentYear = baseYear
@@ -287,7 +284,7 @@ export function parseBaseCalendarText(
 				b.lines.join(' ').replace(/\s+/g, ' ').trim()
 			).join(' ').trim()
 
-			let dateStr = tableLines[c].dPart.replace(/\s+/g, ' ').trim()
+			const dateStr = tableLines[c].dPart.replace(/\s+/g, ' ').trim()
 			if (
 				dateStr && fullAtiv && !fullAtiv.includes('AÇÕES REFERENTES AO') &&
 				!dateStr.includes('AÇÕES REFERENTES')
@@ -347,7 +344,7 @@ export function parseBaseCalendarText(
 		) {
 			processTableLines()
 			inTable = true
-			gIdx = lineClean.indexOf('Grupo de atividades')
+			_gIdx = lineClean.indexOf('Grupo de atividades')
 			rIdx = lineClean.indexOf('Responsável')
 			dIdx = lineClean.indexOf('Data')
 			aIdx = lineClean.indexOf('Atividade')
@@ -377,7 +374,7 @@ export function parseBaseCalendarText(
 			const dSplit = findSplitIndex(lineClean, localDIdx)
 			const aSplit = findSplitIndex(lineClean, localAIdx)
 
-			let gPart = lineClean.substring(0, rSplit).trim()
+			const gPart = lineClean.substring(0, rSplit).trim()
 			let rPart = lineClean.substring(rSplit, dSplit).trim()
 			let dPart = lineClean.substring(dSplit, aSplit).trim()
 			let aPart = lineClean.substring(aSplit).trim()
@@ -441,7 +438,7 @@ export function parseResolutionText(
 	function flushEvent() {
 		if (currentEventLines.length === 0) return
 
-		let cleanStr = currentEventLines.join(' ')
+		const cleanStr = currentEventLines.join(' ')
 			.replace(/^"/, '')
 			.replace(/”\(NR\)$/, '')
 			.replace(/"$/, '')
@@ -454,7 +451,7 @@ export function parseResolutionText(
 
 		const match = cleanStr.match(/^([\d\s/ae]+)\s*[-–]\s*(.+)/i)
 		if (match) {
-			let dateRaw = match[1].trim()
+			const dateRaw = match[1].trim()
 			const ativ = match[2].trim()
 
 			if (!isExclusion) {
@@ -490,7 +487,7 @@ export function parseResolutionText(
 	}
 
 	for (const line of lines) {
-		let lineClean = line.trim()
+		const lineClean = line.trim()
 		if (!lineClean) continue
 
 		if (lineClean.includes('exclui o item:')) isExclusion = true
@@ -578,7 +575,7 @@ function expandDates(
 			const startD = new Date(eventYear, p.start.month - 1, p.start.day)
 			const endD = new Date(eventYear, p.end.month - 1, p.end.day)
 			ev.dateRange = originalDateRaw
-			for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+			for (const d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
 				addEvent(
 					{ day: d.getDate(), month: d.getMonth() + 1 },
 					ev,
