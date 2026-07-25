@@ -39,9 +39,7 @@ export default class extends Cmd {
 			'4', // concurrent fragment downloads for HLS/DASH streams (Reddit/Twitch/etc)
 		]
 
-		if (url.includes('youtube.com') || url.includes('youtu.be')) {
-			cliArgs.push('--extractor-args', 'youtube:player_client=android')
-		} else if (url.includes('twitter.com') || url.includes('x.com')) {
+		if (url.includes('twitter.com') || url.includes('x.com')) {
 			cliArgs.push('--extractor-args', 'twitter:api=graphql')
 		}
 
