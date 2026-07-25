@@ -35,17 +35,14 @@ export default class extends Cmd {
 			'--max-filesize',
 			'2G', // WhatsApp document max size is 2GB
 			'--no-warnings', // keep the error logs clean
+			'-N',
+			'4', // concurrent fragment downloads for HLS/DASH streams (Reddit/Twitch/etc)
 		]
 
 		if (url.includes('youtube.com') || url.includes('youtu.be')) {
 			cliArgs.push('--extractor-args', 'youtube:player_client=android')
 		} else if (url.includes('twitter.com') || url.includes('x.com')) {
 			cliArgs.push('--extractor-args', 'twitter:api=graphql')
-		} else if (url.includes('tiktok.com')) {
-			cliArgs.push(
-				'--user-agent',
-				'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36',
-			)
 		}
 
 		const fileName = `download_${Date.now()}`
@@ -66,7 +63,7 @@ export default class extends Cmd {
 			data.mimetype = 'video/mp4'
 		} else {
 			cliArgs.push('-f', 'bestaudio')
-			cliArgs.push('-x', '--audio-format', 'mp3')
+			cliArgs.push('-x', '--audio-format', 'mp3', '--audio-quality', '0') // highest VBR
 			cliArgs.push('-o', path)
 			data.mimetype = 'audio/mpeg'
 		}
