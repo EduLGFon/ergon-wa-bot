@@ -13,7 +13,8 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	// Add: adds a value to the collection
-	add(key: K, value?: V | object): Promise<V> {
+	// deno-lint-ignore require-await
+	async add(key: K, value?: V | object): Promise<V> {
 		if (!key) throw new Error('Missing object key')
 
 		if (!value) {

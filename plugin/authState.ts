@@ -1,5 +1,4 @@
 import {
-	type _AuthenticationCreds,
 	type AuthenticationState,
 	BufferJSON,
 	initAuthCreds,
