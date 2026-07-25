@@ -1,14 +1,16 @@
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
 import { type CmdCtx, type Msg, type MsgTypes } from '@conf/types/types.d.ts'
 import { allMsgTypes, coolValues, isMedia } from '@conf/types/msgs.ts'
-import prisma, { getGroup, getUser } from '@plugin/prisma.ts'
+import { msgs, users } from '@conf/schema.ts'
 import { findKey } from '@util/functions.ts'
-import cache from '@plugin/cache.ts'
+import { db, getGroup, getUser } from '@db'
 import { logger } from '@util/proto.ts'
+import { eq, sql } from 'drizzle-orm'
+import cache from '@plugin/cache.ts'
 import Group from '@class/group.ts'
 import User from '@class/user.ts'
-import Cmd from '@class/cmd.ts'
 import bot from '@plugin/bot.ts'
+import Cmd from '@class/cmd.ts'
 
 // getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
@@ -75,15 +77,13 @@ async function checkMatch(key: proto.IMessageKey) {
 	const memberAlt = (key as any)?.participantAlt
 
 	if (member?.includes('@lid') && memberAlt?.includes('@s.whatsapp.net')) {
-		const oldUser = await prisma.users.findFirst({ where: { lid: memberAlt } })
+		const oldUser = (await db?.select().from(users).where(eq(users.lid, memberAlt)))?.[0]
 		if (!oldUser) return
-		const newUser = await prisma.users.findFirst({ where: { lid: member } })
+		const newUser = (await db?.select().from(users).where(eq(users.lid, member)))?.[0]
 		if (!newUser) return
 
-		const oldMsgs = await prisma.msgs.findMany({ where: { author: oldUser.id } })
-		const newMsgs = await prisma.msgs.findMany({
-			where: { author: newUser.id },
-		})
+		const oldMsgs = (await db?.select().from(msgs).where(eq(msgs.author, oldUser.id))) || []
+		const newMsgs = (await db?.select().from(msgs).where(eq(msgs.author, newUser.id))) || []
 		print(
 			'MATCH',
 			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser.id}) has two entries.`,
@@ -95,26 +95,14 @@ async function checkMatch(key: proto.IMessageKey) {
 		const author = oldUser.id
 		for (const m of newMsgs) {
 			const group = m.group
-			await prisma.msgs.upsert({
-				where: {
-					author_group: { author, group },
-				},
-				create: {
-					author,
-					group,
-					count: m.count,
-				},
-				update: {
-					count: { increment: m.count },
-				},
+			await db?.insert(msgs).values({ author, group, count: m.count }).onConflictDoUpdate({
+				target: [msgs.author, msgs.group],
+				set: { count: sql`${msgs.count} + ${m.count}` },
 			})
 		}
-		await prisma.msgs.deleteMany({ where: { author: newUser.id } })
-		await prisma.users.update({
-			where: { id: oldUser.id },
-			data: { lid: newUser.lid },
-		})
-		await prisma.users.deleteMany({ where: { id: newUser.id } })
+		await db?.delete(msgs).where(eq(msgs.author, newUser.id))
+		await db?.update(users).set({ lid: newUser.lid }).where(eq(users.id, oldUser.id))
+		await db?.delete(users).where(eq(users.id, newUser.id))
 	}
 }
 

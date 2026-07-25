@@ -3,10 +3,10 @@ import checkGroupAnnouncer from '@plugin/groupAnnouncer.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import { delay } from '@util/functions.ts'
 import { getCtx } from '@util/msgTools.ts'
-import { getUser } from '@prisma'
 import cache from '@plugin/cache.ts'
 import { type proto } from 'baileys'
 import { getFixedT } from 'i18next'
+import { getUser } from '@db'
 
 // messages upsert event
 export default async function (raw: { messages: proto.IWebMessageInfo[] }, _event: str) {
@@ -17,9 +17,9 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		// get abstract msg obj
 		const { msg, args, cmd, group, user } = await getCtx(m)
 		if (!user || !msg) continue
-		if (process.env.SHOW_IDS) console.log(user.name, msg.text, group?.id || msg.chat, msg)
+		if (Deno.env.get('SHOW_IDS')) console.log(user.name, msg.text, group?.id || msg.chat, msg)
 		// this is for dev purpouses like getting a group ID
-		if (process.env.DEV && !process.env.DEVS!.includes(user.lid)) continue
+		if (Deno.env.get('DEV') && !Deno.env.get('DEVS')!.includes(user.lid)) continue
 
 		// poorly way to count globally msgs received by day
 		const today = new Date().getDate()

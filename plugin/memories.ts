@@ -1,5 +1,7 @@
-import prisma from '@prisma'
+import { users } from '@conf/schema.ts'
 import User from '@class/user.ts'
+import { eq } from 'drizzle-orm'
+import { db } from '@db'
 
 export { cleanMemories, createMemories }
 const memoryRegex = /{MEMORY:.+}/gi
@@ -25,23 +27,15 @@ async function createMemories(user: User, msg: AIMsg) {
 		msg.header += `*🧠 Memória ativada: ${m.encode()}*\n`
 	}
 
-	if (!process.env.DATABASE_URL) return
-	await prisma.users.update({
-		// update user memories in database
-		where: { id: user.id },
-		data: { memories: JSON.stringify(user.memories) },
-	})
-	return
+	if (!Deno.env.get('DATABASE_URL')) return
+	await db?.update(users).set({ memories: JSON.stringify(user.memories) }).where(
+		eq(users.id, user.id),
+	)
 }
 
 async function cleanMemories(user: User) {
 	user.memories = [] // delete all memories
 
-	if (!process.env.DATABASE_URL) return
-	await prisma.users.update({
-		// delete it also on DB
-		where: { id: user.id },
-		data: { memories: '' },
-	})
-	return
+	if (!Deno.env.get('DATABASE_URL')) return
+	await db?.update(users).set({ memories: '' }).where(eq(users.id, user.id))
 }

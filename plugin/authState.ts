@@ -5,7 +5,9 @@ import {
 	proto,
 	type SignalDataTypeMap,
 } from 'baileys'
-import prisma from '@prisma'
+import { authCreds, authKey } from '@conf/schema.ts'
+import { and, eq, inArray } from 'drizzle-orm'
+import { db } from '@db'
 
 /** PostgreSQL auth strategy
  * it is used if you setted 'DATABASE_URL' env var
@@ -25,16 +27,15 @@ const postgresAuthState = async (
 ): Promise<{ state: AuthenticationState; saveCreds: () => Promise<void> }> => {
 	const writeCreds = async (data: any) => {
 		const json = toStorableJson(data)
-		await prisma.authCreds.upsert({
-			where: { session },
-			create: { session, data: json },
-			update: { data: json },
+		await db?.insert(authCreds).values({ session, data: json }).onConflictDoUpdate({
+			target: authCreds.session,
+			set: { data: json },
 		})
 	}
 
 	const readCreds = async () => {
-		const row = await prisma.authCreds.findUnique({ where: { session } })
-		return fromStorableJson(row?.data)
+		const rows = await db?.select().from(authCreds).where(eq(authCreds.session, session))
+		return fromStorableJson(rows?.[0]?.data)
 	}
 
 	let creds = await readCreds()
@@ -53,13 +54,13 @@ const postgresAuthState = async (
 						print(type, ids)
 						return {}
 					}
-					const rows = await prisma.authKey.findMany({
-						where: {
-							session,
-							category: type,
-							key: { in: ids },
-						},
-					})
+					const rows = (await db?.select().from(authKey).where(
+						and(
+							eq(authKey.session, session),
+							eq(authKey.category, type),
+							inArray(authKey.key, ids),
+						),
+					)) || []
 
 					const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
 					await Promise.all(
@@ -87,28 +88,25 @@ const postgresAuthState = async (
 
 							if (value) {
 								tasks.push(
-									prisma.authKey.upsert({
-										where: {
-											session_category_key: {
-												session,
-												category,
-												key,
-											},
-										},
-										create: {
-											session,
-											category,
-											key,
-											data: json,
-										},
-										update: { data: json },
+									db?.insert(authKey).values({
+										session,
+										category,
+										key,
+										data: json,
+									}).onConflictDoUpdate({
+										target: [authKey.session, authKey.category, authKey.key],
+										set: { data: json },
 									}),
 								)
 							} else {
 								tasks.push(
-									prisma.authKey.deleteMany({
-										where: { session, category, key },
-									}),
+									db?.delete(authKey).where(
+										and(
+											eq(authKey.session, session),
+											eq(authKey.category, category),
+											eq(authKey.key, key),
+										),
+									),
 								)
 							}
 						}

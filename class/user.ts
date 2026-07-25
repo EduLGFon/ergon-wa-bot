@@ -1,8 +1,10 @@
-import Collection from '@class/collection.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { type Msg } from '@conf/types/types.d.ts'
-import prisma from '@prisma'
+import Collection from '@class/collection.ts'
 import type { Content } from '@google/genai'
+import { users } from '@conf/schema.ts'
+import { eq } from 'drizzle-orm'
+import { db } from '@db'
 
 export default class User {
 	id: num
@@ -42,12 +44,10 @@ export default class User {
 	public set name(value: str) {
 		// update user name
 		this._name = value // on cache
-		if (process.env.DATABASE_URL) {
+		if (Deno.env.get('DATABASE_URL')) {
 			// update it on DB too
-			prisma.users.update({
-				where: { id: this.id },
-				data: { name: value },
-			}).catch((e) => print('USER', `Failed to update name for user ${this.id}:`, e, 'red'))
+			db?.update(users).set({ name: value }).where(eq(users.id, this.id))
+				.catch((e) => print('USER', `Failed to update name for user ${this.id}:`, e, 'red'))
 		}
 	}
 
@@ -59,12 +59,10 @@ export default class User {
 	public set lang(value: str) {
 		// update user language
 		this._lang = value // on cache
-		if (process.env.DATABASE_URL) {
+		if (Deno.env.get('DATABASE_URL')) {
 			// update it on DB too
-			prisma.users.update({
-				where: { id: this.id },
-				data: { lang: value },
-			}).catch((e) => print('USER', `Failed to update lang for user ${this.id}:`, e, 'red'))
+			db?.update(users).set({ lang: value }).where(eq(users.id, this.id))
+				.catch((e) => print('USER', `Failed to update lang for user ${this.id}:`, e, 'red'))
 		}
 	}
 
@@ -76,12 +74,12 @@ export default class User {
 	set prefix(value: str) {
 		// update user db
 		this._prefix = value // on cache
-		if (process.env.DATABASE_URL) {
+		if (Deno.env.get('DATABASE_URL')) {
 			// update it on DB too
-			prisma.users.update({
-				where: { id: this.id },
-				data: { prefix: value },
-			}).catch((e) => print('USER', `Failed to update prefix for user ${this.id}:`, e, 'red'))
+			db?.update(users).set({ prefix: value }).where(eq(users.id, this.id))
+				.catch((e) =>
+					print('USER', `Failed to update prefix for user ${this.id}:`, e, 'red')
+				)
 		}
 	}
 
@@ -89,12 +87,9 @@ export default class User {
 		// +1 on user cmds count
 		this.cmds++ // on cache
 
-		if (!process.env.DATABASE_URL) return
-		await prisma.users.update({
-			// update it on db
-			where: { id: this.id },
-			data: { cmds: { increment: 1 } },
-		})
-		return
+		if (!Deno.env.get('DATABASE_URL')) return
+		// update it on db
+		const { sql } = await import('drizzle-orm')
+		await db?.update(users).set({ cmds: sql`${users.cmds} + 1` }).where(eq(users.id, this.id))
 	}
 }

@@ -1,7 +1,7 @@
-import { getUser } from '@prisma'
-import Cmd from '@class/cmd.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import User from '@class/user.ts'
+import Cmd from '@class/cmd.ts'
+import { getUser } from '@db'
 
 export default class extends Cmd {
 	constructor() {

@@ -34,7 +34,7 @@ const cmds = {
 		args.forEach((a) => {
 			const recipe = receipes[a as keyof typeof receipes]
 			if (!recipe) return console.log('not found:', a)
-			//@ts-ignore shut up TypeScript
+			// @ts-ignore: Deno typing problem with recipe keys
 			receipes[a].controller = spawn(receipes[a].cmd)
 		})
 	},
@@ -42,12 +42,12 @@ const cmds = {
 		// kill a script
 		console.log('Killing:', ...args)
 
-		//@ts-ignore shut up TypeScript
+		// @ts-ignore: Deno typing problem with recipe keys
 		args.forEach((a) => {
 			const recipe = receipes[a as keyof typeof receipes]
 			if (!recipe) return console.log('not found:', a)
 
-			// @ts-ignore
+			// @ts-ignore: Deno typing problem with recipe keys
 			const ctrl = recipe.controller as AbortController
 			if (ctrl) ctrl.abort()
 			else console.log('not running:', a)
@@ -63,7 +63,7 @@ const cmds = {
 			if (!recipe) return console.log('not found:', a)
 
 			recipe.controller.abort() // kill it
-			// @ts-ignore
+			// @ts-ignore: Deno typing problem with recipe keys
 			recipe.controller = spawn(recipe.cmd) as AbortController // spawn it
 		})
 	},
