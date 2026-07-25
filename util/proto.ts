@@ -7,7 +7,7 @@ const now = () => {
 	const d = new Date()
 	try {
 		return new Intl.DateTimeFormat(defaults.lang, {
-			timeZone: process.env.TZ,
+			timeZone: Deno.env.get('TZ'),
 			day: '2-digit',
 			month: '2-digit',
 			hour: '2-digit',
@@ -40,7 +40,7 @@ export default () => {
 	numPrototypes() // add number prototypes
 	global.print = print
 	console.info = print
-	if (process.env.DEV) print('DEV', 'Development mode enabled', 'blue')
+	if (Deno.env.get('DEV')) print('DEV', 'Development mode enabled', 'blue')
 	print('PROTO', 'setted', 'yellow')
 }
 
@@ -67,7 +67,6 @@ console.warn = (...args) => {
 	return warn(...args)
 }
 
-const brightColors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
 const colorize = (color: string, ...args: any) => {
 	const text = args.map((a: any) => typeof a === 'string' ? a : Deno.inspect(a)).join(' ')
 	return [`%c${text}`, `color: ${color}; font-weight: bold;`]
@@ -83,7 +82,7 @@ function print(...args: any) {
 	if (typeof args[2] !== 'string') return console.log(...args)
 
 	const color = args.pop()
-	const memory = process.memoryUsage().rss.bytes().align(5)
+	const memory = Deno.memoryUsage().rss.bytes().align(5)
 
 	console.log(
 		...colorize(

@@ -18,7 +18,7 @@ export default class extends Cmd {
 
 		// execution duration
 		const duration = (Date.now() - startTime).duration(true)
-		const RAM = process.memoryUsage().rss.bytes() // current RAM usage
+		const RAM = Deno.memoryUsage().rss.bytes() // current RAM usage
 
 		const text = `\`$ ${duration}/${RAM}\`\n` + output
 

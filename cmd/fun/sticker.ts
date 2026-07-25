@@ -25,7 +25,7 @@ export default class extends Cmd {
 		const metadata = {
 			pack: `=== Ergon Bot ===\n` +
 				`[👑] Autor: ${user.name}\n` +
-				`[📅] Data: ${now('D')}\n` +
+				`[📅] Data: ${now()}\n` +
 				`[❓] Suporte: dsc.gg/ergon`,
 			author: '',
 		}

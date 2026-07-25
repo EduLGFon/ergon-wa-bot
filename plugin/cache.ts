@@ -53,13 +53,13 @@ class CacheManager {
 			const json = collection.toJSON ? collection.toJSON() : collection
 			await Deno.writeTextFile(`conf/gen/cache/${cat}.json`, JSON.stringify(json)) // write cache
 		}
-		print('CACHE', 'Metrics and media saved', 'yellow')
+		print('CACHE', 'Metrics saved', 'yellow')
 	}
 
 	async resume() {
 		for (const cat of cachedData) {
 			// if --rm-cache is passed, remove cache files
-			if (process.argv.includes('--rm-cache')) {
+			if (Deno.args.includes('--rm-cache')) {
 				await Deno.remove(`conf/gen/cache/${cat}.json`)
 				// remove cache files
 

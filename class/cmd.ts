@@ -47,7 +47,7 @@ export default abstract class Cmd {
 		const send = sendMsg.bind(msg.chat)
 		const react = reactToMsg.bind(msg)
 
-		const isDev = !!process.env.DEVS?.includes(user.lid)
+		const isDev = !!Deno.env.get('DEVS')?.includes(user.lid)
 		// if a normal user tries to run a only-for-devs cmd
 
 		if (this.access.restrict && !isDev) return react('prohibited')
@@ -71,7 +71,9 @@ export default abstract class Cmd {
 			}
 		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
 
-		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb', { user })
+		if (this.access.needsDb && !Deno.env.get('DATABASE_URL')) {
+			return send('events.nodb', { user })
+		}
 		// there is no DB and cmd can't run without it
 
 		return true

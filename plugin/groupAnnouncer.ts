@@ -24,8 +24,8 @@ let isSending = false
 const msgQueue: Announcement[] = []
 
 function getAllowedTags() {
-	const groups1 = process.env.GROUPS1?.split('|') ?? []
-	const groups2 = process.env.GROUPS2?.split('|') ?? []
+	const groups1 = Deno.env.get('GROUPS1')?.split('|') ?? []
+	const groups2 = Deno.env.get('GROUPS2')?.split('|') ?? []
 	return {
 		'#diurno': groups1,
 		'#noturno': groups2,

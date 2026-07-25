@@ -16,13 +16,13 @@ async function start() {
 	await cleanTemp()
 	await loadEvents()
 
-	if (process.env.GROUPS1) scheduleURMenuMsg()
+	if (Deno.env.get('GROUPS1')) scheduleURMenuMsg()
 }
 
 // Save cache on both SIGINT (Ctrl+C) and SIGTERM (PM2 stop/restart)
 const onExit = async () => {
 	await cache.save()
-	process.exit(0)
+	Deno.exit(0)
 }
-process.on('SIGINT', onExit)
-process.on('SIGTERM', onExit)
+Deno.addSignalListener('SIGINT', onExit)
+Deno.addSignalListener('SIGTERM', onExit)

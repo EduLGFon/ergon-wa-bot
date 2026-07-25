@@ -14,7 +14,7 @@ import { delay } from '@util/functions.ts'
 import User from '@class/user.ts'
 
 // Initialize the Gemini client with the Studio API key.
-const GoogleAI = new GoogleGenAI({ apiKey: process.env.GEMINI })
+const GoogleAI = new GoogleGenAI({ apiKey: Deno.env.get('GEMINI') })
 
 export default async function gemini({ input, user, msg, file, model }: Gparams) {
 	const resBody = {
