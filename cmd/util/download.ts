@@ -28,7 +28,7 @@ export default class extends Cmd {
 			'--geo-bypass', // bypass geo blocks
 			'--socket-timeout 15', // prevent hanging
 			'--impersonate Chrome', // bypass bot detection using curl-cffi
-			'--max-filesize 512M', // prevent downloading massive files that WhatsApp would reject
+			'--max-filesize 2G', // WhatsApp document max size is 2GB
 			'--no-warnings', // keep the error logs clean
 		]
 
@@ -48,7 +48,7 @@ export default class extends Cmd {
 		const fileName = `download_${Date.now()}`
 
 		if (type === 'video') {
-			cliArgs.push('-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"')
+			cliArgs.push('-f "b[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"')
 			cliArgs.push('-S "res:1080,ext:mp4:m4a"') // cap resolution at 1080p
 			cliArgs.push('--recode-video mp4') // guarantee mp4 format
 
@@ -74,10 +74,22 @@ export default class extends Cmd {
 			if (!stat) throw new Error('NOT_FOUND')
 
 			const buffer = Buffer.from(await Deno.readFile(path))
-			const mediaMessage = {
-				[type]: buffer,
-				mimetype: data.mimetype,
-			} as unknown as AnyMessageContent
+
+			let mediaMessage: AnyMessageContent
+			if (stat.size > 256 * 1024 * 1024) {
+				// If over 256MB, send as a Document to bypass the strict video/audio limits
+				mediaMessage = {
+					document: buffer,
+					mimetype: data.mimetype,
+					fileName: `${fileName}.${type === 'video' ? 'mp4' : 'mp3'}`,
+				} as unknown as AnyMessageContent
+			} else {
+				// Otherwise, send as native playable media
+				mediaMessage = {
+					[type]: buffer,
+					mimetype: data.mimetype,
+				} as unknown as AnyMessageContent
+			}
 
 			await send(mediaMessage)
 			await Deno.remove(path) // cleanup temp file
