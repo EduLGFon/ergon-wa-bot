@@ -146,8 +146,10 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 		msg += ` - *${day}/${month}*\n`
 		msg += menu.trimEnd() + (calendarEventsStr ? '\n\n' + calendarEventsStr : '')
 	} else {
-		msg = `🎓 *Calendário Acadêmico* - *${day}/${month}*\n\n`
-		msg += calendarEventsStr.trim()
+		msg = calendarEventsStr.replace(
+			'🎓 *Calendário Acadêmico:*',
+			`🎓 *Calendário Acadêmico* - *${day}/${month}*`
+		).trim()
 	}
 
 	const groups = process.env.DEV
