@@ -1,13 +1,12 @@
-import { scheduleURMenuMsg } from './plugin/menuScraping.ts'
-import { loadCmds, loadEvents } from './util/handler.ts'
-import cache, { cleanTemp } from './plugin/cache.ts'
+import { scheduleURMenuMsg } from '@plugin/menuScraping.ts'
+import { loadCmds, loadEvents } from '@util/handler.ts'
+import cache, { cleanTemp } from '@plugin/cache.ts'
 import locale from '@util/locale.ts'
 import proto from '@util/proto.ts'
-import Baileys from './class/baileys.ts'
+import bot from '@plugin/bot.ts'
 
 proto() // load prototypes
 locale() // load locales
-const bot = new Baileys()
 
 start()
 async function start() {
@@ -20,7 +19,6 @@ async function start() {
 	if (process.env.GROUPS1) scheduleURMenuMsg()
 }
 
-export default bot
 // Save cache on both SIGINT (Ctrl+C) and SIGTERM (PM2 stop/restart)
 const onExit = async () => {
 	await cache.save()

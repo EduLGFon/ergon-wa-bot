@@ -1,9 +1,9 @@
 import { type BaileysEventMap } from 'baileys'
-import cache from '../plugin/cache.ts'
 import { readdirSync } from 'node:fs'
+import cache from '@plugin/cache.ts'
 import { resolve } from 'node:path'
+import bot from '@plugin/bot.ts'
 import Cmd from '@class/cmd.ts'
-import bot from '../wa.ts'
 
 export { loadCmds, loadEvents }
 

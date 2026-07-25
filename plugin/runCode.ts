@@ -1,17 +1,17 @@
-import defaults from '../conf/defaults.json' with { type: 'json' }
-import prisma, { getGroup, getUser } from './prisma.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
 import { readFile, writeFile } from 'node:fs/promises'
-import { randomDelay } from '../util/functions.ts'
-import { checkMatch } from '../util/msgTools.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
-import { delay } from '@util/functions.ts'
+import prisma, { getGroup, getUser } from '@prisma'
+import { randomDelay } from '@util/functions.ts'
+import { checkMatch } from '@util/msgTools.ts'
 import { sendURMenu } from './menuScraping.ts'
+import { delay } from '@util/functions.ts'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { extname } from 'node:path'
 import { inspect } from 'node:util'
+import bot from '@plugin/bot.ts'
 import cache from './cache.ts'
-import bot from '../wa.ts'
 
 const execAsync = promisify(exec)
 

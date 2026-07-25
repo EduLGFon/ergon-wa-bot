@@ -1,8 +1,8 @@
 import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
-import Group from '@class/group.ts'
+import { reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
 import { type default as User } from '@class/user.ts'
-import { reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
-import bot from '../wa.ts'
+import Group from '@class/group.ts'
+import bot from '@plugin/bot.ts'
 
 export default abstract class Cmd {
 	name: str

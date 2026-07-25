@@ -1,9 +1,9 @@
 import { type ConnectionState, DisconnectReason } from 'baileys'
-import { randomDelay } from '../../util/functions.ts'
-import { loadEvents } from '../../util/handler.ts'
+import { randomDelay } from '@util/functions.ts'
+import { loadEvents } from '@util/handler.ts'
 import Collection from '@class/collection.ts'
 import { delay } from '@util/functions.ts'
-import bot from '../../wa.ts'
+import bot from '@plugin/bot.ts'
 import QRCode from 'qrcode'
 
 const MAX_LOGINS_IN_MINUTE = 3

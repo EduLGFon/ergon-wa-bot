@@ -1,14 +1,14 @@
-import { allMsgTypes, coolValues, isMedia } from '@conf/types/msgs.ts'
-import Cmd from '@class/cmd.ts'
+import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
 import { type CmdCtx, type Msg, type MsgTypes } from '@conf/types/types.d.ts'
+import { allMsgTypes, coolValues, isMedia } from '@conf/types/msgs.ts'
+import prisma, { getGroup, getUser } from '@plugin/prisma.ts'
 import { findKey } from '@util/functions.ts'
+import cache from '@plugin/cache.ts'
+import { logger } from './proto.ts'
 import Group from '@class/group.ts'
 import User from '@class/user.ts'
-import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
-import prisma, { getGroup, getUser } from '../plugin/prisma.ts'
-import cache from '../plugin/cache.ts'
-import { logger } from './proto.ts'
-import bot from '../wa.ts'
+import Cmd from '@class/cmd.ts'
+import bot from '@plugin/bot.ts'
 
 // getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
@@ -139,7 +139,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	).catch((e) => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
+	).catch((_e) => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
 
 	if (!buffer) return
 
