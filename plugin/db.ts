@@ -9,7 +9,10 @@ if (connectionString) {
 	const sql = postgres(connectionString, { max: 5 })
 	dbClient = drizzle(sql, { schema })
 } else {
-	console.log('%c[DB] - No DATABASE_URL found. Running without DB connection.', 'color: red; font-weight: bold;')
+	console.log(
+		'%c[DB] - No DATABASE_URL found. Running without DB connection.',
+		'color: red; font-weight: bold;',
+	)
 }
 
 export const db = dbClient

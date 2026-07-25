@@ -19,7 +19,8 @@ export default class extends Cmd {
 
 		// Calculate DB Ping by searching for this user's id
 		const DbPing = await measurePing(async () => {
-			await db?.select().from(users).where(eq(users.id, user.id))
+			if (!db) throw new Error('No DB')
+			await db.select().from(users).where(eq(users.id, user.id))
 		})
 		text += createStr('🥜', '..Database_', DbPing)
 
