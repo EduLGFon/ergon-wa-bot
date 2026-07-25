@@ -1,6 +1,6 @@
 {
 	"lang": "pt",
-	"prefix": ",",
+	"prefix": ".",
 	"ai": {
 		"gemini_chain": [
 			"gemini-2.5-flash",
