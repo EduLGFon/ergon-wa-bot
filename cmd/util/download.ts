@@ -28,6 +28,9 @@ export default class extends Cmd {
 			'--geo-bypass', // bypass geo blocks
 			'--socket-timeout 15', // prevent hanging
 			'--impersonate Chrome', // bypass bot detection using curl-cffi
+			'--max-filesize 512M', // prevent downloading massive files that WhatsApp would reject
+			'--no-warnings', // keep the error logs clean
+			'--extractor-args "youtube:player_client=android,web"', // mimic Android app to bypass web-only YouTube bot checks
 		]
 
 		const data = {
