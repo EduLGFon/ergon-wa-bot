@@ -48,13 +48,13 @@ export default class extends Cmd {
 			await startTyping()
 			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
-			Object.setPrototypeOf(data, {
-				[type]: await Deno.readFile(path),
-			})
-			;(data as any).fileName = undefined
-			delete (data as any).fileName
+			const buffer = await Deno.readFile(path)
+			const mediaMessage = {
+				[type]: buffer,
+				mimetype: data.mimetype,
+			} as unknown as AnyMessageContent
 
-			await send(data as AnyMessageContent)
+			await send(mediaMessage)
 			await Deno.remove(path) // cleanup temp file
 		} catch (_e: any) {
 			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
