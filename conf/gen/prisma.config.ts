@@ -1,4 +1,3 @@
-import 'jsr:@std/dotenv/load'
 import { defineConfig, env } from 'prisma/config'
 
 export default defineConfig({
