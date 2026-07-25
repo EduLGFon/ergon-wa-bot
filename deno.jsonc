@@ -90,6 +90,7 @@
 	"allowScripts": [
 		"npm:@google/genai@2.13.0",
 		"npm:@prisma/engines@7.9.0",
+		"npm:@whiskeysockets/baileys@7.0.0-rc13",
 		"npm:prisma@7.9.0",
 		"npm:protobufjs@7.6.5",
 		"npm:sharp@0.30.7",
