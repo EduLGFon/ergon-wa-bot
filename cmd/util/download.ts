@@ -30,8 +30,17 @@ export default class extends Cmd {
 			'--impersonate Chrome', // bypass bot detection using curl-cffi
 			'--max-filesize 512M', // prevent downloading massive files that WhatsApp would reject
 			'--no-warnings', // keep the error logs clean
-			'--extractor-args "youtube:player_client=android,web"', // mimic Android app to bypass web-only YouTube bot checks
 		]
+
+		if (url.includes('youtube.com') || url.includes('youtu.be')) {
+			cliArgs.push('--extractor-args "youtube:player_client=android"')
+		} else if (url.includes('twitter.com') || url.includes('x.com')) {
+			cliArgs.push('--extractor-args "twitter:api=graphql"')
+		} else if (url.includes('tiktok.com')) {
+			cliArgs.push(
+				'--user-agent "Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36"',
+			)
+		}
 
 		const data = {
 			mimetype: '',
