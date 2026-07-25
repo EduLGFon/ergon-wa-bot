@@ -46,7 +46,7 @@
 		"@db": "./plugin/db.ts",
 		"@wa": "./wa.ts"
 	},
-	"unstable": [],
+	"unstable": ["cron"],
 	"tasks": {
 		"presetup": "deno install -g npm:drizzle-kit npm:pm2",
 		"setup": "deno task presetup && deno install && echo light setup complete",
