@@ -26,11 +26,11 @@ function runCmd(command: string, args: string[], env: Record<string, string> = {
 function getPythonCommand(): string {
 	const testCmd = isWin ? 'python' : 'python3'
 	try { const testPy = new Deno.Command(testCmd, { args: ['--version'] }).outputSync()
-	if (testPy.success) return testCmd } catch (e) {}
+	if (testPy.success) return testCmd } catch (_e) { /* noop */ }
 
 	if (!isWin) {
 		try { const testPyNo3 = new Deno.Command('python', { args: ['--version'] }).outputSync()
-		if (testPyNo3.success) return 'python' } catch (e) {}
+		if (testPyNo3.success) return 'python' } catch (_e) { /* noop */ }
 	}
 
 	throw new Error('Python is not installed or not in PATH.')
@@ -128,7 +128,7 @@ async function runStrongSetup() {
 }
 
 // 2. Configure Environment
-async function configureEnv(_rl: any) {
+function configureEnv(_rl: any) {
 	console.log('\n=========================================')
 	console.log('       Configuration Wizard              ')
 	console.log('=========================================')
@@ -319,7 +319,7 @@ function runStartBackground() {
 	try {
 		const checkPM2 = new Deno.Command(pm2Cmd, { args: ['describe', 'wa'] }).outputSync()
 		isPM2Running = checkPM2.success
-	} catch (e) {}
+	} catch (_e) { /* noop */ }
 	
 	if (isPM2Running) {
 		console.log('Bot is already running in PM2. Restarting it...')

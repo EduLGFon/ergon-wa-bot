@@ -5,7 +5,7 @@ export default class extends Cmd {
 	constructor() {
 		super({})
 	}
-	async run({ t, send, msg, user, args }: CmdCtx) {
+	run({ t, send, msg, user, args }: CmdCtx) {
 		if (!args[0] || !msg.text.includes(',')) return send('usage.choose', { user })
 
 		const options = args.join(' ').split(',') // split options

@@ -74,7 +74,7 @@ class CacheManager {
 				print('CACHE', `No ${cat} cache`, 'blue')
 				continue
 			}
-			const json = JSON.parse(cache, (key, value) => {
+			const json = JSON.parse(cache, (_key, value) => {
 				if (
 					value !== null && typeof value === 'object' && value.type === 'Buffer' &&
 					Array.isArray(value.data)

@@ -106,7 +106,7 @@ function spawn(cmd: string | string[]) {
 				signal: control.signal,
 			}).spawn()
 			return control
-		} catch (e) {
+		} catch (_e) {
 			return
 		}
 	}

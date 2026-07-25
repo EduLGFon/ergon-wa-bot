@@ -15,7 +15,7 @@ export default class extends Cmd {
 	}
 
 	async run({ msg, startTyping, send, t }: CmdCtx) {
-		let media = await getMedia(msg)
+		const media = await getMedia(msg)
 
 		if (!media || !media.mime.includes('image')) return send(t('sticker.nobuffer'))
 		await startTyping()

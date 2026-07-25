@@ -35,6 +35,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				// it's a this-process JS code
 				// i'll place several variables and functions here
 				// bc i may want to use them on eval
+				// deno-lint-ignore no-unused-vars
 				const { msg, args, user, group, send, react } = ctx!
 				randomDelay
 				writeFile

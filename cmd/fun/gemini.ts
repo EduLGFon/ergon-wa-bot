@@ -50,7 +50,7 @@ export default class extends Cmd {
 			user,
 			msg, // this message
 			file: await getMedia(msg),
-		}).catch(async (e): Promise<any> => {
+		}).catch((_e): Promise<any> => {
 			send(`> *${model}:* Modelo não disponível. Tente novamente mais tarde ou amanhã.`, {
 				quoted: msg,
 			})

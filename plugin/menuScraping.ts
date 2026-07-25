@@ -3,7 +3,7 @@ import { updateCalendarCache } from './calendarParser.ts'
 import { getAllowedTagsList } from './groupAnnouncer.ts'
 import { existsSync } from 'jsr:@std/fs'
 import { sendMsg } from '../util/msgAbstractions.ts'
-import { scheduleJob } from 'npm:node-schedule'
+import { _scheduleJob } from 'npm:node-schedule'
 import cache from './cache.ts'
 import cron from 'node-cron'
 
@@ -120,7 +120,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 							range = ` (${e.dateRange})`
 						}
 
-						let eventLine = `${prefix}${e.atividade}${range}`
+						const eventLine = `${prefix}${e.atividade}${range}`
 						const resp = (e.responsavel || '').trim().toLowerCase()
 						const isEstudante = resp === 'estudante' || resp === 'estudantes'
 
@@ -234,7 +234,7 @@ const MealEmojis = {
 function parseMenuData(match: str[]) {
 	const meal = match[1] as keyof typeof Hours
 
-	let lines = match[2]
+	const lines = match[2]
 		.replace(regexTags, '\n')
 		.split('\n')
 		.map((item) => item.trim())

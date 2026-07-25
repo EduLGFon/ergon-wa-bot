@@ -70,7 +70,7 @@ export default class Group {
 		return msgs
 	}
 
-	async checkData() {
+	checkData() {
 		return this
 	}
 }

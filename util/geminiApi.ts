@@ -46,9 +46,9 @@ export default async function gemini({ input, user, msg, file, model }: Gparams)
 	})
 }
 
-async function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
+function handleResponse(chunk: GenerateContentResponse, msg: AIMsg) {
 	if (chunk?.candidates) {
-		let web = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
+		const web = chunk.candidates[0]?.groundingMetadata?.webSearchQueries
 		if (web) {
 			let searches = ''
 			if (web.length > 3) {

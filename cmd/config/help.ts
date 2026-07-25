@@ -7,7 +7,7 @@ export default class extends Cmd {
 		super({ alias: ['ajuda', 'menu', '?'] })
 	}
 
-	async run({ args, send, user, t }: CmdCtx) {
+	run({ args, send, user, t }: CmdCtx) {
 		if (args[0]) {
 			// the user is searching for cmd-specific help info
 			const cmd = cache.cmds.find((c) => c.name === args[0] || c.alias.includes(args[0]))
@@ -30,9 +30,9 @@ export default class extends Cmd {
 				let a = cmd.alias[0] ? 0 : -1 // alias index, -1 if no aliases
 				// if cmd has aliases, start from 0, otherwise -1 to use cmd name
 
-				for (let e in examples) {
+				for (const e in examples) {
 					if (a >= cmd.alias.length) a = 0 // reset alias index if it exceeds
-					let cmdName = a === -1 ? cmd.name : cmd.alias[a++] // use cmd name if no alias
+					const cmdName = a === -1 ? cmd.name : cmd.alias[a++] // use cmd name if no alias
 
 					const prefixedCmd = `➥ *${user.prefix}${cmdName}* ` // user prefix + cmd name
 					text.push(prefixedCmd + examples[e])
@@ -53,7 +53,7 @@ export default class extends Cmd {
 			// cmd description locales
 			.join('\n')
 
-		let text = t('help.title') +
+		const text = t('help.title') +
 			'\n\n' + // help menu title
 			cmdsList // cmds list
 

@@ -17,7 +17,7 @@ const SIZE = 512
  * @param format   Resize/crop strategy
  * @param quality  WebP quality (1–100, default 80)
  */
-export async function processImage(
+export function processImage(
 	buffer: Buffer,
 	format: StickerFormat,
 	quality = 80,

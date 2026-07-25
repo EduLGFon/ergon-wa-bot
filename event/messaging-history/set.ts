@@ -10,7 +10,7 @@ interface Event {
 	isLatest: boolean
 }
 
-export default async function (data: Event, e: str) {
+export default function (data: Event, _e: str) {
 	// const { chats, contacts, messages, isLatest, progress } = data
 	print('SYNC', `Syncing data: ${data.progress}%`, 'green')
 

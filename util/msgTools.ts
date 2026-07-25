@@ -30,12 +30,12 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	if (!lid) lid = key.fromMe ? bot.lid : key.remoteJid!
 
 	if (lid?.endsWith('@g.us')) return fakeCtx
-	let user = await getUser({ lid })
+	const user = await getUser({ lid })
 
 	const mime = findKey(message, 'mimetype') // media mimetype like image/png
 	const isBot = Boolean(key.fromMe && !Object.prototype.hasOwnProperty.call(key, 'participant')) // if it's baileys client
 
-	let msg: Msg = {
+	const msg: Msg = {
 		chat: key?.remoteJid!, // msg chat id
 		author: user?.id!,
 		type: types[0],
@@ -123,7 +123,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	const msg = (raw?.message || raw)[types[1]] || raw
 	if (!isMedia(types[0]) || (!msg.media && !msg.url)) return
 
-	let keyObj: MediaMsg = {
+	const keyObj: MediaMsg = {
 		url: msg.url,
 		directPath: msg.directPath,
 		mediaKey: msg.mediaKey,
@@ -197,14 +197,14 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const types = getMsgType(quotedRaw) // quoted message type
 	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
-	let quoted = {
+	const quoted = {
 		type: types[0], // msg type
 		media: await downloadMedia(quotedRaw, types),
 		text: getMsgText(quotedRaw as proto.IMessage),
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg
 
-	let cachedMsg = chat.msgs.find(
+	const cachedMsg = chat.msgs.find(
 		(m) =>
 			// compare quoted msg with cached msgs
 			quoted?.type === m.type &&

@@ -18,7 +18,7 @@ export default class extends Cmd {
 		// code language. can be py (python), rs (rust), cpp (C++), etc.
 
 		const startTime = Date.now() // start time for execution duration
-		let output = await runCode(lang, ctx.args.join(' '), '', ctx)
+		const output = await runCode(lang, ctx.args.join(' '), '', ctx)
 
 		// execution duration
 		const duration = (Date.now() - startTime!).duration(true)

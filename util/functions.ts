@@ -1,7 +1,7 @@
 // Delay: make the code wait for some time
 const delay = async (time: num) => await new Promise((r) => setTimeout(() => r(true), time))
 
-const randomDelay = async (min = 2_000, max = 5_000) =>
+const randomDelay = (min = 2_000, max = 5_000) =>
 	delay(min + Math.floor(Math.random() * (max - min)))
 const randomTime = (min = 1_000, max = 3_000) => min + Math.floor(Math.random() * (max - min))
 

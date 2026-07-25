@@ -62,7 +62,7 @@ async function run() {
 					let range = ''
 					if (e.dateRange) range = ` (${e.dateRange})`
 
-					let eventLine = `${prefix}${e.atividade}${range}`
+					const eventLine = `${prefix}${e.atividade}${range}`
 					const resp = (e.responsavel || '').trim().toLowerCase()
 					const isEstudante = resp === 'estudante' || resp === 'estudantes'
 

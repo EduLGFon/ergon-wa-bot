@@ -27,7 +27,7 @@ export default class extends Cmd {
 			// it converts 10000 to 10.000 (10,000 if you're "american")
 
 			const member = (await getUser({ id: msgs[i].author })) as User
-			let name = (member.name || member.phone).trim()
+			const name = (member.name || member.phone).trim()
 
 			if (!members.includes(member.lid)) continue //name = `~${name}~`
 			// it means user is not a member from this group anymore

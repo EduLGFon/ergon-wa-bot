@@ -10,7 +10,7 @@ export default class extends Cmd {
 			},
 		})
 	}
-	async run({ send }: CmdCtx) {
+	run({ send }: CmdCtx) {
 		const mem = process.memoryUsage()
 
 		const memoryUsageMessage = `Memory Usage:

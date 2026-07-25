@@ -1,5 +1,5 @@
 import {
-	type AuthenticationCreds,
+	type _AuthenticationCreds,
 	type AuthenticationState,
 	BufferJSON,
 	initAuthCreds,
@@ -64,7 +64,7 @@ const postgresAuthState = async (
 
 					const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
 					await Promise.all(
-						ids.map(async (id) => {
+						ids.map((id) => {
 							let value = fromStorableJson(
 								rows.find((r) => r.key === id && r.category === type)?.data,
 							)

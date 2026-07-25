@@ -14,7 +14,7 @@ import type { StickerFormat } from './types.ts'
 
 const SIZE = 512
 const MAX_DURATION = 11
-const TIMEOUT_MS = 60_000
+const _TIMEOUT_MS = 60_000
 
 /**
  * Compression levels tried in order.

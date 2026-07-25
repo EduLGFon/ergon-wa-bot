@@ -19,7 +19,7 @@ export default class extends Cmd {
 		const url = msg.text.getUrl() || msg?.quoted?.text?.getUrl()
 		if (!url) return send('usage.download', { user })
 
-		let type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
+		const type: 'video' | 'audio' = args[0] === 'a' ? 'audio' : 'video'
 
 		const cliArgs = ['--cookies', 'conf/gen/cookies.txt', '--remote-components', 'ejs:github']
 
@@ -57,7 +57,7 @@ export default class extends Cmd {
 
 			await send(data as AnyMessageContent)
 			await Deno.remove(path) // cleanup temp file
-		} catch (e: any) {
+		} catch (_e: any) {
 			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
 		}
 	}

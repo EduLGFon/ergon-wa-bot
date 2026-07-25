@@ -7,7 +7,7 @@ export default class extends Cmd {
 		super({ alias: ['lang'] })
 	}
 
-	async run({ t, args, send, user }: CmdCtx) {
+	run({ t, args, send, user }: CmdCtx) {
 		if (!languages.includes(args[0])) return send('usage.language', { user })
 		// it's a crappy implementation, but all languages are listed on help menu
 

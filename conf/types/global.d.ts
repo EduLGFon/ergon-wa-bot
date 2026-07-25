@@ -2,7 +2,7 @@ type str = string
 type num = number
 type bool = boolean
 type Buf = Buffer
-type Func = Function
+type Func = (...args: any[]) => any
 
 // you can find these (print, str, num) functions on `util/proto.ts`
 declare function print(...args: any[]): void

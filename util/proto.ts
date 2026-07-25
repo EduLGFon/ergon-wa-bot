@@ -69,7 +69,7 @@ function print(...args: any) {
 	}
 	if (typeof args[2] !== 'string') return console.log(...args)
 
-	let color = args.pop()
+	const color = args.pop()
 	const memory = process.memoryUsage().rss.bytes().align(5)
 
 	console.log(
