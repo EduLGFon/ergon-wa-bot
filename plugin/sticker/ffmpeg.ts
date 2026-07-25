@@ -104,7 +104,7 @@ function runFfmpeg(
 
 	const cmd = new Deno.Command('ffmpeg', {
 		args,
-		stdin: 'piped',
+		stdin: 'null',
 		stdout: 'piped',
 		stderr: 'piped',
 	})
