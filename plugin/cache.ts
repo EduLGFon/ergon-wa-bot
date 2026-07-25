@@ -1,10 +1,9 @@
-import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises'
-import Cmd from '@class/cmd.ts'
-import Collection from '@class/collection.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
+import Collection from '@class/collection.ts'
+import { existsSync } from 'jsr:@std/fs'
 import Group from '@class/group.ts'
 import User from '@class/user.ts'
-import { existsSync } from 'node:fs'
+import Cmd from '@class/cmd.ts'
 
 /** Cache manager:
  * It controls, limit and save
@@ -47,12 +46,12 @@ class CacheManager {
 	}
 
 	async save() {
-		if (!existsSync('conf/gen/cache')) await mkdir('conf/gen/cache')
+		if (!existsSync('conf/gen/cache')) await Deno.mkdir('conf/gen/cache')
 
 		for (const cat of cachedData) {
 			const collection = this[cat] as any
 			const json = collection.toJSON ? collection.toJSON() : collection
-			await writeFile(`conf/gen/cache/${cat}.json`, JSON.stringify(json)) // write cache
+			await Deno.writeTextFile(`conf/gen/cache/${cat}.json`, JSON.stringify(json)) // write cache
 		}
 		print('CACHE', 'Metrics and media saved', 'yellow')
 	}
@@ -61,16 +60,14 @@ class CacheManager {
 		for (const cat of cachedData) {
 			// if --rm-cache is passed, remove cache files
 			if (process.argv.includes('--rm-cache')) {
-				await unlink(`conf/gen/cache/${cat}.json`)
+				await Deno.remove(`conf/gen/cache/${cat}.json`)
 				// remove cache files
 
 				print('CACHE', `Removing ${cat} cache`, 'blue')
 				continue
 			}
 
-			const cache = await readFile(`conf/gen/cache/${cat}.json`, {
-				encoding: 'utf8',
-			}).catch(() => null)
+			const cache = await Deno.readTextFile(`conf/gen/cache/${cat}.json`).catch(() => null)
 			// read file
 
 			if (!cache) {
@@ -106,12 +103,14 @@ const cache = new CacheManager()
 export default cache
 
 export async function cleanTemp() {
-	const files = await readdir('conf/gen/temp').catch(() => [] as string[])
+	const files = await Array.fromAsync(Deno.readDir('conf/gen/temp')).then((a) =>
+		a.map((e) => e.name)
+	).catch(() => [] as string[])
 	let i = 0
 	for (const f of files) {
 		if (f === 'disclaimer.txt') continue
 
-		await unlink(`conf/gen/temp/${f}`).catch(() => {})
+		await Deno.remove(`conf/gen/temp/${f}`).catch(() => {})
 		i++
 	}
 	print('TEMP', `${i} temp files cleaned`, 'blue')

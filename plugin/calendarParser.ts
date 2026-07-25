@@ -71,10 +71,7 @@ function getBlocks(
 	return blocks
 }
 
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-const execAsync = promisify(exec)
+// node imports removed
 
 export async function fetchCalendarLinks(
 	year: number,
@@ -135,9 +132,11 @@ export async function fetchCalendarLinks(
 
 async function downloadAndConvertPdf(url: string, destTxt: string) {
 	const destPdf = destTxt.replace('.txt', '.pdf')
-	await execAsync(`curl -sL "${url}" -o "${destPdf}"`)
-	await execAsync(`pdftotext -layout "${destPdf}" "${destTxt}"`)
-	return await readFile(destTxt, 'utf-8')
+	const curl = new Deno.Command('curl', { args: ['-sL', url, '-o', destPdf] })
+	await curl.output()
+	const pdf = new Deno.Command('pdftotext', { args: ['-layout', destPdf, destTxt] })
+	await pdf.output()
+	return await Deno.readTextFile(destTxt)
 }
 
 export interface CalendarEvent {
@@ -628,8 +627,8 @@ export async function updateCalendarCache() {
 	const year = new Date().getFullYear()
 	const { base, resolutions } = await fetchCalendarLinks(year)
 
-	await mkdir('conf/gen/cache', { recursive: true })
-	await mkdir('conf/gen/temp', { recursive: true })
+	await Deno.mkdir('conf/gen/cache', { recursive: true })
+	await Deno.mkdir('conf/gen/temp', { recursive: true })
 
 	const baseTxtPath = `conf/gen/temp/cal_${year}.txt`
 	const baseText = await downloadAndConvertPdf(base, baseTxtPath)
@@ -642,7 +641,7 @@ export async function updateCalendarCache() {
 		parseResolutionText(resText, events, year)
 	}
 
-	await writeFile(
+	await Deno.writeTextFile(
 		`conf/gen/cache/calendar_${year}.json`,
 		JSON.stringify(events, null, 2),
 	)
@@ -650,8 +649,7 @@ export async function updateCalendarCache() {
 }
 
 // Run as script for testing
-const isMain = typeof process !== 'undefined' && process.argv[1] &&
-	process.argv[1].endsWith('calendarParser.ts')
+const isMain = import.meta.main
 if (isMain) {
 	updateCalendarCache().then((events) => {
 		console.log('Cached successfully. Events:')

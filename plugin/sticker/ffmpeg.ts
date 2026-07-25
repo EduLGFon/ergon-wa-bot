@@ -9,8 +9,7 @@
  *   • Adaptive quality: retries at lower quality/fps until output ≤ maxSize
  *   • Temp files are namespaced per job to prevent collisions between workers
  */
-import { spawnSync } from 'node:child_process'
-import { readFileSync, unlinkSync } from 'node:fs'
+// node imports removed
 import type { StickerFormat } from './types.ts'
 
 const SIZE = 512
@@ -69,7 +68,7 @@ export function cleanup(
 	formats: StickerFormat[],
 ): void {
 	try {
-		unlinkSync(inputPath)
+		Deno.removeSync(inputPath)
 	} catch { /* already gone */ }
 	cleanOutputs(outputDir, prefix, formats)
 }
@@ -103,14 +102,17 @@ function runFfmpeg(
 		...maps,
 	]
 
-	const proc = spawnSync('ffmpeg', args, {
-		timeout: TIMEOUT_MS,
-		stdio: ['pipe', 'pipe', 'pipe'],
+	const cmd = new Deno.Command('ffmpeg', {
+		args,
+		stdin: 'piped',
+		stdout: 'piped',
+		stderr: 'piped',
 	})
+	const proc = cmd.outputSync()
 
-	if (proc.status !== 0) {
-		const stderr = proc.stderr?.toString().slice(-500) || 'unknown error'
-		throw new Error(`ffmpeg exited ${proc.status}: ${stderr}`)
+	if (!proc.success) {
+		const stderr = new TextDecoder().decode(proc.stderr).slice(-500) || 'unknown error'
+		throw new Error(`ffmpeg exited ${proc.code}: ${stderr}`)
 	}
 
 	return readOutputs(outputDir, prefix, formats)
@@ -205,7 +207,7 @@ function readOutputs(
 	formats: StickerFormat[],
 ): FfmpegResult[] {
 	return formats.map((f) => {
-		const buf = readFileSync(outPath(dir, prefix, f))
+		const buf = Deno.readFileSync(outPath(dir, prefix, f))
 		return { format: f, buffer: buf, size: buf.length }
 	})
 }
@@ -213,7 +215,7 @@ function readOutputs(
 function cleanOutputs(dir: string, prefix: string, formats: StickerFormat[]): void {
 	for (const f of formats) {
 		try {
-			unlinkSync(outPath(dir, prefix, f))
+			Deno.removeSync(outPath(dir, prefix, f))
 		} catch { /* already gone */ }
 	}
 }

@@ -1,10 +1,10 @@
-import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import emojis from '@util/emojis.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import { getMedia } from '@util/msgAbstractions.ts'
 import runCode from '@plugin/runCode.ts'
-import { getMedia } from '../../util/msgAbstractions.ts'
-import { readFile, unlink, writeFile } from 'node:fs/promises'
+import emojis from '@util/emojis.ts'
+import Cmd from '@class/cmd.ts'
+// migrated node:fs
 
 export default class extends Cmd {
 	constructor() {
@@ -21,16 +21,16 @@ export default class extends Cmd {
 		await startTyping()
 
 		const path = defaults.runner.tempFolder + `/rm_${Date.now()}.webp`
-		await writeFile(path, media.buffer)
+		await Deno.writeFile(path, media.buffer)
 		// create temporary file
 		await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
 		// execute python background remover plugin on
 		// a child process
 
-		const buffer = (await readFile(`${path}.png`)) || media.buffer
+		const buffer = (await Deno.readFile(`${path}.png`)) || media.buffer
 		// read new file, then cleanup temp files
-		await unlink(path).catch(() => {})
-		await unlink(`${path}.png`).catch(() => {})
+		await Deno.remove(path).catch(() => {})
+		await Deno.remove(`${path}.png`).catch(() => {})
 
 		send({ caption: emojis['sparkles'], image: buffer }, { quoted: msg })
 	}

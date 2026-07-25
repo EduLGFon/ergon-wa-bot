@@ -1,10 +1,7 @@
-import { spawn, spawnSync } from 'node:child_process'
-import readline from 'node:readline/promises'
-import path from 'node:path'
-import fs from 'node:fs'
-import os from 'node:os'
+import { join, basename } from 'jsr:@std/path'
+import { existsSync } from 'jsr:@std/fs'
 
-const isWin = os.platform() === 'win32'
+const isWin = Deno.build.os === 'windows'
 
 // Helper to run commands cross-platform without using shell: true (avoids DEP0190 deprecation warning)
 function runCmd(command: string, args: string[], env: Record<string, string> = {}): boolean {
@@ -14,22 +11,26 @@ function runCmd(command: string, args: string[], env: Record<string, string> = {
 		else if (command === 'pm2') execCmd = 'pm2.cmd'
 	}
 	console.log(`\n> Running: ${execCmd} ${args.join(' ')}`)
-	const result = spawnSync(execCmd, args, {
-		stdio: 'inherit',
-		env: { ...process.env, ...env },
+	const cmd = new Deno.Command(execCmd, {
+		args,
+		stdin: 'inherit',
+		stdout: 'inherit',
+		stderr: 'inherit',
+		env: { ...Deno.env.toObject(), ...env },
 	})
-	return result.status === 0
+	const result = cmd.outputSync()
+	return result.success
 }
 
 // Helper to get python command name without shell: true
 function getPythonCommand(): string {
 	const testCmd = isWin ? 'python' : 'python3'
-	const testPy = spawnSync(testCmd, ['--version'])
-	if (testPy.status === 0) return testCmd
+	try { const testPy = new Deno.Command(testCmd, { args: ['--version'] }).outputSync()
+	if (testPy.success) return testCmd } catch (e) {}
 
 	if (!isWin) {
-		const testPyNo3 = spawnSync('python', ['--version'])
-		if (testPyNo3.status === 0) return 'python'
+		try { const testPyNo3 = new Deno.Command('python', { args: ['--version'] }).outputSync()
+		if (testPyNo3.success) return 'python' } catch (e) {}
 	}
 
 	throw new Error('Python is not installed or not in PATH.')
@@ -37,10 +38,10 @@ function getPythonCommand(): string {
 
 // Manual environment loader
 function loadEnv() {
-	const envPath = path.join('conf', '.env')
+	const envPath = join('conf', '.env')
 
-	if (fs.existsSync(envPath)) {
-		const content = fs.readFileSync(envPath, 'utf-8')
+	if (existsSync(envPath)) {
+		const content = Deno.readTextFileSync(envPath)
 
 		for (const line of content.split('\n')) {
 			const trimmed = line.trim()
@@ -55,7 +56,7 @@ function loadEnv() {
 				) {
 					val = val.substring(1, val.length - 1)
 				}
-				process.env[key] = val
+				Deno.env.set(key, val)
 			}
 		}
 	}
@@ -87,7 +88,7 @@ async function runMediumSetup() {
 	console.log('\n--- Running Medium Setup (Python plugins) ---')
 	try {
 		const pythonCmd = getPythonCommand()
-		const venvPath = path.join('conf', 'gen', 'python')
+		const venvPath = join('conf', 'gen', 'python')
 		console.log(`Creating virtual environment with: ${pythonCmd}...`)
 		const venvCreated = runCmd(pythonCmd, ['-m', 'venv', venvPath])
 		if (!venvCreated) {
@@ -96,8 +97,8 @@ async function runMediumSetup() {
 		}
 
 		const pipPath = isWin
-			? path.join(venvPath, 'Scripts', 'pip')
-			: path.join(venvPath, 'bin', 'pip')
+			? join(venvPath, 'Scripts', 'pip')
+			: join(venvPath, 'bin', 'pip')
 
 		console.log('Installing pip dependencies (rembg, onnxruntime, yt-dlp)...')
 		runCmd(pipPath, ['install', 'rembg', 'onnxruntime', 'yt-dlp[default,curl-cffi]'])
@@ -127,19 +128,19 @@ async function runStrongSetup() {
 }
 
 // 2. Configure Environment
-async function configureEnv(rl: readline.Interface) {
+async function configureEnv(_rl: any) {
 	console.log('\n=========================================')
 	console.log('       Configuration Wizard              ')
 	console.log('=========================================')
 
 	// Read locale directory to find available languages
-	const localesDir = path.join('locale')
+	const localesDir = join('locale')
 	let languages: string[] = ['pt', 'en', 'es', 'fr', 'de']
 	try {
-		if (fs.existsSync(localesDir)) {
-			const files = fs.readdirSync(localesDir)
+		if (existsSync(localesDir)) {
+			const files = Array.from(Deno.readDirSync(localesDir)).map(f => f.name)
 			languages = files.filter((f) => f.endsWith('.json')).map((f) =>
-				path.basename(f, '.json')
+				basename(f, '.json')
 			)
 		}
 	} catch (_e) {
@@ -151,11 +152,11 @@ async function configureEnv(rl: readline.Interface) {
 	languages.forEach((lang, idx) => {
 		console.log(`  [${idx + 1}] ${lang}`)
 	})
-	const langChoice = await rl.question(`Choose language [1-${languages.length}] (default: pt): `)
-	const selectedLang = languages[parseInt(langChoice) - 1] || 'pt'
+	const langChoice = prompt(`Choose language [1-${languages.length}] (default: pt): `)
+	const selectedLang = languages[parseInt(langChoice || '1') - 1] || 'pt'
 
 	// Choose Prefix
-	const prefix = await rl.question('\nEnter Bot Command Prefix (default: .): ') || '.'
+	const prefix = prompt('\nEnter Bot Command Prefix (default: .): ') || '.'
 
 	// Timezone
 	const timezones = [
@@ -170,25 +171,25 @@ async function configureEnv(rl: readline.Interface) {
 		console.log(`  [${idx + 1}] ${tz}`)
 	})
 	console.log(`  [${timezones.length + 1}] Custom Timezone`)
-	const tzChoiceInput = await rl.question(
+	const tzChoiceInput = prompt(
 		`Choose timezone [1-${timezones.length + 1}] (default: America/Sao_Paulo): `,
 	)
 	let selectedTz = 'America/Sao_Paulo'
-	const tzChoice = parseInt(tzChoiceInput)
+	const tzChoice = parseInt(tzChoiceInput || '1')
 	if (tzChoice > 0 && tzChoice <= timezones.length) {
 		selectedTz = timezones[tzChoice - 1]
 	} else if (tzChoice === timezones.length + 1) {
-		selectedTz = await rl.question('Enter custom timezone (e.g. Europe/Paris, UTC): ') ||
+		selectedTz = prompt('Enter custom timezone (e.g. Europe/Paris, UTC): ') ||
 			'America/Sao_Paulo'
 	}
 
 	// Database URL
-	const dbUrl = await rl.question(
+	const dbUrl = prompt(
 		'\nEnter Database URL (optional, PostgreSQL recommended. Press enter to skip): ',
 	)
 
 	// Developers
-	const devsInput = await rl.question(
+	const devsInput = prompt(
 		'\nEnter Developer Phone numbers / LIDs separated by a comma (optional. Press enter to skip): ',
 	)
 	const selectedDevs = devsInput
@@ -196,17 +197,17 @@ async function configureEnv(rl: readline.Interface) {
 		: ''
 
 	// Gemini Key
-	const geminiKey = await rl.question(
+	const geminiKey = prompt(
 		'\nEnter Gemini API Key (optional. Press enter to skip. get a key on https://aistudio.google.com/app/apikey): ',
 	)
 
 	// Ensure conf folder exists
-	if (!fs.existsSync('conf')) {
-		fs.mkdirSync('conf', { recursive: true })
+	if (!existsSync('conf')) {
+		Deno.mkdirSync('conf', { recursive: true })
 	}
 
 	// Write .env
-	const envPath = path.join('conf', '.env')
+	const envPath = join('conf', '.env')
 	const envContent = `# Generated by Ergon WA Bot Setup Wizard
 TZ='${selectedTz}'
 DEVS='${selectedDevs}'
@@ -215,15 +216,15 @@ GEMINI='${geminiKey}'
 GROUPS1=''
 GROUPS2=''
 `
-	fs.writeFileSync(envPath, envContent)
+	Deno.writeTextFileSync(envPath, envContent)
 	console.log(`\nWritten configuration to ${envPath}`)
 
 	// Write/Update defaults.json
-	const defaultsPath = path.join('conf', 'defaults.json')
+	const defaultsPath = join('conf', 'defaults.json')
 	let defaults: any = {}
-	if (fs.existsSync(defaultsPath)) {
+	if (existsSync(defaultsPath)) {
 		try {
-			defaults = JSON.parse(fs.readFileSync(defaultsPath, 'utf-8'))
+			defaults = JSON.parse(Deno.readTextFileSync(defaultsPath))
 		} catch (_e) {
 			console.warn('Could not parse existing defaults.json. Recreating...')
 		}
@@ -244,7 +245,7 @@ GROUPS2=''
 		defaults.runner.py.cmd = ['conf/gen/python/bin/python3']
 	}
 
-	fs.writeFileSync(defaultsPath, JSON.stringify(defaults, null, '\t') + '\n')
+	Deno.writeTextFileSync(defaultsPath, JSON.stringify(defaults, null, '\t') + '\n')
 	console.log(`Updated defaults.json language, prefix, and platform paths.`)
 
 	// Load the env variables into the process
@@ -274,10 +275,10 @@ function runUpdate() {
 
 	// Update Python dependencies if virtualenv exists
 	const pipPath = isWin
-		? path.join('conf', 'gen', 'python', 'Scripts', 'pip')
-		: path.join('conf', 'gen', 'python', 'bin', 'pip')
+		? join('conf', 'gen', 'python', 'Scripts', 'pip')
+		: join('conf', 'gen', 'python', 'bin', 'pip')
 
-	if (fs.existsSync(pipPath) || fs.existsSync(pipPath + '.exe')) {
+	if (existsSync(pipPath) || existsSync(pipPath + '.exe')) {
 		console.log('Updating Python dependencies...')
 		runCmd(pipPath, ['install', '-U', 'rembg', 'onnxruntime', 'yt-dlp[default,curl-cffi]'])
 	}
@@ -296,16 +297,17 @@ function runStartForeground() {
 		NODE_EXTRA_CA_CERTS: 'conf/smufesrootca.pem',
 	}
 
-	const child = spawn('deno', ['run', '-A', '--env=conf/.env', 'wa.ts'], {
-		stdio: 'inherit',
-		env: { ...process.env, ...envExtra },
+	const cmd = new Deno.Command('deno', {
+		args: ['run', '-A', '--env=conf/.env', 'wa.ts'],
+		stdin: 'inherit',
+		stdout: 'inherit',
+		stderr: 'inherit',
+		env: { ...Deno.env.toObject(), ...envExtra },
 	})
-
-	return new Promise<void>((resolve) => {
-		child.on('close', (code) => {
-			console.log(`\nBot process exited with code ${code}`)
-			resolve()
-		})
+	
+	const child = cmd.spawn()
+	return child.status.then((status) => {
+		console.log(`\nBot process exited with code ${status.code}`)
 	})
 }
 
@@ -313,8 +315,13 @@ function runStartBackground() {
 	console.log('\n--- Starting in Background (PM2) ---')
 	// Check if process wa is already in PM2 list
 	const pm2Cmd = isWin ? 'pm2.cmd' : 'pm2'
-	const checkPM2 = spawnSync(pm2Cmd, ['describe', 'wa'])
-	if (checkPM2.status === 0) {
+	let isPM2Running = false
+	try {
+		const checkPM2 = new Deno.Command(pm2Cmd, { args: ['describe', 'wa'] }).outputSync()
+		isPM2Running = checkPM2.success
+	} catch (e) {}
+	
+	if (isPM2Running) {
 		console.log('Bot is already running in PM2. Restarting it...')
 		runCmd('pm2', ['restart', 'wa'])
 	} else {
@@ -333,28 +340,27 @@ function runStop() {
 
 // 6. Reset folders & database
 function cleanFolderContents(dirPath: string) {
-	if (fs.existsSync(dirPath)) {
+	if (existsSync(dirPath)) {
 		try {
-			const files = fs.readdirSync(dirPath)
-			for (const file of files) {
-				const fullPath = path.join(dirPath, file)
-				fs.rmSync(fullPath, { recursive: true, force: true })
+			for (const { name: file } of Deno.readDirSync(dirPath)) {
+				const fullPath = join(dirPath, file)
+				Deno.removeSync(fullPath, { recursive: true })
 			}
 			console.log(`  Cleaned: ${dirPath}`)
 		} catch (e: any) {
 			console.error(`  Failed to clean ${dirPath}:`, e.message)
 		}
 	} else {
-		fs.mkdirSync(dirPath, { recursive: true })
+		Deno.mkdirSync(dirPath, { recursive: true })
 		console.log(`  Created: ${dirPath}`)
 	}
 }
 
 function runResetLight() {
 	console.log('\n--- Cleaning Temporary and Auth folders ---')
-	cleanFolderContents(path.join('conf', 'gen', 'auth'))
-	cleanFolderContents(path.join('conf', 'gen', 'cache'))
-	cleanFolderContents(path.join('conf', 'gen', 'temp'))
+	cleanFolderContents(join('conf', 'gen', 'auth'))
+	cleanFolderContents(join('conf', 'gen', 'cache'))
+	cleanFolderContents(join('conf', 'gen', 'temp'))
 	console.log('Light Reset completed successfully.')
 }
 
@@ -362,10 +368,10 @@ async function runResetStrong() {
 	console.log('\n--- Database Truncation (Strong Reset) ---')
 	console.log('Loading database configuration...')
 
-	// Load the env file into process.env if needed
+	// Load the env file into Deno.env.toObject() if needed
 	loadEnv()
 
-	if (!process.env.DATABASE_URL) {
+	if (!Deno.env.toObject().DATABASE_URL) {
 		console.error('Error: DATABASE_URL is not set in conf/.env. Cannot truncate database.')
 		return
 	}
@@ -377,7 +383,7 @@ async function runResetStrong() {
 
 		try {
 			const { PrismaPg } = await import('@prisma/adapter-pg')
-			const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+			const adapter = new PrismaPg({ connectionString: Deno.env.toObject().DATABASE_URL })
 			prisma = new PrismaClient({ adapter })
 		} catch (_e) {
 			//@ts-ignore Fallback to standard PrismaClient
@@ -417,16 +423,13 @@ async function runResetStrong() {
 // MAIN WIZARD LOOP
 async function main() {
 	loadEnv()
-	const rl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout,
-	})
+
 
 	// If .env doesn't exist, force configuration first
-	if (!fs.existsSync(path.join('conf', '.env'))) {
+	if (!existsSync(join('conf', '.env'))) {
 		console.log('\nWelcome! No configuration file (.env) was found.')
 		console.log('Launching Configuration Wizard first...')
-		await configureEnv(rl)
+		await configureEnv(null)
 	}
 
 	let exit = false
@@ -441,9 +444,9 @@ async function main() {
 		console.log('5. Reset (Delete local session data or database keys)')
 		console.log('6. Exit')
 
-		const choice = await rl.question('\nSelect an option [1-6]: ')
+		const choice = prompt('\nSelect an option [1-6]: ')
 
-		switch (choice.trim()) {
+		switch ((choice || '').trim()) {
 			case '1': {
 				console.log('\nSetup Options:')
 				console.log('  1. Light: Minimum packages to run (npm install only)')
@@ -453,11 +456,11 @@ async function main() {
 				console.log('  3. Strong: Medium setup + Database migration (Prisma push)')
 				console.log('  4. Re-configure Environment (.env and defaults.json)')
 				console.log('  5. Back')
-				const setupChoice = await rl.question('\nChoose setup level [1-5]: ')
+				const setupChoice = prompt('\nChoose setup level [1-5]: ')
 				if (setupChoice === '1') await runLightSetup()
 				else if (setupChoice === '2') await runMediumSetup()
 				else if (setupChoice === '3') await runStrongSetup()
-				else if (setupChoice === '4') await configureEnv(rl)
+				else if (setupChoice === '4') await configureEnv(null)
 				break
 			}
 			case '2': {
@@ -469,7 +472,7 @@ async function main() {
 				console.log('  1. Start in Foreground (Active interactive shell)')
 				console.log('  2. Start in Background (PM2 process runner)')
 				console.log('  3. Back')
-				const startChoice = await rl.question('\nChoose run mode [1-3]: ')
+				const startChoice = prompt('\nChoose run mode [1-3]: ')
 				if (startChoice === '1') await runStartForeground()
 				else if (startChoice === '2') await runStartBackground()
 				break
@@ -483,7 +486,7 @@ async function main() {
 				console.log('  1. Light: Delete auth, cache, and temp folders (session files)')
 				console.log('  2. Strong: Delete session keys & credentials from database')
 				console.log('  3. Back')
-				const resetChoice = await rl.question('\nChoose reset type [1-3]: ')
+				const resetChoice = prompt('\nChoose reset type [1-3]: ')
 				if (resetChoice === '1') await runResetLight()
 				else if (resetChoice === '2') await runResetStrong()
 				break
@@ -498,11 +501,11 @@ async function main() {
 		}
 	}
 
-	rl.close()
+	
 	console.log('\nGoodbye!')
 }
 
 main().catch((err) => {
 	console.error('Fatal error in wizard:', err)
-	process.exit(1)
+	Deno.exit(1)
 })

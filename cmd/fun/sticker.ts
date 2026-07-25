@@ -1,14 +1,14 @@
-import { createStickers, type StickerFormat } from '../../plugin/sticker/index.ts'
-import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
+import { createStickers, type StickerFormat } from '@plugin/sticker/index.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import { isVisual } from '@conf/types/msgs.ts'
-import runCode from '@plugin/runCode.ts'
-import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { getMedia } from '../../util/msgAbstractions.ts'
 import { randomDelay } from '../../util/functions.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import { isVisual } from '@conf/types/msgs.ts'
+import runCode from '@plugin/runCode.ts'
+// migrated node:fs
 import { now } from '../../util/proto.ts'
 import cache from '../../plugin/cache.ts'
+import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -118,12 +118,12 @@ export default class extends Cmd {
 	/** Remove image background using the Python rembg plugin. */
 	private async removeBg(buffer: Buffer): Promise<Buffer> {
 		const path = `${defaults.runner.tempFolder}/rmsticker_${Date.now()}.webp`
-		await writeFile(path, buffer)
+		await Deno.writeFile(path, buffer)
 		await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
 
-		const result = await readFile(`${path}.png`).catch(() => buffer)
-		await unlink(path).catch(() => {})
-		await unlink(`${path}.png`).catch(() => {})
+		const result = await Deno.readFile(`${path}.png`).catch(() => buffer)
+		await Deno.remove(path).catch(() => {})
+		await Deno.remove(`${path}.png`).catch(() => {})
 		return result
 	}
 }

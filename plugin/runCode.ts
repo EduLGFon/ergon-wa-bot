@@ -1,19 +1,16 @@
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import { readFile, writeFile } from 'node:fs/promises'
+// migrated node:fs
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import prisma, { getGroup, getUser } from '@prisma'
 import { randomDelay } from '@util/functions.ts'
 import { checkMatch } from '@util/msgTools.ts'
 import { sendURMenu } from './menuScraping.ts'
 import { delay } from '@util/functions.ts'
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
-import { extname } from 'node:path'
-import { inspect } from 'node:util'
+import { extname } from 'jsr:@std/path'
 import bot from '@plugin/bot.ts'
 import cache from './cache.ts'
 
-const execAsync = promisify(exec)
+// removed execAsync
 
 type triggerIncludes = { includes: str[]; template: str }
 type triggerNotIncludes = { notIncludes: str[]; template: str }
@@ -50,13 +47,13 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				cache
 				sendURMenu
 				bot
-				return inspect(await eval(code))
+				return Deno.inspect(await eval(code))
 			}
 			// it's not a this-process JS code
 			// so let's create a file and run it with the right runtime
 			file = `${defaults.runner.tempFolder}/exec.${data.ext!}` // temp/exec.rs
 
-			await writeFile(file, code) // write file
+			await Deno.writeTextFile(file, code) // write file
 			code = '' // clean the code bc it will be on CLI if (file)
 		} else {
 			// it's a already created file
@@ -68,11 +65,13 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 		for (const i in data.cmd) {
 			// cmd is a shell cmd script to run the code
 			// you didn't see the cli? it's here => cli: str[] = []
+			const [runner, ...args] = `${data.cmd[i]} ${file} ${code}`.split(' ')
 			cli[i] = `${data.cmd[i]} ${file} ${code}`
 			// place every cmd into the cli list
 
-			const res = await execAsync(cli[i], { timeout: 120_000 }) // run with 120s timeout
-			output += res.stdout + ' '
+			const cmdObj = new Deno.Command(runner, { args })
+			const res = await cmdObj.output()
+			output += new TextDecoder().decode(res.stdout) + new TextDecoder().decode(res.stderr)
 		}
 		return output.trim()
 	} catch (e: any) {

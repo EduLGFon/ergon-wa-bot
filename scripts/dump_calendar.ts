@@ -1,5 +1,5 @@
 import { updateCalendarCache } from '../plugin/calendarParser.ts'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'jsr:@std/fs'
 
 async function run() {
 	console.log('Forcing calendar cache update to use new parsing logic...')
@@ -15,7 +15,7 @@ async function run() {
 	}
 
 	const events: Record<string, any[]> = JSON.parse(
-		readFileSync(calendarPath, 'utf-8'),
+		Deno.readTextFileSync(calendarPath),
 	)
 
 	// Iterate over all days of the year

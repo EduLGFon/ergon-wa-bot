@@ -5,7 +5,7 @@
  * When all workers are busy, incoming jobs are queued (FIFO).
  * Crashed workers are automatically respawned.
  */
-import { Worker } from 'node:worker_threads'
+// removed node:worker_threads
 import type { StickerFormat, StickerResult, WorkerRequest, WorkerResponse } from './types.ts'
 
 // ── types ───────────────────────────────────────────────────────────
@@ -69,11 +69,13 @@ export class StickerPool {
 
 	private spawn(): PoolWorker {
 		const instance = new Worker(
-			new URL('./worker.ts', import.meta.url),
+			new URL('./worker.ts', import.meta.url).href,
+			{ type: 'module' }
 		)
 		const pw: PoolWorker = { instance, busy: false }
 
-		instance.on('message', (res: WorkerResponse) => {
+		instance.addEventListener('message', (e: MessageEvent<WorkerResponse>) => {
+			const res = e.data
 			const { pending } = pw
 			pw.busy = false
 			pw.pending = undefined
@@ -93,7 +95,7 @@ export class StickerPool {
 			this.drain()
 		})
 
-		instance.on('error', (err: any) => {
+		instance.addEventListener('error', (err: any) => {
 			print('STICKER/POOL', `Worker crashed: ${err.message}`, 'red')
 
 			// reject in-flight job

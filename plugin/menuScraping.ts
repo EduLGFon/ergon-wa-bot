@@ -1,9 +1,9 @@
 import { delay, randomDelay } from '../util/functions.ts'
 import { updateCalendarCache } from './calendarParser.ts'
 import { getAllowedTagsList } from './groupAnnouncer.ts'
-import { readFile, writeFile } from 'node:fs/promises'
+import { existsSync } from 'jsr:@std/fs'
 import { sendMsg } from '../util/msgAbstractions.ts'
-import { existsSync } from 'node:fs'
+import { scheduleJob } from 'npm:node-schedule'
 import cache from './cache.ts'
 import cron from 'node-cron'
 
@@ -51,7 +51,7 @@ async function checkForUpdates() {
 	if (!menu) return
 
 	oldMenu = oldMenu ||
-		(await readFile('conf/gen/cache/menu.txt', { encoding: 'utf-8' }).catch(
+		(await Deno.readTextFile('conf/gen/cache/menu.txt').catch(
 			() => '',
 		))
 
@@ -79,7 +79,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 
 		if (existsSync(calendarPath)) {
 			const events: Record<string, any[]> = JSON.parse(
-				await readFile(calendarPath, 'utf-8'),
+				await Deno.readTextFile(calendarPath),
 			)
 			const todayEvents = events[`${day}/${month}/${year}`]
 			if (todayEvents && todayEvents.length > 0) {
@@ -162,7 +162,7 @@ export async function sendURMenu(menuStr = '', updated = 0) {
 		await randomDelay()
 	}
 	if (menu) {
-		await writeFile('conf/gen/cache/menu.txt', menu)
+		await Deno.writeTextFile('conf/gen/cache/menu.txt', menu)
 		oldMenu = menu
 	}
 }

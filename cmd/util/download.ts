@@ -1,11 +1,11 @@
-import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import runCode from '@plugin/runCode.ts'
-import { randomDelay } from '../../util/functions.ts'
-import { readFile, unlink } from 'node:fs/promises'
+import { type CmdCtx } from '@conf/types/types.d.ts'
 import type { AnyMessageContent } from 'baileys'
-import emojis from '../../util/emojis.ts'
+import { randomDelay } from '@util/functions.ts'
+import runCode from '@plugin/runCode.ts'
+// migrated node:fs
+import emojis from '@util/emojis.ts'
+import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -50,13 +50,13 @@ export default class extends Cmd {
 			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
 			Object.setPrototypeOf(data, {
-				[type]: await readFile(path),
+				[type]: await Deno.readFile(path),
 			})
 			;(data as any).fileName = undefined
 			delete (data as any).fileName
 
 			await send(data as AnyMessageContent)
-			await unlink(path) // cleanup temp file
+			await Deno.remove(path) // cleanup temp file
 		} catch (e: any) {
 			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}`)
 		}
