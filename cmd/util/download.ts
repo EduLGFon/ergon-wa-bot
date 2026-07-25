@@ -27,6 +27,7 @@ export default class extends Cmd {
 			'--no-playlist', // don't download whole playlists
 			'--geo-bypass', // bypass geo blocks
 			'--socket-timeout 15', // prevent hanging
+			'--impersonate Chrome', // bypass bot detection using curl-cffi
 		]
 
 		const data = {
@@ -57,6 +58,9 @@ export default class extends Cmd {
 			await startTyping()
 			output = await runCode('bash', `${defaults.runner.ytdlp} ${cliArgs.join(' ')} "${url}"`)
 
+			const stat = await Deno.stat(path).catch(() => null)
+			if (!stat) throw new Error('NOT_FOUND')
+
 			const buffer = Buffer.from(await Deno.readFile(path))
 			const mediaMessage = {
 				[type]: buffer,
@@ -66,11 +70,10 @@ export default class extends Cmd {
 			await send(mediaMessage)
 			await Deno.remove(path) // cleanup temp file
 		} catch (_e: any) {
-			send(
-				`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output}\n\n*_Erro:_* ${
-					_e?.stack || _e?.message || _e
-				}`,
-			)
+			const err = _e?.message === 'NOT_FOUND'
+				? ''
+				: `\n\n*_Erro interno:_* ${_e?.stack || _e?.message || _e}`
+			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output.trim()}${err}`)
 		}
 	}
 }
