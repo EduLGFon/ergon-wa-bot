@@ -7,7 +7,8 @@ export default class extends Cmd {
 		super({ alias: ['ajuda', 'menu', '?'] })
 	}
 
-	run({ args, send, user, t }: CmdCtx) {
+	// deno-lint-ignore require-await
+	async run({ args, send, user, t }: CmdCtx) {
 		if (args[0]) {
 			// the user is searching for cmd-specific help info
 			const cmd = cache.cmds.find((c) => c.name === args[0] || c.alias.includes(args[0]))

@@ -1,5 +1,4 @@
 import defaults from '@conf/defaults.json' with { type: 'json' }
-// migrated node:fs
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import prisma, { getGroup, getUser } from '@prisma'
 import { randomDelay } from '@util/functions.ts'
@@ -38,9 +37,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				// deno-lint-ignore no-unused-vars
 				const { msg, args, user, group, send, react } = ctx!
 				randomDelay
-				writeFile
 				getGroup
-				readFile
 				checkMatch
 				getUser
 				prisma

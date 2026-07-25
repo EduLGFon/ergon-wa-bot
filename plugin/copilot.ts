@@ -8,7 +8,7 @@
  * Run eval
  * etc
  */
-import $ from 'dax'
+import $ from 'jsr:@david/dax'
 
 const controller = new AbortController()
 const node_args = ['--expose-gc', '--no-warnings', '--env-file=conf/.env'].join(' ')
@@ -32,7 +32,8 @@ const cmds = {
 		console.log('Start:', ...args)
 
 		args.forEach((a) => {
-			if (!receipes[a]) return console.log('not found:', a)
+			const recipe = receipes[a as keyof typeof receipes]
+			if (!recipe) return console.log('not found:', a)
 			//@ts-ignore shut up TypeScript
 			receipes[a].controller = spawn(receipes[a].cmd)
 		})
@@ -43,9 +44,11 @@ const cmds = {
 
 		//@ts-ignore shut up TypeScript
 		args.forEach((a) => {
-			if (!receipes[a]) return console.log('not found:', a)
-
-			const ctrl = receipes[a].controller
+			const recipe = receipes[a as keyof typeof receipes]
+			if (!recipe) return console.log('not found:', a)
+			
+			// @ts-ignore
+			const ctrl = recipe.controller as AbortController
 			if (ctrl) ctrl.abort()
 			else console.log('not running:', a)
 		})
@@ -60,7 +63,8 @@ const cmds = {
 			if (!recipe) return console.log('not found:', a)
 
 			recipe.controller.abort() // kill it
-			recipe.controller = spawn(recipe.cmd) // spawn it
+			// @ts-ignore
+			recipe.controller = spawn(recipe.cmd) as AbortController // spawn it
 		})
 	},
 	c() {

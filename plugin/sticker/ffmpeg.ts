@@ -207,7 +207,7 @@ function readOutputs(
 	formats: StickerFormat[],
 ): FfmpegResult[] {
 	return formats.map((f) => {
-		const buf = Deno.readFileSync(outPath(dir, prefix, f))
+		const buf = Buffer.from(Deno.readFileSync(outPath(dir, prefix, f)))
 		return { format: f, buffer: buf, size: buf.length }
 	})
 }

@@ -1,13 +1,12 @@
 import { createStickers, type StickerFormat } from '@plugin/sticker/index.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import { getMedia } from '../../util/msgAbstractions.ts'
-import { randomDelay } from '../../util/functions.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
+import { getMedia } from '@util/msgAbstractions.ts'
+import { randomDelay } from '@util/functions.ts'
 import { isVisual } from '@conf/types/msgs.ts'
 import runCode from '@plugin/runCode.ts'
-// migrated node:fs
-import { now } from '../../util/proto.ts'
-import cache from '../../plugin/cache.ts'
+import { now } from '@util/proto.ts'
+import cache from '@plugin/cache.ts'
 import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
@@ -124,6 +123,6 @@ export default class extends Cmd {
 		const result = await Deno.readFile(`${path}.png`).catch(() => buffer)
 		await Deno.remove(path).catch(() => {})
 		await Deno.remove(`${path}.png`).catch(() => {})
-		return result
+		return Buffer.from(result)
 	}
 }

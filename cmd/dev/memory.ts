@@ -10,7 +10,8 @@ export default class extends Cmd {
 			},
 		})
 	}
-	run({ send }: CmdCtx) {
+	// deno-lint-ignore require-await
+	async run({ send }: CmdCtx) {
 		const mem = process.memoryUsage()
 
 		const memoryUsageMessage = `Memory Usage:

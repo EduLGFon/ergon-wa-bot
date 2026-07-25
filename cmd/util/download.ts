@@ -3,7 +3,6 @@ import { type CmdCtx } from '@conf/types/types.d.ts'
 import type { AnyMessageContent } from 'baileys'
 import { randomDelay } from '@util/functions.ts'
 import runCode from '@plugin/runCode.ts'
-// migrated node:fs
 import emojis from '@util/emojis.ts'
 import Cmd from '@class/cmd.ts'
 

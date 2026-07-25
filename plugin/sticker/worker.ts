@@ -1,3 +1,4 @@
+/// <reference lib="deno.worker" />
 /**
  * Worker thread for video/GIF sticker processing.
  *

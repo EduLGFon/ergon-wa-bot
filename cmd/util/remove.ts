@@ -4,7 +4,6 @@ import { getMedia } from '@util/msgAbstractions.ts'
 import runCode from '@plugin/runCode.ts'
 import emojis from '@util/emojis.ts'
 import Cmd from '@class/cmd.ts'
-// migrated node:fs
 
 export default class extends Cmd {
 	constructor() {
@@ -32,6 +31,6 @@ export default class extends Cmd {
 		await Deno.remove(path).catch(() => {})
 		await Deno.remove(`${path}.png`).catch(() => {})
 
-		send({ caption: emojis['sparkles'], image: buffer }, { quoted: msg })
+		send({ caption: emojis['sparkles'], image: Buffer.from(buffer) }, { quoted: msg })
 	}
 }
