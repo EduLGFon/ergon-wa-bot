@@ -10,7 +10,7 @@ export default class extends Cmd {
 	constructor() {
 		super({
 			alias: ['d'],
-			cooldown: 30_000,
+			cooldown: 10_000,
 		})
 	}
 
@@ -29,14 +29,23 @@ export default class extends Cmd {
 			'--no-playlist', // don't download whole playlists
 			'--geo-bypass', // bypass geo blocks
 			'--socket-timeout',
-			'15', // prevent hanging
+			'25', // prevent hanging
 			'--impersonate',
 			'Chrome', // bypass bot detection using curl-cffi
 			'--max-filesize',
 			'2G', // WhatsApp document max size is 2GB
 			'--no-warnings', // keep the error logs clean
 			'-N',
-			'4', // concurrent fragment downloads for HLS/DASH streams (Reddit/Twitch/etc)
+			'16', // concurrent fragment downloads for HLS/DASH streams (Reddit/Twitch/etc)
+			'--retries',
+			'10', // retry on network errors
+			'--fragment-retries',
+			'10', // retry on fragment download errors
+			'--retry-sleep',
+			'linear=1:5:1',
+			'--force-ipv4',
+			'--postprocessor-args',
+			'ffmpeg:-movflags +faststart',
 		]
 
 		if (url.includes('twitter.com') || url.includes('x.com')) {
@@ -51,12 +60,10 @@ export default class extends Cmd {
 		}
 
 		if (type === 'video') {
-			cliArgs.push(
-				'-f',
-				'b[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-			)
-			cliArgs.push('-S', 'res:1080,ext:mp4:m4a') // cap resolution at 1080p
-			cliArgs.push('--recode-video', 'mp4') // guarantee mp4 format
+			cliArgs.push('-f', 'bv*[vcodec^=avc]+ba[acodec^=aac]/b[ext=mp4]/best')
+			cliArgs.push('-S', 'res:1080,codec:h264:aac,ext:mp4:m4a')
+			cliArgs.push('--remux-video', 'mp4')
+			cliArgs.push('--merge-output-format', 'mp4')
 			cliArgs.push('-o', path)
 			data.mimetype = 'video/mp4'
 		} else {
