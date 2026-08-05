@@ -6,7 +6,7 @@
  * offloading is needed for single images.
  */
 import sharp from 'sharp'
-import type { StickerFormat } from './types.ts'
+import type { StickerFormat } from '@plugin/sticker/types.ts'
 
 const SIZE = 512
 
@@ -17,7 +17,7 @@ const SIZE = 512
  * @param format   Resize/crop strategy
  * @param quality  WebP quality (1–100, default 80)
  */
-export async function processImage(
+export function processImage(
 	buffer: Buffer,
 	format: StickerFormat,
 	quality = 80,

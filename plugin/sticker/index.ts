@@ -6,10 +6,10 @@
  *   • Videos  → worker thread pool running ffmpeg (non-blocking)
  *   • All outputs get EXIF metadata injected before being returned
  */
-import type { StickerOptions, StickerResult } from './types.ts'
-import { processImage } from './image.ts'
-import { injectExif } from './exif.ts'
-import { StickerPool } from './pool.ts'
+import type { StickerOptions, StickerResult } from '@plugin/sticker/types.ts'
+import { processImage } from '@plugin/sticker/image.ts'
+import { injectExif } from '@plugin/sticker/exif.ts'
+import { StickerPool } from '@plugin/sticker/pool.ts'
 
 const DEFAULT_MAX_SIZE = 1_000_000 // 1 MB — WhatsApp won't load larger stickers
 const POOL_SIZE = 2
@@ -43,8 +43,8 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 	if (isVideo) {
 		// Video formats: only full/crop supported in ffmpeg pipeline
 		// circle/rounded silently fall back to crop (no mask overlay in ffmpeg)
-		const videoFormats = formats.map(f =>
-			f === 'circle' || f === 'rounded' ? 'crop' as const : f,
+		const videoFormats = formats.map((f) =>
+			f === 'circle' || f === 'rounded' ? 'crop' as const : f
 		)
 		// deduplicate (e.g. if user asked for crop + circle → two crops)
 		const unique = [...new Set(videoFormats)]
@@ -53,7 +53,7 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 	} else {
 		// Images: process all formats in parallel on the main thread
 		results = await Promise.all(
-			formats.map(async format => ({
+			formats.map(async (format) => ({
 				format,
 				buffer: await processImage(buffer, format, quality),
 			})),
@@ -62,11 +62,11 @@ export async function createStickers(opts: StickerOptions): Promise<StickerResul
 
 	// Inject EXIF metadata (pack name, author) into every sticker
 	return Promise.all(
-		results.map(async r => ({
+		results.map(async (r) => ({
 			format: r.format,
 			buffer: await injectExif(r.buffer, metadata),
 		})),
 	)
 }
 
-export type { StickerFormat, StickerMetadata, StickerResult } from './types.ts'
+export type { StickerFormat, StickerMetadata, StickerResult } from '@plugin/sticker/types.ts'

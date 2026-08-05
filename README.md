@@ -27,9 +27,9 @@
 
 ### `1 -` 🛠️ Install runtimes and tools:
 
-- [NodeJS 💩](https://nodejs.org/pt-br/) (for Ergon)
+- [Deno 🦕](https://deno.com/) (for Ergon)
 
-> 🪧 » _Recommended version: 26 or higher_
+> 🪧 » _Recommended version: 2.0 or higher_
 
 **OPTIONAL TOOLS**
 
@@ -38,8 +38,8 @@
 > 🪧 » _Recommended version: 16 or higher_
 
 > ⚠️ » You may notice some auth creds/keys storing issues if you don't set a DB, but Ergon will
-> still work well. Also, some cmds may require a database to work (e.g. rank) or setting
-> user-level language/prefix permanently.
+> still work well. Also, some cmds may require a database to work (e.g. rank) or setting user-level
+> language/prefix permanently.
 
 - FFMPEG (for video stickers)
 
@@ -52,7 +52,7 @@
 - You can also use these languages/runtimes inside Ergon or eval. But it's **not required** for any
   base features. only install them if you want to use them.
 
-* [BUN 🧁](https://bun.sh), [DENO 🦕](https://deno.com/), [LuaJIT 🌙](https://luajit.org/), G++
+* [BUN 🧁](https://bun.sh), [NodeJS 🐢](https://nodejs.org/), [LuaJIT 🌙](https://luajit.org/), G++
   (C/C++), Rustc (Rust)
 
 ### `2 -` 📁 Download or clone the repository:
@@ -67,35 +67,50 @@ git clone https://github.com/EduLGFon/ergon-wa-bot # You need to have git instal
 
 ### `3 -` 🌿 Setup Wizard & Modes:
 
-Ergon includes an interactive setup wizard and predefined setup scripts to configure the bot to your requirements.
+Ergon includes an interactive setup wizard and predefined setup scripts to configure the bot to your
+requirements.
 
 #### 🧙 The Setup Wizard
-To start the interactive wizard which guides you through configuring the `.env` configuration file, defaults, timezone, language, and dependencies step-by-step:
+
+To start the interactive wizard which guides you through configuring the `.env` configuration file,
+defaults, timezone, language, and dependencies step-by-step:
+
 ```bash
-npm run wizard
+deno task wizard
 ```
+
 Using the wizard, you can also manage the bot lifecycle:
-- **Configure**: Set up environment variables, timezone, language, prefix, database URL, and Gemini API keys.
+
+- **Configure**: Set up environment variables, timezone, language, prefix, database URL, and Gemini
+  API keys.
 - **Install/Setup**: Choose Light, Medium, or Strong setup levels.
-- **Update**: Run a full update that pulls latest repository commits, updates npm/pip packages, and re-generates schemas.
-- **Start/Restart**: Run the bot in the **Foreground** (interactive console) or **Background** (via PM2).
+- **Update**: Run a full update that pulls latest repository commits, updates npm/pip packages, and
+  re-generates schemas.
+- **Start/Restart**: Run the bot in the **Foreground** (interactive console) or **Background** (via
+  PM2).
 - **Stop**: Stop and clean up running background PM2 processes.
-- **Reset**: Perform a Light Reset (deleting session data, cache, and temporary files) or a Strong Reset (truncating auth keys and credentials directly from the database).
+- **Reset**: Perform a Light Reset (deleting session data, cache, and temporary files) or a Strong
+  Reset (truncating auth keys and credentials directly from the database).
 
 #### ⚙️ Predefined Setup Modes
+
 If you prefer running a single command, choose one of these modes based on your environment:
 
-1. **Light Setup** (`npm run setup`)
-   - Installs global tools (`prisma`, `pm2`) and Node project dependencies.
-   - Ideal if you want a quick test or do not require database persistent data and optional features like video stickers or background removal.
+1. **Light Setup** (`deno task setup`)
+   - Installs global tools (`drizzle-kit`, `pm2`) and Deno project dependencies.
+   - Ideal if you want a quick test or do not require database persistent data and optional features
+     like video stickers or background removal.
 
-2. **Medium Setup** (`npm run setup:medium`)
-   - Includes Light Setup + installs a Python virtual environment with libraries (`rembg`, `onnxruntime`, `yt-dlp`) for background removal on stickers and video downloading.
+2. **Medium Setup** (`deno task setup:medium`)
+   - Includes Light Setup + installs a Python virtual environment with libraries (`rembg`,
+     `onnxruntime`, `yt-dlp`) for background removal on stickers and video downloading.
    - Ideal for full local utility command support without a PostgreSQL database.
 
-3. **Strong Setup** (`npm run setup:strong`)
-   - Includes Medium Setup + runs database schema migrations (`prisma db push`) to synchronize with your PostgreSQL database.
-   - Ideal for full production environments with message rankings, cached message history, and user-level preference persistence.
+3. **Strong Setup** (`deno task setup:strong`)
+   - Includes Medium Setup + runs database schema migrations (`deno task db:push`) to synchronize
+     with your PostgreSQL database.
+   - Ideal for full production environments with message rankings, cached message history, and
+     user-level preference persistence.
 
 ---
 
@@ -107,12 +122,20 @@ If you prefer running a single command, choose one of these modes based on your 
 
 # 🎨 New Custom Sticker Engine
 
-Ergon features a custom-built, fast, and robust WhatsApp Sticker Engine that avoids the limitations of standard sticker formatting libraries:
+Ergon features a custom-built, fast, and robust WhatsApp Sticker Engine that avoids the limitations
+of standard sticker formatting libraries:
 
-- **⚡ Instant Image Stickers (via `sharp`)**: Static image stickers (including `full`, `crop`, `circle`, and `rounded` formats) are processed using SVG masks on the main thread in under 50ms.
-- **🎞️ Single-Pass Video Conversion (via `ffmpeg`)**: Animated video and GIF stickers are encoded using the ffmpeg `split` filter. This allows the bot to decode the video once and write multiple formats (`full` and `crop`) simultaneously, cutting encoding times in half.
-- **🧵 Non-blocking Worker Pools**: Video/GIF sticker processing is offloaded to a queue-managed worker thread pool (2 threads by default) so that the bot remains responsive to other users even during heavy rendering tasks.
-- **📉 Intelligent Adaptive Compression**: To guarantee that stickers do not get rejected by WhatsApp (which occurs when files exceed 1MB), the engine automatically checks file sizes and retries rendering with progressively lower framerates/quality settings if the limit is exceeded.
+- **⚡ Instant Image Stickers (via `sharp`)**: Static image stickers (including `full`, `crop`,
+  `circle`, and `rounded` formats) are processed using SVG masks on the main thread in under 50ms.
+- **🎞️ Single-Pass Video Conversion (via `ffmpeg`)**: Animated video and GIF stickers are encoded
+  using the ffmpeg `split` filter. This allows the bot to decode the video once and write multiple
+  formats (`full` and `crop`) simultaneously, cutting encoding times in half.
+- **🧵 Non-blocking Worker Pools**: Video/GIF sticker processing is offloaded to a queue-managed
+  worker thread pool (2 threads by default) so that the bot remains responsive to other users even
+  during heavy rendering tasks.
+- **📉 Intelligent Adaptive Compression**: To guarantee that stickers do not get rejected by
+  WhatsApp (which occurs when files exceed 1MB), the engine automatically checks file sizes and
+  retries rendering with progressively lower framerates/quality settings if the limit is exceeded.
 
 ---
 
@@ -136,19 +159,18 @@ Ergon features a custom-built, fast, and robust WhatsApp Sticker Engine that avo
 
 ```
 # Stopping services
-npm run stop
+deno task stop
 
 # You can update everything just running:
-npm run update
+deno task update
 # It will: pull commits from repository,
-# update node modules, update deno and bun,
-# update python dependencies, generate prisma schema,
-# and rebuild source.
+# update Deno packages, update Python dependencies,
+# generate Drizzle schema, and rebuild source.
 
 # 'update' won't start services.
 
 # Starting services
-npm start
+deno task start
 ```
 
 > ⚠️ » _None of these scripts will update `Python`, `LuaJIT`, `PostgreSQL`, `G++` or `GIT`. You
@@ -159,11 +181,11 @@ npm start
 - I recommend you to reset and log out WhatsApp Web sometimes to fix decrypt bugs
 
 ```
-npm run stop # Stopping services
+deno task stop # Stopping services
 
-npm run reset # Cleaning auth, cache and temp
+deno task reset # Cleaning auth, cache and temp
 
-npm start # Starting all services
+deno task start # Starting all services
 # Scan QR Code
 ```
 

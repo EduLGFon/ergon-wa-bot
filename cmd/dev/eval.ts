@@ -1,4 +1,8 @@
-import { Cmd, type CmdCtx, defaults, runCode } from '../../map.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import runCode from '@plugin/runCode.ts'
+import Cmd from '@class/cmd.ts'
+
 const langs = Object.keys(defaults.runner)
 
 export default class extends Cmd {
@@ -15,17 +19,15 @@ export default class extends Cmd {
 		// code language. can be py (python), rs (rust), cpp (C++), etc.
 
 		const startTime = Date.now() // start time for execution duration
-		let output = await runCode(lang, ctx.args.join(' '), '', ctx)
+		const output = await runCode(lang, ctx.args.join(' '), '', ctx)
 
 		// execution duration
 		const duration = (Date.now() - startTime!).duration(true)
-		const RAM = process.memoryUsage().rss.bytes() // current RAM usage
+		const RAM = Deno.memoryUsage().rss.bytes() // current RAM usage
 
-		const text =
-			`\`$ ${duration}/${RAM}\`` + // msg header
+		const text = `\`$ ${duration}/${RAM}\`` + // msg header
 			(output === 'undefined' ? '' : '\n' + output.trim()) // delete 'undefined' outputs
 
 		ctx.send(text)
-		return
 	}
 }

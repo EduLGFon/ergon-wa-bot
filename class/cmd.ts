@@ -1,6 +1,8 @@
-import { type CmdCtx, Group, type Msg, type User } from '../map.ts'
-import { reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
-import bot from '../wa.ts'
+import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
+import { reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
+import { type default as User } from '@class/user.ts'
+import Group from '@class/group.ts'
+import bot from '@plugin/bot.ts'
 
 export default abstract class Cmd {
 	name: str
@@ -45,7 +47,7 @@ export default abstract class Cmd {
 		const send = sendMsg.bind(msg.chat)
 		const react = reactToMsg.bind(msg)
 
-		const isDev = !!process.env.DEVS?.includes(user.lid)
+		const isDev = !!Deno.env.get('DEVS')?.includes(user.lid)
 		// if a normal user tries to run a only-for-devs cmd
 
 		if (this.access.restrict && !isDev) return react('prohibited')
@@ -56,7 +58,7 @@ export default abstract class Cmd {
 			if (!this.access.groups) return react('block') // this cmd can't run on groups
 
 			// all group admins id
-			const admins = group.members.filter(m => m.admin).map(m => m.id)
+			const admins = group.members.filter((m) => m.admin).map((m) => m.id)
 
 			// this user is not an admin and can't run this cmd
 			if (this.access.admin && !admins.includes(user.lid) && !isDev) {
@@ -69,7 +71,9 @@ export default abstract class Cmd {
 			}
 		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
 
-		if (this.access.needsDb && !process.env.DATABASE_URL) return send('events.nodb')
+		if (this.access.needsDb && !Deno.env.get('DATABASE_URL')) {
+			return send('events.nodb', { user })
+		}
 		// there is no DB and cmd can't run without it
 
 		return true

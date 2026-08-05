@@ -1,5 +1,5 @@
 import type { Chat, Contact, WAMessage } from 'baileys'
-// import { getUser } from '../../util/prisma.ts'
+// import { getUser } from '@util/prisma.ts'
 // import { appendFile } from 'fs/promises'
 
 interface Event {
@@ -10,7 +10,7 @@ interface Event {
 	isLatest: boolean
 }
 
-export default async function (data: Event, e: str) {
+export default function (data: Event, _e: str) {
 	// const { chats, contacts, messages, isLatest, progress } = data
 	print('SYNC', `Syncing data: ${data.progress}%`, 'green')
 

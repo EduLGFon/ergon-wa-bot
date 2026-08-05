@@ -1,4 +1,4 @@
-import type { MsgTypes } from './types.d.ts'
+import type { MsgTypes } from '@conf/types/types.d.ts'
 
 const textTypes = {
 	conversation: 'text',

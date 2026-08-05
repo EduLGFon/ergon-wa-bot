@@ -8,11 +8,12 @@ export default class Collection<K, V> extends Map<K, V> {
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
 	}
 
-	get(key: K): V | undefined {
+	override get(key: K): V | undefined {
 		return super.get(key)
 	}
 
 	// Add: adds a value to the collection
+	// deno-lint-ignore require-await
 	async add(key: K, value?: V | object): Promise<V> {
 		if (!key) throw new Error('Missing object key')
 
@@ -25,7 +26,8 @@ export default class Collection<K, V> extends Map<K, V> {
 		if (existing) {
 			if (!value) return existing as V
 			// Merge: existing fields take priority over new ones
-			value = Object.assign({}, value, existing) as V
+			// Object.assign(value, existing) mutates value and preserves its prototype
+			value = Object.assign(value, existing) as V
 		}
 
 		this.set(key, value as V)

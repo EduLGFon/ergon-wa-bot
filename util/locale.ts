@@ -1,8 +1,8 @@
 import translationBackend from 'i18next-fs-backend'
-import { readdirSync } from 'node:fs'
+// node:fs removed
 import i18next from 'i18next'
 
-export const languages = readdirSync('locale/').map(l => l.split('.')[0]) // get file names
+export const languages = Array.from(Deno.readDirSync('locale/')).map((l) => l.name.split('.')[0]) // get file names
 
 export default async function () {
 	try {

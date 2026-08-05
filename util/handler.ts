@@ -1,9 +1,8 @@
 import { type BaileysEventMap } from 'baileys'
-import cache from '../plugin/cache.ts'
-import { readdirSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { Cmd } from '../map.ts'
-import bot from '../wa.ts'
+import { resolve } from 'jsr:@std/path'
+import cache from '@plugin/cache.ts'
+import bot from '@plugin/bot.ts'
+import Cmd from '@class/cmd.ts'
 
 export { loadCmds, loadEvents }
 
@@ -11,9 +10,9 @@ async function folderHandler(path: str, handler: Func) {
 	path = resolve(path)
 	let count = 0
 
-	for (const category of readdirSync(path)) {
+	for (const { name: category } of Deno.readDirSync(path)) {
 		// For each category folder
-		for (const file of readdirSync(`${path}/${category}`)) {
+		for (const { name: file } of Deno.readDirSync(`${path}/${category}`)) {
 			// for each file of each category
 			const imported = await import(`file://${path}/${category}/${file}`)
 
@@ -51,7 +50,8 @@ async function loadEvents() {
 		bot.sock.ev.on(name, (...args) => {
 			// It allows to modify events in run time
 			cache.events.get(name)!(...args, name).catch((e: Error) =>
-				print(`EVENT/${name}:`, e, e.stack, 'red'))
+				print(`EVENT/${name}:`, e, e.stack, 'red')
+			)
 			// it's the same as eventFunction(...args, name)
 		})
 	})

@@ -1,20 +1,16 @@
-import {
-	allMsgTypes,
-	Cmd,
-	type CmdCtx,
-	coolValues,
-	findKey,
-	Group,
-	isMedia,
-	type Msg,
-	type MsgTypes,
-	User,
-} from '../map.ts'
 import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
-import prisma, { getGroup, getUser } from '../plugin/prisma.ts'
-import cache from '../plugin/cache.ts'
-import { logger } from './proto.ts'
-import bot from '../wa.ts'
+import { type CmdCtx, type Msg, type MsgTypes } from '@conf/types/types.d.ts'
+import { allMsgTypes, coolValues, isMedia } from '@conf/types/msgs.ts'
+import { msgs, users } from '@conf/schema.ts'
+import { findKey } from '@util/functions.ts'
+import { db, getGroup, getUser } from '@db'
+import { logger } from '@util/proto.ts'
+import { eq, sql } from 'drizzle-orm'
+import cache from '@plugin/cache.ts'
+import Group from '@class/group.ts'
+import User from '@class/user.ts'
+import bot from '@plugin/bot.ts'
+import Cmd from '@class/cmd.ts'
 
 // getCtx: command context === message abstraction layer
 async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
@@ -36,12 +32,12 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	if (!lid) lid = key.fromMe ? bot.lid : key.remoteJid!
 
 	if (lid?.endsWith('@g.us')) return fakeCtx
-	let user = await getUser({ lid })
+	const user = await getUser({ lid })
 
 	const mime = findKey(message, 'mimetype') // media mimetype like image/png
 	const isBot = Boolean(key.fromMe && !Object.prototype.hasOwnProperty.call(key, 'participant')) // if it's baileys client
 
-	let msg: Msg = {
+	const msg: Msg = {
 		chat: key?.remoteJid!, // msg chat id
 		author: user?.id!,
 		type: types[0],
@@ -81,15 +77,13 @@ async function checkMatch(key: proto.IMessageKey) {
 	const memberAlt = (key as any)?.participantAlt
 
 	if (member?.includes('@lid') && memberAlt?.includes('@s.whatsapp.net')) {
-		const oldUser = await prisma.users.findFirst({ where: { lid: memberAlt } })
+		const oldUser = (await db?.select().from(users).where(eq(users.lid, memberAlt)))?.[0]
 		if (!oldUser) return
-		const newUser = await prisma.users.findFirst({ where: { lid: member } })
+		const newUser = (await db?.select().from(users).where(eq(users.lid, member)))?.[0]
 		if (!newUser) return
 
-		const oldMsgs = await prisma.msgs.findMany({ where: { author: oldUser.id } })
-		const newMsgs = await prisma.msgs.findMany({
-			where: { author: newUser.id },
-		})
+		const oldMsgs = (await db?.select().from(msgs).where(eq(msgs.author, oldUser.id))) || []
+		const newMsgs = (await db?.select().from(msgs).where(eq(msgs.author, newUser.id))) || []
 		print(
 			'MATCH',
 			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser.id}) has two entries.`,
@@ -101,26 +95,14 @@ async function checkMatch(key: proto.IMessageKey) {
 		const author = oldUser.id
 		for (const m of newMsgs) {
 			const group = m.group
-			await prisma.msgs.upsert({
-				where: {
-					author_group: { author, group },
-				},
-				create: {
-					author,
-					group,
-					count: m.count,
-				},
-				update: {
-					count: { increment: m.count },
-				},
+			await db?.insert(msgs).values({ author, group, count: m.count }).onConflictDoUpdate({
+				target: [msgs.author, msgs.group],
+				set: { count: sql`${msgs.count} + ${m.count}` },
 			})
 		}
-		await prisma.msgs.deleteMany({ where: { author: newUser.id } })
-		await prisma.users.update({
-			where: { id: oldUser.id },
-			data: { lid: newUser.lid },
-		})
-		await prisma.users.deleteMany({ where: { id: newUser.id } })
+		await db?.delete(msgs).where(eq(msgs.author, newUser.id))
+		await db?.update(users).set({ lid: newUser.lid }).where(eq(users.id, oldUser.id))
+		await db?.delete(users).where(eq(users.id, newUser.id))
 	}
 }
 
@@ -129,7 +111,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	const msg = (raw?.message || raw)[types[1]] || raw
 	if (!isMedia(types[0]) || (!msg.media && !msg.url)) return
 
-	let keyObj: MediaMsg = {
+	const keyObj: MediaMsg = {
 		url: msg.url,
 		directPath: msg.directPath,
 		mediaKey: msg.mediaKey,
@@ -145,7 +127,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	).catch(e => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
+	).catch((_e) => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
 
 	if (!buffer) return
 
@@ -170,7 +152,7 @@ function getInput(msg: Msg, prefix: str) {
 
 	let args: str[] = msg.text.replace(prefix, '').trim().split(' ')
 	const callCmd = args.shift()!.toLowerCase() // cmd name on msg | .help => 'help' === callCmd
-	const cmd = cache.cmds.find(c => c.name === callCmd || c.alias.includes(callCmd))
+	const cmd = cache.cmds.find((c) => c.name === callCmd || c.alias.includes(callCmd))
 	// search command by name or by aliases
 
 	const first = args[0]?.toLowerCase() // first arg
@@ -203,15 +185,15 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 	const types = getMsgType(quotedRaw) // quoted message type
 	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
-	let quoted = {
+	const quoted = {
 		type: types[0], // msg type
 		media: await downloadMedia(quotedRaw, types),
 		text: getMsgText(quotedRaw as proto.IMessage),
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg
 
-	let cachedMsg = chat.msgs.find(
-		m =>
+	const cachedMsg = chat.msgs.find(
+		(m) =>
 			// compare quoted msg with cached msgs
 			quoted?.type === m.type &&
 			quoted?.media === m.media &&
@@ -248,13 +230,15 @@ function msgMeta(
 	body: str | AnyMessageContent,
 	reply?: proto.IWebMessageInfo,
 ) {
-	let chat = typeof msg === 'string' ? msg : (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
+	let chat = typeof msg === 'string'
+		? msg
+		: (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
 	const text = typeof body === 'string' ? { text: body } : body
 	const quote = reply
 		? { quoted: reply }
 		: typeof msg === 'string'
-			? {}
-			: { quoted: (msg as Msg).message }
+		? {}
+		: { quoted: (msg as Msg).message }
 	const key = (msg as Msg).key ? (msg as Msg).key : msg as proto.IMessageKey
 
 	if (chat && !chat.includes('@')) chat += '@s.whatsapp.net'

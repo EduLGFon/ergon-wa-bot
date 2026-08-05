@@ -1,4 +1,7 @@
-import type { Cmd, emojis, Group, User } from '../../map.ts'
+import type Cmd from '@class/cmd.ts'
+import type Group from '@class/group.ts'
+import type User from '@class/user.ts'
+import emojis from '@util/emojis.ts'
 import type { AnyMessageContent, proto } from 'baileys'
 import type { TFunction } from 'i18next'
 
@@ -46,7 +49,7 @@ interface CmdCtx {
 	cmd: Cmd
 	startTyping(): Promise<void>
 	send(str: str | AnyMessageContent, opts?: { user?: User; quoted?: Msg }): Promise<CmdCtx>
-	react(emoji: str | ReturnType<typeof emojis>): Promise<void>
+	react(emoji: str | (typeof emojis)[keyof typeof emojis]): Promise<void>
 	t: TFunction<'translation', undefined>
 }
 

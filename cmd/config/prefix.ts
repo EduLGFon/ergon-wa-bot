@@ -1,10 +1,12 @@
-import { Cmd, type CmdCtx } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
 
 export default class extends Cmd {
 	constructor() {
 		super({})
 	}
 
+	// deno-lint-ignore require-await
 	async run({ t, user, send, args }: CmdCtx) {
 		if (!args[0] || args[0].length > 3) return send('usage.prefix', { user })
 

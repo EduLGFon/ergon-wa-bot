@@ -1,10 +1,13 @@
-import { type CmdCtx, emojis, getCtx, type Msg, User } from '../map.ts'
+import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
 import type { AnyMessageContent } from 'baileys'
-import { downloadMedia } from './msgTools.ts'
-import { randomEmoji } from './emojis.ts'
-import cache from '../plugin/cache.ts'
+import { downloadMedia } from '@util/msgTools.ts'
+import { getCtx } from '@util/msgTools.ts'
+import { randomEmoji } from '@util/emojis.ts'
+import emojis from '@util/emojis.ts'
+import cache from '@plugin/cache.ts'
 import { getFixedT } from 'i18next'
-import bot from '../wa.ts'
+import User from '@class/user.ts'
+import bot from '@plugin/bot.ts'
 
 export { editMsg, getMedia, reactToMsg, sendMsg, startTyping }
 

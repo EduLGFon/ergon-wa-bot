@@ -9,13 +9,12 @@
  *   • Adaptive quality: retries at lower quality/fps until output ≤ maxSize
  *   • Temp files are namespaced per job to prevent collisions between workers
  */
-import { spawnSync } from 'node:child_process'
-import { readFileSync, unlinkSync } from 'node:fs'
-import type { StickerFormat } from './types.ts'
+// node imports removed
+import type { StickerFormat } from '@plugin/sticker/types.ts'
 
 const SIZE = 512
-const MAX_DURATION = 7
-const TIMEOUT_MS = 60_000
+const MAX_DURATION = 11
+const _TIMEOUT_MS = 60_000
 
 /**
  * Compression levels tried in order.
@@ -51,7 +50,7 @@ export function encodeVideo(
 ): FfmpegResult[] {
 	for (const level of LEVELS) {
 		const results = runFfmpeg(inputPath, outputDir, prefix, formats, level)
-		if (results.every(r => r.size <= maxSize)) return results
+		if (results.every((r) => r.size <= maxSize)) return results
 
 		// too big — clean outputs and retry with lower settings
 		cleanOutputs(outputDir, prefix, formats)
@@ -68,7 +67,9 @@ export function cleanup(
 	prefix: string,
 	formats: StickerFormat[],
 ): void {
-	try { unlinkSync(inputPath) } catch { /* already gone */ }
+	try {
+		Deno.removeSync(inputPath)
+	} catch { /* already gone */ }
 	cleanOutputs(outputDir, prefix, formats)
 }
 
@@ -83,25 +84,35 @@ function runFfmpeg(
 	level: { quality: number; fps: number },
 ): FfmpegResult[] {
 	const { filter, maps } = buildFilterGraph(
-		formats, level.quality, level.fps, outputDir, prefix,
+		formats,
+		level.quality,
+		level.fps,
+		outputDir,
+		prefix,
 	)
 
 	const args = [
-		'-y',                       // overwrite
-		'-t', String(MAX_DURATION), // cap input duration
-		'-i', inputPath,
-		'-filter_complex', filter,
+		'-y', // overwrite
+		'-t',
+		String(MAX_DURATION), // cap input duration
+		'-i',
+		inputPath,
+		'-filter_complex',
+		filter,
 		...maps,
 	]
 
-	const proc = spawnSync('ffmpeg', args, {
-		timeout: TIMEOUT_MS,
-		stdio: ['pipe', 'pipe', 'pipe'],
+	const cmd = new Deno.Command('ffmpeg', {
+		args,
+		stdin: 'null',
+		stdout: 'piped',
+		stderr: 'piped',
 	})
+	const proc = cmd.outputSync()
 
-	if (proc.status !== 0) {
-		const stderr = proc.stderr?.toString().slice(-500) || 'unknown error'
-		throw new Error(`ffmpeg exited ${proc.status}: ${stderr}`)
+	if (!proc.success) {
+		const stderr = new TextDecoder().decode(proc.stderr).slice(-500) || 'unknown error'
+		throw new Error(`ffmpeg exited ${proc.code}: ${stderr}`)
 	}
 
 	return readOutputs(outputDir, prefix, formats)
@@ -124,19 +135,25 @@ function buildFilterGraph(
 	const maps: string[] = []
 
 	const codecArgs = (q: number) => [
-		'-c:v', 'libwebp',
-		'-loop', '0',
+		'-c:v',
+		'libwebp',
+		'-loop',
+		'0',
 		'-an',
-		'-quality', String(q),
-		'-compression_level', '4',
-		'-preset', 'icon',
+		'-quality',
+		String(q),
+		'-compression_level',
+		'4',
+		'-preset',
+		'icon',
 	]
 
 	if (formats.length === 1) {
 		const f = formats[0]
 		filters.push(`[0:v]fps=${fps},${scaleFilter(f)}[${f}]`)
 		maps.push(
-			'-map', `[${f}]`,
+			'-map',
+			`[${f}]`,
 			...codecArgs(quality),
 			outPath(outputDir, prefix, f),
 		)
@@ -149,7 +166,8 @@ function buildFilterGraph(
 			const f = formats[i]
 			filters.push(`[s${i}]${scaleFilter(f)}[${f}]`)
 			maps.push(
-				'-map', `[${f}]`,
+				'-map',
+				`[${f}]`,
 				...codecArgs(quality),
 				outPath(outputDir, prefix, f),
 			)
@@ -188,14 +206,16 @@ function readOutputs(
 	prefix: string,
 	formats: StickerFormat[],
 ): FfmpegResult[] {
-	return formats.map(f => {
-		const buf = readFileSync(outPath(dir, prefix, f))
+	return formats.map((f) => {
+		const buf = Buffer.from(Deno.readFileSync(outPath(dir, prefix, f)))
 		return { format: f, buffer: buf, size: buf.length }
 	})
 }
 
 function cleanOutputs(dir: string, prefix: string, formats: StickerFormat[]): void {
 	for (const f of formats) {
-		try { unlinkSync(outPath(dir, prefix, f)) } catch { /* already gone */ }
+		try {
+			Deno.removeSync(outPath(dir, prefix, f))
+		} catch { /* already gone */ }
 	}
 }

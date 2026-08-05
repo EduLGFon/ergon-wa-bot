@@ -1,4 +1,6 @@
-import { Cmd, type CmdCtx, delay, isValidPositiveIntenger } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import { delay, isValidPositiveIntenger } from '@util/functions.ts'
 
 export default class extends Cmd {
 	constructor() {

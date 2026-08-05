@@ -4,11 +4,10 @@
  * https://pm2.keymetrics.io/docs/usage/application-declaration/
  */
 const runtime_args = [
-	'--expose-gc',
-	'--env-file=conf/.env',
-	'--trace-warnings',
-	// '--hot',
-	// '--hmr',
+	'run',
+	'-A',
+	'--v8-flags=--expose-gc',
+	'--env=conf/.env',
 	// '--max-old-space-size=16384',
 ]
 
@@ -16,12 +15,13 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 	apps: [{ // pm2 launch settings
 		name: 'wa',
 		script: 'wa.ts', /// main file
-		interpreter: 'node',
+		interpreter: 'deno',
 		interpreter_args: runtime_args,
 		env: {
 			NODE_EXTRA_CA_CERTS: 'conf/smufesrootca.pem',
 		},
 		log_file: 'conf/gen/out.log',
 		merge_logs: true,
+		exp_backoff_restart_delay: 1_000, // Starts at 100ms, exponentially increases up to 15s to prevent login spam
 	}],
 }

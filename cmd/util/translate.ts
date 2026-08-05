@@ -1,5 +1,6 @@
 import { translate } from 'google-translate-api-x'
-import { Cmd, type CmdCtx } from '../../map.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -16,8 +17,7 @@ export default class extends Cmd {
 		try {
 			const output = await translate(args.join(' '), { to: toLang })
 
-			const text =
-				`*[🌐] - ${t('translate.desc')}*\n` + // Google translate title
+			const text = `*[🌐] - ${t('translate.desc')}*\n` + // Google translate title
 				`*${output?.from?.language?.iso}  ➟  ${toLang}*\n` + // lang identify
 				output?.text.encode() // translation
 

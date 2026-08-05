@@ -1,8 +1,10 @@
-import { Cmd, type CmdCtx, defaults } from '../../map.ts'
-import { cleanMemories } from '../../plugin/memories.ts'
-import { getMedia } from '../../util/msgAbstractions.ts'
-import { randomDelay } from '../../util/functions.ts'
-import gemini from '../../util/geminiApi.ts'
+import Cmd from '@class/cmd.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import { cleanMemories } from '@plugin/memories.ts'
+import { getMedia } from '@util/msgAbstractions.ts'
+import { randomDelay } from '@util/functions.ts'
+import gemini from '@util/geminiApi.ts'
 
 export default class extends Cmd {
 	constructor() {
@@ -48,7 +50,7 @@ export default class extends Cmd {
 			user,
 			msg, // this message
 			file: await getMedia(msg),
-		}).catch(async (e): Promise<any> => {
+		}).catch((_e) => {
 			send(`> *${model}:* Modelo não disponível. Tente novamente mais tarde ou amanhã.`, {
 				quoted: msg,
 			})

@@ -1,5 +1,7 @@
-import { getUser } from '../../plugin/prisma.ts'
-import { Cmd, type CmdCtx, User } from '../../map.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import User from '@class/user.ts'
+import Cmd from '@class/cmd.ts'
+import { getUser } from '@db'
 
 export default class extends Cmd {
 	constructor() {
@@ -17,7 +19,7 @@ export default class extends Cmd {
 		let text = `*[🏆] - Rank de mensagens*\n\n`
 
 		const msgs = await group.getCountedMsgs()
-		const members = group.members.map(m => m.id)
+		const members = group.members.map((m) => m.id)
 
 		let pos = 1
 		for (const i in msgs) {
@@ -25,7 +27,7 @@ export default class extends Cmd {
 			// it converts 10000 to 10.000 (10,000 if you're "american")
 
 			const member = (await getUser({ id: msgs[i].author })) as User
-			let name = (member.name || member.phone).trim()
+			const name = (member.name || member.phone).trim()
 
 			if (!members.includes(member.lid)) continue //name = `~${name}~`
 			// it means user is not a member from this group anymore

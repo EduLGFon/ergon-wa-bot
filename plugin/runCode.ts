@@ -1,15 +1,15 @@
-import defaults from '../conf/defaults.json' with { type: 'json' }
-import prisma, { getGroup, getUser } from './prisma.ts'
-import { readFile, writeFile } from 'node:fs/promises'
-import { randomDelay } from '../util/functions.ts'
-import { checkMatch } from '../util/msgTools.ts'
-import { type CmdCtx, delay } from '../map.ts'
-import { sendURMenu } from './menuScraping.ts'
-import { execSync } from 'node:child_process'
-import { extname } from 'node:path'
-import { inspect } from 'node:util'
-import cache from './cache.ts'
-import bot from '../wa.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
+import { db as prisma, getGroup, getUser } from '@db'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import { sendURMenu } from '@plugin/menuScraping.ts'
+import { randomDelay } from '@util/functions.ts'
+import { checkMatch } from '@util/msgTools.ts'
+import { delay } from '@util/functions.ts'
+import { extname } from 'jsr:@std/path'
+import cache from '@plugin/cache.ts'
+import bot from '@plugin/bot.ts'
+
+// removed execAsync
 
 type triggerIncludes = { includes: str[]; template: str }
 type triggerNotIncludes = { notIncludes: str[]; template: str }
@@ -34,11 +34,10 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				// it's a this-process JS code
 				// i'll place several variables and functions here
 				// bc i may want to use them on eval
+				// deno-lint-ignore no-unused-vars
 				const { msg, args, user, group, send, react } = ctx!
 				randomDelay
-				writeFile
 				getGroup
-				readFile
 				checkMatch
 				getUser
 				prisma
@@ -46,13 +45,13 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				cache
 				sendURMenu
 				bot
-				return inspect(await eval(code))
+				return Deno.inspect(await eval(code))
 			}
 			// it's not a this-process JS code
 			// so let's create a file and run it with the right runtime
 			file = `${defaults.runner.tempFolder}/exec.${data.ext!}` // temp/exec.rs
 
-			await writeFile(file, code) // write file
+			await Deno.writeTextFile(file, code) // write file
 			code = '' // clean the code bc it will be on CLI if (file)
 		} else {
 			// it's a already created file
@@ -64,10 +63,13 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 		for (const i in data.cmd) {
 			// cmd is a shell cmd script to run the code
 			// you didn't see the cli? it's here => cli: str[] = []
+			const [runner, ...args] = `${data.cmd[i]} ${file} ${code}`.split(' ')
 			cli[i] = `${data.cmd[i]} ${file} ${code}`
 			// place every cmd into the cli list
 
-			output += execSync(cli[i], { timeout: 30_000 }) + ' ' // run with 30s timeout
+			const cmdObj = new Deno.Command(runner, { args })
+			const res = await cmdObj.output()
+			output += new TextDecoder().decode(res.stdout) + new TextDecoder().decode(res.stderr)
 		}
 		return output.trim()
 	} catch (e: any) {

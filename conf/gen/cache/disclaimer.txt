@@ -1,3 +1,0 @@
-DO NOT DELETE THIS FOLDER
-
-you can delete all files inside it, but never the folder

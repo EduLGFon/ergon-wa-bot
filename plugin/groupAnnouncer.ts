@@ -1,6 +1,8 @@
-import { getMedia, reactToMsg, sendMsg } from '../util/msgAbstractions.ts'
-import { randomDelay } from '../util/functions.ts'
-import { Group, type Msg, User } from '../map.ts'
+import { getMedia, reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
+import { randomDelay } from '@util/functions.ts'
+import Group from '@class/group.ts'
+import { type Msg } from '@conf/types/types.d.ts'
+import User from '@class/user.ts'
 import type { AnyMessageContent } from 'baileys'
 type Announcement = { text?: str; caption?: str; groups?: str[]; tag?: str; msg?: Msg }
 // Announcement = simple text msg or media msg (replace text by caption)
@@ -22,8 +24,8 @@ let isSending = false
 const msgQueue: Announcement[] = []
 
 function getAllowedTags() {
-	const groups1 = process.env.GROUPS1?.split('|') ?? []
-	const groups2 = process.env.GROUPS2?.split('|') ?? []
+	const groups1 = Deno.env.get('GROUPS1')?.split('|') ?? []
+	const groups2 = Deno.env.get('GROUPS2')?.split('|') ?? []
 	return {
 		'#diurno': groups1,
 		'#noturno': groups2,
@@ -45,12 +47,13 @@ async function checkGroupAnnouncer(msg: Msg, user: User, group?: Group) {
 	let announceMsg: Announcement = {}
 	const lowText = msg.text.toLowerCase()
 	for (const [key, value] of Object.entries(allowedTags)) {
-		if (lowText.includes(key))
+		if (lowText.includes(key)) {
 			announceMsg = {
 				tag: key, // tag trigger
-				groups: value.filter(g => g !== group.id),
+				groups: value.filter((g) => g !== group.id),
 				// all groups that wasn't the group the msg was sent
 			}
+		}
 	}
 
 	// ignore msgs that not contain any tag

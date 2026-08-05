@@ -1,7 +1,8 @@
-import { sendMsg } from '../util/msgAbstractions.ts'
-import { randomDelay } from '../util/functions.ts'
-import prisma, { getUser } from './prisma.ts'
-import { User } from '../map.ts'
+import { Msg, sendMsg } from '../../../util/msgAbstractions.ts'
+import { randomDelay } from '../../../util/functions.ts'
+import prisma, { getUser } from '../../../plugin/prisma.ts'
+import User from '@class/user.ts'
+// import { Alarm } from '@prisma/client'
 
 export { createAlarms, getUserAlarms, sendAlarms }
 
@@ -11,7 +12,7 @@ const alarmRegex = /{ALARM:.+:[0-9].+}/gi
 
 async function sendAlarms() {
 	if (!process.env.DATABASE_URL) return // there is no DB
-	const alarms: Alarm[] = await prisma.alarms.findMany({
+	const alarms = await (prisma as any).alarms.findMany({
 		where: {
 			status: 0, // only get alarms that are not sent
 		},
@@ -121,7 +122,7 @@ async function createAlarms(user: User, msg: AIMsg, chat: str) {
 async function getUserAlarms(user: User) {
 	// get all alarms created by the user
 	if (!process.env.DATABASE_URL) return ['Nenhum alarme.']
-	const alarms: Alarm[] = await prisma.alarms.findMany({
+	const alarms = await (prisma as any).alarms.findMany({
 		where: { author: user.id },
 	})
 

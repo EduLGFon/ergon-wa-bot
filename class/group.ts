@@ -1,5 +1,10 @@
-import { Collection, defaults, type Msg, prisma } from '../map.ts'
+import defaults from '@conf/defaults.json' with { type: 'json' }
 import type { GroupMetadata, GroupParticipant } from 'baileys'
+import { type Msg } from '@conf/types/types.d.ts'
+import Collection from '@class/collection.ts'
+import { desc, eq, sql } from 'drizzle-orm'
+import { msgs } from '@conf/schema.ts'
+import { db } from '@db'
 
 export default class Group {
 	id: str
@@ -37,38 +42,27 @@ export default class Group {
 	async countMsg(msg: Msg) {
 		// +1 to group member msgs count
 		this.msgs.add(msg.key.id!, msg) // add it to cache
-		if (!process.env.DATABASE_URL || msg.isBot) return
+		if (!Deno.env.get('DATABASE_URL') || msg.isBot) return
 
-		await prisma.msgs.upsert({
-			// save it on db
-			where: {
-				author_group: { author: msg.author, group: this.id.parsePhone() },
-			},
-			create: {
-				// create user counter
-				author: msg.author,
-				group: this.id.parsePhone(),
-			},
-			update: {
-				// or add 1  to count
-				count: { increment: 1 },
-			},
+		await db?.insert(msgs).values({
+			author: msg.author,
+			group: this.id.parsePhone(),
+		}).onConflictDoUpdate({
+			target: [msgs.author, msgs.group],
+			set: { count: sql`${msgs.count} + 1` },
 		})
-		return
 	}
 
 	async getCountedMsgs() {
-		if (!process.env.DATABASE_URL) return []
+		if (!Deno.env.get('DATABASE_URL')) return []
 
-		const msgs = await prisma.msgs.findMany({
-			where: { group: this.id.parsePhone() },
-			orderBy: { count: 'desc' },
-		})
+		const dbMsgs = await db?.select().from(msgs).where(eq(msgs.group, this.id.parsePhone()))
+			.orderBy(desc(msgs.count))
 
-		return msgs
+		return dbMsgs || []
 	}
 
-	async checkData() {
+	checkData() {
 		return this
 	}
 }

@@ -8,7 +8,7 @@
  * Run eval
  * etc
  */
-import $ from 'dax'
+import $ from 'jsr:@david/dax'
 
 const controller = new AbortController()
 const node_args = ['--expose-gc', '--no-warnings', '--env-file=conf/.env'].join(' ')
@@ -31,9 +31,10 @@ const cmds = {
 		// start a script
 		console.log('Start:', ...args)
 
-		args.forEach(a => {
-			if (!receipes[a]) return console.log('not found:', a)
-			//@ts-ignore shut up TypeScript
+		args.forEach((a) => {
+			const recipe = receipes[a as keyof typeof receipes]
+			if (!recipe) return console.log('not found:', a)
+			// @ts-ignore: Deno typing problem with recipe keys
 			receipes[a].controller = spawn(receipes[a].cmd)
 		})
 	},
@@ -41,11 +42,13 @@ const cmds = {
 		// kill a script
 		console.log('Killing:', ...args)
 
-		//@ts-ignore shut up TypeScript
-		args.forEach(a => {
-			if (!receipes[a]) return console.log('not found:', a)
+		// @ts-ignore: Deno typing problem with recipe keys
+		args.forEach((a) => {
+			const recipe = receipes[a as keyof typeof receipes]
+			if (!recipe) return console.log('not found:', a)
 
-			const ctrl = receipes[a].controller
+			// @ts-ignore: Deno typing problem with recipe keys
+			const ctrl = recipe.controller as AbortController
 			if (ctrl) ctrl.abort()
 			else console.log('not running:', a)
 		})
@@ -54,13 +57,14 @@ const cmds = {
 		// restart a script
 		console.log('Restarting:', ...args)
 
-		args.forEach(a => {
+		args.forEach((a) => {
 			const recipe = receipes[a as 'tsc']
 
 			if (!recipe) return console.log('not found:', a)
 
 			recipe.controller.abort() // kill it
-			recipe.controller = spawn(recipe.cmd) // spawn it
+			// @ts-ignore: Deno typing problem with recipe keys
+			recipe.controller = spawn(recipe.cmd) as AbortController // spawn it
 		})
 	},
 	c() {
@@ -106,7 +110,7 @@ function spawn(cmd: string | string[]) {
 				signal: control.signal,
 			}).spawn()
 			return control
-		} catch (e) {
+		} catch (_e) {
 			return
 		}
 	}
