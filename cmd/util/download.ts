@@ -14,7 +14,7 @@ export default class extends Cmd {
 		})
 	}
 
-	async run({ msg, args, user, startTyping, send }: CmdCtx) {
+	async run({ msg, args, user, react, send }: CmdCtx) {
 		const urls = msg.text.getUrl() || msg?.quoted?.text?.getUrl()
 		const url = urls?.[0]
 		if (!url) return send('usage.download', { user })
@@ -77,8 +77,8 @@ export default class extends Cmd {
 
 		let output = ''
 		try {
-			await randomDelay(250, 700)
-			await startTyping()
+			await randomDelay(250, 1_000)
+			await react('loading') // indicate that the download is in progress
 
 			const cmdObj = new Deno.Command(defaults.runner.ytdlp, { args: cliArgs })
 			const { stdout, stderr } = await cmdObj.output()
