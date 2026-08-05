@@ -38,6 +38,7 @@ export default class Baileys {
 			markOnlineOnConnect: false, // your account won't be "online" all the time
 			browser: Browsers.macOS('Desktop'),
 			syncFullHistory: false,
+			version: [2, 3000, 1044006379],
 			shouldSyncHistoryMessage: () => false,
 			// ignore useless msgs
 			shouldIgnoreJid: (jid: str) =>

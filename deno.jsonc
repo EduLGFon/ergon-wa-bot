@@ -22,21 +22,21 @@
 		}
 	},
 	"imports": {
-		"@google/genai": "npm:@google/genai@^2.11.0",
-		"baileys": "npm:@whiskeysockets/baileys",
+		"@google/genai": "npm:@google/genai@^2.15.0",
+		"baileys": "npm:@whiskeysockets/baileys@7.0.0-rc14",
 		"google-translate-api-x": "npm:google-translate-api-x@^10.7.3",
 		"humanize-duration": "npm:humanize-duration@^3.34.0",
 		"i18next": "npm:i18next@^26.3.6",
-		"i18next-fs-backend": "npm:i18next-fs-backend@^2.6.6",
+		"i18next-fs-backend": "npm:i18next-fs-backend@^2.6.7",
 		"node-webpmux": "npm:node-webpmux@^3.2.1",
-		"sharp": "npm:sharp@^0.33.0",
-		"@types/node": "npm:@types/node@^25.9.5",
-		"drizzle-orm": "npm:drizzle-orm",
-		"drizzle-kit": "npm:drizzle-kit",
-		"postgres": "npm:postgres",
-		"@std/log": "jsr:@std/log",
-		"@std/datetime": "jsr:@std/datetime",
-		"@libs/qrcode": "jsr:@libs/qrcode",
+		"sharp": "npm:sharp@^0.35.3",
+		"@types/node": "npm:@types/node@^26.1.2",
+		"drizzle-orm": "npm:drizzle-orm@0.45.2",
+		"drizzle-kit": "npm:drizzle-kit@0.31.10",
+		"postgres": "npm:postgres@3.4.9",
+		"@std/log": "jsr:@std/log@0.224.14",
+		"@std/datetime": "jsr:@std/datetime@0.225.7",
+		"@libs/qrcode": "jsr:@libs/qrcode@3.1.0",
 		"@class/": "./class/",
 		"@cmd/": "./cmd/",
 		"@conf/": "./conf/",
@@ -46,7 +46,9 @@
 		"@db": "./plugin/db.ts",
 		"@wa": "./wa.ts"
 	},
-	"unstable": ["cron"],
+	"unstable": [
+		"cron"
+	],
 	"tasks": {
 		"presetup": "deno install -g npm:drizzle-kit npm:pm2",
 		"setup": "deno task presetup && deno install && echo light setup complete",
@@ -81,7 +83,12 @@
 	"nodeModulesDir": "auto",
 	"allowScripts": [
 		"npm:@google/genai@2.13.0",
+		"npm:@google/genai@2.15.0",
 		"npm:@whiskeysockets/baileys@7.0.0-rc13",
+		"npm:@whiskeysockets/baileys@7.0.0-rc14",
+		"npm:esbuild@0.18.20",
+		"npm:esbuild@0.25.12",
+		"npm:esbuild@0.28.1",
 		"npm:protobufjs@7.6.5",
 		"npm:sharp@0.30.7",
 		"npm:sharp@0.33.5"
