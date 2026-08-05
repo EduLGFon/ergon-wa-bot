@@ -1,6 +1,6 @@
 import { scheduleURMenuMsg } from '@plugin/menuScraping.ts'
 import { loadCmds, loadEvents } from '@util/handler.ts'
-import cache, { cleanTemp } from '@plugin/cache.ts'
+import cache from '@plugin/cache.ts'
 import locale from '@util/locale.ts'
 import proto from '@util/proto.ts'
 import bot from '@plugin/bot.ts'
@@ -13,7 +13,6 @@ async function start() {
 	await bot.connect()
 	await loadCmds()
 	await cache.resume()
-	await cleanTemp()
 	await loadEvents()
 
 	if (Deno.env.get('GROUPS1')) scheduleURMenuMsg()

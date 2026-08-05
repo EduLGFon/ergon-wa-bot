@@ -101,15 +101,3 @@ class CacheManager {
 
 const cache = new CacheManager()
 export default cache
-
-export async function cleanTemp() {
-	const files = await Array.fromAsync(Deno.readDir('conf/gen/temp')).then((a) =>
-		a.map((e) => e.name)
-	).catch(() => [] as string[])
-	let i = 0
-	for (const f of files) {
-		await Deno.remove(`conf/gen/temp/${f}`).catch(() => {})
-		i++
-	}
-	print('TEMP', `${i} temp files cleaned`, 'blue')
-}
