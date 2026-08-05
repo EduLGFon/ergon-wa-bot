@@ -68,7 +68,7 @@
 		"db:pull": "deno run -A npm:drizzle-kit introspect",
 		"reset": "rm -r conf/gen/auth/* conf/gen/cache/* conf/gen/temp/*",
 		"fmt": "deno fmt",
-		"dev": "deno task stop; DEV=1 pm2 start conf/ecosystem.config.cjs --attach",
+		"dev": "DEV=1 NODE_EXTRA_CA_CERTS=conf/smufesrootca.pem deno run -A --watch-hmr --v8-flags=--expose-gc --env=conf/.env wa.ts",
 		"translate": "deno run -A npm:@parvineyvazov/json-translator locale/pt.json -m google -f pt -t en es fr de"
 	},
 	"compilerOptions": {
