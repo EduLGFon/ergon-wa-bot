@@ -108,8 +108,6 @@ export async function cleanTemp() {
 	).catch(() => [] as string[])
 	let i = 0
 	for (const f of files) {
-		if (f === 'disclaimer.txt') continue
-
 		await Deno.remove(`conf/gen/temp/${f}`).catch(() => {})
 		i++
 	}

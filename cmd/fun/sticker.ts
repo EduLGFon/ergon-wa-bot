@@ -24,9 +24,9 @@ export default class extends Cmd {
 		const quality = Number(args[0]) || undefined
 		const metadata = {
 			pack: `=== Ergon Bot ===\n` +
-				`[👑] Autor: ${user.name}\n` +
-				`[📅] Data: ${now()}\n` +
-				`[❓] Suporte: dsc.gg/ergon`,
+				`[👑] Author: ${user.name}\n` +
+				`[📅] Date: ${now().split('.')[0]}\n` +
+				`[❓] Support: dsc.gg/ergon`,
 			author: '',
 		}
 
