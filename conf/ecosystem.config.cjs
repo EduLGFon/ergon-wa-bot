@@ -6,7 +6,6 @@
 const runtime_args = [
 	'run',
 	'-A',
-	'--watch-hmr',
 	'--v8-flags=--expose-gc',
 	'--env=conf/.env',
 	// '--max-old-space-size=16384',
@@ -23,5 +22,6 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		},
 		log_file: 'conf/gen/out.log',
 		merge_logs: true,
+		exp_backoff_restart_delay: 1_000, // Starts at 100ms, exponentially increases up to 15s to prevent login spam
 	}],
 }
