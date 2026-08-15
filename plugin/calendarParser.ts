@@ -594,6 +594,29 @@ function parseDateStr(s: string) {
 	return { day: parseInt(m[1]), month: m[2] ? parseInt(m[2]) : 0 }
 }
 
+export function normalizeActivity(s: string): string {
+	return s
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '') // remove accents
+		.replace(/[^a-z0-9]/g, '') // remove punctuation, spaces, dots, commas
+		.trim()
+}
+
+export function areDuplicateActivities(a: string, b: string): boolean {
+	const nA = normalizeActivity(a)
+	const nB = normalizeActivity(b)
+	if (!nA || !nB) return false
+	if (nA === nB) return true
+
+	if (nA.includes(nB) || nB.includes(nA)) {
+		const minLen = Math.min(nA.length, nB.length)
+		const maxLen = Math.max(nA.length, nB.length)
+		if (minLen / maxLen > 0.65) return true
+	}
+	return false
+}
+
 function addEvent(
 	d: { day: number; month: number },
 	ev: CalendarEvent,
@@ -609,17 +632,33 @@ function addEvent(
 	if (clearExisting) events[key] = []
 
 	if (isExclusion) {
-		events[key] = events[key].filter((e) => {
-			const cleanA = e.atividade.toLowerCase().replace(/[^a-z0-9]/g, '')
-			const cleanB = ev.atividade.toLowerCase().replace(/[^a-z0-9]/g, '')
-			return !cleanA.includes(cleanB) && !cleanB.includes(cleanA)
-		})
+		events[key] = events[key].filter((e) => !areDuplicateActivities(e.atividade, ev.atividade))
 		return
 	}
 
-	const exists = events[key].some((e) => e.atividade === ev.atividade)
-	if (!exists) {
-		events[key].push({ ...ev }) // shallow clone to safely assign different range or just push
+	const existingIndex = events[key].findIndex((e) =>
+		areDuplicateActivities(e.atividade, ev.atividade)
+	)
+
+	if (existingIndex !== -1) {
+		const existing = events[key][existingIndex]
+		if (!existing.dateRange && ev.dateRange) {
+			existing.dateRange = ev.dateRange
+		}
+		if (!existing.grupo && ev.grupo) {
+			existing.grupo = ev.grupo
+		}
+		if (!existing.responsavel && ev.responsavel) {
+			existing.responsavel = ev.responsavel
+		}
+		// Prefer the longer/more complete version
+		if (
+			ev.atividade.length > existing.atividade.length && !existing.atividade.includes('...')
+		) {
+			existing.atividade = ev.atividade
+		}
+	} else {
+		events[key].push({ ...ev })
 	}
 }
 
