@@ -49,7 +49,7 @@
 		"cron"
 	],
 	"tasks": {
-		"presetup": "deno install -g npm:drizzle-kit npm:pm2",
+		"presetup": "deno install -g npm:drizzle-kit && deno install -g -f -A --unsafe-proto npm:pm2",
 		"setup": "deno task presetup && deno install && echo light setup complete",
 		"setup:medium": "deno task presetup && deno install && deno task setup:py && echo medium setup complete",
 		"setup:strong": "deno task presetup && deno task db:push && deno install && deno task setup:py && echo strong setup complete",
@@ -58,10 +58,10 @@
 		"update": "git pull origin master; deno task presetup; deno install; deno upgrade; deno task update:py; deno task postinstall",
 		"update:py": "conf/gen/python/bin/pip install -U rembg onnxruntime yt-dlp[default,curl-cffi]",
 		"postinstall": "deno task db:gen",
-		"start": "pm2 start conf/ecosystem.config.cjs --attach",
+		"start": "deno run -A --unsafe-proto npm:pm2 start conf/ecosystem.config.cjs --attach",
 		"start:dev": "NODE_EXTRA_CA_CERTS=conf/smufesrootca.pem deno run -A --env=conf/.env wa.ts",
-		"restart": "pm2 restart wa --attach",
-		"stop": "pm2 delete wa",
+		"restart": "deno run -A --unsafe-proto npm:pm2 restart wa --attach",
+		"stop": "deno run -A --unsafe-proto npm:pm2 delete wa",
 		"db:gen": "deno run -A npm:drizzle-kit generate",
 		"db:push": "deno run -A npm:drizzle-kit push",
 		"db:pull": "deno run -A npm:drizzle-kit introspect",
