@@ -86,7 +86,7 @@ export default class extends Cmd {
 			const stat = await Deno.stat(path).catch(() => null)
 			if (!stat) throw new Error('NOT_FOUND')
 
-			const buffer = await Deno.readFile(path)
+			const buffer = Buffer.from(await Deno.readFile(path))
 
 			let mediaMessage: AnyMessageContent
 			if (stat.size > 256 * 1024 * 1024) {
