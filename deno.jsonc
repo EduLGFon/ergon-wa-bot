@@ -22,7 +22,7 @@
 		}
 	},
 	"imports": {
-		"@google/genai": "npm:@google/genai@^2.15.0",
+		"@google/genai": "npm:@google/genai@^2.17.1",
 		"baileys": "npm:@whiskeysockets/baileys@7.0.0-rc14",
 		"google-translate-api-x": "npm:google-translate-api-x@^10.7.3",
 		"humanize-duration": "npm:humanize-duration@^3.34.0",
@@ -30,7 +30,7 @@
 		"i18next-fs-backend": "npm:i18next-fs-backend@^2.6.7",
 		"node-webpmux": "npm:node-webpmux@^3.2.1",
 		"sharp": "npm:sharp@^0.35.3",
-		"@types/node": "npm:@types/node@^26.1.2",
+		"@types/node": "npm:@types/node@^26.2.0",
 		"drizzle-orm": "npm:drizzle-orm@0.45.2",
 		"drizzle-orm/": "npm:/drizzle-orm@0.45.2/",
 		"drizzle-kit": "npm:drizzle-kit@0.31.10",
@@ -80,16 +80,5 @@
 		]
 	},
 	"nodeModulesDir": "auto",
-	"allowScripts": [
-		"npm:@google/genai@2.13.0",
-		"npm:@google/genai@2.15.0",
-		"npm:@whiskeysockets/baileys@7.0.0-rc13",
-		"npm:@whiskeysockets/baileys@7.0.0-rc14",
-		"npm:esbuild@0.18.20",
-		"npm:esbuild@0.25.12",
-		"npm:esbuild@0.28.1",
-		"npm:protobufjs@7.6.5",
-		"npm:sharp@0.30.7",
-		"npm:sharp@0.33.5"
-	]
+	"allowScripts": ["npm:@google/genai@2.13.0", "npm:@google/genai@2.15.0", "npm:@google/genai@2.17.1", "npm:@whiskeysockets/baileys@7.0.0-rc13", "npm:@whiskeysockets/baileys@7.0.0-rc14", "npm:esbuild@0.18.20", "npm:esbuild@0.25.12", "npm:esbuild@0.28.1", "npm:protobufjs@7.6.5", "npm:sharp@0.30.7", "npm:sharp@0.33.5"]
 }

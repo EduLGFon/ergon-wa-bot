@@ -3,8 +3,8 @@
   "specifiers": {
     "jsr:@libs/qrcode@3.1.0": "3.1.0",
     "jsr:@std/dotenv@*": "0.225.7",
-    "npm:@google/genai@^2.15.0": "2.15.0",
-    "npm:@types/node@^26.1.2": "26.1.2",
+    "npm:@google/genai@^2.17.1": "2.17.1",
+    "npm:@types/node@^26.2.0": "26.2.0",
     "npm:@whiskeysockets/baileys@7.0.0-rc14": "7.0.0-rc14_sharp@0.35.3",
     "npm:astring@1.9.0": "1.9.0",
     "npm:drizzle-kit@0.31.10": "0.31.10",
@@ -450,8 +450,8 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
-    "@google/genai@2.15.0": {
-      "integrity": "sha512-Q41TvqwBQ9NcmWdh6qxY5qrpg+0FaVHD7febQoH007pykxzco4ohScBUP4BBBy+Q8j5D8euIBSRIBDfWuNVCKA==",
+    "@google/genai@2.17.1": {
+      "integrity": "sha512-CdZ3M/titoH81hXXkvOikrOW26bC9IXh9iYT7u+r+5p7wi1LnMEnB0AbJfDeWAkjuneP4oJ299BtCt6twmORWg==",
       "dependencies": [
         "google-auth-library",
         "p-retry",
@@ -691,8 +691,8 @@
     "@tokenizer/token@0.3.0": {
       "integrity": "sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A=="
     },
-    "@types/node@26.1.2": {
-      "integrity": "sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==",
+    "@types/node@26.2.0": {
+      "integrity": "sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg==",
       "dependencies": [
         "undici-types"
       ]
@@ -934,8 +934,8 @@
       "os": ["darwin"],
       "scripts": true
     },
-    "gaxios@7.3.0": {
-      "integrity": "sha512-RB5vLV+vvQeoFPCX4QMK6/hjVkbIamPp1QSUD0CiZcnj12qbpiL+pLbYtgD+oZkWl0tl9z+o2Utp+MpM3QRhBA==",
+    "gaxios@7.3.1": {
+      "integrity": "sha512-kB3rzJV7d9juLZh8/56QTXCwQfxyhdOMdyYk1HdQKFtF8TJTDTZQJtixWIwXdE9Jji91mC41DUNpjleo4L4eAQ==",
       "dependencies": [
         "extend",
         "https-proxy-agent",
@@ -1306,8 +1306,8 @@
   "workspace": {
     "dependencies": [
       "jsr:@libs/qrcode@3.1.0",
-      "npm:@google/genai@^2.15.0",
-      "npm:@types/node@^26.1.2",
+      "npm:@google/genai@^2.17.1",
+      "npm:@types/node@^26.2.0",
       "npm:@whiskeysockets/baileys@7.0.0-rc14",
       "npm:drizzle-kit@0.31.10",
       "npm:drizzle-orm@0.45.2",
