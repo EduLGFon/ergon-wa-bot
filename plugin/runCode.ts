@@ -1,11 +1,10 @@
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { db as prisma, getGroup, getUser } from '@db'
-import { type CmdCtx } from '@conf/types/types.d.ts'
 import { sendURMenu } from '@plugin/menuScraping.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
 import { randomDelay } from '@util/functions.ts'
 import { checkMatch } from '@util/msgTools.ts'
 import { delay } from '@util/functions.ts'
-import { extname } from 'jsr:@std/path'
 import cache from '@plugin/cache.ts'
 import bot from '@plugin/bot.ts'
 
@@ -55,7 +54,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 			code = '' // clean the code bc it will be on CLI if (file)
 		} else {
 			// it's a already created file
-			lang = extname(file).slice(1) as Lang // get file extension (e.g. '.rs' => 'rs')
+			lang = file.slice(file.lastIndexOf('.') + 1) as Lang // get file extension (e.g. '.rs' => 'rs')
 			data = defaults.runner[lang] // get language instruction
 		}
 

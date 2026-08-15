@@ -1,6 +1,5 @@
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import Collection from '@class/collection.ts'
-import { existsSync } from 'jsr:@std/fs'
 import Group from '@class/group.ts'
 import User from '@class/user.ts'
 import Cmd from '@class/cmd.ts'
@@ -46,7 +45,7 @@ class CacheManager {
 	}
 
 	async save() {
-		if (!existsSync('conf/gen/cache')) await Deno.mkdir('conf/gen/cache')
+		await Deno.mkdir('conf/gen/cache', { recursive: true })
 
 		for (const cat of cachedData) {
 			const collection = this[cat] as any

@@ -1,7 +1,17 @@
-import { basename, join } from 'jsr:@std/path'
-import { existsSync } from 'jsr:@std/fs'
-
 const isWin = Deno.build.os === 'windows'
+
+function existsSync(path: string): boolean {
+	try {
+		Deno.statSync(path)
+		return true
+	} catch {
+		return false
+	}
+}
+
+function join(...parts: string[]): string {
+	return parts.join('/').replace(/\/+/g, '/')
+}
 
 // Helper to run commands cross-platform without using shell: true (avoids DEP0190 deprecation warning)
 function runCmd(command: string, args: string[], env: Record<string, string> = {}): boolean {
@@ -141,7 +151,9 @@ function configureEnv(_rl: any) {
 	try {
 		if (existsSync(localesDir)) {
 			const files = Array.from(Deno.readDirSync(localesDir)).map((f) => f.name)
-			languages = files.filter((f) => f.endsWith('.json')).map((f) => basename(f, '.json'))
+			languages = files.filter((f) => f.endsWith('.json')).map((f) =>
+				f.replace(/\.json$/, '')
+			)
 		}
 	} catch (_e) {
 		// Keep defaults

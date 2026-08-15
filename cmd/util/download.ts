@@ -1,9 +1,8 @@
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { type CmdCtx } from '@conf/types/types.d.ts'
-import type { AnyMessageContent } from 'baileys'
 import { randomDelay } from '@util/functions.ts'
+import type { AnyMessageContent } from 'baileys'
 import emojis from '@util/emojis.ts'
-import { Buffer } from 'node:buffer'
 import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
@@ -87,7 +86,7 @@ export default class extends Cmd {
 			const stat = await Deno.stat(path).catch(() => null)
 			if (!stat) throw new Error('NOT_FOUND')
 
-			const buffer = Buffer.from(await Deno.readFile(path))
+			const buffer = await Deno.readFile(path)
 
 			let mediaMessage: AnyMessageContent
 			if (stat.size > 256 * 1024 * 1024) {

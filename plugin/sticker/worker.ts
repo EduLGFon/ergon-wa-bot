@@ -7,9 +7,8 @@
  * All I/O is intentionally synchronous — this thread exists precisely
  * to keep blocking work off the main event loop.
  */
-import { join } from 'jsr:@std/path'
-import { cleanup, encodeVideo } from '@plugin/sticker/ffmpeg.ts'
 import type { WorkerRequest, WorkerResponse } from '@plugin/sticker/types.ts'
+import { cleanup, encodeVideo } from '@plugin/sticker/ffmpeg.ts'
 
 const TEMP_DIR = 'conf/gen/temp'
 
@@ -21,7 +20,7 @@ try {
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 	const req = e.data
 	const prefix = `stk_${req.id}_${Date.now()}`
-	const inputPath = join(TEMP_DIR, `${prefix}_in`)
+	const inputPath = `${TEMP_DIR}/${prefix}_in`
 
 	try {
 		Deno.writeFileSync(inputPath, req.buffer)

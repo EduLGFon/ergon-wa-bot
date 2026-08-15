@@ -8,7 +8,6 @@
  * Run eval
  * etc
  */
-import $ from 'jsr:@david/dax'
 
 const controller = new AbortController()
 const node_args = ['--expose-gc', '--no-warnings', '--env-file=conf/.env'].join(' ')
@@ -77,8 +76,9 @@ ask()
 watch() // Watch project files
 
 // Ask: prompt cmds on terminal
-async function ask() {
-	const input = await $.prompt('$ ')
+function ask() {
+	const input = prompt('$ ')
+	if (!input) return
 
 	const args = input.trim().split(' ')
 	const cmd = args.shift()! as 's'

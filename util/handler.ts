@@ -1,5 +1,4 @@
 import { type BaileysEventMap } from 'baileys'
-import { resolve } from 'jsr:@std/path'
 import cache from '@plugin/cache.ts'
 import bot from '@plugin/bot.ts'
 import Cmd from '@class/cmd.ts'
@@ -7,7 +6,7 @@ import Cmd from '@class/cmd.ts'
 export { loadCmds, loadEvents }
 
 async function folderHandler(path: str, handler: Func) {
-	path = resolve(path)
+	path = Deno.realPathSync(path)
 	let count = 0
 
 	for (const { name: category } of Deno.readDirSync(path)) {
