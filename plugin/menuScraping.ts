@@ -1,7 +1,10 @@
-import { delay, randomDelay } from '@util/functions.ts'
+import { analyzeCalendarEvents, type ClassifiedCalendar } from '@util/calendarAnalytics.ts'
+import { type ParsedMenuResult, parseMenuHtml } from '@util/menuParser.ts'
 import { updateCalendarCache } from '@plugin/calendarParser.ts'
 import { getAllowedTagsList } from '@plugin/groupAnnouncer.ts'
-import { existsSync } from 'jsr:@std/fs'
+import { generateDailySummary } from '@util/dailySummary.ts'
+import { delay, randomDelay } from '@util/functions.ts'
+import { fetchWeatherForecast } from '@util/weather.ts'
 import { sendMsg } from '@util/msgAbstractions.ts'
 import cache from '@plugin/cache.ts'
 
@@ -10,6 +13,7 @@ let day = '',
 	year = ''
 const numPadding = (n: number) => (n < 10 ? '0' + n : n.toString()) // 4 => 04
 updateDate()
+
 export function scheduleURMenuMsg() {
 	// Deno.cron runs in UTC, so we translate UTC-3 (America/Sao_Paulo) to UTC
 	// 6 AM UTC-3 = 9 AM UTC
@@ -32,137 +36,105 @@ export function scheduleURMenuMsg() {
 	updateCalendarCache().catch(() => null)
 }
 
-let oldMenu = ''
+let oldMenuText = ''
 async function checkForUpdates() {
 	await randomDelay()
 	const menu = await scrapURMenu()
-	if (!menu) return
+	if (!menu || !menu.hasMenu) return
 
-	oldMenu = oldMenu ||
-		(await Deno.readTextFile('conf/gen/cache/menu.txt').catch(
-			() => '',
-		))
+	oldMenuText = oldMenuText ||
+		(await Deno.readTextFile('conf/gen/cache/menu.txt').catch(() => ''))
 
-	if (oldMenu === menu) return
+	if (oldMenuText === menu.rawFullText) return
 	print('MENUSCRAP', 'Menu updated', 'blue')
 	sendURMenu(menu, 1)
 	await cache.save()
 }
 
-// send the Menu Msg to all groups saveds by the "#all" tag + some others
-export async function sendURMenu(menuStr = '', updated = 0) {
+// send the Menu Msg to all groups saved by the "#all" tag + some others
+export async function sendURMenu(
+	menuData: ParsedMenuResult | null = null,
+	updated = 0,
+) {
 	await randomDelay()
-	const menu = menuStr || (await scrapURMenu())
+	updateDate()
+	const date = new Date()
 
-	let calendarEventsStr = ''
-	let hasCalendarEvents = false
+	// 1. Fetch menu if not provided
+	const menu = menuData || (await scrapURMenu())
+
+	// 2. Fetch weather forecast in parallel
+	const weather = await fetchWeatherForecast()
+
+	// 3. Process calendar events
+	let classifiedCalendar: ClassifiedCalendar | null = null
 	try {
 		const calendarPath = `conf/gen/cache/calendar_${year}.json`
-		if (!existsSync(calendarPath)) {
+		let rawCalendar = await Deno.readTextFile(calendarPath).catch(() => null)
+		if (!rawCalendar) {
 			print('MENUSCRAP', 'Calendar cache missing. Fetching now...', 'yellow')
 			await updateCalendarCache().catch((e) =>
 				print('MENUSCRAP', 'Error initializing calendar cache', e, 'red')
 			)
+			rawCalendar = await Deno.readTextFile(calendarPath).catch(() => null)
 		}
 
-		if (existsSync(calendarPath)) {
-			const events: Record<string, any[]> = JSON.parse(
-				await Deno.readTextFile(calendarPath),
-			)
-			const todayEvents = events[`${day}/${month}/${year}`]
-			if (todayEvents && todayEvents.length > 0) {
-				hasCalendarEvents = true
-				let outStr = `🎓 *Calendário Acadêmico:*\n`
-
-				const eventsByPeriod: Record<string, any[]> = {}
-				for (const e of todayEvents) {
-					const p = e.periodo || 'GERAL'
-					if (!eventsByPeriod[p]) eventsByPeriod[p] = []
-					eventsByPeriod[p].push(e)
-				}
-
-				for (const p in eventsByPeriod) {
-					outStr += `\n*[${p}]*\n`
-
-					eventsByPeriod[p].sort((a, b) => {
-						const rA = (a.responsavel || '').trim().toLowerCase()
-						const rB = (b.responsavel || '').trim().toLowerCase()
-
-						const getScore = (r: string) => {
-							if (r === 'estudante' || r === 'estudantes') return 1
-							if (r === 'professor' || r === 'professores') return 3
-							return 4
-						}
-						return getScore(rA) - getScore(rB)
-					})
-
-					for (const e of eventsByPeriod[p]) {
-						let prefix = ''
-						if (e.grupo || e.responsavel) {
-							const g = e.grupo ? e.grupo : ''
-							const r = e.responsavel ? ` (${e.responsavel})` : ''
-							prefix = `${g}${r}: `
-						}
-						let range = ''
-						if (e.dateRange) {
-							range = ` (${e.dateRange})`
-						}
-
-						const eventLine = `${prefix}${e.atividade}${range}`
-						const resp = (e.responsavel || '').trim().toLowerCase()
-						const isEstudante = resp === 'estudante' || resp === 'estudantes'
-
-						if (isEstudante) {
-							outStr += ` 🚨 *${eventLine}*\n`
-						} else {
-							outStr += ` 🔸 ${eventLine}\n`
-						}
-					}
-				}
-
-				calendarEventsStr = outStr + `\n`
-			}
+		if (rawCalendar) {
+			const events: Record<string, any[]> = JSON.parse(rawCalendar)
+			classifiedCalendar = analyzeCalendarEvents(events, date)
 		}
 	} catch (e: any) {
-		print('MENUSCRAP', 'Error reading calendar cache', e.stack, 'red')
+		print('MENUSCRAP', 'Error reading calendar cache', e.stack || e, 'red')
 	}
 
-	if (!menu && !hasCalendarEvents) return
+	const hasMenu = Boolean(menu && menu.hasMenu)
+	const hasCalendar = Boolean(classifiedCalendar && classifiedCalendar.hasEvents)
 
+	if (!hasMenu && !hasCalendar) {
+		print('MENUSCRAP', 'No menu and no calendar events to send.', 'yellow')
+		return
+	}
+
+	// 4. Generate AI summary with deterministic fallback
+	const dateStr = `${day}/${month}`
+
+	const summary = await generateDailySummary({
+		dateStr,
+		weather,
+		menu,
+		calendar: classifiedCalendar,
+	})
+
+	// 5. Construct full message
 	let msg = ''
-	if (menu) {
-		msg = updated ? `🔄 *ATUALIZAÇÃO DO CARDÁPIO*` : `🍽️ *CARDÁPIO DO RU*`
-		msg += ` - *${day}/${month}*\n`
-		msg += menu.trimEnd() + (calendarEventsStr ? '\n\n' + calendarEventsStr : '')
-	} else {
-		msg = calendarEventsStr.replace(
-			'🎓 *Calendário Acadêmico:*',
-			`🎓 *Calendário Acadêmico* - *${day}/${month}*`,
-		).trim()
+	if (updated) {
+		msg = `🔄 *ATUALIZAÇÃO DO CARDÁPIO* - *${dateStr}*\n\n`
 	}
+
+	msg += summary.trim()
 
 	const groups = Deno.env.get('DEV')
 		? [Deno.env.get('GROUPS0')!]
 		: getAllowedTagsList().concat('5527997014112-1491836324@g.us')
 
 	for (const g of groups) {
+		if (!g) continue
 		const msgCtx = await sendMsg.bind(g)(msg)
 		await randomDelay()
 		await sendMsg.bind(g)({ pin: msgCtx.msg.key, time: 86_400, type: 1 })
 		await randomDelay()
 	}
-	if (menu) {
-		await Deno.writeTextFile('conf/gen/cache/menu.txt', menu)
-		oldMenu = menu
+
+	if (menu?.rawFullText) {
+		await Deno.writeTextFile('conf/gen/cache/menu.txt', menu.rawFullText)
+		oldMenuText = menu.rawFullText
 	}
 }
 
-// regex to parse HTML data
-const regexFood =
-	/(CAFÉ DA MANHÃ|ALMOÇO|JANTAR)[\s\S]*?<div class="field-content">([\s\S]*?)<\/div>/gi
-const regexTags = /<[^>]*>?/gm
 // scrap university's restaurant menu
-export default async function scrapURMenu(retries = 0): Promise<string | null> {
+export default async function scrapURMenu(
+	retries = 0,
+): Promise<ParsedMenuResult | null> {
 	updateDate()
 	try {
 		const res = await fetch(
@@ -170,15 +142,9 @@ export default async function scrapURMenu(retries = 0): Promise<string | null> {
 		)
 		if (!res.ok) return null
 		const txt = await res.text()
-
-		let msg = ''
-		for (const match of txt.matchAll(regexFood)) {
-			msg += parseMenuData(match)
-		}
-
-		return msg.trim()
+		return parseMenuHtml(txt)
 	} catch (e: any) {
-		print('MENUSCRAP', 'Error scraping menu', e?.stack, 'red')
+		print('MENUSCRAP', 'Error scraping menu', e?.stack || e, 'red')
 		if (retries >= 3) {
 			print('MENUSCRAP', 'Max retries reached, giving up', 'red')
 			return null
@@ -194,70 +160,4 @@ function updateDate() {
 	day = global.menuDay || numPadding(date.getDate())
 	month = numPadding(date.getMonth() + 1)
 	year = date.getFullYear().toString()
-}
-
-const titles = [
-	// menu titles
-	'Acompanhamentos',
-	'Prato Principal',
-	'Acompanhamento',
-	'Guarnição',
-	'Sobremesa',
-	'Desjejum',
-	'Saladas',
-	'Leite',
-	'Fruta',
-	'Opção',
-	'Suco',
-	'Café',
-]
-const Hours = {
-	'CAFÉ DA MANHÃ': '7h-8h',
-	ALMOÇO: '11h-13h30',
-	JANTAR: '17h-19h',
-}
-const MealEmojis = {
-	'CAFÉ DA MANHÃ': '☕',
-	ALMOÇO: '🍛',
-	JANTAR: '🍲',
-}
-function parseMenuData(match: str[]) {
-	const meal = match[1] as keyof typeof Hours
-
-	const lines = match[2]
-		.replace(regexTags, '\n')
-		.split('\n')
-		.map((item) => item.trim())
-		.filter((item) => item.length > 2 && !item.includes('*O cardápio poderá sofrer'))
-
-	if (meal === 'CAFÉ DA MANHÃ') {
-		const items: string[] = []
-		let currentTitle = ''
-		for (const line of lines) {
-			if (titles.includes(line)) {
-				currentTitle = line
-			} else {
-				if (currentTitle === 'Fruta' || currentTitle === 'Suco') {
-					items.push(`*${currentTitle}:* ${line}`)
-				} else if (currentTitle === 'Café' || currentTitle === 'Leite') {
-					const lowerLine = line.toLowerCase()
-					if (lowerLine.includes(currentTitle.toLowerCase())) {
-						items.push(line)
-					} else {
-						items.push(`${currentTitle} ${lowerLine}`)
-					}
-				} else {
-					items.push(line)
-				}
-			}
-		}
-		return `\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n- ${
-			items.join(', ')
-		}\n`
-	}
-
-	return (
-		`\n> ${MealEmojis[meal] || '🍽️'} *${meal.toPascalCase()} ${Hours[meal]}*\n` +
-		lines.map((v) => (titles.includes(v) ? `*${v}:* ` : v + '\n')).join('')
-	)
 }
