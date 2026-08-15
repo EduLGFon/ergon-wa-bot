@@ -1,6 +1,6 @@
+import { type CmdCtx } from '@conf/types/types.d.ts'
 import { translate } from 'google-translate-api-x'
 import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
 
 export default class extends Cmd {
 	constructor() {

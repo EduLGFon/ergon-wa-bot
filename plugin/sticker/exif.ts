@@ -5,9 +5,10 @@
  * embedded inside the WebP file. This module builds the raw TIFF/EXIF blob
  * and injects it via node-webpmux (works for both static and animated WebP).
  */
-import webpmux from 'node-webpmux'
-const { Image } = webpmux
 import type { StickerMetadata } from '@plugin/sticker/types.ts'
+import webpmux from 'node-webpmux'
+
+const { Image } = webpmux
 
 /**
  * Build the binary EXIF blob that WhatsApp reads for sticker metadata.

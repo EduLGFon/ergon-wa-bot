@@ -5,8 +5,8 @@
  * entirely on the main thread — sharp is fast enough that no worker
  * offloading is needed for single images.
  */
-import sharp from 'sharp'
 import type { StickerFormat } from '@plugin/sticker/types.ts'
+import sharp from 'sharp'
 
 const SIZE = 512
 

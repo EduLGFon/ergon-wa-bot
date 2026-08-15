@@ -1,5 +1,5 @@
-import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
 import { reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
+import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
 import { type default as User } from '@class/user.ts'
 import Group from '@class/group.ts'
 import bot from '@plugin/bot.ts'

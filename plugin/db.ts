@@ -1,5 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import * as schema from '@conf/schema.ts'
+import cache from '@plugin/cache.ts'
+import Group from '@class/group.ts'
+import User from '@class/user.ts'
+import { eq } from 'drizzle-orm'
+import bot from '@plugin/bot.ts'
 import postgres from 'postgres'
 
 const connectionString = Deno.env.get('DATABASE_URL')
@@ -16,12 +21,6 @@ if (connectionString) {
 }
 
 export const db = dbClient
-
-import Group from '@class/group.ts'
-import User from '@class/user.ts'
-import cache from '@plugin/cache.ts'
-import bot from '@plugin/bot.ts'
-import { eq } from 'drizzle-orm'
 
 export async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
 	let id = Number(lid.parsePhone()) || Date.now()

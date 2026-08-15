@@ -1,9 +1,9 @@
-import type Cmd from '@class/cmd.ts'
+import type { AnyMessageContent, proto } from 'baileys'
+import type { TFunction } from 'i18next'
 import type Group from '@class/group.ts'
 import type User from '@class/user.ts'
 import emojis from '@util/emojis.ts'
-import type { AnyMessageContent, proto } from 'baileys'
-import type { TFunction } from 'i18next'
+import type Cmd from '@class/cmd.ts'
 
 type MsgTypes =
 	| 'text'
