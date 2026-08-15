@@ -80,5 +80,17 @@
 		]
 	},
 	"nodeModulesDir": "auto",
-	"allowScripts": ["npm:@google/genai@2.13.0", "npm:@google/genai@2.15.0", "npm:@google/genai@2.17.1", "npm:@whiskeysockets/baileys@7.0.0-rc13", "npm:@whiskeysockets/baileys@7.0.0-rc14", "npm:esbuild@0.18.20", "npm:esbuild@0.25.12", "npm:esbuild@0.28.1", "npm:protobufjs@7.6.5", "npm:sharp@0.30.7", "npm:sharp@0.33.5"]
+	"allowScripts": [
+		"npm:@google/genai@2.13.0",
+		"npm:@google/genai@2.15.0",
+		"npm:@google/genai@2.17.1",
+		"npm:@whiskeysockets/baileys@7.0.0-rc13",
+		"npm:@whiskeysockets/baileys@7.0.0-rc14",
+		"npm:esbuild@0.18.20",
+		"npm:esbuild@0.25.12",
+		"npm:esbuild@0.28.1",
+		"npm:protobufjs@7.6.5",
+		"npm:sharp@0.30.7",
+		"npm:sharp@0.33.5"
+	]
 }
