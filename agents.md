@@ -12,4 +12,8 @@
   3. `deno fmt`
 - Always follow Clean Code and SOLID principles.
 - Avoid overly large files and complex syntax.
-- In all files: include a top-of-file comment describing what the file does and why it is needed (giving the most important context up front). Always write good comments on functions and non-obvious code, adhering to good commenting practices.
+- In all files: include a top-of-file comment describing what the file does and why it is needed
+  (giving the most important context up front). Always write good comments on functions and
+  non-obvious code, adhering to good commenting practices.
+- This workspace is DENO-only. Always choose DENO native libraries/ways instead of DENO-first
+  libraries or NODE libraries (this should only be used as a last resort).
