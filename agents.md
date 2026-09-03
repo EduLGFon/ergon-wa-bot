@@ -10,3 +10,6 @@
   1. `deno check` (without specifying a file)
   2. `deno lint`
   3. `deno fmt`
+- Always follow Clean Code and SOLID principles.
+- Avoid overly large files and complex syntax.
+- In all files: include a top-of-file comment describing what the file does and why it is needed (giving the most important context up front). Always write good comments on functions and non-obvious code, adhering to good commenting practices.
