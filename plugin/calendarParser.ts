@@ -1,3 +1,8 @@
+// Parses the UFES academic calendar PDFs (via pdftotext -layout) into per-day
+// events. Tables frequently span page breaks: pdftotext repeats the page
+// footers/headers mid-table WITHOUT repeating the column header, so the parser
+// must keep accumulating rows across those interruptions (only a new month
+// calendar or a new column header ends the current batch).
 interface TextBlock {
 	startIdx: number
 	endIdx: number
@@ -70,8 +75,6 @@ function getBlocks(
 	}
 	return blocks
 }
-
-// node imports removed
 
 export async function fetchCalendarLinks(
 	year: number,
@@ -155,7 +158,7 @@ export function parseBaseCalendarText(
 	const events: Record<string, CalendarEvent[]> = {}
 
 	let inTable = false
-	let _gIdx = -1, rIdx = -1, dIdx = -1, aIdx = -1
+	let rIdx = -1, dIdx = -1, aIdx = -1
 
 	let currentPeriodo = ''
 	let currentYear = baseYear
@@ -167,8 +170,14 @@ export function parseBaseCalendarText(
 		aPart: string
 		periodo: string
 		year: number
+		// True when the row was read after a mid-table page-break interruption
+		// (footers/headers without a repeated column header). Only those
+		// continuation rows may inherit an empty grupo cell from the span label
+		// above; anywhere else the historical nearest-block behavior is kept.
+		afterBreak: boolean
 	}
 	const tableLines: TableLine[] = []
+	let batchCrossedBreak = false
 
 	const ignoreKeywords = [
 		'UNIVERSIDADE FEDERAL DO ESPÍRITO SANTO',
@@ -181,14 +190,23 @@ export function parseBaseCalendarText(
 	]
 
 	const processTableLines = () => {
-		if (tableLines.length === 0) return
+		if (tableLines.length === 0) {
+			batchCrossedBreak = false
+			return
+		}
 
+		// Rejoin dates split across two text lines ("24 a" + "28/8", "4a" +
+		// "6/8", "17 e" + "18/8"). expandDates below treats "a" as a range and
+		// "e" as separate days, so both connectors merge the same way here.
 		for (let i = 0; i < tableLines.length; i++) {
-			if (tableLines[i].dPart.match(/a$/)) {
+			if (tableLines[i].dPart.match(/[ae]$/)) {
 				for (let j = i + 1; j < tableLines.length; j++) {
 					if (tableLines[j].dPart) {
 						const center = Math.floor((i + j) / 2)
-						tableLines[center].dPart = tableLines[i].dPart.replace(/a$/, ' a ') +
+						tableLines[center].dPart = tableLines[i].dPart.replace(
+							/([ae])$/,
+							' $1 ',
+						) +
 							tableLines[j].dPart
 						if (center !== i) tableLines[i].dPart = ''
 						if (center !== j) tableLines[j].dPart = ''
@@ -238,17 +256,34 @@ export function parseBaseCalendarText(
 				tableLines[Math.floor(b.centerIdx)].periodo === currentP
 			)
 			if (validG.length > 0) {
-				validG.sort((a, b) => Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c))
-				if (
-					validG.length > 1 &&
-					Math.abs(validG[0].centerIdx - c) ===
-						Math.abs(validG[1].centerIdx - c)
-				) {
-					assignments[c].g.push(
-						validG[1].centerIdx < validG[0].centerIdx ? validG[1] : validG[0],
-					)
+				// Continuation rows (after a mid-table page break) with an empty
+				// grupo cell belong to the vertical span whose label sits above
+				// them, so when the nearest label is a far one below (the next
+				// span's label) they inherit the nearest label from above.
+				// Anywhere else the historical nearest-block behavior is kept.
+				if (!tableLines[c].gPart.trim() && tableLines[c].afterBreak) {
+					validG.sort((a, b) => Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c))
+					let picked = validG[0]
+					if (picked.centerIdx > c && picked.centerIdx - c > 3) {
+						const above = validG
+							.filter((b) => b.centerIdx < c)
+							.sort((a, b) => b.centerIdx - a.centerIdx)
+						if (above.length > 0) picked = above[0]
+					}
+					assignments[c].g.push(picked)
 				} else {
-					assignments[c].g.push(validG[0])
+					validG.sort((a, b) => Math.abs(a.centerIdx - c) - Math.abs(b.centerIdx - c))
+					if (
+						validG.length > 1 &&
+						Math.abs(validG[0].centerIdx - c) ===
+							Math.abs(validG[1].centerIdx - c)
+					) {
+						assignments[c].g.push(
+							validG[1].centerIdx < validG[0].centerIdx ? validG[1] : validG[0],
+						)
+					} else {
+						assignments[c].g.push(validG[0])
+					}
 				}
 			}
 
@@ -304,6 +339,7 @@ export function parseBaseCalendarText(
 		}
 
 		tableLines.length = 0
+		batchCrossedBreak = false
 	}
 
 	for (const line of lines) {
@@ -312,16 +348,16 @@ export function parseBaseCalendarText(
 			'Professor',
 		).trimEnd()
 
-		if (
-			lineClean.match(/ESTA RESOLUÇÃO/i) || lineClean.match(/^\s*\*Data/i) ||
-			lineClean.match(/^\s*\*\*PA:/i)
-		) {
-			processTableLines()
-			inTable = false
+		// Page footers/headers (*Data, **PA, UNIVERSIDADE, CONSELHO, ESTA
+		// RESOLUÇÃO...) interrupt tables in pdftotext -layout output, but the
+		// table continues on the next page without a repeated column header.
+		// They are skipped WITHOUT flushing so continuation rows stay in the same
+		// batch (preserving vertically-spanned grupo cells). Only a month calendar
+		// (Dias Letivos) or a new column header below ends the current batch.
+		if (ignoreKeywords.some((kw) => lineClean.includes(kw))) {
+			if (inTable) batchCrossedBreak = true
 			continue
 		}
-
-		if (ignoreKeywords.some((kw) => lineClean.includes(kw))) continue
 
 		const refMatch = lineClean.match(/AÇÕES REFERENTES.*?(PERÍODO.*)/i)
 		if (refMatch) {
@@ -337,13 +373,21 @@ export function parseBaseCalendarText(
 			continue
 		}
 
+		// Month calendars whose header wraps onto two text lines leave a bare
+		// "Dias Letivos: ..." line without the MONTH/YYYY part. It must also end
+		// the current batch, otherwise it is captured as a table row.
+		if (lineClean.toLowerCase().includes('dias letivos')) {
+			processTableLines()
+			inTable = false
+			continue
+		}
+
 		if (
 			lineClean.includes('Grupo de atividades') &&
 			lineClean.includes('Atividade') && lineClean.includes('Data')
 		) {
 			processTableLines()
 			inTable = true
-			_gIdx = lineClean.indexOf('Grupo de atividades')
 			rIdx = lineClean.indexOf('Responsável')
 			dIdx = lineClean.indexOf('Data')
 			aIdx = lineClean.indexOf('Atividade')
@@ -351,6 +395,11 @@ export function parseBaseCalendarText(
 		}
 
 		if (inTable && dIdx !== -1 && aIdx !== -1) {
+			// Only the date/activity boundary follows the drifting date column.
+			// The grupo boundary stays fixed at the header column: shifting it
+			// rightwards would swallow responsavel text (e.g. "PA**") into the
+			// grupo slice. Shifting it leftwards is still needed for rows that
+			// start left of the header column.
 			let localRIdx = rIdx
 			let localDIdx = dIdx
 			let localAIdx = aIdx
@@ -363,20 +412,42 @@ export function parseBaseCalendarText(
 					dateMatch[0].indexOf(dateMatch[1])
 				if (Math.abs(actualDIdx - dIdx) < 25) {
 					const shift = actualDIdx - dIdx
-					localRIdx = Math.max(0, rIdx + shift)
+					if (shift < 0) localRIdx = Math.max(0, rIdx + shift)
 					localDIdx = Math.max(0, dIdx + shift)
 					localAIdx = Math.max(0, aIdx + shift)
 				}
 			}
 
-			const rSplit = findSplitIndex(lineClean, localRIdx)
+			const rSplit = findSplitIndex(lineClean, localRIdx, true)
 			const dSplit = findSplitIndex(lineClean, localDIdx)
 			const aSplit = findSplitIndex(lineClean, localAIdx)
 
 			const gPart = lineClean.substring(0, rSplit).trim()
 			let rPart = lineClean.substring(rSplit, dSplit).trim()
-			let dPart = lineClean.substring(dSplit, aSplit).trim()
+			let dPart = normalizeDatePart(lineClean.substring(dSplit, aSplit).trim())
 			let aPart = lineClean.substring(aSplit).trim()
+
+			// Date fragments stranded in rPart on short date-only lines ("4a"
+			// for "4 a 6/8"): with no direct date match there is no column
+			// shift, so the fixed slice leaves them left of the date column.
+			// Move them back to dPart so the split-date merge below can see them.
+			if (!dPart && rPart.match(/^\d{1,2}(?:\/\d{1,2})?\s*[ae]$/)) {
+				dPart = rPart
+				rPart = ''
+			}
+
+			// The fixed-width slice can swallow activity words into dPart when a
+			// row starts its activity left of the header column (e.g. "22 a 26/2
+			// Matrícula ... Refugiados 2027/1"). Keep only the leading date
+			// portion and push the remainder back to the activity.
+			const datePrefix = dPart.match(
+				/^(\d{1,2}(?:\/\d{1,2})?(?:\s+[ae]\s+\d{1,2}(?:\/\d{1,2})?|\s*[ae](?=\s|$))?(?:\s*(?:e|,)\s*\d{1,2}(?:\/\d{1,2})?)*)/i,
+			)
+			if (datePrefix && datePrefix[1].length < dPart.length) {
+				const rest = dPart.slice(datePrefix[1].length).trim()
+				dPart = datePrefix[1].trim()
+				if (rest) aPart = rest + (aPart ? ' ' + aPart : '')
+			}
 
 			if (dPart && !/\d/.test(dPart)) {
 				aPart = dPart + (aPart ? ' ' + aPart : '')
@@ -399,6 +470,7 @@ export function parseBaseCalendarText(
 					aPart,
 					periodo: currentPeriodo,
 					year: currentYear,
+					afterBreak: batchCrossedBreak,
 				})
 			}
 		}
@@ -407,8 +479,15 @@ export function parseBaseCalendarText(
 	return events
 }
 
-function findSplitIndex(line: string, hint: number): number {
+function findSplitIndex(line: string, hint: number, preferLeft = false): number {
 	if (hint <= 0 || hint >= line.length) return hint
+	// Grupo boundary: a hint landing inside a word means the responsavel starts
+	// left of the header column, so the word belongs to the right side.
+	if (preferLeft && line[hint] !== ' ') {
+		let left = hint
+		while (left > 0 && line[left] !== ' ') left--
+		return left
+	}
 	if (line[hint] === ' ' && line[hint - 1] === ' ') return hint
 
 	let left = hint
@@ -531,10 +610,14 @@ function expandDates(
 	eventYear: number,
 	isExclusion = false,
 ) {
-	const originalDateRaw = dateRaw.replace(/\s*a\s*/g, ' a ').replace(
-		/\s*e\s*/g,
-		' e ',
-	).trim()
+	// Normalize only connectors between digits so activity words that leaked
+	// into dateRaw can never be mangled (previous /\s*a\s*/g spaced every "a",
+	// turning "Matrícula" into "M a trícul a").
+	const originalDateRaw = dateRaw
+		.replace(/(\d)\s*a\s*(?=\d|$)/g, '$1 a ')
+		.replace(/(\d)\s*e\s*(?=\d|$)/g, '$1 e ')
+		.replace(/\s+/g, ' ')
+		.trim()
 	dateRaw = dateRaw.replace(/012\/2027/, '1/2/2027')
 	dateRaw = dateRaw.replace(/\/\d{4}/g, '')
 
@@ -568,11 +651,14 @@ function expandDates(
 
 	for (const p of parsedSegments) {
 		if (p.type === 'single' && p.d) {
+			if (!p.d.month) continue
 			ev.dateRange = originalDateRaw
 			addEvent(p.d, ev, events, clearExisting, eventYear, isExclusion)
 		} else if (p.type === 'range' && p.start && p.end) {
+			if (!p.start.month || !p.end.month) continue
 			const startD = new Date(eventYear, p.start.month - 1, p.start.day)
 			const endD = new Date(eventYear, p.end.month - 1, p.end.day)
+			if (startD > endD) continue
 			ev.dateRange = originalDateRaw
 			for (const d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
 				addEvent(
@@ -588,10 +674,28 @@ function expandDates(
 	}
 }
 
+function normalizeDatePart(dPart: string): string {
+	// pdftotext -layout sometimes collapses "28/7 a" into "287 a" (lost slash).
+	// Restore it when the 3 digits hold a valid day+month without one.
+	const collapsed = dPart.match(/^(\d{2})(\d)\s*a$/)
+	if (collapsed) {
+		const day = parseInt(collapsed[1])
+		const month = parseInt(collapsed[2])
+		if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+			return `${collapsed[1]}/${collapsed[2]} a`
+		}
+	}
+	return dPart
+}
+
 function parseDateStr(s: string) {
-	const m = s.trim().match(/^(\d{1,3})(?:\/(\d{1,2}))?/)
+	const m = s.trim().match(/^(\d{1,2})(?!\d)(?:\/(\d{1,2})(?!\d))?/)
 	if (!m) return null
-	return { day: parseInt(m[1]), month: m[2] ? parseInt(m[2]) : 0 }
+	const day = parseInt(m[1])
+	const month = m[2] ? parseInt(m[2]) : 0
+	if (day < 1 || day > 31) return null
+	if (month < 0 || month > 12) return null
+	return { day, month }
 }
 
 export function normalizeActivity(s: string): string {
@@ -625,6 +729,10 @@ function addEvent(
 	year: number,
 	isExclusion = false,
 ) {
+	// Defense in depth: never emit month-less or out-of-range keys (previously
+	// produced entries like 17/00/2026 or overflowed dates such as day 287).
+	if (!d.day || d.day < 1 || d.day > 31) return
+	if (!d.month || d.month < 1 || d.month > 12) return
 	const key = `${d.day.toString().padStart(2, '0')}/${
 		d.month.toString().padStart(2, '0')
 	}/${year}`
