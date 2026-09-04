@@ -13,6 +13,9 @@ export interface ParsedMenuResult {
 	breakfast?: {
 		fruit?: string
 		juice?: string
+		bread?: string
+		milk?: string
+		coffee?: string
 		items: string[]
 		rawBlock: string
 	}
@@ -52,6 +55,13 @@ const MealEmojis: Record<string, string> = {
 	JANTAR: '🍲',
 }
 
+// 'Pão francês' -> 'francês'; 'Pão de Milho' -> 'de milho' (always strip the 'Pão' prefix)
+function shortenBreadType(line: string): string {
+	const t = line.trim()
+	const cleaned = t.replace(/^(p[ãa]o|p[ãa]es|desjejum)\s+/i, '').trim() || t
+	return cleaned.toLowerCase()
+}
+
 export function parseMenuHtml(html: string): ParsedMenuResult {
 	const result: ParsedMenuResult = {
 		hasMenu: false,
@@ -76,6 +86,9 @@ export function parseMenuHtml(html: string): ParsedMenuResult {
 			let currentTitle = ''
 			let fruit = ''
 			let juice = ''
+			let bread = ''
+			let milk = ''
+			let coffee = ''
 			for (const line of lines) {
 				if (titles.includes(line)) {
 					currentTitle = line
@@ -86,12 +99,24 @@ export function parseMenuHtml(html: string): ParsedMenuResult {
 					} else if (currentTitle === 'Suco') {
 						juice = line
 						items.push(`*Suco:* ${line}`)
-					} else if (currentTitle === 'Café' || currentTitle === 'Leite') {
+					} else if (currentTitle === 'Desjejum') {
+						bread = shortenBreadType(line)
+						items.push(line)
+					} else if (currentTitle === 'Leite') {
+						milk = line
 						const lowerLine = line.toLowerCase()
-						if (lowerLine.includes(currentTitle.toLowerCase())) {
+						if (lowerLine.includes('leite')) {
 							items.push(line)
 						} else {
-							items.push(`${currentTitle} ${lowerLine}`)
+							items.push(`Leite ${lowerLine}`)
+						}
+					} else if (currentTitle === 'Café') {
+						coffee = line
+						const lowerLine = line.toLowerCase()
+						if (lowerLine.includes('café') || lowerLine.includes('cafe')) {
+							items.push(line)
+						} else {
+							items.push(`Café ${lowerLine}`)
 						}
 					} else {
 						items.push(line)
@@ -102,7 +127,7 @@ export function parseMenuHtml(html: string): ParsedMenuResult {
 			const rawBlock = `> ${MealEmojis[meal] || '☕'} *Café da Manhã (${
 				Hours[meal] || '7h – 8h'
 			})*\n• ${items.join(', ')}`
-			result.breakfast = { fruit, juice, items, rawBlock }
+			result.breakfast = { fruit, juice, bread, milk, coffee, items, rawBlock }
 			blocks.push(rawBlock)
 		} else {
 			const mealDetails: MealDetails = { rawBlock: '' }
