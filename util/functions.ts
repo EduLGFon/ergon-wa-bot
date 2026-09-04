@@ -10,6 +10,9 @@ const isValidPositiveIntenger = (num: num) => !Number.isNaN(num) && num > 0 && N
 
 // findKey: Search for a key inside an object
 function findKey(obj: any, key: str): any {
+	// null/primitive nodes (common in proto trees) hold no keys
+	if (!obj || typeof obj !== 'object') return
+
 	// if the obj has this key, then return it
 	if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key]
 
@@ -20,7 +23,7 @@ function findKey(obj: any, key: str): any {
 
 		const value = obj[property]
 		// if the property is a obj, call findKey() recursively
-		if (typeof value === 'object') {
+		if (value && typeof value === 'object') {
 			const result = findKey(value, key)
 
 			if (result !== undefined) return result

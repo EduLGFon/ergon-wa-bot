@@ -1,7 +1,8 @@
+import { findCachedOriginal, promotePendingDelete, saveDeleted } from '@plugin/deletedStore.ts'
 import { reactToMsg, sendMsg, startTyping } from '@util/msgAbstractions.ts'
 import checkGroupAnnouncer from '@plugin/groupAnnouncer.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
-import { delay } from '@util/functions.ts'
+import { delay, findKey } from '@util/functions.ts'
 import { getCtx } from '@util/msgTools.ts'
 import { type proto } from 'baileys'
 import cache from '@plugin/cache.ts'
@@ -14,8 +15,52 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 	for (const m of raw.messages) {
 		if (!m?.message) continue
 
-		// get abstract msg obj
-		const { msg, args, cmd, group, user } = await getCtx(m)
+		if (Deno.env.get('SHOW_IDS')) {
+			print(
+				'UPSERT/shape',
+				`${m.key?.id} keys=${Object.keys(m.message || {}).join(',')}`,
+				'blue',
+			)
+		}
+
+		// Backup revoke path: some deletes arrive as upsert with a
+		// protocolMessage (type REVOKE = 0) instead of messages.update.
+		const protoMsg = findKey(m.message, 'protocolMessage')
+		if (protoMsg?.type === 0 && protoMsg?.key?.id) {
+			try {
+				const chatId = protoMsg.key.remoteJid || m.key?.remoteJid!
+				const orig = findCachedOriginal(chatId, protoMsg.key.id)
+				if (!orig) {
+					// Original never cached: a stashed quote copy may exist - promote it.
+					const rescued = await promotePendingDelete(chatId, protoMsg.key.id).catch(() =>
+						null
+					)
+					if (!rescued) {
+						print(
+							'GOTCHA',
+							`miss ${chatId} ${protoMsg.key.id} (original not in cache)`,
+							'yellow',
+						)
+					}
+				} else if (!orig.isBot) {
+					const saved = await saveDeleted(orig)
+					if (!saved) print('GOTCHA', `dupe ${chatId} ${protoMsg.key.id}`, 'yellow')
+				}
+			} catch (e) {
+				print('GOTCHA/upsert', (e as Error)?.message || e, 'red')
+			}
+			continue
+		}
+
+		// get abstract msg obj (per-message guard: one bad msg must not drop the batch)
+		let parsed
+		try {
+			parsed = await getCtx(m)
+		} catch (e) {
+			print('CTX/failed', `${m.key?.id} ${(e as Error)?.message || e}`, 'red')
+			continue
+		}
+		const { msg, args, cmd, group, user } = parsed
 		if (!user || !msg) continue
 		if (Deno.env.get('SHOW_IDS')) console.log(user.name, msg.text, group?.id || msg.chat, msg)
 		// this is for dev purpouses like getting a group ID

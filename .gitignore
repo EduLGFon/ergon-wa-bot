@@ -2,6 +2,7 @@
 conf/gen/auth/*
 conf/gen/build
 conf/gen/cache/*
+conf/gen/deleted/*
 conf/gen/log
 conf/gen/prisma/*
 conf/gen/python/*
