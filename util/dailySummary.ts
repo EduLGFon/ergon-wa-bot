@@ -99,6 +99,22 @@ function formatHeaderTitle(raw: string): string {
 	return `*${t}*`
 }
 
+function formatBreakfastLine(b: NonNullable<ParsedMenuResult['breakfast']>): string {
+	const parts: string[] = []
+	if (b.bread) parts.push(`🍞 ${b.bread}`)
+	if (b.milk) parts.push('🥛')
+	if (b.coffee) parts.push('☕')
+	if (b.fruit) parts.push(b.fruit)
+	if (b.juice) parts.push(`suco de ${b.juice}`)
+	if (parts.length === 0) return ''
+	if (parts.length === 1) return parts[0]
+	return `${parts.slice(0, -1).join(', ')} e ${parts[parts.length - 1]}`
+}
+
+function pushSubItemLines(menuLines: string[], subItems: string[]) {
+	for (const item of subItems) menuLines.push(`   ↳ _${item}_`)
+}
+
 function buildAIPrompt(input: DailySummaryInput): string {
 	const headerTitle = formatHeaderTitle(input.bulletinTitle || '🧠 *Boletim CEUNES*')
 
@@ -115,10 +131,14 @@ function buildAIPrompt(input: DailySummaryInput): string {
 	if (input.menu && input.menu.hasMenu) {
 		const parts: string[] = []
 		if (input.menu.breakfast) {
-			const bItems = []
-			if (input.menu.breakfast.fruit) bItems.push(input.menu.breakfast.fruit)
-			if (input.menu.breakfast.juice) bItems.push(`Suco de ${input.menu.breakfast.juice}`)
-			if (bItems.length > 0) parts.push(`Café da manhã: ${bItems.join(' e ')}`)
+			const b = input.menu.breakfast
+			const bData = []
+			if (b.bread) bData.push(`Pão: ${b.bread}`)
+			if (b.milk) bData.push(`Leite: ${b.milk}`)
+			if (b.coffee) bData.push(`Café: ${b.coffee}`)
+			if (b.fruit) bData.push(`Fruta: ${b.fruit}`)
+			if (b.juice) bData.push(`Suco: ${b.juice}`)
+			if (bData.length > 0) parts.push(`Café da manhã: ${bData.join(' | ')}`)
 		}
 		if (input.menu.lunch) {
 			parts.push(
@@ -187,17 +207,22 @@ function buildAIPrompt(input: DailySummaryInput): string {
 
 Siga RIGOROSAMENTE esta estrutura:
 ${headerTitle} - *${input.dateStr}*
-
 [Linha de Clima: ${input.weather ? input.weather.formattedLine : 'Sem dados'}]
 
 🍽️ *Cardápio do RU:*
 [Se cardápio NÃO disponível:   • _Cardápio ainda não divulgado (ou RU fechado). Se for publicado mais tarde, enviaremos a atualização aqui!_]
 [Se cardápio disponível:
-☕ *Café:* (Fruta) & (Suco)
+☕ *Café:* 🍞 [tipo pão], 🥛, ☕, [Fruta] e suco de [Suco] (omitir item ausente, sem inventar)
 🍛 *Almoço:* [Prato Principal] _(Opção: [Opção])_
-   ↳ _[Guarnição] • Saladas: [Saladas] • [Sobremesa] • Suco de [Suco]_
+   ↳ _[Guarnição]_
+   ↳ _Saladas: [Saladas]_
+   ↳ _[Sobremesa]_
+   ↳ _Suco de [Suco]_ (um item por linha, omitir ausentes)
 🍲 *Jantar:* [Prato Principal] _(Opção: [Opção])_
-   ↳ _[Guarnição] • Saladas: [Saladas] • [Sobremesa] • Suco de [Suco]_
+   ↳ _[Guarnição]_
+   ↳ _Saladas: [Saladas]_
+   ↳ _[Sobremesa]_
+   ↳ _Suco de [Suco]_ (um item por linha, omitir ausentes)
 ]
 
 🎓 *Calendário Acadêmico:*
@@ -218,7 +243,8 @@ Regras:
 1. NUNCA invente pratos ou prazos.
 2. Destaque prazos de estudantes com 🚨 e negrito.
 3. Não use travessão "—", use apenas traço simples "-".
-4. Não adicione dia da semana no cabeçalho, use exatamente "${headerTitle} - *${input.dateStr}*".`
+4. Não adicione dia da semana no cabeçalho, use exatamente "${headerTitle} - *${input.dateStr}*".
+5. Café da manhã: use 🍞 + tipo do pão, 🥛 para leite, ☕ para café (ex.: "🍞 francês, 🥛, ☕, maçã e suco de goiaba"); omita itens ausentes sem inventar.`
 }
 
 export function generateFallbackSummary(input: DailySummaryInput): string {
@@ -237,11 +263,9 @@ export function generateFallbackSummary(input: DailySummaryInput): string {
 	const menuLines: string[] = ['🍽️ *Cardápio do RU:*']
 	if (input.menu && input.menu.hasMenu) {
 		if (input.menu.breakfast) {
-			const bItems = []
-			if (input.menu.breakfast.fruit) bItems.push(input.menu.breakfast.fruit)
-			if (input.menu.breakfast.juice) bItems.push(`Suco de ${input.menu.breakfast.juice}`)
-			if (bItems.length > 0) {
-				menuLines.push(`☕ *Café:* ${bItems.join(' & ')}`)
+			const bLine = formatBreakfastLine(input.menu.breakfast)
+			if (bLine) {
+				menuLines.push(`☕ *Café:* ${bLine}`)
 			}
 		}
 
@@ -257,9 +281,7 @@ export function generateFallbackSummary(input: DailySummaryInput): string {
 			if (input.menu.lunch.salads) subItems.push(`Saladas: ${input.menu.lunch.salads}`)
 			if (input.menu.lunch.dessert) subItems.push(input.menu.lunch.dessert)
 			if (input.menu.lunch.juice) subItems.push(`Suco de ${input.menu.lunch.juice}`)
-			if (subItems.length > 0) {
-				menuLines.push(`   ↳ _${subItems.join(' • ')}_`)
-			}
+			pushSubItemLines(menuLines, subItems)
 		}
 
 		if (input.menu.dinner) {
@@ -274,9 +296,7 @@ export function generateFallbackSummary(input: DailySummaryInput): string {
 			if (input.menu.dinner.salads) subItems.push(`Saladas: ${input.menu.dinner.salads}`)
 			if (input.menu.dinner.dessert) subItems.push(input.menu.dinner.dessert)
 			if (input.menu.dinner.juice) subItems.push(`Suco de ${input.menu.dinner.juice}`)
-			if (subItems.length > 0) {
-				menuLines.push(`   ↳ _${subItems.join(' • ')}_`)
-			}
+			pushSubItemLines(menuLines, subItems)
 		}
 	} else {
 		menuLines.push(
@@ -316,6 +336,10 @@ export function generateFallbackSummary(input: DailySummaryInput): string {
 		sections.push(calLines.join('\n'))
 	}
 
+	// Single line break between title and weather line, double elsewhere
+	if (input.weather && sections.length > 1) {
+		return `${sections[0]}\n${sections.slice(1).join('\n\n')}`
+	}
 	return sections.join('\n\n')
 }
 
