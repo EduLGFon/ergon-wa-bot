@@ -17,3 +17,5 @@
   non-obvious code, adhering to good commenting practices.
 - This workspace is DENO-only. Always choose DENO native libraries/ways instead of DENO-first
   libraries or NODE libraries (this should only be used as a last resort).
+- All test scripts, debug scripts, and other helper files created by agents must be saved inside the
+  `scripts/` directory. Never leave scratch files in the repository root.
