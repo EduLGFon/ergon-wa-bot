@@ -22,6 +22,12 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		},
 		log_file: 'conf/gen/out.log',
 		merge_logs: true,
+		// Prod showed 38h/33h dead gaps after fatal crashes: PM2 must always restart.
+		// No max_memory_restart by operator choice; in-process guards own recovery.
+		autorestart: true,
+		min_uptime: 10_000, // must stay up 10s to count as success (prevents login-spam loops)
 		exp_backoff_restart_delay: 1_000, // Starts at 100ms, exponentially increases up to 15s to prevent login spam
+		listen_timeout: 10_000,
+		kill_timeout: 10_000, // give cache.save() on SIGTERM time to flush
 	}],
 }

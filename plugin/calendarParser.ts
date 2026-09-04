@@ -80,7 +80,8 @@ export async function fetchCalendarLinks(
 	year: number,
 ): Promise<{ base: string; resolutions: string[] }> {
 	const url = 'https://prograd.ufes.br/calendario'
-	const res = await fetch(url)
+	// Timeout so a hung portal never wedges the cache update; callers already catch.
+	const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
 	if (!res.ok) throw new Error(`Failed to fetch ${url}`)
 	const html = await res.text()
 
@@ -135,7 +136,8 @@ export async function fetchCalendarLinks(
 
 async function downloadAndConvertPdf(url: string, destTxt: string) {
 	const destPdf = destTxt.replace('.txt', '.pdf')
-	const curl = new Deno.Command('curl', { args: ['-sL', url, '-o', destPdf] })
+	// --max-time keeps a stalled download from hanging the daily job forever.
+	const curl = new Deno.Command('curl', { args: ['-sL', '--max-time', '60', url, '-o', destPdf] })
 	await curl.output()
 	const pdf = new Deno.Command('pdftotext', { args: ['-layout', destPdf, destTxt] })
 	await pdf.output()

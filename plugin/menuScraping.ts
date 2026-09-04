@@ -137,8 +137,10 @@ export default async function scrapURMenu(
 ): Promise<ParsedMenuResult | null> {
 	updateDate()
 	try {
+		// Timeout so a hung RU site never wedges the bulletin; retries handle transient drops.
 		const res = await fetch(
 			`https://restaurante.saomateus.ufes.br/cardapio/${year}-${month}-${day}`,
+			{ signal: AbortSignal.timeout(10_000) },
 		)
 		if (!res.ok) return null
 		const txt = await res.text()

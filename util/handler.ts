@@ -1,3 +1,6 @@
+// Handler loader: discovers command and event modules from disk and binds them to the
+// live Baileys socket. Event dispatch is guarded so one bad message or a mid-reconnect
+// clear() can never throw synchronously and kill the process.
 import { type BaileysEventMap } from 'baileys'
 import cache from '@plugin/cache.ts'
 import bot from '@plugin/bot.ts'
@@ -48,10 +51,17 @@ async function loadEvents() {
 		// Listen to the event here
 		bot.sock.ev.on(name, (...args) => {
 			// It allows to modify events in run time
-			cache.events.get(name)!(...args, name).catch((e: Error) =>
-				print(`EVENT/${name}:`, e, e.stack, 'red')
-			)
-			// it's the same as eventFunction(...args, name)
+			try {
+				const fn = cache.events.get(name)
+				if (!fn) return
+				// it's the same as eventFunction(...args, name)
+				Promise.resolve(fn(...args, name)).catch((e: Error) =>
+					print(`EVENT/${name}:`, e, e.stack, 'red')
+				)
+			} catch (e) {
+				// Sync throw (e.g. handler cleared mid-reconnect) must not become uncaught.
+				print(`EVENT/${name}:`, e, (e as Error)?.stack, 'red')
+			}
 		})
 	})
 }

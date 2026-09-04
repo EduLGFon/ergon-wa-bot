@@ -1,9 +1,9 @@
+// Daily summary builder: composes the deterministic morning bulletin (weather + RU menu + calendar).
+// Gemini was removed after 100% failure in prod (503 overloaded + timeouts); this file is fallback-only now.
 import { type ClassifiedCalendar } from '@util/calendarAnalytics.ts'
-import defaults from '@conf/defaults.json' with { type: 'json' }
 import { getNextBulletinTitle } from '@util/bulletinTitles.ts'
 import { type ParsedMenuResult } from '@util/menuParser.ts'
 import { type WeatherReport } from '@util/weather.ts'
-import { GoogleGenAI } from '@google/genai'
 
 export interface DailySummaryInput {
 	dateStr: string
@@ -21,70 +21,9 @@ export async function generateDailySummary(
 		input.bulletinTitle = await getNextBulletinTitle()
 	}
 
-	const apiKey = Deno.env.get('GEMINI')
-	if (!apiKey) {
-		if (typeof print === 'function') {
-			print(
-				'DAILYSUMMARY',
-				'No GEMINI API key found. Using deterministic fallback.',
-				'yellow',
-			)
-		}
-		return generateFallbackSummary(input)
-	}
-
-	try {
-		const GoogleAI = new GoogleGenAI({ apiKey })
-		const model = defaults.ai.gemini_chain?.[0] || 'gemini-2.5-flash'
-		const prompt = buildAIPrompt(input)
-
-		const callPromise = GoogleAI.models.generateContent({
-			model,
-			contents: prompt,
-			config: {
-				systemInstruction:
-					'Você é o assistente inteligente oficial do campus universitário (CEUNES/UFES). ' +
-					'Sua missão é gerar um resumo matinal diário completo, limpo e direto para WhatsApp, exatamente na estrutura solicitada. ' +
-					'Use formatação do WhatsApp (*negrito*, _itálico_). ' +
-					'Use traço simples "-" no cabeçalho, NUNCA use travessão "—". ' +
-					'Destaque SEMPRE eventos novos ou prioritários de Estudante com sirene 🚨 e em negrito. ' +
-					'Se NÃO houver novos eventos iniciados hoje, coloque OBRIGATORIAMENTE a linha "  • _Nada de novo em relação a ontem._" no topo da seção de calendário. ' +
-					'Mantenha o texto compacto e legível em uma única tela de celular.',
-			},
-		})
-
-		// 6 seconds timeout limit
-		const timeoutPromise = new Promise<null>((_, reject) =>
-			setTimeout(() => reject(new Error('Gemini API timeout')), 6_000)
-		)
-
-		const res = await Promise.race([callPromise, timeoutPromise])
-		if (res && res.text && res.text.trim().length > 20) {
-			return cleanAIOutput(res.text.trim())
-		}
-
-		if (typeof print === 'function') {
-			print('DAILYSUMMARY', 'Empty or invalid response from Gemini. Falling back.', 'yellow')
-		}
-		return generateFallbackSummary(input)
-	} catch (e: any) {
-		if (typeof print === 'function') {
-			print(
-				'DAILYSUMMARY',
-				`Gemini summary generation failed (${e?.message || e}). Using fallback.`,
-				'yellow',
-			)
-		}
-		return generateFallbackSummary(input)
-	}
-}
-
-function cleanAIOutput(text: string): string {
-	// Remove markdown code blocks if the model wrapped the response in ```
-	let cleaned = text.replace(/^```(?:markdown|whatsapp)?\n?/i, '').replace(/\n?```$/i, '').trim()
-	// Replace any em-dash with simple hyphen
-	cleaned = cleaned.replace(/—/g, '-')
-	return cleaned
+	// Deterministic-only: Gemini path removed (prod showed 15/15 failures).
+	// Keep the async shape so callers do not need to change.
+	return generateFallbackSummary(input)
 }
 
 function formatHeaderTitle(raw: string): string {
@@ -113,138 +52,6 @@ function formatBreakfastLine(b: NonNullable<ParsedMenuResult['breakfast']>): str
 
 function pushSubItemLines(menuLines: string[], subItems: string[]) {
 	for (const item of subItems) menuLines.push(`   ↳ _${item}_`)
-}
-
-function buildAIPrompt(input: DailySummaryInput): string {
-	const headerTitle = formatHeaderTitle(input.bulletinTitle || '🧠 *Boletim CEUNES*')
-
-	let weatherText = 'Sem dados do clima para hoje.'
-	if (input.weather) {
-		weatherText =
-			`Condição: ${input.weather.condition} (${input.weather.emoji}), Mínima: ${input.weather.tempMin}°C, Máxima: ${input.weather.tempMax}°C, Chuva: ${input.weather.rainProb}%. Dica: ${
-				input.weather.tip || 'Nenhuma'
-			}`
-	}
-
-	let menuText =
-		'Cardápio do RU ainda não divulgado para hoje (ou RU fechado). Informe no resumo que o cardápio ainda não foi publicado e que atualizações serão enviadas aqui assim que postarem.'
-	if (input.menu && input.menu.hasMenu) {
-		const parts: string[] = []
-		if (input.menu.breakfast) {
-			const b = input.menu.breakfast
-			const bData = []
-			if (b.bread) bData.push(`Pão: ${b.bread}`)
-			if (b.milk) bData.push(`Leite: ${b.milk}`)
-			if (b.coffee) bData.push(`Café: ${b.coffee}`)
-			if (b.fruit) bData.push(`Fruta: ${b.fruit}`)
-			if (b.juice) bData.push(`Suco: ${b.juice}`)
-			if (bData.length > 0) parts.push(`Café da manhã: ${bData.join(' | ')}`)
-		}
-		if (input.menu.lunch) {
-			parts.push(
-				`Almoço: Prato Principal: ${
-					input.menu.lunch.mainDish || 'Não informado'
-				} | Opção: ${input.menu.lunch.optionDish || 'Não informada'} | Guarnição: ${
-					input.menu.lunch.sideDish || ''
-				} | Saladas: ${input.menu.lunch.salads || ''} | Sobremesa: ${
-					input.menu.lunch.dessert || ''
-				} | Suco: ${input.menu.lunch.juice || ''}`,
-			)
-		}
-		if (input.menu.dinner) {
-			parts.push(
-				`Jantar: Prato Principal: ${
-					input.menu.dinner.mainDish || 'Não informado'
-				} | Opção: ${input.menu.dinner.optionDish || 'Não informada'} | Guarnição: ${
-					input.menu.dinner.sideDish || ''
-				} | Saladas: ${input.menu.dinner.salads || ''} | Sobremesa: ${
-					input.menu.dinner.dessert || ''
-				} | Suco: ${input.menu.dinner.juice || ''}`,
-			)
-		}
-		menuText = parts.join('\n')
-	}
-
-	let calendarText = 'Nenhum evento acadêmico para hoje.'
-	if (input.calendar && input.calendar.hasEvents) {
-		const lines = []
-		if (input.calendar.newStudentEvents.length > 0) {
-			lines.push(
-				`NOVOS EVENTOS DE ESTUDANTE INICIADOS HOJE: ${
-					input.calendar.newStudentEvents.map((e) =>
-						`${e.atividade} (${e.dateRange || ''})`
-					).join('; ')
-				}`,
-			)
-		} else {
-			lines.push(
-				`NOVOS EVENTOS INICIADOS HOJE: Nenhum (Use obrigatoriamente a linha "  • _Nada de novo em relação a ontem._")`,
-			)
-		}
-
-		if (input.calendar.endingTodayEvents.length > 0) {
-			lines.push(
-				`ÚLTIMO DIA HOJE: ${
-					input.calendar.endingTodayEvents.map((e) =>
-						`${e.atividade} (Resp: ${e.responsavel || 'Geral'})`
-					).join('; ')
-				}`,
-			)
-		}
-		if (input.calendar.ongoingStudentEvents.length > 0) {
-			lines.push(
-				`EM ANDAMENTO (ESTUDANTE): ${
-					input.calendar.ongoingStudentEvents.map((e) =>
-						`${e.atividade} (${e.dateRange || ''})`
-					).join('; ')
-				}`,
-			)
-		}
-		calendarText = lines.join('\n')
-	}
-
-	return `Gere o resumo diário do campus para a data ${input.dateStr}.
-
-Siga RIGOROSAMENTE esta estrutura:
-${headerTitle} - *${input.dateStr}*
-[Linha de Clima: ${input.weather ? input.weather.formattedLine : 'Sem dados'}]
-
-🍽️ *Cardápio do RU:*
-[Se cardápio NÃO disponível:   • _Cardápio ainda não divulgado (ou RU fechado). Se for publicado mais tarde, enviaremos a atualização aqui!_]
-[Se cardápio disponível:
-☕ *Café:* 🍞 [tipo pão], 🥛, ☕, [Fruta] e suco de [Suco] (omitir item ausente, sem inventar)
-🍛 *Almoço:* [Prato Principal] _(Opção: [Opção])_
-   ↳ _[Guarnição]_
-   ↳ _Saladas: [Saladas]_
-   ↳ _[Sobremesa]_
-   ↳ _Suco de [Suco]_ (um item por linha, omitir ausentes)
-🍲 *Jantar:* [Prato Principal] _(Opção: [Opção])_
-   ↳ _[Guarnição]_
-   ↳ _Saladas: [Saladas]_
-   ↳ _[Sobremesa]_
-   ↳ _Suco de [Suco]_ (um item por linha, omitir ausentes)
-]
-
-🎓 *Calendário Acadêmico:*
-  (REGRA: Se NÃO houver novos eventos iniciados hoje, coloque OBRIGATORIAMENTE na primeira linha: "  • _Nada de novo em relação a ontem._")
-  (Se HOUVER novos prazos de estudantes iniciados hoje, use 🚨 *Estudante:* em negrito)
-  (Use ⏳ *Último dia hoje:* para eventos que terminam hoje)
-  (Use 📌 *Em andamento:* para prazos relevantes de estudantes)
-
-DADOS DO DIA:
-- Data: ${input.dateStr}
-- Clima: ${weatherText}
-- Cardápio RU:
-${menuText}
-- Calendário Acadêmico:
-${calendarText}
-
-Regras:
-1. NUNCA invente pratos ou prazos.
-2. Destaque prazos de estudantes com 🚨 e negrito.
-3. Não use travessão "—", use apenas traço simples "-".
-4. Não adicione dia da semana no cabeçalho, use exatamente "${headerTitle} - *${input.dateStr}*".
-5. Café da manhã: use 🍞 + tipo do pão, 🥛 para leite, ☕ para café (ex.: "🍞 francês, 🥛, ☕, maçã e suco de goiaba"); omita itens ausentes sem inventar.`
 }
 
 export function generateFallbackSummary(input: DailySummaryInput): string {
