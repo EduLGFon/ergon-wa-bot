@@ -35,6 +35,18 @@ export function attachWaRelay(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateL
 			console.error('[BRIDGE] WA→TG handler failed:', e)
 		}
 	})
+	// Reactions ride a separate event on the same shared socket. Attached
+	// here (after loadEvents) for the same removeAllListeners reason.
+	bot.sock.ev.on(
+		'messages.reaction',
+		async (reactions: { key: proto.IMessageKey; reaction: proto.IReaction }[]) => {
+			try {
+				await handleWaReactions(reactions)
+			} catch (e) {
+				console.error('[BRIDGE] WA→TG reaction handler failed:', e)
+			}
+		},
+	)
 	console.log('[BRIDGE] WA→TG relay attached to the shared WhatsApp socket')
 }
 
@@ -136,6 +148,48 @@ function phoneOf(jid: string | undefined | null): string {
 	if (!jid) return ''
 	const user = jid.split('@')[0].split(':')[0]
 	return user ? `+${user}` : ''
+}
+
+// WhatsApp reaction → Telegram reaction. Each side mirrors through a single
+// bot identity (bots get one reaction per message on Telegram, one react per
+// key on WhatsApp), so concurrent reactors are last-writer-wins by design.
+async function handleWaReactions(
+	reactions: { key: proto.IMessageKey; reaction: proto.IReaction }[],
+): Promise<void> {
+	if (!db || !limiter || !tg) return
+
+	for (const { key, reaction } of reactions) {
+		try {
+			// Skip our own TG→WA reacts echoing back (loop guard).
+			if ((reaction as any)?.key?.fromMe) continue
+			const targetId = key?.id
+			const jid = key?.remoteJid
+			if (!targetId || !jid || jid === 'status@broadcast') continue
+			const mapping = db.getByJid(jid)
+			if (!mapping || mapping.archived) continue
+			// Unmapped targets (pre-bridge history, pruned) can't be quoted
+			// by Telegram — nothing to attach the reaction to.
+			const target = db.getByWaMsgId(targetId, jid)
+			if (!target) continue
+
+			const emoji = waReactionToTgEmoji(reaction?.text)
+			const payload = emoji ? [{ type: 'emoji' as const, emoji }] : []
+			await limiter.enqueue(() =>
+				tg!.api.setMessageReaction(supergroupId, target.tg_msg_id, payload as any)
+			)
+		} catch (e) {
+			console.error('[BRIDGE] failed to relay one WA reaction:', e)
+		}
+	}
+}
+
+// Normalize a WhatsApp reaction emoji for Telegram's allowed list, which
+// uses the non-VS16 form (❤, not ❤️). Returns null for removals (empty
+// text) so the caller clears the reaction instead.
+export function waReactionToTgEmoji(text: string | null | undefined): string | null {
+	if (!text) return null
+	const clean = text.replace(/\uFE0F/g, '').trim()
+	return clean || null
 }
 
 async function createForumTopic(displayName: string, _isGroup: boolean): Promise<number> {

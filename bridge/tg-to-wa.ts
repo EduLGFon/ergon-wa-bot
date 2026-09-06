@@ -61,6 +61,31 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 		}
 	})
 
+	// Telegram reaction → WhatsApp reaction. Like quotes, this resolves the
+	// reacted-to Telegram message through reply_map to the WA key it mirrors.
+	// Loop guard: our own WA→TG setMessageReaction echoes back as an update
+	// from a bot user, which we ignore.
+	tg.on('message_reaction', async (ctx) => {
+		try {
+			const upd: any = ctx.update.message_reaction
+			if (!upd || String(upd.chat?.id) !== supergroupId) return
+			if (upd.user?.is_bot) return
+			if (!upd.message_id) return
+
+			const entry = db.getReplyMap(upd.message_id)
+			if (!entry) return
+			const key = restoreWaKey(entry)
+			if (!key) return
+
+			const emoji = tgReactionToWaEmoji(upd.old_reaction, upd.new_reaction)
+			await limiter.enqueue(async () => {
+				await bot.sock.sendMessage(entry.wa_jid, { react: { text: emoji, key } })
+			})
+		} catch (e) {
+			console.error('[BRIDGE] TG→WA reaction failed:', e)
+		}
+	})
+
 	tg.on('message', async (ctx) => {
 		try {
 			const msg: any = ctx.msg
@@ -171,6 +196,40 @@ function buildWaContent(
 				caption: text || undefined,
 			}
 	}
+}
+
+// Rebuild the Baileys key of the WA message a Telegram message mirrors.
+// Current rows carry the full key JSON; legacy rows stored '{}' — those are
+// always TG-originated sends (fromMe), so the key can be synthesized.
+export function restoreWaKey(
+	entry: { wa_jid: string; wa_msg_id: string; wa_key_json: string },
+): any {
+	try {
+		const key = JSON.parse(entry.wa_key_json)
+		if (key?.id) return key
+	} catch {
+		// fall through to synthesis
+	}
+	if (entry.wa_msg_id) {
+		return { remoteJid: entry.wa_jid, id: entry.wa_msg_id, fromMe: true }
+	}
+	return null
+}
+
+// Pick the WhatsApp reaction text for a Telegram reaction change. Empty
+// string = removal. Custom-emoji and paid reactions have no WhatsApp
+// equivalent, so they fall back to ❤️ (logged by the caller path).
+export function tgReactionToWaEmoji(oldList: any[], newList: any[]): string {
+	const oldR = oldList || []
+	const newR = newList || []
+	if (newR.length === 0) return ''
+	const same = (a: any, b: any) =>
+		a?.type === b?.type && (a?.emoji || a?.custom_emoji_id) === (b?.emoji || b?.custom_emoji_id)
+	const fresh = newR.filter((r: any) => !oldR.some((o: any) => same(o, r)))
+	const pool = fresh.length > 0 ? fresh : newR
+	const std = pool.find((r: any) => r?.type === 'emoji' && r?.emoji)
+	if (std) return String(std.emoji)
+	return '❤️'
 }
 
 // Telegram reply → WhatsApp quoted reply. The reply_map tells us which WA
