@@ -1,11 +1,17 @@
 import {
 	Browsers,
+	BufferJSON,
 	downloadMediaMessage,
+	initAuthCreds,
 	makeWASocket,
 	type proto,
 	useMultiFileAuthState,
 } from 'baileys'
 import { makeCacheableSignalKeyStore } from 'baileys'
+import { drizzle } from 'drizzle-orm/postgres-js'
+import postgres from 'postgres'
+import { and, eq, inArray } from 'drizzle-orm'
+import * as schema from '../conf/schema.ts'
 import { BridgeDB, type MappingRow } from './db.ts'
 import { RateLimiter } from './rate-limiter.ts'
 import { Bot } from 'grammy'
@@ -14,17 +20,133 @@ export let waSock: ReturnType<typeof makeWASocket> | null = null
 let botInstance: Bot | null = null
 let dbInstance: BridgeDB | null = null
 let rateLimiterInstance: RateLimiter | null = null
+let drizzleDb: ReturnType<typeof drizzle> | undefined
+
+function getDrizzleDb() {
+	if (drizzleDb) return drizzleDb
+	const connectionString = Deno.env.get('DATABASE_URL')
+	if (connectionString) {
+		const sql = postgres(connectionString, { max: 5 })
+		drizzleDb = drizzle(sql, { schema })
+	}
+	return drizzleDb
+}
+
+async function postgresAuthState(session: string) {
+	const writeCreds = async (data: any) => {
+		const json = JSON.parse(JSON.stringify(data, BufferJSON.replacer))
+		const d = getDrizzleDb()
+		if (d) {
+			await d.insert(schema.authCreds).values({ session, data: json }).onConflictDoUpdate({
+				target: schema.authCreds.session,
+				set: { data: json },
+			})
+		}
+	}
+
+	const readCreds = async () => {
+		const d = getDrizzleDb()
+		if (!d) return null
+		const rows = await d.select().from(schema.authCreds).where(
+			eq(schema.authCreds.session, session),
+		)
+		return rows?.[0]?.data ? JSON.parse(JSON.stringify(rows[0].data, BufferJSON.reviver)) : null
+	}
+
+	let creds = await readCreds()
+	if (!creds) {
+		creds = initAuthCreds()
+		await writeCreds(creds)
+	}
+
+	return {
+		state: {
+			creds,
+			keys: {
+				get: async (type: string, ids: string[]) => {
+					const d = getDrizzleDb()
+					if (!d) return {}
+					const rows = await d.select().from(schema.authKey).where(
+						and(
+							eq(schema.authKey.session, session),
+							eq(schema.authKey.category, type),
+							inArray(schema.authKey.key, ids),
+						),
+					)
+					const data: Record<string, any> = {}
+					for (const id of ids) {
+						const row = rows.find((r: any) => r.key === id && r.category === type)
+						if (row?.data) data[id] = row.data
+					}
+					return data
+				},
+				set: async (data: any) => {
+					const d = getDrizzleDb()
+					if (!d) return
+					const tasks: any[] = []
+					for (const category in data) {
+						const catData = data[category]
+						for (const key in catData) {
+							const value = catData[key]
+							const json = JSON.parse(JSON.stringify(value))
+							if (value) {
+								tasks.push(
+									getDrizzleDb()!.insert(schema.authKey).values({
+										session,
+										category,
+										key,
+										data: json,
+									}).onConflictDoUpdate({
+										target: [
+											schema.authKey.session,
+											schema.authKey.category,
+											schema.authKey.key,
+										],
+										set: { data: json },
+									}),
+								)
+							} else {
+								tasks.push(
+									getDrizzleDb()!.delete(schema.authKey).where(
+										and(
+											eq(schema.authKey.session, session),
+											eq(schema.authKey.category, category),
+											eq(schema.authKey.key, key),
+										),
+									),
+								)
+							}
+						}
+					}
+					await Promise.all(tasks)
+				},
+			},
+		},
+		saveCreds: async () => {
+			await writeCreds(creds)
+		},
+	}
+}
 
 async function initWhatsAppConnection() {
 	try {
-		const { state, saveCreds } = await useMultiFileAuthState('../conf/gen/auth')
+		const usePostgres = !!Deno.env.get('DATABASE_URL')
+		let state: any
 
-		console.log('[WA] Auth loaded, connecting...')
+		if (usePostgres) {
+			console.log('[WA] Using PostgreSQL auth')
+			const auth = await postgresAuthState('2')
+			state = auth
+		} else {
+			console.log('[WA] Using file-based auth')
+			const auth = await useMultiFileAuthState('../conf/gen/auth')
+			state = auth
+		}
 
 		waSock = makeWASocket({
 			auth: {
-				creds: state.creds,
-				keys: makeCacheableSignalKeyStore(state.keys, { level: 'silent' } as any),
+				creds: state.state.creds,
+				keys: makeCacheableSignalKeyStore(state.state.keys, { level: 'silent' } as any),
 			},
 			logger: { level: 'info' } as any,
 			markOnlineOnConnect: false,
@@ -34,7 +156,7 @@ async function initWhatsAppConnection() {
 			shouldSyncHistoryMessage: () => false,
 		})
 
-		waSock.ev.on('creds.update', saveCreds)
+		waSock.ev.on('creds.update', state.saveCreds)
 
 		waSock.ev.on('messages.upsert', async (raw: { messages: proto.IWebMessageInfo[] }) => {
 			await handleWAMessages(raw.messages)
@@ -45,10 +167,12 @@ async function initWhatsAppConnection() {
 		console.log('[WA] Connected!')
 	} catch (e) {
 		console.error('[WA] Connection failed:', e)
-		console.error('[WA] Make sure the WhatsApp bot is logged in and conf/gen/auth exists')
-		console.error(
-			'[WA] If using PostgreSQL auth, copy session from main bot or run: deno task reset',
-		)
+		console.error('[WA] Make sure the WhatsApp bot is logged in')
+		if (Deno.env.get('DATABASE_URL')) {
+			console.error('[WA] PostgreSQL auth is enabled - ensure DATABASE_URL is correct')
+		} else {
+			console.error('[WA] File-based auth - ensure conf/gen/auth exists')
+		}
 	}
 }
 
