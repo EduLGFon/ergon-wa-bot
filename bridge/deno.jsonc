@@ -13,8 +13,7 @@
 	},
 	"imports": {
 		"baileys": "npm:@whiskeysockets/baileys@7.0.0-rc14",
-		"grammy": "npm:grammy@1.36.0",
-		"better-sqlite3": "npm:better-sqlite3@11.0.0"
+		"grammy": "npm:grammy@1.36.0"
 	},
 	"compilerOptions": {
 		"module": "NodeNext",

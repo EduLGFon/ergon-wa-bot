@@ -19,11 +19,15 @@ WhatsApp chats, allowing you to read and reply to WhatsApp from Telegram.
 2. **Add bot to supergroup**: Make it an admin
 3. **Enable Topics**: In supergroup settings, enable Forum Topics
 4. **Grant permissions**: The bot needs `can_manage_topics` admin right
-5. **Get the supergroup ID**: Forward a message from the supergroup to @userinfobot to get the chat
-   ID, or use `/id` in the supergroup (see Commands below)
-6. **Set environment variables** in `.env`:
+5. **Send a message** in the supergroup (so updates are available)
+6. **Discover the supergroup ID**:
+   ```bash
+   cd bridge
+   deno run -A --env-file=.env mod.ts -- --find-id
+   ```
+7. **Set environment variables** in `.env`:
    - `TELEGRAM_BOT_TOKEN` — Your bot token from BotFather
-   - `TELEGRAM_SUPERGROUP_ID` — The supergroup chat ID
+   - `TELEGRAM_SUPERGROUP_ID` — The ID printed by `--find-id`
 
 ## Environment Variables
 
@@ -40,20 +44,21 @@ RATE_LIMIT_MS=1000
 ## Running
 
 ```bash
+# Discover supergroup ID first (if not known)
 cd bridge
-deno run -A --env=.env mod.ts
+deno run -A --env-file=.env mod.ts -- --find-id
+
+# Start the bridge
+deno run -A --env-file=.env mod.ts
 ```
 
 Or alongside the existing WhatsApp bot:
 
 ```bash
-# Start the WhatsApp bot (if not already running)
 cd /home/ed/p/test-ergon
 deno task start
-
-# Start the bridge
 cd bridge
-deno run -A --env=.env mod.ts
+deno run -A --env-file=.env mod.ts
 ```
 
 ## Commands
@@ -62,6 +67,14 @@ deno run -A --env=.env mod.ts
 - `/id` — Show the supergroup chat ID for `.env` configuration
 - `/topics` — List all active topic mappings
 - `/archive` — Archive a topic (preserves mapping/history)
+
+## CLI Flags
+
+- `--find-id` — Discover the supergroup ID by querying Telegram API updates. Requires the bot to be
+  added to the supergroup and a message to have been sent there.
+  ```bash
+  deno run -A --env-file=.env mod.ts -- --find-id
+  ```
 
 ## Known Limitations
 
