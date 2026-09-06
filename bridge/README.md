@@ -17,7 +17,9 @@ approach.
   Looks up `whatsapp_jid → topic`, auto-creates the forum topic on first sight, relays text + media
   via the proper `sendPhoto` / `sendVideo` / `sendVoice` / `sendDocument` / `sendSticker` calls.
 - **Telegram → WhatsApp** (`tg-to-wa.ts`): grammY handlers relay topic messages back out through
-  `bot.sock.sendMessage`. Telegram replies become WhatsApp quoted replies via the `reply_map` table.
+  `bot.sock.sendMessage`. Telegram replies become WhatsApp quoted replies via the `reply_map` table,
+  reactions become WA reacts, edits become protocol MESSAGE_EDITs, and `/new <phone> [name]` starts
+  a bridged chat from the Telegram side.
 - **Mapping store** (`db.ts`): SQLite at `conf/gen/bridge.db` —
   `mappings(whatsapp_jid ↔ telegram_topic_id, …)` + `reply_map`.
 - **Rate limiting** (`rate-limiter.ts`): one global FIFO queue with ~1s spacing, because all topics
@@ -55,11 +57,19 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
 - `/topics` — list active JID → topic mappings
 - `/archive` / `/close` — stop mirroring a topic (mapping kept)
 - `/reopen` — resume mirroring an archived topic
+- `/new <phone> [name]` — verify a number on WhatsApp and bridge it into a fresh topic
 
 ## Known Limitations
 
-- Own (`fromMe`) WhatsApp messages are not mirrored — relaying them would echo every Telegram reply
-  back into Telegram.
+- Own WhatsApp messages sent from the phone mirror with a `You:` label; TG→WA echoes are
+  deduplicated through `reply_map`.
+- Edits relay both ways (text in place, media via caption fallback); outside the platform edit
+  windows (TG 48h, WA ~15 min) they fail silently in logs.
+- Formatting (bold/italic/strike/code) converts both ways; underline/spoiler and named links degrade
+  gracefully.
+- Reactions are last-writer-wins per message (single bot identity on each side); custom-emoji and
+  paid TG reactions fall back to ❤️ on WhatsApp.
+- Group joins/leaves/admin changes post service lines; renames also rename the topic.
 - `General`-topic messages (no `message_thread_id`) are ignored except commands.
 - Captions over 1024 chars arrive as media + follow-up text message.
 - WhatsApp `view-once` media is relayed after unwrapping (privacy note: it becomes a normal Telegram

@@ -7,6 +7,7 @@ import { Bot } from 'grammy'
 import bot from '@plugin/bot.ts'
 import type { BridgeDB } from './db.ts'
 import type { RateLimiter } from './rate-limiter.ts'
+import { tgEntitiesToWa } from './format.ts'
 
 export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter): void {
 	const supergroupId = String(Deno.env.get('TELEGRAM_SUPERGROUP_ID'))
@@ -61,6 +62,50 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 		}
 	})
 
+	// Start a bridged chat from the Telegram side: `/new <phone> [name]`.
+	// Verifies the number on WhatsApp, creates the forum topic + mapping —
+	// the first message written in that topic relays like any other.
+	tg.command('new', async (ctx) => {
+		try {
+			if (String(ctx.chat.id) !== supergroupId) return
+			if (ctx.from?.is_bot) return
+			const args = ((ctx.match as string) || '').trim().split(/\s+/)
+			const digits = (args[0] || '').replace(/\D/g, '')
+			if (!digits || digits.length < 7 || digits.length > 15) {
+				await ctx.reply(
+					'Usage: /new <phone number> [name]\nExample: /new 15551234567 Alice',
+				)
+				return
+			}
+			const jid = `${digits}@s.whatsapp.net`
+			const existing = db.getByJid(jid)
+			if (existing && !existing.archived) {
+				await ctx.reply(
+					`+${digits} is already bridged in topic #${existing.telegram_topic_id}.`,
+				)
+				return
+			}
+			const lookup = await bot.sock.onWhatsApp(jid).catch((): {
+				jid: string
+				exists: boolean
+			}[] => [])
+			const info = lookup?.[0]
+			if (!info?.exists) {
+				await ctx.reply(`No WhatsApp account found for +${digits}.`)
+				return
+			}
+			const name = (args.slice(1).join(' ') || `+${digits}`).slice(0, 128)
+			const topic = await tg.api.createForumTopic(supergroupId, name)
+			db.getOrCreate(jid, topic.message_thread_id, name, '1:1')
+			console.log(`[BRIDGE] new topic #${topic.message_thread_id} for ${jid} (via /new)`)
+			await ctx.reply(
+				`Bridged +${digits} → topic #${topic.message_thread_id}. Write there to send.`,
+			)
+		} catch (e) {
+			console.error('[BRIDGE] TG→WA /new failed:', e)
+		}
+	})
+
 	// Telegram reaction → WhatsApp reaction. Like quotes, this resolves the
 	// reacted-to Telegram message through reply_map to the WA key it mirrors.
 	// Loop guard: our own WA→TG setMessageReaction echoes back as an update
@@ -99,7 +144,10 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 			const mapping = db.getByTopicId(topicId)
 			if (!mapping || mapping.archived) return
 
-			const text = (msg.text || msg.caption || '').trim()
+			// Telegram entities → WhatsApp markers (*bold*, _italic_, …) so
+			// formatting survives the crossing in both text and captions.
+			const rawText = msg.text || msg.caption || ''
+			const text = tgEntitiesToWa(rawText, msg.entities || msg.caption_entities).trim()
 			const media = await downloadTgMedia(tg, msg)
 			if (!text && !media && !msg.location && !msg.contact && !msg.poll) return
 
@@ -128,6 +176,40 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 			})
 		} catch (e) {
 			console.error('[BRIDGE] TG→WA relay failed:', e)
+		}
+	})
+
+	// Telegram edit → WhatsApp edit. Resolves the edited message through
+	// reply_map to the WA key it mirrors and sends a protocol MESSAGE_EDIT
+	// (text only — a media caption edit degrades to editing the caption text;
+	// failures, e.g. expired edit window, just log).
+	tg.on('edited_message', async (ctx) => {
+		try {
+			const msg: any = ctx.editedMessage
+			if (!msg) return
+			if (String(ctx.chat.id) !== supergroupId) return
+			if (msg.from?.is_bot) return
+			const topicId = msg.message_thread_id
+			if (!topicId) return
+
+			const mapping = db.getByTopicId(topicId)
+			if (!mapping || mapping.archived) return
+
+			const rawText = msg.text || msg.caption || ''
+			const text = tgEntitiesToWa(rawText, msg.entities || msg.caption_entities).trim()
+			if (!text) return
+
+			const entry = db.getReplyMap(msg.message_id)
+			if (!entry) return
+			const key = restoreWaKey(entry)
+			if (!key) return
+
+			await limiter.enqueue(async () => {
+				await bot.sock.sendMessage(mapping.whatsapp_jid, { text, edit: key })
+				db.updateLastActive(mapping.whatsapp_jid)
+			})
+		} catch (e) {
+			console.error('[BRIDGE] TG→WA edit failed:', e)
 		}
 	})
 }
