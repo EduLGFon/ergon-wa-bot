@@ -1,6 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
-import { existsSync } from 'node:fs'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 
 export interface MappingRow {
 	whatsapp_jid: string
@@ -10,6 +9,26 @@ export interface MappingRow {
 	created_at: number
 	last_active_at: number
 	archived: boolean
+}
+
+export interface ReplyMapRow {
+	tg_msg_id: number
+	wa_jid: string
+	wa_msg_id: string
+	wa_key_json: string
+	created_at: number
+}
+
+function toMapping(row: Record<string, unknown>): MappingRow {
+	return {
+		whatsapp_jid: row.whatsapp_jid as string,
+		telegram_topic_id: row.telegram_topic_id as number,
+		display_name: row.display_name as string,
+		chat_type: row.chat_type as '1:1' | 'group',
+		created_at: row.created_at as number,
+		last_active_at: row.last_active_at as number,
+		archived: Boolean(row.archived),
+	}
 }
 
 export class BridgeDB {
@@ -38,6 +57,17 @@ export class BridgeDB {
 		`)
 		this.db.exec('CREATE INDEX IF NOT EXISTS idx_telegram_topic ON mappings(telegram_topic_id)')
 		this.db.exec('CREATE INDEX IF NOT EXISTS idx_archived ON mappings(archived)')
+		// Maps a Telegram message back to the WhatsApp message it mirrors,
+		// so Telegram replies can become WhatsApp quoted replies.
+		this.db.exec(`
+			CREATE TABLE IF NOT EXISTS reply_map (
+				tg_msg_id INTEGER PRIMARY KEY,
+				wa_jid TEXT NOT NULL,
+				wa_msg_id TEXT NOT NULL,
+				wa_key_json TEXT NOT NULL DEFAULT '{}',
+				created_at INTEGER NOT NULL
+			)
+		`)
 	}
 
 	close(): void {
@@ -59,12 +89,8 @@ export class BridgeDB {
 				.prepare(
 					'UPDATE mappings SET last_active_at = ?, display_name = ? WHERE whatsapp_jid = ?',
 				)
-				.run(Date.now() as any, displayName as any, jid as any)
-			return {
-				...existing,
-				last_active_at: Date.now(),
-				display_name: displayName,
-			} as unknown as MappingRow
+				.run(Date.now(), displayName, jid)
+			return { ...toMapping(existing), last_active_at: Date.now(), display_name: displayName }
 		}
 
 		const row: MappingRow = {
@@ -82,13 +108,13 @@ export class BridgeDB {
 				'INSERT INTO mappings (whatsapp_jid, telegram_topic_id, display_name, chat_type, created_at, last_active_at, archived) VALUES (?, ?, ?, ?, ?, ?, ?)',
 			)
 			.run(
-				row.whatsapp_jid as any,
-				row.telegram_topic_id as any,
-				row.display_name as any,
-				row.chat_type as any,
-				row.created_at as any,
-				row.last_active_at as any,
-				row.archived as any,
+				row.whatsapp_jid,
+				row.telegram_topic_id,
+				row.display_name,
+				row.chat_type,
+				row.created_at,
+				row.last_active_at,
+				0,
 			)
 		return row
 	}
@@ -98,7 +124,7 @@ export class BridgeDB {
 			| Record<string, unknown>
 			| undefined
 		if (!row) return undefined
-		return row as unknown as MappingRow
+		return toMapping(row)
 	}
 
 	getByTopicId(topicId: number): MappingRow | undefined {
@@ -106,34 +132,58 @@ export class BridgeDB {
 			'SELECT * FROM mappings WHERE telegram_topic_id = ? AND archived = 0',
 		).get(topicId) as Record<string, unknown> | undefined
 		if (!row) return undefined
-		return row as unknown as MappingRow
+		return toMapping(row)
 	}
 
 	getAllActive(): MappingRow[] {
-		return this.db.prepare('SELECT * FROM mappings WHERE archived = 0')
-			.all() as unknown as MappingRow[]
+		return (this.db.prepare('SELECT * FROM mappings WHERE archived = 0').all() as Record<
+			string,
+			unknown
+		>[]).map(toMapping)
 	}
 
 	getAll(): MappingRow[] {
-		return this.db.prepare('SELECT * FROM mappings').all() as unknown as MappingRow[]
+		return (this.db.prepare('SELECT * FROM mappings').all() as Record<string, unknown>[]).map(
+			toMapping,
+		)
 	}
 
 	archive(jid: string): void {
-		this.db.prepare('UPDATE mappings SET archived = 1 WHERE whatsapp_jid = ?').run(jid as any)
+		this.db.prepare('UPDATE mappings SET archived = 1 WHERE whatsapp_jid = ?').run(jid)
 	}
 
 	unarchive(jid: string): void {
-		this.db.prepare('UPDATE mappings SET archived = 0 WHERE whatsapp_jid = ?').run(jid as any)
+		this.db.prepare('UPDATE mappings SET archived = 0 WHERE whatsapp_jid = ?').run(jid)
 	}
 
 	delete(jid: string): void {
-		this.db.prepare('DELETE FROM mappings WHERE whatsapp_jid = ?').run(jid as any)
+		this.db.prepare('DELETE FROM mappings WHERE whatsapp_jid = ?').run(jid)
 	}
 
 	updateLastActive(jid: string): void {
 		this.db.prepare('UPDATE mappings SET last_active_at = ? WHERE whatsapp_jid = ?').run(
-			Date.now() as any,
-			jid as any,
+			Date.now(),
+			jid,
 		)
+	}
+
+	saveReplyMap(tgMsgId: number, waJid: string, waMsgId: string, waKeyJson: string): void {
+		this.db
+			.prepare(
+				'INSERT OR REPLACE INTO reply_map (tg_msg_id, wa_jid, wa_msg_id, wa_key_json, created_at) VALUES (?, ?, ?, ?, ?)',
+			)
+			.run(tgMsgId, waJid, waMsgId, waKeyJson, Date.now())
+		// keep the table small: only recent messages can be replied to anyway
+		this.db.prepare(
+			'DELETE FROM reply_map WHERE created_at < ?',
+		).run(Date.now() - 7 * 24 * 60 * 60 * 1000)
+	}
+
+	getReplyMap(tgMsgId: number): ReplyMapRow | undefined {
+		const row = this.db.prepare('SELECT * FROM reply_map WHERE tg_msg_id = ?').get(tgMsgId) as
+			| Record<string, unknown>
+			| undefined
+		if (!row) return undefined
+		return row as unknown as ReplyMapRow
 	}
 }

@@ -14,9 +14,14 @@
 	"imports": {
 		"baileys": "npm:@whiskeysockets/baileys@7.0.0-rc14",
 		"grammy": "npm:grammy@1.36.0",
-		"drizzle-orm": "npm:drizzle-orm@0.45.2",
-		"postgres": "npm:postgres@3.4.9",
-		"@std/fs": "jsr:@std/fs@1.0.0"
+		"@class/": "../class/",
+		"@cmd/": "../cmd/",
+		"@conf/": "../conf/",
+		"@event/": "../event/",
+		"@plugin/": "../plugin/",
+		"@util/": "../util/",
+		"@db": "../plugin/db.ts",
+		"@wa": "../wa.ts"
 	},
 	"compilerOptions": {
 		"module": "NodeNext",

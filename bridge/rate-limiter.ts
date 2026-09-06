@@ -1,54 +1,44 @@
+// Outgoing queue: Telegram allows ~1 msg/sec into the same chat, and all
+// forum topics share the same underlying supergroup chat, so we use ONE
+// global FIFO queue with `limitMs` spacing between sends (not per-topic).
 export class RateLimiter {
 	private limitMs: number
-	private queues: Map<number, Array<() => Promise<void>>> = new Map()
-	private timers: Map<number, ReturnType<typeof setTimeout>> = new Map()
+	private queue: Array<{ fn: () => Promise<unknown>; resolve: (v: unknown) => void }> = []
+	private running = false
+	private lastRun = 0
 
 	constructor(limitMs: number = 1000) {
 		this.limitMs = limitMs
 	}
 
-	enqueue(fn: () => Promise<void>, topicId?: number): void {
-		const key = topicId || 0
-		if (!this.queues.has(key)) {
-			this.queues.set(key, [])
-		}
-		this.queues.get(key)!.push(fn)
-		this.processQueue(key)
+	enqueue<T>(fn: () => Promise<T>): Promise<T> {
+		return new Promise<T>((resolve) => {
+			this.queue.push({
+				fn: fn as () => Promise<unknown>,
+				resolve: resolve as (v: unknown) => void,
+			})
+			void this.drain()
+		})
 	}
 
-	private processQueue(topicId: number): void {
-		if (this.timers.has(topicId)) return
-
-		const queue = this.queues.get(topicId)
-		if (!queue || queue.length === 0) return
-
-		const timer = setTimeout(async () => {
-			const fn = queue.shift()
-			if (fn) {
-				await fn().catch((e) => console.error('RateLimiter error:', e))
-				if (queue.length > 0) {
-					this.processQueue(topicId)
-				} else {
-					this.timers.delete(topicId)
-					this.queues.delete(topicId)
+	private async drain(): Promise<void> {
+		if (this.running) return
+		this.running = true
+		try {
+			while (this.queue.length > 0) {
+				const wait = this.limitMs - (Date.now() - this.lastRun)
+				if (wait > 0) await new Promise((r) => setTimeout(r, wait))
+				const item = this.queue.shift()!
+				try {
+					item.resolve(await item.fn())
+				} catch (e) {
+					console.error('[BRIDGE] queued send failed:', e)
+					item.resolve(undefined)
 				}
-			} else {
-				this.timers.delete(topicId)
-				this.queues.delete(topicId)
+				this.lastRun = Date.now()
 			}
-		}, this.limitMs)
-
-		this.timers.set(topicId, timer)
-	}
-
-	async flush(topicId?: number): Promise<void> {
-		const key = topicId || 0
-		while (this.queues.get(key)?.length) {
-			await new Promise((r) => setTimeout(r, this.limitMs))
-			const fn = this.queues.get(key)?.shift()
-			if (fn) await fn().catch(() => {})
+		} finally {
+			this.running = false
 		}
-		this.timers.delete(key)
-		this.queues.delete(key)
 	}
 }

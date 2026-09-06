@@ -1,335 +1,280 @@
-import {
-	Browsers,
-	BufferJSON,
-	downloadMediaMessage,
-	initAuthCreds,
-	makeWASocket,
-	type proto,
-	useMultiFileAuthState,
-} from 'baileys'
-import { makeCacheableSignalKeyStore } from 'baileys'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-import { and, eq, inArray } from 'drizzle-orm'
-import * as schema from '../conf/schema.ts'
-import { BridgeDB, type MappingRow } from './db.ts'
-import { RateLimiter } from './rate-limiter.ts'
-import { Bot } from 'grammy'
+// WhatsApp → Telegram relay.
+//
+// IMPORTANT: this module does NOT open its own WhatsApp connection. A second
+// Baileys socket sharing the same auth state fights the main bot for the
+// session (stream conflict / repeated logouts). Instead we piggyback on the
+// already-running bot singleton from @plugin/bot.ts.
+//
+// Call `attachWaRelay()` AFTER `loadEvents()` in wa.ts — loadEvents() calls
+// removeAllListeners() per event, so attaching earlier would wipe our hook.
+import { downloadMediaMessage, type proto } from 'baileys'
+import { Bot, InputFile } from 'grammy'
+import { findKey } from '@util/functions.ts'
+import { logger } from '@util/proto.ts'
+import bot from '@plugin/bot.ts'
+import type { BridgeDB } from './db.ts'
+import type { RateLimiter } from './rate-limiter.ts'
 
-export let waSock: ReturnType<typeof makeWASocket> | null = null
-let botInstance: Bot | null = null
-let dbInstance: BridgeDB | null = null
-let rateLimiterInstance: RateLimiter | null = null
-let drizzleDb: ReturnType<typeof drizzle> | undefined
+let tg: Bot | null = null
+let db: BridgeDB | null = null
+let limiter: RateLimiter | null = null
+let supergroupId: string | number = ''
+const groupNameCache = new Map<string, string>()
 
-function getDrizzleDb() {
-	if (drizzleDb) return drizzleDb
-	const connectionString = Deno.env.get('DATABASE_URL')
-	if (connectionString) {
-		const sql = postgres(connectionString, { max: 5 })
-		drizzleDb = drizzle(sql, { schema })
-	}
-	return drizzleDb
-}
+export function attachWaRelay(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateLimiter): void {
+	tg = tgBot
+	db = bridgeDb
+	limiter = rateLimiter
+	supergroupId = Deno.env.get('TELEGRAM_SUPERGROUP_ID')!
 
-async function postgresAuthState(session: string) {
-	const writeCreds = async (data: any) => {
-		const json = JSON.parse(JSON.stringify(data, BufferJSON.replacer))
-		const d = getDrizzleDb()
-		if (d) {
-			await d.insert(schema.authCreds).values({ session, data: json }).onConflictDoUpdate({
-				target: schema.authCreds.session,
-				set: { data: json },
-			})
-		}
-	}
-
-	const readCreds = async () => {
-		const d = getDrizzleDb()
-		if (!d) return null
-		const rows = await d.select().from(schema.authCreds).where(
-			eq(schema.authCreds.session, session),
-		)
-		return rows?.[0]?.data ? JSON.parse(JSON.stringify(rows[0].data, BufferJSON.reviver)) : null
-	}
-
-	let creds = await readCreds()
-	if (!creds) {
-		creds = initAuthCreds()
-		await writeCreds(creds)
-	}
-
-	return {
-		state: {
-			creds,
-			keys: {
-				get: async (type: string, ids: string[]) => {
-					const d = getDrizzleDb()
-					if (!d) return {}
-					const rows = await d.select().from(schema.authKey).where(
-						and(
-							eq(schema.authKey.session, session),
-							eq(schema.authKey.category, type),
-							inArray(schema.authKey.key, ids),
-						),
-					)
-					const data: Record<string, any> = {}
-					for (const id of ids) {
-						const row = rows.find((r: any) => r.key === id && r.category === type)
-						if (row?.data) data[id] = row.data
-					}
-					return data
-				},
-				set: async (data: any) => {
-					const d = getDrizzleDb()
-					if (!d) return
-					const tasks: any[] = []
-					for (const category in data) {
-						const catData = data[category]
-						for (const key in catData) {
-							const value = catData[key]
-							const json = JSON.parse(JSON.stringify(value))
-							if (value) {
-								tasks.push(
-									getDrizzleDb()!.insert(schema.authKey).values({
-										session,
-										category,
-										key,
-										data: json,
-									}).onConflictDoUpdate({
-										target: [
-											schema.authKey.session,
-											schema.authKey.category,
-											schema.authKey.key,
-										],
-										set: { data: json },
-									}),
-								)
-							} else {
-								tasks.push(
-									getDrizzleDb()!.delete(schema.authKey).where(
-										and(
-											eq(schema.authKey.session, session),
-											eq(schema.authKey.category, category),
-											eq(schema.authKey.key, key),
-										),
-									),
-								)
-							}
-						}
-					}
-					await Promise.all(tasks)
-				},
-			},
-		},
-		saveCreds: async () => {
-			await writeCreds(creds)
-		},
-	}
-}
-
-async function initWhatsAppConnection() {
-	try {
-		const usePostgres = !!Deno.env.get('DATABASE_URL')
-		let state: any
-
-		if (usePostgres) {
-			console.log('[WA] Using PostgreSQL auth')
-			const auth = await postgresAuthState('2')
-			state = auth
-		} else {
-			console.log('[WA] Using file-based auth')
-			const auth = await useMultiFileAuthState('../conf/gen/auth')
-			state = auth
-		}
-
-		waSock = makeWASocket({
-			auth: {
-				creds: state.state.creds,
-				keys: makeCacheableSignalKeyStore(state.state.keys, { level: 'silent' } as any),
-			},
-			logger: { level: 'info' } as any,
-			markOnlineOnConnect: false,
-			browser: Browsers.macOS('Desktop'),
-			syncFullHistory: false,
-			version: [2, 3000, 1044006379],
-			shouldSyncHistoryMessage: () => false,
-		})
-
-		waSock.ev.on('creds.update', state.saveCreds)
-
-		waSock.ev.on('messages.upsert', async (raw: { messages: proto.IWebMessageInfo[] }) => {
+	// Additional listener on the SHARED socket — the core bot handler stays untouched.
+	bot.sock.ev.on('messages.upsert', async (raw: { messages: proto.IWebMessageInfo[] }) => {
+		try {
 			await handleWAMessages(raw.messages)
-		})
-
-		console.log('[WA] Connecting to WhatsApp...')
-		await (waSock as any).connect()
-		console.log('[WA] Connected!')
-	} catch (e) {
-		console.error('[WA] Connection failed:', e)
-		console.error('[WA] Make sure the WhatsApp bot is logged in')
-		if (Deno.env.get('DATABASE_URL')) {
-			console.error('[WA] PostgreSQL auth is enabled - ensure DATABASE_URL is correct')
-		} else {
-			console.error('[WA] File-based auth - ensure conf/gen/auth exists')
+		} catch (e) {
+			console.error('[BRIDGE] WA→TG handler failed:', e)
 		}
-	}
+	})
+	console.log('[BRIDGE] WA→TG relay attached to the shared WhatsApp socket')
 }
 
 async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
-	if (!dbInstance || !rateLimiterInstance || !botInstance) return
+	if (!db || !limiter || !tg) return
 
 	for (const m of messages) {
-		if (!m?.message || !m.key || m.key.fromMe) continue
+		try {
+			if (!m?.message || !m.key) continue
+			// Skip our own messages: TG→WA sends re-emit here with fromMe=true,
+			// relaying them would echo every Telegram reply back to Telegram.
+			if (m.key.fromMe) continue
+			// Skip protocol traffic (deletes, history sync, …)
+			if (findKey(m.message, 'protocolMessage')) continue
 
-		const jid = m.key.remoteJid!
-		if (!jid) continue
-		const isGroup = jid.includes('@g.us')
-		const participant = m.key.participant || jid
-		const displayName = m.pushName || participant.split(':')[0] || ''
-		const chatType: '1:1' | 'group' = isGroup ? 'group' : '1:1'
+			const jid = m.key.remoteJid
+			if (!jid || jid === 'status@broadcast') continue
+			const isGroup = jid.endsWith('@g.us')
+			const chatType: '1:1' | 'group' = isGroup ? 'group' : '1:1'
 
-		let mapping = dbInstance.getByJid(jid)
+			const displayName = await resolveChatName(jid, m.pushName, isGroup)
+			const senderName = isGroup
+				? (m.pushName || phoneOf(m.key.participant) || 'unknown')
+				: displayName
 
-		if (!mapping || mapping.archived) {
-			const topicId = await createForumTopic(displayName, isGroup)
-			mapping = dbInstance.getOrCreate(jid, topicId, displayName, chatType)
-		} else {
-			dbInstance.updateLastActive(jid)
+			let mapping = db.getByJid(jid)
+			if (!mapping || mapping.archived) {
+				const topicId = await createForumTopic(displayName, isGroup)
+				mapping = db.getOrCreate(jid, topicId, displayName, chatType)
+				console.log(`[BRIDGE] new topic #${topicId} for ${jid} (${displayName})`)
+			} else {
+				if (mapping.display_name !== displayName) {
+					mapping = db.getOrCreate(jid, mapping.telegram_topic_id, displayName, chatType)
+				} else {
+					db.updateLastActive(jid)
+				}
+			}
+			const topicId = mapping.telegram_topic_id
+
+			const text = getMsgText(m.message)
+			const media = await downloadWaMedia(m)
+
+			if (!text && !media) continue
+
+			const label = isGroup ? `${senderName}: ` : ''
+			await limiter.enqueue(() => sendToTopic(topicId, label, text, media, jid, m))
+		} catch (e) {
+			console.error('[BRIDGE] failed to relay one WA message:', e)
 		}
-
-		const text = getMsgText(m.message)
-		const media = await downloadMedia(m)
-
-		if (!text && !media) continue
-
-		await rateLimiterInstance.enqueue(async () => {
-			await sendToTelegram(mapping!, text, media, isGroup)
-		}, mapping!.telegram_topic_id)
 	}
 }
 
-async function createForumTopic(displayName: string, isGroup: boolean): Promise<number> {
-	if (!botInstance) throw new Error('Bot not initialized')
-	const name = isGroup ? displayName : `WA: ${displayName || 'Unknown'}`
-	const tgChatId = Deno.env.get('TELEGRAM_SUPERGROUP_ID')!
-	const result = await botInstance.api.createForumTopic(tgChatId, name.slice(0, 255))
-	return result.message_thread_id
-}
-
-async function sendToTelegram(
-	mapping: MappingRow,
-	text: string,
-	media: { type: string; buffer: Uint8Array } | null,
+async function resolveChatName(
+	jid: string,
+	pushName: string | undefined | null,
 	isGroup: boolean,
-) {
-	if (!botInstance) return
-
-	let content: any = {}
-
-	if (media) {
-		content = mediaToTelegramContent(media)
+): Promise<string> {
+	if (isGroup) {
+		const cached = groupNameCache.get(jid)
+		if (cached) return cached
+		try {
+			const meta = await bot.sock.groupMetadata(jid)
+			if (meta?.subject) {
+				groupNameCache.set(jid, meta.subject)
+				return meta.subject
+			}
+		} catch {
+			// fall through to pushName/phone
+		}
+		const fallback = pushName || jid.split('@')[0]
+		groupNameCache.set(jid, fallback)
+		return fallback
 	}
-
-	if (text) {
-		content = { ...content, text: isGroup ? `*${mapping.display_name}*: ${text}` : text }
-	}
-
-	if (Object.keys(content).length === 0) return
-
-	await botInstance.api.sendMessage(Deno.env.get('TELEGRAM_SUPERGROUP_ID')!, content, {
-		message_thread_id: mapping.telegram_topic_id,
-	})
+	return pushName || phoneOf(jid) || jid.split('@')[0]
 }
 
-function mediaToTelegramContent(media: { type: string; buffer: Uint8Array }): any {
-	switch (media.type) {
+function phoneOf(jid: string | undefined | null): string {
+	if (!jid) return ''
+	const user = jid.split('@')[0].split(':')[0]
+	return user ? `+${user}` : ''
+}
+
+async function createForumTopic(displayName: string, _isGroup: boolean): Promise<number> {
+	if (!tg) throw new Error('Telegram bot not initialized')
+	const name = (displayName || 'Unknown').slice(0, 128) || 'Unknown'
+	const topic = await tg.api.createForumTopic(supergroupId, name)
+	return topic.message_thread_id
+}
+
+async function sendToTopic(
+	topicId: number,
+	label: string,
+	text: string,
+	media:
+		| { kind: string; buffer: Uint8Array; mime?: string; fileName?: string; ptt?: boolean }
+		| null,
+	waJid: string,
+	waMsg: proto.IWebMessageInfo,
+): Promise<void> {
+	if (!tg || !db) return
+	const fullText = `${label}${text}`
+
+	if (!media) {
+		const sent = await tg.api.sendMessage(supergroupId, fullText, {
+			message_thread_id: topicId,
+		})
+		db.saveReplyMap(
+			sent.message_id,
+			waJid,
+			waMsg.key?.id || '',
+			JSON.stringify(waMsg.key || {}),
+		)
+		return
+	}
+
+	const caption = fullText.length > 1024 ? undefined : (fullText || undefined)
+	const file = new InputFile(media.buffer, media.fileName || `file.${extOf(media)}`)
+	const thread = { message_thread_id: topicId } as const
+	let sent: { message_id: number }
+
+	switch (media.kind) {
 		case 'image':
-			return { photo: media.buffer }
+			sent = await tg.api.sendPhoto(supergroupId, file, { ...thread, caption })
+			break
 		case 'video':
-			return { video: media.buffer }
-		case 'audio':
-			return { audio: media.buffer }
-		case 'sticker':
-			return { sticker: media.buffer }
-		case 'document':
-			return { document: media.buffer }
+			sent = await tg.api.sendVideo(supergroupId, file, { ...thread, caption })
+			break
 		case 'voice':
-			return { voice: media.buffer }
+			sent = await tg.api.sendVoice(supergroupId, file, { ...thread, caption })
+			break
+		case 'audio':
+			sent = await tg.api.sendAudio(supergroupId, file, { ...thread, caption })
+			break
+		case 'sticker':
+			sent = await tg.api.sendSticker(supergroupId, file, { message_thread_id: topicId })
+			break
 		default:
-			return { document: media.buffer }
+			sent = await tg.api.sendDocument(supergroupId, file, { ...thread, caption })
+			break
+	}
+	db.saveReplyMap(sent.message_id, waJid, waMsg.key?.id || '', JSON.stringify(waMsg.key || {}))
+
+	// Captions are capped at 1024 chars — send the overflow as a follow-up.
+	if (caption === undefined && fullText) {
+		await tg.api.sendMessage(supergroupId, fullText, { message_thread_id: topicId })
 	}
 }
 
-function getMsgText(message: proto.IMessage | undefined): string {
-	if (!message) return ''
+function extOf(media: { kind: string; mime?: string }): string {
+	if (media.mime?.includes('/')) {
+		const ext = media.mime.split('/')[1].split(';')[0].split('+')[0]
+		if (ext && ext.length <= 5) return ext
+	}
+	switch (media.kind) {
+		case 'image':
+			return 'jpg'
+		case 'video':
+			return 'mp4'
+		case 'voice':
+		case 'audio':
+			return 'ogg'
+		case 'sticker':
+			return 'webp'
+		default:
+			return 'bin'
+	}
+}
+
+function getMsgText(message: proto.IMessage): string {
 	for (const key of ['conversation', 'text', 'caption']) {
-		const msg = (message as any)[key]
-		if (msg) return String(msg).trim()
+		const res = findKey(message, key)
+		if (res) return String(res).trim()
 	}
 	return ''
 }
 
-async function downloadMedia(
-	m: proto.IWebMessageInfo,
-): Promise<{ type: string; buffer: Uint8Array } | null> {
+interface WaMedia {
+	kind: 'image' | 'video' | 'voice' | 'audio' | 'sticker' | 'document'
+	buffer: Uint8Array
+	mime?: string
+	fileName?: string
+	ptt?: boolean
+}
+
+async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaMedia | null> {
 	try {
-		if (!m.message || !m.key) return null
-		const wamessage = m.message as any
-		const types = [
-			'conversation',
-			'text',
-			'extendedTextMessage',
-			'imageMessage',
-			'videoMessage',
-			'audioMessage',
-			'stickerMessage',
-			'documentMessage',
-			'ptvMessage',
-			'viewOnceMessageV2',
-		]
-		for (const t of types) {
-			const segment = (wamessage as any)[t]
-			if (segment && (segment as any).url) {
-				const buffer = await downloadMediaMessage(wamessage, 'buffer', {}, {
-					reuploadRequest: (waSock as any).updateMediaMessage,
-					logger: { level: 'silent' } as any,
-				})
-				if (buffer) {
-					let type = 'document'
-					if (t.includes('image')) type = 'image'
-					else if (t.includes('video')) type = 'video'
-					else if (t.includes('audio')) type = 'audio'
-					else if (t.includes('sticker')) type = 'sticker'
-					else if (t.includes('document')) type = 'document'
-					return { type, buffer: new Uint8Array(buffer) }
-				}
-			}
+		const raw = unwrap(m.message)
+		if (!raw) return null
+
+		let kind: WaMedia['kind'] | null = null
+		let node: any = null
+		if (raw.imageMessage) {
+			kind = 'image'
+			node = raw.imageMessage
+		} else if (raw.videoMessage) {
+			kind = 'video'
+			node = raw.videoMessage
+		} else if (raw.audioMessage) {
+			kind = raw.audioMessage.ptt ? 'voice' : 'audio'
+			node = raw.audioMessage
+		} else if (raw.stickerMessage) {
+			kind = 'sticker'
+			node = raw.stickerMessage
+		} else if (raw.documentMessage) {
+			kind = 'document'
+			node = raw.documentMessage
+		} else {
+			return null
+		}
+		if (!node?.url && !node?.directPath) return null
+
+		const buffer = await downloadMediaMessage(
+			m as any,
+			'buffer',
+			{},
+			{ reuploadRequest: bot.sock.updateMediaMessage, logger },
+		).catch(() => null) as Buffer | Uint8Array | null
+		if (!buffer) return null
+
+		return {
+			kind,
+			buffer: new Uint8Array(buffer),
+			mime: node.mimetype,
+			fileName: node.fileName,
+			ptt: node.ptt,
 		}
 	} catch {
-		// ignore media download errors
+		return null
 	}
-	return null
 }
 
-export async function start(
-	db: BridgeDB,
-	rateLimiter: RateLimiter,
-	bot: Bot,
-) {
-	dbInstance = db
-	rateLimiterInstance = rateLimiter
-	botInstance = bot
-
-	await initWhatsAppConnection()
-}
-
-export function stop() {
-	if (waSock) {
-		;(waSock as any).ws.close()
-		waSock = null
+// Peel view-once / ephemeral wrappers so media underneath is reachable.
+function unwrap(message: proto.IMessage | undefined | null): any {
+	let node: any = message
+	for (let i = 0; i < 4 && node; i++) {
+		if (node.viewOnceMessageV2) node = node.viewOnceMessageV2.message
+		else if (node.viewOnceMessage) node = node.viewOnceMessage.message
+		else if (node.ephemeralMessage) node = node.ephemeralMessage.message
+		else if (node.documentWithCaptionMessage) node = node.documentWithCaptionMessage.message
+		else break
 	}
-	dbInstance = null
-	rateLimiterInstance = null
-	botInstance = null
+	return node
 }

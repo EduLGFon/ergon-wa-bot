@@ -1,135 +1,249 @@
+// Telegram → WhatsApp relay.
+//
+// Sends through the SHARED WhatsApp socket (bot.sock singleton), so there is
+// only ever one WhatsApp connection. Text, captions, media and Telegram
+// replies (→ WhatsApp quoted replies) are supported.
 import { Bot } from 'grammy'
-import { waSock } from './wa-to-tg.ts'
-import { BridgeDB, type MappingRow } from './db.ts'
-import { RateLimiter } from './rate-limiter.ts'
+import bot from '@plugin/bot.ts'
+import type { BridgeDB } from './db.ts'
+import type { RateLimiter } from './rate-limiter.ts'
 
-export function startTelegramBot(db: BridgeDB, rateLimiter: RateLimiter): Bot {
-	const token = Deno.env.get('TELEGRAM_BOT_TOKEN')!
-	const bot = new Bot(token)
+export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter): void {
+	const supergroupId = String(Deno.env.get('TELEGRAM_SUPERGROUP_ID'))
 
-	bot.command('start', async (ctx) => {
-		await ctx.reply('🤖 WhatsApp Bridge Bot is active!')
+	tg.command('start', async (ctx) => {
+		await ctx.reply('WhatsApp bridge is active. Each WhatsApp chat mirrors to its own topic.')
 	})
 
-	bot.command('id', async (ctx) => {
-		const chatId = ctx.chat.id
+	tg.command('id', async (ctx) => {
 		await ctx.reply(
-			`📍 Supergroup ID: \`${chatId}\`\n\nCopy this and set it as TELEGRAM_SUPERGROUP_ID in your .env file.`,
+			`Supergroup ID: \`${ctx.chat.id}\`\nSet it as TELEGRAM_SUPERGROUP_ID in conf/.env.`,
+			{ parse_mode: 'Markdown' },
 		)
 	})
 
-	bot.command('topics', async (ctx) => {
+	tg.command('topics', async (ctx) => {
 		const topics = db.getAllActive()
 		const msg = topics.map((t) =>
-			`📱 ${t.display_name} (${t.whatsapp_jid}) → Topic #${t.telegram_topic_id}`
+			`${t.display_name} (${t.whatsapp_jid}) -> topic #${t.telegram_topic_id}`
 		).join('\n')
 		await ctx.reply(msg || 'No active topics yet.')
 	})
 
-	bot.command('archive', async (ctx) => {
-		const topicId = ctx.msg.message_thread_id
-		if (topicId) {
-			const mapping = db.getByTopicId(topicId)
-			if (mapping) {
-				db.archive(mapping.whatsapp_jid)
-				await ctx.reply(`Archived bridge for ${mapping.display_name}`)
-			}
-		}
-	})
-
-	bot.command('close', async (ctx) => {
-		const topicId = ctx.msg.message_thread_id
-		if (topicId) {
-			const mapping = db.getByTopicId(topicId)
-			if (mapping) {
-				db.archive(mapping.whatsapp_jid)
-				await ctx.reply(`Closed bridge for ${mapping.display_name} (mapping preserved)`)
-			}
-		}
-	})
-
-	bot.on('message', async (ctx) => {
-		const topicId = ctx.msg.message_thread_id
+	tg.command('archive', async (ctx) => {
+		const topicId = (ctx.msg as any)?.message_thread_id
 		if (!topicId) return
-
 		const mapping = db.getByTopicId(topicId)
-		if (!mapping || mapping.archived) return
-
-		const text = ctx.msg.text || ''
-		const media = await getTelegramMedia(ctx)
-
-		if (!text && !media) return
-
-		await rateLimiter.enqueue(async () => {
-			await relayToWhatsApp(mapping, text, media)
-		}, topicId)
+		if (mapping) {
+			db.archive(mapping.whatsapp_jid)
+			await ctx.reply(`Archived bridge for ${mapping.display_name} (mapping kept)`)
+		}
 	})
 
-	return bot
+	// Alias kept for backwards compatibility.
+	tg.command('close', async (ctx) => {
+		const topicId = (ctx.msg as any)?.message_thread_id
+		if (!topicId) return
+		const mapping = db.getByTopicId(topicId)
+		if (mapping) {
+			db.archive(mapping.whatsapp_jid)
+			await ctx.reply(`Closed bridge for ${mapping.display_name} (mapping kept)`)
+		}
+	})
+
+	tg.command('reopen', async (ctx) => {
+		const topicId = (ctx.msg as any)?.message_thread_id
+		if (!topicId) return
+		const all = db.getAll().find((t) => t.telegram_topic_id === topicId)
+		if (all) {
+			db.unarchive(all.whatsapp_jid)
+			await ctx.reply(`Reopened bridge for ${all.display_name}`)
+		}
+	})
+
+	tg.on('message', async (ctx) => {
+		try {
+			const msg: any = ctx.msg
+			// Only bridge the configured supergroup; ignore DMs/other groups.
+			if (String(ctx.chat.id) !== supergroupId) return
+			// Ignore the bot's own messages (loops) and non-topic (General) chatter.
+			if (msg.from?.is_bot) return
+			const topicId = msg.message_thread_id
+			if (!topicId) return
+
+			const mapping = db.getByTopicId(topicId)
+			if (!mapping || mapping.archived) return
+
+			const text = (msg.text || msg.caption || '').trim()
+			const media = await downloadTgMedia(tg, msg)
+			if (!text && !media && !msg.location && !msg.contact && !msg.poll) return
+
+			const quoted = buildQuoted(msg, mapping.whatsapp_jid, db)
+			const waContent = buildWaContent(text, media, msg)
+			if (!waContent) return
+
+			await limiter.enqueue(async () => {
+				const sent = await bot.sock.sendMessage(
+					mapping.whatsapp_jid,
+					waContent,
+					quoted ? { quoted } : undefined,
+				)
+				if (sent?.key?.id) {
+					db.saveReplyMap(msg.message_id, mapping.whatsapp_jid, sent.key.id, '{}')
+				}
+				db.updateLastActive(mapping.whatsapp_jid)
+			})
+		} catch (e) {
+			console.error('[BRIDGE] TG→WA relay failed:', e)
+		}
+	})
 }
 
-async function relayToWhatsApp(mapping: MappingRow, text: string, media: any) {
-	if (!waSock) return
-	let content: any = text ? { text } : undefined
-	if (media && media.buffer) {
-		content = mediaToWaContent(media)
+function buildWaContent(
+	text: string,
+	media: { kind: string; buffer: Uint8Array; fileName?: string; mime?: string } | null,
+	msg: any,
+): any {
+	if (msg.location) {
+		const { latitude, longitude } = msg.location
+		return {
+			location: { degreesLatitude: latitude, degreesLongitude: longitude },
+		}
 	}
-	await waSock.sendMessage(mapping.whatsapp_jid, content)
-}
+	if (msg.contact) {
+		const c = msg.contact
+		return {
+			text: `Contact: ${c.first_name || ''} ${c.last_name || ''} ${c.phone_number || ''}`
+				.trim(),
+		}
+	}
+	if (msg.poll) {
+		const p = msg.poll
+		const opts = (p.options || []).map((o: any) => `- ${o.text}`).join('\n')
+		return { text: `${text ? text + '\n' : ''}Poll: ${p.question}\n${opts}`.trim() }
+	}
+	if (!media) return text ? { text } : null
 
-function mediaToWaContent(media: { type: string; buffer: Uint8Array }): any {
-	switch (media.type) {
+	switch (media.kind) {
 		case 'image':
-			return { image: media.buffer }
+			return { image: media.buffer, caption: text || undefined }
 		case 'video':
-			return { video: media.buffer }
+			return { video: media.buffer, caption: text || undefined }
+		case 'voice':
+			return { audio: media.buffer, ptt: true, mimetype: 'audio/ogg; codecs=opus' }
 		case 'audio':
-			return { audio: media.buffer }
+			return { audio: media.buffer, mimetype: media.mime || 'audio/mpeg' }
 		case 'sticker':
 			return { sticker: media.buffer }
-		case 'document':
-			return { document: media.buffer }
-		case 'voice':
-			return { audio: media.buffer, ptt: true }
 		default:
-			return { document: media.buffer }
+			return {
+				document: media.buffer,
+				fileName: media.fileName || 'file',
+				mimetype: media.mime || 'application/octet-stream',
+				caption: text || undefined,
+			}
 	}
 }
 
-async function getTelegramMedia(ctx: any): Promise<{ type: string; buffer: Uint8Array } | null> {
+// Telegram reply → WhatsApp quoted reply. The reply_map tells us which WA
+// message the replied-to Telegram message mirrors. Baileys accepts a minimal
+// quoted stub ({key, message}) when the full original is unavailable.
+function buildQuoted(msg: any, waJid: string, db: BridgeDB): any {
+	const repliedId = msg.reply_to_message?.message_id
+	if (!repliedId) return null
 	try {
-		if (ctx.msg.photo) {
-			const file = await ctx.msg.photo[ctx.msg.photo.length - 1].getFile()
-			const buffer = await file.download()
-			return { type: 'image', buffer: new Uint8Array(buffer) }
+		const entry = db.getReplyMap(repliedId)
+		if (!entry) return null
+		let key: any = null
+		try {
+			key = JSON.parse(entry.wa_key_json)
+		} catch {
+			key = null
 		}
-		if (ctx.msg.video) {
-			const file = await ctx.msg.video.getFile()
-			const buffer = await file.download()
-			return { type: 'video', buffer: new Uint8Array(buffer) }
+		if (!key?.id) {
+			key = { remoteJid: waJid, id: entry.wa_msg_id, fromMe: false }
 		}
-		if (ctx.msg.audio) {
-			const file = await ctx.msg.audio.getFile()
-			const buffer = await file.download()
-			return { type: 'audio', buffer: new Uint8Array(buffer) }
-		}
-		if (ctx.msg.document) {
-			const file = await ctx.msg.document.getFile()
-			const buffer = await file.download()
-			return { type: 'document', buffer: new Uint8Array(buffer) }
-		}
-		if (ctx.msg.voice) {
-			const file = await ctx.msg.voice.getFile()
-			const buffer = await file.download()
-			return { type: 'voice', buffer: new Uint8Array(buffer) }
-		}
-		if (ctx.msg.sticker) {
-			const file = await ctx.msg.sticker.getFile()
-			const buffer = await file.download()
-			return { type: 'sticker', buffer: new Uint8Array(buffer) }
-		}
+		const origText = msg.reply_to_message?.text || msg.reply_to_message?.caption || ''
+		return { key, message: { conversation: origText.slice(0, 500) || '...' } }
 	} catch {
 		return null
 	}
+}
+
+interface TgMedia {
+	kind: 'image' | 'video' | 'voice' | 'audio' | 'sticker' | 'document'
+	buffer: Uint8Array
+	fileName?: string
+	mime?: string
+}
+
+async function downloadTgMedia(tg: Bot, msg: any): Promise<TgMedia | null> {
+	try {
+		let fileId: string | null = null
+		let kind: TgMedia['kind'] = 'document'
+		let fileName: string | undefined
+		let mime: string | undefined
+
+		if (msg.sticker) {
+			fileId = fileIdOf(msg.sticker)
+			kind = 'sticker'
+		} else if (msg.photo?.length) {
+			fileId = fileIdOf(msg.photo[msg.photo.length - 1])
+			kind = 'image'
+		} else if (msg.video) {
+			fileId = fileIdOf(msg.video)
+			kind = 'video'
+			fileName = msg.video.file_name
+			mime = msg.video.mime_type
+		} else if (msg.video_note) {
+			fileId = fileIdOf(msg.video_note)
+			kind = 'video'
+		} else if (msg.animation) {
+			fileId = fileIdOf(msg.animation)
+			kind = 'video'
+			fileName = msg.animation.file_name
+			mime = msg.animation.mime_type
+		} else if (msg.voice) {
+			fileId = fileIdOf(msg.voice)
+			kind = 'voice'
+		} else if (msg.audio) {
+			fileId = fileIdOf(msg.audio)
+			kind = 'audio'
+			mime = msg.audio.mime_type
+		} else if (msg.document) {
+			fileId = fileIdOf(msg.document)
+			kind = 'document'
+			fileName = msg.document.file_name
+			mime = msg.document.mime_type
+		} else {
+			return null
+		}
+
+		if (!fileId) return null
+		const buffer = await downloadTgFile(tg, fileId)
+		if (!buffer) return null
+		return { kind, buffer, fileName, mime }
+	} catch {
+		return null
+	}
+}
+
+function fileIdOf(f: any): string | null {
+	if (!f) return null
+	if (typeof f === 'string') return f
+	if (typeof f.file_id === 'string') return f.file_id
 	return null
+}
+
+async function downloadTgFile(tg: Bot, fileId: string): Promise<Uint8Array | null> {
+	try {
+		const token = Deno.env.get('TELEGRAM_BOT_TOKEN')!
+		const file = await tg.api.getFile(fileId)
+		if (!file.file_path) return null
+		const res = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`)
+		if (!res.ok) return null
+		return new Uint8Array(await res.arrayBuffer())
+	} catch {
+		return null
+	}
 }

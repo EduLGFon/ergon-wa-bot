@@ -1,13 +1,23 @@
+// Bridge entry point.
+//
+// Two ways to use it:
+//
+// 1. Embedded (normal): wa.ts calls `startBridge()` AFTER bot.connect() +
+//    loadEvents(). The bridge shares the running WhatsApp socket — no second
+//    connection, no auth duplication.
+// 2. Standalone helper: `deno run -A bridge/mod.ts -- --find-id` prints the
+//    supergroup ID so you can put it in conf/.env. This mode never touches
+//    WhatsApp.
 import { Bot } from 'grammy'
 import { BridgeDB } from './db.ts'
 import { RateLimiter } from './rate-limiter.ts'
-import { startTelegramBot } from './tg-to-wa.ts'
-import { start, stop as stopWaRelay } from './wa-to-tg.ts'
+import { registerTgHandlers } from './tg-to-wa.ts'
+import { attachWaRelay } from './wa-to-tg.ts'
 
-async function findSupergroupId(): Promise<void> {
+export async function findSupergroupId(): Promise<void> {
 	const token = Deno.env.get('TELEGRAM_BOT_TOKEN')
 	if (!token) {
-		console.error('Missing TELEGRAM_BOT_TOKEN in .env')
+		console.error('Missing TELEGRAM_BOT_TOKEN in env')
 		Deno.exit(1)
 	}
 
@@ -18,8 +28,8 @@ async function findSupergroupId(): Promise<void> {
 		const chat = update.message?.chat || update.edited_message?.chat ||
 			update.channel_post?.chat
 		if (chat && (chat.type === 'supergroup' || chat.type === 'group')) {
-			console.log(`\n📍 Supergroup ID: \`${chat.id}\`\n`)
-			console.log(`Copy this ID and set it as TELEGRAM_SUPERGROUP_ID in your .env file.`)
+			console.log(`\nSupergroup ID: \`${chat.id}\`\n`)
+			console.log(`Copy this ID and set it as TELEGRAM_SUPERGROUP_ID in conf/.env.`)
 			console.log(`Chat title: ${chat.title || 'N/A'}`)
 			console.log(`Is forum: ${chat.is_forum || false}`)
 			Deno.exit(0)
@@ -28,58 +38,46 @@ async function findSupergroupId(): Promise<void> {
 
 	console.log('No supergroup found in recent updates.')
 	console.log('Make sure the bot is added to the supergroup and send a message there first.')
-	console.log('\nTo add the bot:')
-	console.log('  1. Add bot to supergroup as admin')
-	console.log('  2. Send a message in the supergroup')
-	console.log('  3. Run this command again')
 }
 
-async function main() {
-	const args = Deno.args
+// Starts the Telegram side and hooks the WA→TG relay onto the shared socket.
+// Returns null (instead of throwing) when not configured, so the WhatsApp
+// bot always boots even if the bridge env is missing.
+export function startBridge(): Bot | null {
+	const token = Deno.env.get('TELEGRAM_BOT_TOKEN')
+	const supergroupId = Deno.env.get('TELEGRAM_SUPERGROUP_ID')
 
-	if (args.includes('--find-id')) {
-		await findSupergroupId()
-		return
+	if (!token || !supergroupId) {
+		console.log(
+			'[BRIDGE] disabled: set TELEGRAM_BOT_TOKEN and TELEGRAM_SUPERGROUP_ID to enable',
+		)
+		return null
 	}
 
-	const TELEGRAM_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
-	const SUPERGROUP_ID = Deno.env.get('TELEGRAM_SUPERGROUP_ID')
+	const db = new BridgeDB('conf/gen/bridge.db')
+	db.init()
+	const limiter = new RateLimiter(Number(Deno.env.get('RATE_LIMIT_MS') || 1000))
 
-	if (!TELEGRAM_TOKEN || !SUPERGROUP_ID) {
-		console.error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_SUPERGROUP_ID in .env')
-		console.error('\nRun with --find-id to discover the supergroup ID:')
-		console.error('  deno run -A --env-file=.env mod.ts -- --find-id')
+	const tg = new Bot(token)
+	registerTgHandlers(tg, db, limiter)
+	// The WA socket is already connected by wa.ts at this point.
+	attachWaRelay(tg, db, limiter)
+
+	tg.catch((e) => console.error('[BRIDGE] Telegram handler error:', e))
+	// Fire-and-forget: bot.start() long-polls until stopped; never await it
+	// here or wa.ts would never finish booting.
+	tg.start().catch((e) => console.error('[BRIDGE] Telegram polling stopped:', e))
+
+	console.log('[BRIDGE] running: WhatsApp <-> Telegram topic mirror active')
+	return tg
+}
+
+if (import.meta.main) {
+	if (Deno.args.includes('--find-id')) {
+		await findSupergroupId()
+	} else {
+		console.error('This module runs embedded in the WhatsApp bot (see wa.ts).')
+		console.error('Helper: deno run -A --env-file=conf/.env bridge/mod.ts -- --find-id')
 		Deno.exit(1)
 	}
-
-	console.log('[BRIDGE] Starting...')
-	console.log('[BRIDGE] DB path: ../conf/gen/bridge.db')
-	console.log('[BRIDGE] Auth: PostgreSQL (DATABASE_URL set) or ../conf/gen/auth')
-	console.log('[BRIDGE] Telegram token:', TELEGRAM_TOKEN ? 'set' : 'MISSING')
-	console.log('[BRIDGE] Supergroup ID:', SUPERGROUP_ID || 'MISSING')
-
-	const db = new BridgeDB('../conf/gen/bridge.db')
-	db.init()
-
-	const rateLimiter = new RateLimiter(Number(Deno.env.get('RATE_LIMIT_MS') || 1000))
-
-	console.log('[BRIDGE] Starting Telegram bot and WhatsApp relay...')
-	const tgBot = startTelegramBot(db, rateLimiter)
-	console.log('[BRIDGE] WhatsApp ↔ Telegram bridge is running')
-	console.log('[BRIDGE] Press Ctrl+C to stop')
-	await Promise.all([tgBot.start(), start(db, rateLimiter, tgBot)])
 }
-
-main().catch((e) => {
-	console.error('[BRIDGE] Fatal error:', e)
-	Deno.exit(1)
-})
-
-Deno.addSignalListener('SIGINT', async () => {
-	await stopWaRelay()
-	Deno.exit(0)
-})
-Deno.addSignalListener('SIGTERM', async () => {
-	await stopWaRelay()
-	Deno.exit(0)
-})
