@@ -1,6 +1,6 @@
 {
 	"events": {
-		"cooldown": "[🕓] - Tá com pressa? Você foi taxado em *{{time}}*, espera um pouquinho aí",
+		"cooldown": "[🕓] - Calma calabreso! Você foi taxado em *{{time}}*, espera um pouquinho aí",
 		"nodb": "[💡] Este comando requer um banco de dados configurado."
 	},
 	"langs": {
