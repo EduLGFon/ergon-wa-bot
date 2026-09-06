@@ -229,22 +229,85 @@ async function handleWaReactions(
 
 			const emoji = waReactionToTgEmoji(reaction?.text)
 			const payload = emoji ? [{ type: 'emoji' as const, emoji }] : []
-			await limiter.enqueue(() =>
-				tg!.api.setMessageReaction(supergroupId, target.tg_msg_id, payload as any)
-			)
+			await limiter.enqueue(async () => {
+				try {
+					await tg!.api.setMessageReaction(supergroupId, target.tg_msg_id, payload as any)
+				} catch (e) {
+					// REACTION_INVALID = the emoji isn't usable here (not a
+					// Telegram reaction at all, or disabled in this chat's
+					// Settings → Reactions). Warn once per emoji with the
+					// fix hint; later occurrences are debug noise. Never
+					// rethrows — reactions must not spam the limiter log.
+					const desc = reactionErrorDescription(e)
+					if (desc.includes('REACTION_INVALID')) {
+						if (warnedReactions.has(emoji || '')) {
+							console.debug(
+								`[BRIDGE] skipping unsupported reaction ${
+									emoji || '(removal)'
+								} (known)`,
+							)
+						} else {
+							warnedReactions.add(emoji || '')
+							console.warn(
+								`[BRIDGE] reaction ${
+									emoji || '(removal)'
+								} rejected by Telegram (REACTION_INVALID): ` +
+									`not a Telegram reaction emoji or disabled in this supergroup's Settings → Reactions. Skipping.`,
+							)
+						}
+						return
+					}
+					throw e
+				}
+			})
 		} catch (e) {
 			console.error('[BRIDGE] failed to relay one WA reaction:', e)
 		}
 	}
 }
 
-// Normalize a WhatsApp reaction emoji for Telegram's allowed list, which
-// uses the non-VS16 form (❤, not ❤️). Returns null for removals (empty
-// text) so the caller clears the reaction instead.
+// Emojis already warned about (REACTION_INVALID) so repeats stay at debug.
+const warnedReactions = new Set<string>()
+
+function reactionErrorDescription(err: unknown): string {
+	if (typeof err === 'string') return err
+	const anyErr = err as { description?: unknown; message?: unknown }
+	if (typeof anyErr?.description === 'string') return anyErr.description
+	if (typeof anyErr?.message === 'string') return anyErr.message
+	return ''
+}
+
+// Normalize a WhatsApp reaction emoji for Telegram's reaction set:
+// strip VS16 (❤️→❤) and skin-tone modifiers (👍🏽→👍), then map common
+// WhatsApp reactions that Telegram simply doesn't offer (😂→🤣, …).
+// Returns the emoji as-is when unknown — Telegram may still accept it —
+// and null for removals (empty text) so the caller clears the reaction.
 export function waReactionToTgEmoji(text: string | null | undefined): string | null {
 	if (!text) return null
-	const clean = text.replace(/\uFE0F/g, '').trim()
-	return clean || null
+	const clean = text.replace(/\uFE0F/g, '').replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '').trim()
+	if (!clean) return null
+	return WA_TO_TG_REACTION_FALLBACK[clean] || clean
+}
+
+// Everyday WhatsApp reactions with no Telegram reaction counterpart (all
+// targets verified against Telegram's allowed reaction list). Anything not
+// listed here is forwarded verbatim — REACTION_INVALID, if it comes, is
+// contained by the caller above.
+const WA_TO_TG_REACTION_FALLBACK: Record<string, string> = {
+	'😂': '🤣',
+	'😊': '🥰',
+	'😅': '😁',
+	'😌': '😇',
+	'😏': '😎',
+	'🥲': '😢',
+	'😮': '😱',
+	'😳': '😱',
+	'🥺': '😢',
+	'😤': '😡',
+	'🙌': '🎉',
+	'🫶': '❤',
+	'💖': '❤',
+	'💕': '❤',
 }
 
 async function createForumTopic(displayName: string, _isGroup: boolean): Promise<number> {
