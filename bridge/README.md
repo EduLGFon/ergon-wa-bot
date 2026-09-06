@@ -20,7 +20,7 @@ WhatsApp chats, allowing you to read and reply to WhatsApp from Telegram.
 3. **Enable Topics**: In supergroup settings, enable Forum Topics
 4. **Grant permissions**: The bot needs `can_manage_topics` admin right
 5. **Get the supergroup ID**: Forward a message from the supergroup to @userinfobot to get the chat
-   ID
+   ID, or use `/id` in the supergroup (see Commands below)
 6. **Set environment variables** in `.env`:
    - `TELEGRAM_BOT_TOKEN` — Your bot token from BotFather
    - `TELEGRAM_SUPERGROUP_ID` — The supergroup chat ID
@@ -59,6 +59,7 @@ deno run -A --env=.env mod.ts
 ## Commands
 
 - `/start` — Bot status
+- `/id` — Show the supergroup chat ID for `.env` configuration
 - `/topics` — List all active topic mappings
 - `/archive` — Archive a topic (preserves mapping/history)
 

@@ -11,6 +11,13 @@ export function startTelegramBot(db: BridgeDB, rateLimiter: RateLimiter): Bot {
 		await ctx.reply('🤖 WhatsApp Bridge Bot is active!')
 	})
 
+	bot.command('id', async (ctx) => {
+		const chatId = ctx.chat.id
+		await ctx.reply(
+			`📍 Supergroup ID: \`${chatId}\`\n\nCopy this and set it as TELEGRAM_SUPERGROUP_ID in your .env file.`,
+		)
+	})
+
 	bot.command('topics', async (ctx) => {
 		const topics = db.getAllActive()
 		const msg = topics.map((t) =>
