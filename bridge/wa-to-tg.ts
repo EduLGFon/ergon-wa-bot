@@ -16,28 +16,40 @@ let dbInstance: BridgeDB | null = null
 let rateLimiterInstance: RateLimiter | null = null
 
 async function initWhatsAppConnection() {
-	const { state, saveCreds } = await useMultiFileAuthState('conf/gen/auth')
+	try {
+		const { state, saveCreds } = await useMultiFileAuthState('../conf/gen/auth')
 
-	waSock = makeWASocket({
-		auth: {
-			creds: state.creds,
-			keys: makeCacheableSignalKeyStore(state.keys, { level: 'silent' } as any),
-		},
-		logger: { level: 'silent' } as any,
-		markOnlineOnConnect: false,
-		browser: Browsers.macOS('Desktop'),
-		syncFullHistory: false,
-		version: [2, 3000, 1044006379],
-		shouldSyncHistoryMessage: () => false,
-	})
+		console.log('[WA] Auth loaded, connecting...')
 
-	waSock.ev.on('creds.update', saveCreds)
+		waSock = makeWASocket({
+			auth: {
+				creds: state.creds,
+				keys: makeCacheableSignalKeyStore(state.keys, { level: 'silent' } as any),
+			},
+			logger: { level: 'info' } as any,
+			markOnlineOnConnect: false,
+			browser: Browsers.macOS('Desktop'),
+			syncFullHistory: false,
+			version: [2, 3000, 1044006379],
+			shouldSyncHistoryMessage: () => false,
+		})
 
-	waSock.ev.on('messages.upsert', async (raw: { messages: proto.IWebMessageInfo[] }) => {
-		await handleWAMessages(raw.messages)
-	})
+		waSock.ev.on('creds.update', saveCreds)
 
-	await (waSock as any).connect()
+		waSock.ev.on('messages.upsert', async (raw: { messages: proto.IWebMessageInfo[] }) => {
+			await handleWAMessages(raw.messages)
+		})
+
+		console.log('[WA] Connecting to WhatsApp...')
+		await (waSock as any).connect()
+		console.log('[WA] Connected!')
+	} catch (e) {
+		console.error('[WA] Connection failed:', e)
+		console.error('[WA] Make sure the WhatsApp bot is logged in and conf/gen/auth exists')
+		console.error(
+			'[WA] If using PostgreSQL auth, copy session from main bot or run: deno task reset',
+		)
+	}
 }
 
 async function handleWAMessages(messages: proto.IWebMessageInfo[]) {

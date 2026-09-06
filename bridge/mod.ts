@@ -52,14 +52,22 @@ async function main() {
 		Deno.exit(1)
 	}
 
-	const db = new BridgeDB('conf/gen/bridge.db')
+	console.log('[BRIDGE] Starting...')
+	console.log('[BRIDGE] DB path: conf/gen/bridge.db')
+	console.log('[BRIDGE] Auth path: ../conf/gen/auth')
+	console.log('[BRIDGE] Telegram token:', TELEGRAM_TOKEN ? 'set' : 'MISSING')
+	console.log('[BRIDGE] Supergroup ID:', SUPERGROUP_ID || 'MISSING')
+
+	const db = new BridgeDB('../conf/gen/bridge.db')
 	db.init()
 
 	const rateLimiter = new RateLimiter(Number(Deno.env.get('RATE_LIMIT_MS') || 1000))
 
+	console.log('[BRIDGE] Starting Telegram bot...')
 	const tgBot = startTelegramBot(db, rateLimiter)
 	await tgBot.start()
 
+	console.log('[BRIDGE] Starting WhatsApp relay...')
 	await start(db, rateLimiter, tgBot)
 
 	console.log('[BRIDGE] WhatsApp ↔ Telegram bridge is running')
