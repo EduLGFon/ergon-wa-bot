@@ -53,8 +53,8 @@ async function main() {
 	}
 
 	console.log('[BRIDGE] Starting...')
-	console.log('[BRIDGE] DB path: conf/gen/bridge.db')
-	console.log('[BRIDGE] Auth path: ../conf/gen/auth')
+	console.log('[BRIDGE] DB path: ../conf/gen/bridge.db')
+	console.log('[BRIDGE] Auth: PostgreSQL (DATABASE_URL set) or ../conf/gen/auth')
 	console.log('[BRIDGE] Telegram token:', TELEGRAM_TOKEN ? 'set' : 'MISSING')
 	console.log('[BRIDGE] Supergroup ID:', SUPERGROUP_ID || 'MISSING')
 
@@ -63,15 +63,11 @@ async function main() {
 
 	const rateLimiter = new RateLimiter(Number(Deno.env.get('RATE_LIMIT_MS') || 1000))
 
-	console.log('[BRIDGE] Starting Telegram bot...')
+	console.log('[BRIDGE] Starting Telegram bot and WhatsApp relay...')
 	const tgBot = startTelegramBot(db, rateLimiter)
-	await tgBot.start()
-
-	console.log('[BRIDGE] Starting WhatsApp relay...')
-	await start(db, rateLimiter, tgBot)
-
 	console.log('[BRIDGE] WhatsApp ↔ Telegram bridge is running')
 	console.log('[BRIDGE] Press Ctrl+C to stop')
+	await Promise.all([tgBot.start(), start(db, rateLimiter, tgBot)])
 }
 
 main().catch((e) => {
