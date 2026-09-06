@@ -1,0 +1,34 @@
+{
+	"fmt": {
+		"indentWidth": 4,
+		"singleQuote": true,
+		"useTabs": true,
+		"semiColons": false,
+		"lineWidth": 100
+	},
+	"lint": {
+		"rules": {
+			"exclude": ["no-explicit-any", "no-import-prefix", "no-unversioned-import"]
+		}
+	},
+	"imports": {
+		"baileys": "npm:@whiskeysockets/baileys@7.0.0-rc14",
+		"grammy": "npm:grammy@1.36.0",
+		"@class/": "../class/",
+		"@cmd/": "../cmd/",
+		"@conf/": "../conf/",
+		"@event/": "../event/",
+		"@plugin/": "../plugin/",
+		"@util/": "../util/",
+		"@db": "../plugin/db.ts",
+		"@wa": "../wa.ts"
+	},
+	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"strict": true,
+		"skipLibCheck": false,
+		"types": ["../conf/types/global.d.ts"]
+	},
+	"nodeModulesDir": "auto"
+}

@@ -57,6 +57,15 @@ async function start() {
 	await cache.resume()
 	await loadEvents()
 
+	// Telegram bridge shares this process's WhatsApp socket (no 2nd connection).
+	// Must start AFTER loadEvents(), which resets event listeners.
+	try {
+		const { startBridge } = await import('./bridge/mod.ts')
+		await startBridge()
+	} catch (e) {
+		print('BRIDGE', `disabled: ${(e as Error)?.message || e}`, 'red')
+	}
+
 	if (Deno.env.get('GROUPS1')) scheduleURMenuMsg()
 }
 

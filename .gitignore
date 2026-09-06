@@ -7,6 +7,7 @@ conf/gen/log
 conf/gen/prisma/*
 conf/gen/python/*
 conf/gen/temp/*
+conf/gen/bridge.db*
 cookies.txt
 out.log
 
