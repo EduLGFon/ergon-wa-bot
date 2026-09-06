@@ -12,7 +12,7 @@ import { Bot, InputFile } from 'grammy'
 import { findKey } from '@util/functions.ts'
 import { logger } from '@util/proto.ts'
 import bot from '@plugin/bot.ts'
-import type { BridgeDB } from './db.ts'
+import type { BridgeDB, MirrorKind } from './db.ts'
 import type { RateLimiter } from './rate-limiter.ts'
 import { parseVcard, type TgEntity, waMarkdownToTgEntities } from './format.ts'
 
@@ -274,21 +274,21 @@ async function sendToTopic(
 		: undefined
 	const rich = entities.length > 0 ? { entities } : undefined
 	const thread = { message_thread_id: topicId } as const
-	const save = (tgId: number): void => {
-		db!.saveReplyMap(tgId, waJid, waMsg.key?.id || '', JSON.stringify(waMsg.key || {}))
+	const save = (tgId: number, kind: MirrorKind): void => {
+		db!.saveReplyMap(tgId, waJid, waMsg.key?.id || '', JSON.stringify(waMsg.key || {}), kind)
 	}
 
 	// Location / contact / poll have no caption concept: the content goes
 	// first (carrying the native reply), then any text as a follow-up.
 	if (special) {
 		const sentId = await sendSpecial(topicId, special, reply)
-		if (sentId) save(sentId)
+		if (sentId) save(sentId, 'special')
 		if (body) {
 			const sent = await tg.api.sendMessage(supergroupId, body, {
 				...thread,
 				...rich,
 			})
-			save(sent.message_id)
+			save(sent.message_id, 'text')
 		}
 		return
 	}
@@ -299,7 +299,7 @@ async function sendToTopic(
 			...rich,
 			...reply,
 		})
-		save(sent.message_id)
+		save(sent.message_id, 'text')
 		return
 	}
 
@@ -364,7 +364,7 @@ async function sendToTopic(
 			})
 			break
 	}
-	save(sent.message_id)
+	save(sent.message_id, media.kind === 'sticker' ? 'sticker' : 'media')
 
 	// Captions are capped at 1024 chars — send the overflow as a follow-up.
 	if (caption === undefined && body) {
@@ -485,7 +485,8 @@ export function getSpecialContent(message: proto.IMessage | undefined | null): W
 // WhatsApp message edit → Telegram edit. Edits arrive as `messages.update`
 // with `update.message.editedMessage.message` (never as upsert). The mirror
 // message is always bot-owned, so Telegram's 48h edit window is the only
-// limit — failures (expired window, deleted message) just log.
+// platform limit — but mirrors of stickers/polls/venues/contacts can't be
+// edited at all, and rows predating tg_kind fall back to try-both.
 async function handleWaEdits(
 	updates: { key: proto.IMessageKey; update: { message?: any } }[],
 ): Promise<void> {
@@ -498,10 +499,24 @@ async function handleWaEdits(
 			const jid = key?.remoteJid
 			const id = key?.id
 			if (!jid || !id || jid === 'status@broadcast') continue
+			// Echo of our own TG→WA edit (marked before the WA send) — the
+			// TG message already shows this text; editing would 400.
+			if (db.takeTgEdit(jid, id)) {
+				console.debug(`[BRIDGE] skipping echo of TG-initiated edit ${id}`)
+				continue
+			}
 			const mapping = db.getByJid(jid)
 			if (!mapping || mapping.archived) continue
 			const target = db.getByWaMsgId(id, jid)
 			if (!target) continue
+
+			const route = routeEdit((target as { tg_kind?: string }).tg_kind)
+			if (route === 'skip') {
+				console.debug(
+					`[BRIDGE] skipping edit of non-editable TG mirror (kind=${target.tg_kind})`,
+				)
+				continue
+			}
 
 			const isGroup = jid.endsWith('@g.us')
 			const label = key.fromMe
@@ -513,20 +528,83 @@ async function handleWaEdits(
 			const rich = entities.length > 0 ? { entities } : undefined
 
 			await limiter.enqueue(async () => {
-				// Text mirrors edit in place; media mirrors (caption) fail
-				// the text edit and fall through to the caption path.
 				try {
-					await tg!.api.editMessageText(supergroupId, target.tg_msg_id, body, rich)
-				} catch {
+					if (route === 'text' || route === 'both') {
+						await tg!.api.editMessageText(supergroupId, target.tg_msg_id, body, rich)
+						return
+					}
 					await tg!.api.editMessageCaption(supergroupId, target.tg_msg_id, {
 						caption: body.slice(0, 1024) || undefined,
 					})
+				} catch (first) {
+					// Legacy 'unknown' rows: the mirror type is a guess, so a
+					// failed text edit retries as caption before giving up.
+					if (route === 'both') {
+						try {
+							await tg!.api.editMessageCaption(supergroupId, target.tg_msg_id, {
+								caption: body.slice(0, 1024) || undefined,
+							})
+							return
+						} catch (second) {
+							logEditFailure(target.tg_msg_id, second, String(describeErr(first)))
+							return
+						}
+					}
+					logEditFailure(target.tg_msg_id, first)
 				}
 			})
 		} catch (e) {
 			console.error('[BRIDGE] failed to relay one WA edit:', e)
 		}
 	}
+}
+
+// Which Telegram edit endpoint a mirror kind needs. Stickers, polls,
+// venues, contacts and locations have no bot-editable representation —
+// attempting them only produces 400s, so they are skipped up front.
+export function routeEdit(tgKind: string | undefined): 'text' | 'caption' | 'both' | 'skip' {
+	switch (tgKind) {
+		case 'text':
+			return 'text'
+		case 'media':
+			return 'caption'
+		case 'sticker':
+		case 'special':
+			return 'skip'
+		default:
+			return 'both'
+	}
+}
+
+// Log an edit failure at the right level instead of always erroring:
+// 'not modified' is a harmless duplicate, "can't be edited"/"not found" is
+// an expired window, deleted message or wrong type — only the rest is a bug.
+export function classifyEditError(err: unknown): 'debug' | 'warn' | 'error' {
+	const desc = describeErr(err).toLowerCase()
+	if (desc.includes('not modified')) return 'debug'
+	if (desc.includes("can't be edited") || desc.includes('not found')) return 'warn'
+	return 'error'
+}
+
+function describeErr(err: unknown): string {
+	if (typeof err === 'string') return err
+	const anyErr = err as { description?: unknown; message?: unknown }
+	if (typeof anyErr?.description === 'string') return anyErr.description
+	if (typeof anyErr?.message === 'string') return anyErr.message
+	try {
+		return JSON.stringify(err)
+	} catch {
+		return String(err)
+	}
+}
+
+function logEditFailure(tgMsgId: number, err: unknown, firstErr?: string): void {
+	const level = classifyEditError(err)
+	const detail = `${describeErr(err)}${firstErr ? ` (first attempt: ${firstErr})` : ''}`
+	const line = `[BRIDGE] edit of TG message ${tgMsgId} failed (${level}): ${detail}`
+	if (level === 'debug') console.debug(line)
+	else if (level === 'warn') console.warn(line)
+	else console.error(line)
 }
 
 // Group membership changes → service lines in the topic.

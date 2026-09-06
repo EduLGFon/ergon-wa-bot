@@ -204,6 +204,10 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 			const key = restoreWaKey(entry)
 			if (!key) return
 
+			// Marked synchronously so the server echo of this protocol
+			// message (arriving as WA `messages.update`) is recognized and
+			// skipped instead of re-editing the TG message it came from.
+			db.markTgEdit(mapping.whatsapp_jid, entry.wa_msg_id)
 			await limiter.enqueue(async () => {
 				await bot.sock.sendMessage(mapping.whatsapp_jid, { text, edit: key })
 				db.updateLastActive(mapping.whatsapp_jid)

@@ -63,8 +63,10 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
 
 - Own WhatsApp messages sent from the phone mirror with a `You:` label; TG→WA echoes are
   deduplicated through `reply_map`.
-- Edits relay both ways (text in place, media via caption fallback); outside the platform edit
-  windows (TG 48h, WA ~15 min) they fail silently in logs.
+- Edits relay both ways (text in place, media via caption fallback); mirrors of
+  stickers/polls/venues/contacts are skipped (not bot-editable), TG-initiated edit echoes are
+  deduplicated, and failures log at debug/warn level instead of erroring. Outside the platform edit
+  windows (TG 48h, WA ~15 min) edits can't apply.
 - Formatting (bold/italic/strike/code) converts both ways; underline/spoiler and named links degrade
   gracefully.
 - Reactions are last-writer-wins per message (single bot identity on each side); custom-emoji and

@@ -17,7 +17,16 @@ export interface ReplyMapRow {
 	wa_msg_id: string
 	wa_key_json: string
 	created_at: number
+	// What KIND of Telegram message mirrors the WA one (text/media/sticker/
+	// special). Tells the edit path which endpoint to use; 'unknown' for
+	// rows written before this column existed (or TG-originated rows, whose
+	// TG side is the original and never needs editing by the bot).
+	tg_kind: string
 }
+
+// Mirror kinds stored in reply_map.tg_kind. Only WA→TG rows carry a real
+// kind; TG→WA rows keep 'unknown'.
+export type MirrorKind = 'text' | 'media' | 'sticker' | 'special' | 'unknown'
 
 function toMapping(row: Record<string, unknown>): MappingRow {
 	return {
@@ -74,6 +83,12 @@ export class BridgeDB {
 		this.db.exec(
 			'CREATE INDEX IF NOT EXISTS idx_reply_wa ON reply_map(wa_jid, wa_msg_id)',
 		)
+		// Mirror kind for the edit path (which TG endpoint to call). ADD
+		// COLUMN is a no-op on DBs that already have it — safe to run every boot.
+		const cols = this.db.prepare(`PRAGMA table_info(reply_map)`).all() as { name: string }[]
+		if (!cols.some((c) => c.name === 'tg_kind')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN tg_kind TEXT NOT NULL DEFAULT 'unknown'`)
+		}
 	}
 
 	close(): void {
@@ -173,12 +188,18 @@ export class BridgeDB {
 		)
 	}
 
-	saveReplyMap(tgMsgId: number, waJid: string, waMsgId: string, waKeyJson: string): void {
+	saveReplyMap(
+		tgMsgId: number,
+		waJid: string,
+		waMsgId: string,
+		waKeyJson: string,
+		tgKind: MirrorKind = 'unknown',
+	): void {
 		this.db
 			.prepare(
-				'INSERT OR REPLACE INTO reply_map (tg_msg_id, wa_jid, wa_msg_id, wa_key_json, created_at) VALUES (?, ?, ?, ?, ?)',
+				'INSERT OR REPLACE INTO reply_map (tg_msg_id, wa_jid, wa_msg_id, wa_key_json, tg_kind, created_at) VALUES (?, ?, ?, ?, ?, ?)',
 			)
-			.run(tgMsgId, waJid, waMsgId, waKeyJson, Date.now())
+			.run(tgMsgId, waJid, waMsgId, waKeyJson, tgKind, Date.now())
 		// keep the table small: only recent messages can be replied to anyway
 		this.db.prepare(
 			'DELETE FROM reply_map WHERE created_at < ?',
@@ -203,5 +224,29 @@ export class BridgeDB {
 		).get(waMsgId, waJid) as Record<string, unknown> | undefined
 		if (!row) return undefined
 		return row as unknown as ReplyMapRow
+	}
+
+	// In-memory echo guard for TG-initiated edits. A TG edit is forwarded to
+	// WA as a protocol MESSAGE_EDIT, and the server echoes that protocol
+	// message back as `messages.update` — without this guard the bridge
+	// would "edit" the TG message to the text it already has (400: message
+	// is not modified) on every TG-initiated edit. Marked synchronously
+	// before the WA send; consumed when the echo arrives. Phone-side edits
+	// of own messages are NOT marked, so they still mirror.
+	private pendingTgEdits = new Set<string>()
+
+	markTgEdit(waJid: string, waMsgId: string): void {
+		if (this.pendingTgEdits.size > 1000) {
+			const oldest = this.pendingTgEdits.values().next().value
+			if (oldest !== undefined) this.pendingTgEdits.delete(oldest)
+		}
+		this.pendingTgEdits.add(`${waJid}\n${waMsgId}`)
+	}
+
+	takeTgEdit(waJid: string, waMsgId: string): boolean {
+		const k = `${waJid}\n${waMsgId}`
+		if (!this.pendingTgEdits.has(k)) return false
+		this.pendingTgEdits.delete(k)
+		return true
 	}
 }
