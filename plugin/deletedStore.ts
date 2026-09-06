@@ -232,13 +232,6 @@ async function saveDeleted(msg: Msg): Promise<DeletedEntry | null> {
 	const cached = url ? cache.media.get(url) : undefined
 	const saved = await persistEntry(chat, entry, cached?.buffer, cached?.mime || msg.mime)
 	if (!saved) return null
-	print(
-		'GOTCHA',
-		`archived ${chat} ${entry.id} (${entry.type}${entry.mediaFile ? '+media' : ''}${
-			entry.unavailable ? ', unavailable' : ''
-		})`,
-		'green',
-	)
 	return saved
 }
 
@@ -278,13 +271,6 @@ async function savePendingQuote(input: {
 	const cached = input.media?.url ? cache.media.get(input.media.url) : undefined
 	const saved = await persistEntry(input.chat, entry, cached?.buffer, cached?.mime || input.mime)
 	if (!saved) return null
-	print(
-		'GOTCHA',
-		`stashed ${input.chat} ${input.id} (${input.type} via quote${
-			entry.mediaFile ? '+media' : ''
-		}${entry.unavailable ? ', unavailable' : ''})`,
-		'green',
-	)
 	return saved
 }
 

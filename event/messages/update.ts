@@ -33,10 +33,7 @@ export default async function (updates: WAMessageUpdate[], _event: str) {
 			const orig = findCachedOriginal(chat, deletedId)
 			if (!orig) {
 				// Original never cached: a stashed quote copy may exist - promote it.
-				const rescued = await promotePendingDelete(chat, deletedId).catch(() => null)
-				if (!rescued) {
-					print('GOTCHA', `miss ${chat} ${deletedId} (original not in cache)`, 'yellow')
-				}
+				await promotePendingDelete(chat, deletedId).catch(() => null)
 				continue
 			}
 			if (orig.isBot) continue
