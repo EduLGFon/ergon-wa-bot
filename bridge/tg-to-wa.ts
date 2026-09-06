@@ -124,20 +124,40 @@ function buildWaContent(
 	}
 	if (!media) return text ? { text } : null
 
+	// Baileys' getStream() only accepts Buffer | { stream } | { url }. A raw
+	// Deno/Telegram Uint8Array falls through to `item.url.toString()` and
+	// crashes with "Cannot read properties of undefined (reading 'toString')",
+	// so convert every buffer to a Node Buffer first.
+	const buf = Buffer.from(media.buffer)
+
 	switch (media.kind) {
 		case 'image':
-			return { image: media.buffer, caption: text || undefined }
+			return { image: buf, caption: text || undefined }
 		case 'video':
-			return { video: media.buffer, caption: text || undefined }
+			return { video: buf, caption: text || undefined, mimetype: media.mime || 'video/mp4' }
 		case 'voice':
-			return { audio: media.buffer, ptt: true, mimetype: 'audio/ogg; codecs=opus' }
+			return { audio: buf, ptt: true, mimetype: 'audio/ogg; codecs=opus' }
 		case 'audio':
-			return { audio: media.buffer, mimetype: media.mime || 'audio/mpeg' }
+			return { audio: buf, mimetype: media.mime || 'audio/mpeg' }
 		case 'sticker':
-			return { sticker: media.buffer }
+			// WhatsApp stickers must be WebP. Telegram video (.webm) and
+			// animated (.tgs) stickers are not — relay those as video/document
+			// so they still arrive instead of failing or showing blank.
+			if (media.mime === 'video/webm' || (media.fileName || '').endsWith('.webm')) {
+				return { video: buf, caption: text || undefined }
+			}
+			if (media.mime?.includes('tgs') || (media.fileName || '').endsWith('.tgs')) {
+				return {
+					document: buf,
+					fileName: media.fileName || 'sticker.tgs',
+					mimetype: media.mime || 'application/octet-stream',
+					caption: text || undefined,
+				}
+			}
+			return { sticker: buf }
 		default:
 			return {
-				document: media.buffer,
+				document: buf,
 				fileName: media.fileName || 'file',
 				mimetype: media.mime || 'application/octet-stream',
 				caption: text || undefined,
@@ -187,6 +207,19 @@ async function downloadTgMedia(tg: Bot, msg: any): Promise<TgMedia | null> {
 		if (msg.sticker) {
 			fileId = fileIdOf(msg.sticker)
 			kind = 'sticker'
+			// WhatsApp only accepts WebP stickers. Flag video (.webm) and
+			// animated (.tgs) ones here so buildWaContent() can relay them
+			// as video/document instead.
+			if (msg.sticker.is_video) {
+				fileName = 'sticker.webm'
+				mime = 'video/webm'
+			} else if (msg.sticker.is_animated) {
+				fileName = 'sticker.tgs'
+				mime = 'application/x-tgs'
+			} else {
+				fileName = 'sticker.webp'
+				mime = 'image/webp'
+			}
 		} else if (msg.photo?.length) {
 			fileId = fileIdOf(msg.photo[msg.photo.length - 1])
 			kind = 'image'
