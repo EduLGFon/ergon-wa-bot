@@ -89,7 +89,15 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 					quoted ? { quoted } : undefined,
 				)
 				if (sent?.key?.id) {
-					db.saveReplyMap(msg.message_id, mapping.whatsapp_jid, sent.key.id, '{}')
+					// Store the real key (not '{}'): buildQuoted reuses it for
+					// TG→WA quotes, and getByWaMsgId needs the true stanzaId so
+					// WA quotes of TG-originated messages resolve back here.
+					db.saveReplyMap(
+						msg.message_id,
+						mapping.whatsapp_jid,
+						sent.key.id,
+						JSON.stringify(sent.key),
+					)
 				}
 				db.updateLastActive(mapping.whatsapp_jid)
 			})

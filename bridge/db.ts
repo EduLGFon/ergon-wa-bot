@@ -68,6 +68,12 @@ export class BridgeDB {
 				created_at INTEGER NOT NULL
 			)
 		`)
+		// Reverse direction: WhatsApp quotes reference the original by its
+		// stanzaId (= wa_msg_id), so WA→TG needs this lookup to set
+		// reply_parameters on the Telegram message.
+		this.db.exec(
+			'CREATE INDEX IF NOT EXISTS idx_reply_wa ON reply_map(wa_jid, wa_msg_id)',
+		)
 	}
 
 	close(): void {
@@ -183,6 +189,18 @@ export class BridgeDB {
 		const row = this.db.prepare('SELECT * FROM reply_map WHERE tg_msg_id = ?').get(tgMsgId) as
 			| Record<string, unknown>
 			| undefined
+		if (!row) return undefined
+		return row as unknown as ReplyMapRow
+	}
+
+	// Reverse lookup for the WA→TG direction: given the quoted stanzaId from
+	// a WhatsApp message's contextInfo, find the Telegram message that
+	// mirrors the original. Scoped by chat because stanzaIds are only
+	// unique per chat.
+	getByWaMsgId(waMsgId: string, waJid: string): ReplyMapRow | undefined {
+		const row = this.db.prepare(
+			'SELECT * FROM reply_map WHERE wa_msg_id = ? AND wa_jid = ?',
+		).get(waMsgId, waJid) as Record<string, unknown> | undefined
 		if (!row) return undefined
 		return row as unknown as ReplyMapRow
 	}

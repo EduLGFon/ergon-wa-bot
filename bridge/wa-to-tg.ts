@@ -79,8 +79,29 @@ async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 
 			if (!text && !media) continue
 
+			// WhatsApp quote → Telegram reply. Resolve the quoted stanzaId to
+			// the Telegram message mirroring the original; when the original
+			// was never bridged (history, pruned), fall back to a textual
+			// quote header so context isn't silently lost.
+			const quote = getQuoteInfo(m, displayName)
+			let replyToTgId: number | null = null
+			let quoteHeader: string | null = null
+			if (quote) {
+				const target = db.getByWaMsgId(quote.stanzaId, jid)
+				if (target) {
+					replyToTgId = target.tg_msg_id
+				} else {
+					quoteHeader = `↩️ ${quote.author}: ${quote.preview}`
+				}
+			}
+
 			const label = isGroup ? `${senderName}: ` : ''
-			await limiter.enqueue(() => sendToTopic(topicId, label, text, media, jid, m))
+			await limiter.enqueue(() =>
+				sendToTopic(topicId, label, text, media, jid, m, {
+					tgId: replyToTgId,
+					header: quoteHeader,
+				})
+			)
 		} catch (e) {
 			console.error('[BRIDGE] failed to relay one WA message:', e)
 		}
@@ -133,13 +154,20 @@ async function sendToTopic(
 		| null,
 	waJid: string,
 	waMsg: proto.IWebMessageInfo,
+	quote: { tgId: number | null; header: string | null },
 ): Promise<void> {
 	if (!tg || !db) return
-	const fullText = `${label}${text}`
+	// Native Telegram quote when the original was bridged. allow_sending_
+	// without_reply keeps the send alive if that message was deleted since.
+	const reply = quote.tgId
+		? { reply_parameters: { message_id: quote.tgId, allow_sending_without_reply: true } }
+		: undefined
+	const body = `${quote.header ? quote.header + '\n' : ''}${label}${text}`
 
 	if (!media) {
-		const sent = await tg.api.sendMessage(supergroupId, fullText, {
+		const sent = await tg.api.sendMessage(supergroupId, body, {
 			message_thread_id: topicId,
+			...reply,
 		})
 		db.saveReplyMap(
 			sent.message_id,
@@ -150,36 +178,45 @@ async function sendToTopic(
 		return
 	}
 
-	const caption = fullText.length > 1024 ? undefined : (fullText || undefined)
+	// Stickers take no caption: deliver an unmapped quote header as its own
+	// message so the context still lands in the topic.
+	if (media.kind === 'sticker' && quote.header && !quote.tgId) {
+		await tg.api.sendMessage(supergroupId, quote.header, { message_thread_id: topicId })
+	}
+
+	const caption = body.length > 1024 ? undefined : (body || undefined)
 	const file = new InputFile(media.buffer, media.fileName || `file.${extOf(media)}`)
 	const thread = { message_thread_id: topicId } as const
 	let sent: { message_id: number }
 
 	switch (media.kind) {
 		case 'image':
-			sent = await tg.api.sendPhoto(supergroupId, file, { ...thread, caption })
+			sent = await tg.api.sendPhoto(supergroupId, file, { ...thread, caption, ...reply })
 			break
 		case 'video':
-			sent = await tg.api.sendVideo(supergroupId, file, { ...thread, caption })
+			sent = await tg.api.sendVideo(supergroupId, file, { ...thread, caption, ...reply })
 			break
 		case 'voice':
-			sent = await tg.api.sendVoice(supergroupId, file, { ...thread, caption })
+			sent = await tg.api.sendVoice(supergroupId, file, { ...thread, caption, ...reply })
 			break
 		case 'audio':
-			sent = await tg.api.sendAudio(supergroupId, file, { ...thread, caption })
+			sent = await tg.api.sendAudio(supergroupId, file, { ...thread, caption, ...reply })
 			break
 		case 'sticker':
-			sent = await tg.api.sendSticker(supergroupId, file, { message_thread_id: topicId })
+			sent = await tg.api.sendSticker(supergroupId, file, {
+				message_thread_id: topicId,
+				...reply,
+			})
 			break
 		default:
-			sent = await tg.api.sendDocument(supergroupId, file, { ...thread, caption })
+			sent = await tg.api.sendDocument(supergroupId, file, { ...thread, caption, ...reply })
 			break
 	}
 	db.saveReplyMap(sent.message_id, waJid, waMsg.key?.id || '', JSON.stringify(waMsg.key || {}))
 
 	// Captions are capped at 1024 chars — send the overflow as a follow-up.
-	if (caption === undefined && fullText) {
-		await tg.api.sendMessage(supergroupId, fullText, { message_thread_id: topicId })
+	if (caption === undefined && body) {
+		await tg.api.sendMessage(supergroupId, body, { message_thread_id: topicId })
 	}
 }
 
@@ -209,6 +246,60 @@ function getMsgText(message: proto.IMessage): string {
 		if (res) return String(res).trim()
 	}
 	return ''
+}
+
+interface WaQuote {
+	stanzaId: string
+	preview: string
+	author: string
+}
+
+export type { WaQuote }
+
+// Extract the WhatsApp quote (contextInfo) from an incoming message, if any.
+// Reads contextInfo off the unwrapped top-level content node directly —
+// never a deep search — so a nested quote-inside-a-quote can't be mistaken
+// for the outer one. (findKey also skips quotedMessage subtrees, which is
+// why getMsgText above returns the reply's own text, not the quoted text.)
+export function getQuoteInfo(m: proto.IWebMessageInfo, fallbackAuthor: string): WaQuote | null {
+	try {
+		const raw = unwrap(m.message)
+		if (!raw || typeof raw !== 'object') return null
+		let ctx: any = null
+		for (const value of Object.values(raw)) {
+			if (value && typeof value === 'object' && (value as any).contextInfo?.stanzaId) {
+				ctx = (value as any).contextInfo
+				break
+			}
+		}
+		if (!ctx) return null
+		return {
+			stanzaId: String(ctx.stanzaId),
+			preview: describeQuoted(ctx.quotedMessage),
+			author: ctx.participant ? phoneOf(ctx.participant) : fallbackAuthor,
+		}
+	} catch {
+		return null
+	}
+}
+
+// Short human-readable summary of the quoted original for the fallback
+// header (used only when the original was never bridged to Telegram).
+function describeQuoted(quotedMessage: any): string {
+	if (quotedMessage && typeof quotedMessage === 'object') {
+		const text = getMsgText(quotedMessage as proto.IMessage)
+		if (text) return text.length > 200 ? text.slice(0, 200) + '…' : text
+		const key = Object.keys(quotedMessage)[0] || ''
+		if (key.includes('image')) return '📷 a photo'
+		if (key.includes('video')) return '🎥 a video'
+		if (key.includes('audio')) return '🎵 an audio message'
+		if (key.includes('sticker')) return 'a sticker'
+		if (key.includes('document')) return '📄 a document'
+		if (key.includes('location')) return '📍 a location'
+		if (key.includes('contact')) return '👤 a contact'
+		if (key.includes('poll')) return '📊 a poll'
+	}
+	return 'a message'
 }
 
 interface WaMedia {
