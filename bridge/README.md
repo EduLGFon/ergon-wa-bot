@@ -69,10 +69,13 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   windows (TG 48h, WA ~15 min) edits can't apply.
 - Formatting (bold/italic/strike/code) converts both ways; underline/spoiler and named links degrade
   gracefully.
-- Reactions are last-writer-wins per message (single bot identity on each side); common
-  WhatsApp reactions missing on Telegram (😂→🤣, …) are mapped, anything Telegram rejects
-  (REACTION_INVALID) is skipped with a one-time warn; custom-emoji and paid TG reactions
-  fall back to ❤️ on WhatsApp.
+- Reactions are last-writer-wins per message (single bot identity on each side); common WhatsApp
+  reactions missing on Telegram (😂→🤣, …) are mapped, anything Telegram rejects (REACTION_INVALID)
+  is skipped with a one-time warn; custom-emoji and paid TG reactions fall back to ❤️ on WhatsApp.
+  Two prerequisites, both silent when missing: the bot must be an **administrator** of the
+  supergroup and polling must opt into `message_reaction` (done in `mod.ts` — Telegram excludes it
+  from defaults). TG-initiated react echoes are deduplicated via a pending mark, so genuine
+  reactions from your own phone still relay; WA reaction carriers never surface as `You: ❤️` text.
 - Group joins/leaves/admin changes post service lines; renames also rename the topic.
 - `General`-topic messages (no `message_thread_id`) are ignored except commands.
 - Captions over 1024 chars arrive as media + follow-up text message.

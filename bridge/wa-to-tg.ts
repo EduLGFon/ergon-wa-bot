@@ -84,8 +84,14 @@ async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 	for (const m of messages) {
 		try {
 			if (!m?.message || !m.key) continue
-			// Skip protocol traffic (deletes, history sync, …)
+			// Skip protocol traffic (deletes, history sync, …) and reaction
+			// carriers: Baileys delivers every reaction BOTH as messages.upsert
+			// with reactionMessage content AND as messages.reaction. The
+			// carrier's reactionMessage.text is the emoji itself, which
+			// getMsgText would otherwise relay as a bogus "You: ❤️" message —
+			// reactions travel via handleWaReactions only.
 			if (findKey(m.message, 'protocolMessage')) continue
+			if (findKey(m.message, 'reactionMessage')) continue
 
 			const jid = m.key.remoteJid
 			if (!jid || jid === 'status@broadcast') continue
@@ -215,8 +221,6 @@ async function handleWaReactions(
 
 	for (const { key, reaction } of reactions) {
 		try {
-			// Skip our own TG→WA reacts echoing back (loop guard).
-			if ((reaction as any)?.key?.fromMe) continue
 			const targetId = key?.id
 			const jid = key?.remoteJid
 			if (!targetId || !jid || jid === 'status@broadcast') continue
@@ -225,13 +229,35 @@ async function handleWaReactions(
 			// Unmapped targets (pre-bridge history, pruned) can't be quoted
 			// by Telegram — nothing to attach the reaction to.
 			const target = db.getByWaMsgId(targetId, jid)
-			if (!target) continue
+			if (!target) {
+				console.debug(
+					`[BRIDGE] skipping WA reaction: target ${targetId} not in reply_map`,
+				)
+				continue
+			}
 
 			const emoji = waReactionToTgEmoji(reaction?.text)
+			// Echo of our own TG→WA react (marked before the WA send) — the
+			// TG message already shows this reaction; re-setting would loop.
+			// NOTE: no blanket fromMe skip here. The bridge socket is the
+			// owner's account, so genuine reactions made on the owner's phone
+			// arrive with fromMe=true too — skipping those would drop every
+			// own-phone reaction silently (only the marked echo is skipped).
+			if (db.takeTgReact(jid, targetId, emoji || '')) {
+				console.debug(
+					`[BRIDGE] skipping echo of TG-initiated react ${emoji} on ${targetId}`,
+				)
+				continue
+			}
 			const payload = emoji ? [{ type: 'emoji' as const, emoji }] : []
 			await limiter.enqueue(async () => {
 				try {
 					await tg!.api.setMessageReaction(supergroupId, target.tg_msg_id, payload as any)
+					console.debug(
+						`[BRIDGE] WA→TG reaction ${
+							emoji || '(removed)'
+						} on TG msg ${target.tg_msg_id}`,
+					)
 				} catch (e) {
 					// REACTION_INVALID = the emoji isn't usable here (not a
 					// Telegram reaction at all, or disabled in this chat's

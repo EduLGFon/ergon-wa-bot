@@ -249,4 +249,30 @@ export class BridgeDB {
 		this.pendingTgEdits.delete(k)
 		return true
 	}
+
+	// In-memory echo guard for TG-initiated reactions. A TG reaction is
+	// forwarded to WA via sendMessage({react}), and the server echoes that
+	// react back as `messages.reaction` with fromMe=true — indistinguishable
+	// from a genuine reaction made on the owner's own phone (the bridge
+	// socket IS the owner's account, so those are fromMe too). A blanket
+	// fromMe skip would drop all genuine own-phone reactions, so instead the
+	// TG→WA send marks (jid, target, emoji) synchronously beforehand and the
+	// WA→TG side consumes exactly one matching echo. Marked synchronously
+	// before the WA send; unmarked reactions always relay.
+	private pendingTgReacts = new Set<string>()
+
+	markTgReact(waJid: string, waMsgId: string, emoji: string): void {
+		if (this.pendingTgReacts.size > 1000) {
+			const oldest = this.pendingTgReacts.values().next().value
+			if (oldest !== undefined) this.pendingTgReacts.delete(oldest)
+		}
+		this.pendingTgReacts.add(`${waJid}\n${waMsgId}\n${emoji}`)
+	}
+
+	takeTgReact(waJid: string, waMsgId: string, emoji: string): boolean {
+		const k = `${waJid}\n${waMsgId}\n${emoji}`
+		if (!this.pendingTgReacts.has(k)) return false
+		this.pendingTgReacts.delete(k)
+		return true
+	}
 }

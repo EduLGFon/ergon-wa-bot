@@ -108,8 +108,11 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 
 	// Telegram reaction → WhatsApp reaction. Like quotes, this resolves the
 	// reacted-to Telegram message through reply_map to the WA key it mirrors.
-	// Loop guard: our own WA→TG setMessageReaction echoes back as an update
-	// from a bot user, which we ignore.
+	// Requires the bot to be supergroup admin + message_reaction in
+	// allowed_updates (see mod.ts) — otherwise these updates never arrive.
+	// Loop guard: our own WA→TG setMessageReaction does NOT echo back (per
+	// Telegram docs, bots don't receive updates for reactions set by bots),
+	// and the WA side consumes the one server echo via markTgReact/takeTgReact.
 	tg.on('message_reaction', async (ctx) => {
 		try {
 			const upd: any = ctx.update.message_reaction
@@ -118,13 +121,30 @@ export function registerTgHandlers(tg: Bot, db: BridgeDB, limiter: RateLimiter):
 			if (!upd.message_id) return
 
 			const entry = db.getReplyMap(upd.message_id)
-			if (!entry) return
+			if (!entry) {
+				console.debug(
+					`[BRIDGE] skipping TG reaction: TG msg ${upd.message_id} not in reply_map`,
+				)
+				return
+			}
 			const key = restoreWaKey(entry)
-			if (!key) return
+			if (!key) {
+				console.debug(
+					`[BRIDGE] skipping TG reaction: no WA key for TG msg ${upd.message_id}`,
+				)
+				return
+			}
 
 			const emoji = tgReactionToWaEmoji(upd.old_reaction, upd.new_reaction)
+			// Marked synchronously so the server echo of this react
+			// (arriving as WA `messages.reaction` with fromMe=true) is
+			// recognized and skipped instead of re-reacting on Telegram.
+			db.markTgReact(entry.wa_jid, entry.wa_msg_id, emoji)
 			await limiter.enqueue(async () => {
 				await bot.sock.sendMessage(entry.wa_jid, { react: { text: emoji, key } })
+				console.debug(
+					`[BRIDGE] TG→WA reaction ${emoji || '(removed)'} on ${entry.wa_msg_id}`,
+				)
 			})
 		} catch (e) {
 			console.error('[BRIDGE] TG→WA reaction failed:', e)

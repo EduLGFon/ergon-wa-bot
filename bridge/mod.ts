@@ -66,10 +66,39 @@ export function startBridge(): Bot | null {
 	tg.catch((e) => console.error('[BRIDGE] Telegram handler error:', e))
 	// Fire-and-forget: bot.start() long-polls until stopped; never await it
 	// here or wa.ts would never finish booting.
-	tg.start().catch((e) => console.error('[BRIDGE] Telegram polling stopped:', e))
+	//
+	// allowed_updates MUST list message_reaction explicitly: Telegram excludes
+	// it (with chat_member and message_reaction_count) from the default set,
+	// so without this the TG→WA reaction handler never fires — silently.
+	// The bot must also be an administrator in the supergroup, otherwise
+	// Telegram withholds these updates too (checked below, non-fatal warn).
+	tg.start({
+		allowed_updates: ['message', 'edited_message', 'message_reaction'],
+	}).catch((e) => console.error('[BRIDGE] Telegram polling stopped:', e))
+	void checkReactionPrereqs(tg, supergroupId)
 
 	console.log('[BRIDGE] running: WhatsApp <-> Telegram topic mirror active')
 	return tg
+}
+
+// Non-blocking sanity check: reacting on Telegram only reaches the bridge
+// when the bot is an admin of the supergroup. Warns once instead of failing
+// the boot — messaging works fine without it, reactions just stay silent.
+async function checkReactionPrereqs(tg: Bot, supergroupId: string): Promise<void> {
+	try {
+		const me = await tg.api.getMe()
+		const member = await tg.api.getChatMember(supergroupId, me.id).catch(() => null) as
+			| { status?: string }
+			| null
+		if (member && member.status !== 'administrator' && member.status !== 'creator') {
+			console.warn(
+				`[BRIDGE] Telegram reactions need the bot to be an administrator of the supergroup (currently: ${member.status}). ` +
+					'TG→WA reactions will not arrive until it is promoted.',
+			)
+		}
+	} catch (e) {
+		console.debug('[BRIDGE] reaction prereq check skipped:', e)
+	}
 }
 
 if (import.meta.main) {
