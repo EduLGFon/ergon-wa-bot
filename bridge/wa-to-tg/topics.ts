@@ -64,9 +64,14 @@ async function createOrRefreshMapping(
 	// Heal a mapping stored under a previous variant (bare LID first
 	// sighting, then PN with alt): keep the existing topic, move the row
 	// and its replies onto the canonical JID instead of creating dupe.
+	// Cross-kind heals (group <-> DM) are never legitimate - a poisoned
+	// alias must not let a group steal a DM topic or vice versa.
 	for (const variant of [...new Set([jid, ...(opts.aliases || [])])]) {
 		const known = db.getByJidOrAlias(variant)
-		if (known && !known.archived && known.whatsapp_jid !== jid) {
+		if (
+			known && !known.archived && known.whatsapp_jid !== jid &&
+			known.chat_type === chatType
+		) {
 			const old = known.whatsapp_jid
 			db.delete(old)
 			db.getOrCreate(
