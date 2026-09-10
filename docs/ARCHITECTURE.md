@@ -354,7 +354,8 @@ without touching WA.
   legacy fallback, single-group mode when equal); `move.ts` moves topics across groups (business:
   clean cut, personal: newest-100 `copyMessage` replay sourced from each row's home group with
   re-threading, old topic closed with pointer); `prompt.ts` posts the Personal/Business button
-  prompt once per new chat; `db.ts` `jid_aliases` maps every variant to the canonical JID plus
+  prompt once per new chat; `db.ts` `jid_aliases` maps user LID<->PN variants to the canonical JID
+  (group sender alts are never stored; boot purges mixed rows) plus
   `bucket`/`telegram_chat_id`/`prompt_msg_id` routing columns and a composite
   `(tg_chat_id, tg_msg_id)` reply key; `text.ts` unwrap + `@Name (+phone)` annotation;
   `media.ts`/`media-utils.ts` download + size/ext; `send.ts`/`send-media.ts` route by kind

@@ -23,16 +23,26 @@ export function isPnJid(jid: string): boolean {
 	return jid.endsWith('@s.whatsapp.net')
 }
 
+// True for group chat JIDs (never have LID/PN variants).
+export function isGroupJid(jid: string): boolean {
+	return jid.endsWith('@g.us')
+}
+
 // Alt JIDs Baileys attaches for the same chat (LID<->PN pair).
+// Group chats never merge sender alts: participantAlt identifies the
+// message author, not the chat, so storing it as a chat alias poisons
+// jid_aliases (user PN -> group) and later heals steal the group topic.
 export function altJidsOf(key: {
 	remoteJid?: string | null
 	remoteJidAlt?: string | null
 	participantAlt?: string | null
 }): string[] {
+	const primary = normalizeJid(key?.remoteJid)
+	if (isGroupJid(primary)) return []
 	const alts: string[] = []
 	for (const raw of [key?.remoteJidAlt, key?.participantAlt]) {
 		const n = normalizeJid(raw)
-		if (n && n !== normalizeJid(key?.remoteJid)) alts.push(n)
+		if (n && !isGroupJid(n) && n !== primary) alts.push(n)
 	}
 	return [...new Set(alts)]
 }
@@ -48,7 +58,9 @@ export function pickCanonical(primary: string, alts: string[]): string {
 }
 
 // Sync candidates for hot paths (edits/deletes/reactions): every known
-// variant of this key, so alias-aware DB lookups hit pre-migration rows.
+// variant of this chat, so alias-aware DB lookups hit pre-migration rows.
+// Group chats resolve to the group only - the participant is the author,
+// never an alias of the chat.
 export function candidatesOf(key: {
 	remoteJid?: string | null
 	remoteJidAlt?: string | null
@@ -56,14 +68,18 @@ export function candidatesOf(key: {
 	participantAlt?: string | null
 }): string[] {
 	const primary = normalizeJid(key?.remoteJid)
+	if (isGroupJid(primary)) return [primary].filter(Boolean)
 	const alts = altJidsOf(key)
 	const participant = normalizeJid(key?.participant)
-	const extra = participant && participant !== primary ? [participant] : []
+	const extra = participant && !isGroupJid(participant) && participant !== primary
+		? [participant]
+		: []
 	return [...new Set([pickCanonical(primary, alts), primary, ...alts, ...extra].filter(Boolean))]
 }
 
 // Full canonical JID for an incoming key. Falls back to lidMapping when
 // the server sent a bare LID with no alt (first sighting of a contact).
+// Group keys stay on the group JID with no sender aliases.
 export async function canonicalChatJid(
 	key: {
 		remoteJid?: string | null

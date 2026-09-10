@@ -203,6 +203,31 @@ export class BridgeDB {
 				canonical TEXT NOT NULL
 			)
 		`)
+		this.purgePoisonedAliases()
+	}
+
+	// Drop alias rows that mix chats with senders. A past wa-to-tg bug
+	// stored group participant alts as chat aliases (user PN -> group) and
+	// heal moves stored group -> user / group -> group. Only user-user
+	// LID<->PN pairs are legitimate, so anything touching @g.us (or any
+	// other non-user domain) is deleted. Runs every boot, returns the
+	// number of rows removed.
+	purgePoisonedAliases(): number {
+		try {
+			const res = this.db.prepare(
+				`DELETE FROM jid_aliases WHERE NOT (
+					(alias LIKE '%@lid' OR alias LIKE '%@s.whatsapp.net') AND
+					(canonical LIKE '%@lid' OR canonical LIKE '%@s.whatsapp.net')
+				)`,
+			).run() as unknown as { changes?: unknown }
+			const n = typeof res?.changes === 'number' ? res.changes : Number(res?.changes ?? 0)
+			if (n > 0) {
+				console.log(`[BRIDGE] purged ${n} poisoned jid_alias rows (group/sender mix)`)
+			}
+			return Number.isFinite(n) ? n : 0
+		} catch {
+			return 0
+		}
 	}
 
 	close(): void {
