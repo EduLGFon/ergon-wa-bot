@@ -378,9 +378,10 @@ without touching WA.
   line, TG echoes consumed via the `pendingTgPins` guard); `calls.ts` (one editable notice per call
   id across offer/ringing/ accept/reject/timeout/terminate, missed vs ended lines); `polls.ts` (poll
   crypto metadata, vote decrypt, result lines, vote encrypt + relay); `poll-tally.ts` (live per-poll
-  tally - one edited message showing per-option counts, percentages and voters); `rich.ts`
-  (contacts, invites, events, scheduled calls, sticker packs and offline call logs as text notices);
-  `special.ts` (location/contact/poll mapping); `unsupported.ts`/`unsupported-preview.ts` friendly
+  tally - one edited message showing per-option counts, percentages and voters, folding to a one-off
+  per-vote reply line when no tally message can be posted); `rich.ts` (contacts, invites, events,
+  scheduled calls, sticker packs and offline call logs as text notices); `special.ts`
+  (location/contact/poll mapping); `unsupported.ts`/`unsupported-preview.ts` friendly
   `type
   (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
   `tgCall` queue + `notifyTopic` (never throws/loops).

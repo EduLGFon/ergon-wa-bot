@@ -10,7 +10,9 @@
 // Echoes of our own TG-TO-WA votes pass through unchanged - applying a
 // voter's selection is idempotent, so no echo guard is needed. Deletes the
 // tally when the last voter leaves, and re-posts fresh if the tally message
-// was lost (restart, manual delete).
+// was lost (restart, manual delete). When no tally message can be created
+// the vote still lands as a one-off `🗳️ X voted:` reply line (the old
+// per-vote behavior).
 import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
 import { chatForReply } from './routing.ts'
 import type { GroupIds } from './routing.ts'
@@ -151,6 +153,26 @@ export async function applyPollTally(
 		db.savePollTally(entry.tg_chat_id, entry.tg_msg_id, JSON.stringify(t))
 	} catch (e) {
 		console.error('[BRIDGE] failed to post poll tally:', shortErr(e))
+		// No tally message possible - don't lose the vote. Fall back to a
+		// one-off reply line under the poll (the old per-vote behavior).
+		if (names.length > 0) {
+			try {
+				await tgCall(
+					() =>
+						tg!.api.sendMessage(chatId, `🗳️ ${voterName} voted: ${names.join(', ')}`, {
+							message_thread_id: threadId,
+							reply_parameters: {
+								message_id: entry.tg_msg_id,
+								allow_sending_without_reply: true,
+							},
+						}),
+					'poll-vote',
+				)
+				return
+			} catch (e2) {
+				console.error('[BRIDGE] poll-vote fallback failed:', shortErr(e2))
+			}
+		}
 		await notifyTopic(
 			chatId,
 			threadId,
