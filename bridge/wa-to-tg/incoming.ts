@@ -83,7 +83,9 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// Own messages: TG-TO-WA sends re-emit here with fromMe=true. Those
 			// are already in reply_map, so skip them - but messages sent from
 			// the phone/client are new (unmapped) and mirror with a `You:`
-			// label. The map check doubles as redelivery dedupe.
+			// label. The map check doubles as redelivery dedupe. Caption
+			// follow-ups have no TG row, so their echoes are marked by id.
+			if (m.key.fromMe && !!m.key.id && db.takeFollowUp(m.key.id)) continue
 			const echoRow = m.key.fromMe && !!m.key.id
 				? db.getByWaMsgIdAny(m.key.id, [jid, ...aliases])
 				: undefined

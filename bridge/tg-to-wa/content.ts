@@ -23,8 +23,21 @@ export async function buildWaContent(
 	}
 	if (msg.poll) {
 		const p = msg.poll
-		const opts = (p.options || []).map((o: any) => `- ${o.text}`).join('\n')
-		return { text: `${text ? text + '\n' : ''}Poll: ${p.question}\n${opts}`.trim() }
+		const values = tgPollOptions(msg)
+		if (!values) {
+			const opts = (p.options || []).map((o: any) => `- ${o?.text}`).join('\n')
+			const fallback = `${text ? text + '\n' : ''}Poll: ${p.question}\n${opts}`.trim()
+			return fallback ? { text: fallback } : null
+		}
+		// Quiz mode has no WhatsApp equivalent - the correct answer is
+		// dropped and the quiz travels as a regular poll.
+		return {
+			poll: {
+				name: String(p.question || 'Poll').slice(0, 255),
+				values,
+				selectableCount: p.allows_multiple_answers ? values.length : 1,
+			},
+		}
 	}
 	if (!media) return text ? { text } : null
 	// Baileys' getStream() only accepts Buffer | { stream } | { url }. A raw
@@ -82,6 +95,17 @@ export async function buildWaContent(
 				caption: text || undefined,
 			}
 	}
+}
+
+// Ordered option texts of a Telegram poll, or null when unusable (fewer
+// than 2 non-blank options). Shared by the WA poll builder below and the
+// vote-metadata stored after the send.
+export function tgPollOptions(msg: any): string[] | null {
+	const opts = (msg?.poll?.options || [])
+		.map((o: any) => String(o?.text || '').trim())
+		.filter((o: string) => o.length > 0)
+		.slice(0, 12)
+	return opts.length >= 2 ? opts : null
 }
 
 // Rebuild the Baileys key of the WA message a Telegram message mirrors.

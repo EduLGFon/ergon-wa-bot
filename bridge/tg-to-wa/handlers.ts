@@ -2,7 +2,8 @@
 // Reaction and edit handlers live in handler-events.ts.
 import { bucketOfChat, type GroupIds } from '../wa-to-tg/routing.ts'
 import { notifyTopic, shortErr, tgDownloadFailureLine } from './replies.ts'
-import { buildQuoted, buildWaContent } from './content.ts'
+import { buildQuoted, buildWaContent, tgPollOptions } from './content.ts'
+import { selfJid } from '../wa-to-tg/jid.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
 import { bufferTgAlbumItem } from './album.ts'
 import { tgEntitiesToWa } from '../format.ts'
@@ -103,7 +104,7 @@ export function registerTgMessageHandler(
 			const waContent = await buildWaContent(textForWa, media, msg)
 			if (!waContent) return
 			const needsTextFollowUp = !!textForWa &&
-				(!!msg.location || !!msg.video_note ||
+				(!!msg.location || !!msg.video_note || !!msg.poll ||
 					(msg.contact && !String(waContent.text || '').includes(textForWa)))
 			await waSend(async () => {
 				const sent = await bot.sock.sendMessage(
@@ -125,9 +126,25 @@ export function registerTgMessageHandler(
 							replyTo: msg.reply_to_message?.message_id ?? null,
 						},
 					)
+					// Telegram-created polls become native WA polls - keep the
+					// metadata so votes relay both ways (the secret backfills
+					// from the send echo, the creator is always us).
+					const pollId = msg.poll?.id
+					const pollOpts = msg.poll ? tgPollOptions(msg) : null
+					if (pollId && pollOpts) {
+						db.savePollMeta(chatId, msg.message_id, {
+							secret: null,
+							options: pollOpts,
+							creator: selfJid(),
+							pollId,
+						})
+					}
 				}
 				if (needsTextFollowUp) {
-					await bot.sock.sendMessage(mapping.whatsapp_jid, { text: textForWa })
+					const follow = await bot.sock.sendMessage(mapping.whatsapp_jid, {
+						text: textForWa,
+					})
+					if (follow?.key?.id) db.markFollowUp(follow.key.id)
 				}
 				db.updateLastActive(mapping.whatsapp_jid)
 			})

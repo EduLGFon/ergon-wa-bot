@@ -657,6 +657,26 @@ export class BridgeDB {
 		return true
 	}
 
+	// In-memory echo guard for caption follow-ups. Poll/location/video-note
+	// captions travel as a second WA text with no TG row of their own, so
+	// reply_map cannot catch the echo - the follow-up id is marked instead
+	// and its echo skipped, otherwise it re-mirrors as a duplicate You line.
+	private pendingFollowUps = new Set<string>()
+
+	markFollowUp(waMsgId: string): void {
+		if (this.pendingFollowUps.size > 200) {
+			const oldest = this.pendingFollowUps.values().next().value
+			if (oldest !== undefined) this.pendingFollowUps.delete(oldest)
+		}
+		if (waMsgId) this.pendingFollowUps.add(waMsgId)
+	}
+
+	takeFollowUp(waMsgId: string): boolean {
+		if (!waMsgId || !this.pendingFollowUps.has(waMsgId)) return false
+		this.pendingFollowUps.delete(waMsgId)
+		return true
+	}
+
 	// In-memory echo guard for TG-initiated poll votes. A TG vote is relayed
 	// via relayMessage({pollUpdateMessage}), and the server echoes it back
 	// as a fromMe pollUpdateMessage upsert - indistinguishable from a genuine

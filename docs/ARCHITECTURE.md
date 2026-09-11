@@ -391,10 +391,10 @@ without touching WA.
   `buckets.ts` Personal/Business buttons (`callback_query`, chat resolved via stored prompt ID) plus
   `/personal` `/business` topic commands, serialized per chat (double-tap never opens two topics);
   `content.ts` WA payload builders (`Buffer.from` at boundary, webm->webp transcode, tgs->document,
-  poll/contact text fallback); `media.ts` largest-photo pick + `getFile` fetch with double size
-  caps; `replies.ts` notices + ffmpeg webm conversion; `album.ts` batching; `commands.ts` topic
-  admin (`/start /id /topics /archive /close /reopen /mute /unmute`); `newchat.ts`
-  `/new <phone> [name]` with `onWhatsApp` verification (inherits the group's bucket).
+  native poll creation, contact text fallback); `media.ts` largest-photo pick + `getFile` fetch with
+  double size caps; `replies.ts` notices + ffmpeg webm conversion; `album.ts` batching;
+  `commands.ts` topic admin (`/start /id /topics /archive /close /reopen /mute /unmute`);
+  `newchat.ts` `/new <phone> [name]` with `onWhatsApp` verification (inherits the group's bucket).
 - Cross-cutting: pairing auto-creates on first WA sight (or `/new`) into the personal group as
   `undecided` until the buttons/commands classify it; renames sync, mute/archive pause both
   directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes no
