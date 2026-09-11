@@ -30,6 +30,31 @@ interface CallState {
 const liveCalls = new Map<string, CallState>()
 const MAX_LIVE_CALLS = 50
 
+// Recently closed calls by chat JID - WhatsApp posts a callLogMessage right
+// after the live signaling, which would duplicate the notice above. The rich
+// fallback drops call logs inside this window and renders older ones (calls
+// from before the bridge was watching) as text instead.
+const closedCalls = new Map<string, number>()
+const CALL_CLOSE_WINDOW_MS = 120_000
+
+function markCallClosed(jid: string): void {
+	if (closedCalls.size > 200) {
+		const oldest = closedCalls.keys().next().value
+		if (oldest !== undefined) closedCalls.delete(oldest)
+	}
+	closedCalls.set(jid, Date.now())
+}
+
+export function wasCallClosedRecently(jid: string): boolean {
+	const at = closedCalls.get(jid)
+	if (!at) return false
+	if (Date.now() - at > CALL_CLOSE_WINDOW_MS) {
+		closedCalls.delete(jid)
+		return false
+	}
+	return true
+}
+
 // Short call duration - largest two units, e.g. 45s, 2m 30s, 1h 3m.
 function fmtDuration(ms: number): string {
 	const total = Math.max(0, Math.round(ms / 1000))
@@ -147,6 +172,7 @@ async function handleOneCall(ev: WACallEvent): Promise<void> {
 		return
 	}
 	state.lastLine = line
+	if (terminal) markCallClosed(jid)
 	try {
 		if (state.tgMsgId == null) {
 			const sent = await tgCall(

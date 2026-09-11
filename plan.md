@@ -55,10 +55,12 @@ startedAt/terminate. Single status lines, no grouping window needed beyond the c
 
 ## 5. Other message types as text notices
 
-Replace generic "didn't cross" lines with useful content: `contactsArrayMessage` -> N `sendContact`
-calls; `groupInviteMessage`, `eventMessage`/`eventResponseMessage`, `scheduledCallCreationMessage`,
-`stickerPackMessage`, `pinInChatMessage` (until section 3 lands) -> formatted notices. Touches
-`unsupported.ts` / `unsupported-preview.ts` / `incoming.ts` routing.
+Replace generic "didn't cross" lines with useful content (`rich.ts`, wired in `incoming.ts` before
+the empty-relay branch): `contactsArrayMessage` -> contact list text; `groupInviteMessage`,
+`eventMessage`/`eventResponseMessage`, `scheduledCallCreationMessage`, `stickerPackMessage` ->
+formatted notices; `callLogMessage` -> text unless it duplicates a just-relayed live call
+(suppressed via `wasCallClosedRecently`, 120s window). Handled types leave
+`WA_UNSUPPORTED_FRIENDLY`.
 
 ## 6. Polls - creation, votes, results
 

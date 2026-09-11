@@ -52,25 +52,6 @@ export function previewUnsupportedContent(primary: string, node: any): string | 
 				return truncateOneLine(node.name, 160)
 			case 'albumMessage':
 				return firstString(node, ['caption'])
-			case 'contactsArrayMessage': {
-				const list = Array.isArray(node.contacts) ? node.contacts : []
-				const names = list
-					.map((c: any) => String(c?.displayName ?? '').trim())
-					.filter(Boolean)
-					.slice(0, 3)
-				return truncateOneLine(
-					`${list.length} contact${list.length === 1 ? '' : 's'}${
-						names.length > 0 ? `: ${names.join(', ')}` : ''
-					}`,
-				)
-			}
-			case 'groupInviteMessage':
-				return firstString(node, ['groupName', 'caption']) ??
-					truncateOneLine(
-						[node.groupName, node.inviteCode ? `code ${node.inviteCode}` : null]
-							.filter(Boolean)
-							.join(' '),
-					)
 			case 'buttonsMessage':
 			case 'templateMessage':
 			case 'interactiveMessage':
@@ -94,28 +75,10 @@ export function previewUnsupportedContent(primary: string, node: any): string | 
 			case 'nativeFlowResponseMessage':
 				return firstString(node, ['body', 'title']) ??
 					firstString(node.nativeFlowResponseMessage ?? {}, ['name', 'paramsJson'])
-			case 'eventMessage':
-				return firstString(node, ['name', 'description', 'location']) ??
-					(typeof node.startTime === 'number' ? `starts ${node.startTime}` : null)
-			case 'eventResponseMessage':
-				return firstString(node, ['eventName']) ??
-					(typeof node.response === 'string'
-						? truncateOneLine(`response ${node.response}`)
-						: null)
-			case 'callLogMessage':
-				return firstString(node, ['displayName']) ??
-					(typeof node.duration === 'number'
-						? truncateOneLine(`duration ${node.duration}s`)
-						: null)
-			case 'scheduledCallCreationMessage':
-			case 'scheduledCallEditMessage':
-				return firstString(node, ['scheduledCallName', 'title'])
 			case 'productMessage':
 			case 'orderMessage':
 			case 'invoiceMessage':
 				return firstString(node, ['title', 'description', 'currencyCode'])
-			case 'stickerPackMessage':
-				return firstString(node, ['name', 'stickerPackId'])
 			case 'newsletterAdminInviteMessage':
 				return firstString(node, ['newsletterName', 'caption'])
 			case 'highlyStructuredMessage':

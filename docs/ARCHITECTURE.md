@@ -49,10 +49,10 @@ bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module di
   bridge/format.ts       # TG entities <-> WA markdown converters
   bridge/rate-limiter.ts # FIFO flood gate with 429 retry
   bridge/wa-to-tg.ts     # facade re-exporting wa-to-tg/
-  bridge/wa-to-tg/       # 28 modules: relay, state, incoming, dispatch, chat, topics, jid,
+  bridge/wa-to-tg/       # 29 modules: relay, state, incoming, dispatch, chat, topics, jid,
                          # routing, move, prompt, text, media, media-utils, send, send-media,
                          # quote, album, album-flush, album-send, edits, deletes, pins, calls,
-                         # reactions, special, unsupported, unsupported-preview, errors
+                         # reactions, special, rich, unsupported, unsupported-preview, errors
   bridge/tg-to-wa/       # 9 modules: handlers, handler-events, content, media,
                          # replies, album, commands, buckets, newchat
 class/                   # domain models: baileys.ts, cmd.ts, collection.ts,
@@ -372,10 +372,12 @@ without touching WA.
   last-writer-wins, `REACTION_INVALID` -> heart retry); `pins.ts` (pin/unpin carriers resolve the
   mirror via `reply_map`, pin natively with a service line, TG echoes consumed via the
   `pendingTgPins` guard); `calls.ts` (one editable notice per call id across offer/ringing/
-  accept/reject/timeout/terminate, missed vs ended lines); `special.ts` (location/contact/poll
-  mapping); `unsupported.ts`/`unsupported-preview.ts` friendly `type (rawKey) + preview + sender`
-  notices; `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never
-  throws/loops).
+  accept/reject/timeout/terminate, missed vs ended lines); `rich.ts` (contacts, invites, events,
+  scheduled calls, sticker packs and offline call logs as text notices); `special.ts`
+  (location/contact/poll mapping); `unsupported.ts`/`unsupported-preview.ts` friendly
+  `type
+  (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
+  `tgCall` queue + `notifyTopic` (never throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
   mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering
   (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback header,

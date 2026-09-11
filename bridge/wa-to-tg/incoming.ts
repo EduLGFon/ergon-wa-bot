@@ -11,6 +11,7 @@ import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
 import { getSpecialContent } from './special.ts'
+import { getRichNotice } from './rich.ts'
 import { handleWaPin } from './pins.ts'
 import { downloadWaMedia } from './media.ts'
 import { findKey } from '@util/functions.ts'
@@ -101,6 +102,12 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 				special = null
 			}
 
+			// Rich types with no native Telegram mapping degrade to a readable
+			// text notice instead of the unsupported line below.
+			if (!text && !media && !special) {
+				const rich = getRichNotice(m.message, jid)
+				if (rich) text = rich
+			}
 			if (!text && !media && !special) {
 				if (topicId !== null) await notifyEmptyRelay(cid, topicId, dl, m, senderName)
 				continue
