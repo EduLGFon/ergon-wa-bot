@@ -3,7 +3,7 @@
 // View-once and ephemeral wrappers hide the real payload, and Telegram cannot
 // resolve WhatsApp identities - these pure helpers peel wrappers, extract
 // text and annotate mentions so downstream senders stay simple.
-import { normalizeJid } from './jid.ts'
+import { stripDevice } from './jid.ts'
 import { findKey } from '@util/functions.ts'
 import type { proto } from 'baileys'
 
@@ -96,11 +96,7 @@ const TOKEN_RE = /@[^@\s.,;:!?)]+/g
 // Canonical key for owner comparison - normalize, then strip any device
 // suffix on both sides so `123:4@s.whatsapp.net` still matches its mention.
 function ownerKey(jid: string | undefined | null): string {
-	const n = normalizeJid(typeof jid === 'string' ? jid : '')
-	if (!n) return ''
-	const at = n.indexOf('@')
-	if (at < 0) return n
-	return `${n.slice(0, at).split(':')[0]}@${n.slice(at + 1)}`
+	return stripDevice(typeof jid === 'string' ? jid : '')
 }
 
 // True when the message mentions everyone (@all): WhatsApp marks those with

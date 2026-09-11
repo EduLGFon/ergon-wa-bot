@@ -18,6 +18,16 @@ export function normalizeJid(jid: string | undefined | null): string {
 	}
 }
 
+// Normalized JID with any device suffix removed (`123:4@s.whatsapp.net` ->
+// `123@s.whatsapp.net`) for account-level comparisons.
+export function stripDevice(jid: string | undefined | null): string {
+	const n = normalizeJid(typeof jid === 'string' ? jid : '')
+	if (!n) return ''
+	const at = n.indexOf('@')
+	if (at < 0) return n
+	return `${n.slice(0, at).split(':')[0]}@${n.slice(at + 1)}`
+}
+
 // True for phone-number user JIDs (the stable canonical form for DMs).
 export function isPnJid(jid: string): boolean {
 	return jid.endsWith('@s.whatsapp.net')
@@ -101,6 +111,18 @@ export async function ownerWaJids(): Promise<string[]> {
 		return [...out].filter(Boolean)
 	} catch {
 		return []
+	}
+}
+
+// Device-stripped JID of the bridge owner's own WA account, or '' when the
+// socket is not connected yet. Sync shortcut for hot paths that only need
+// the bare account (outgoing detection); use ownerWaJids for full matching.
+export function selfJid(): string {
+	try {
+		const raw = (bot.sock as any)?.user?.id
+		return typeof raw === 'string' ? stripDevice(raw) : ''
+	} catch {
+		return ''
 	}
 }
 

@@ -49,9 +49,9 @@ bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module di
   bridge/format.ts       # TG entities <-> WA markdown converters
   bridge/rate-limiter.ts # FIFO flood gate with 429 retry
   bridge/wa-to-tg.ts     # facade re-exporting wa-to-tg/
-  bridge/wa-to-tg/       # 27 modules: relay, state, incoming, dispatch, chat, topics, jid,
+  bridge/wa-to-tg/       # 28 modules: relay, state, incoming, dispatch, chat, topics, jid,
                          # routing, move, prompt, text, media, media-utils, send, send-media,
-                         # quote, album, album-flush, album-send, edits, deletes, pins,
+                         # quote, album, album-flush, album-send, edits, deletes, pins, calls,
                          # reactions, special, unsupported, unsupported-preview, errors
   bridge/tg-to-wa/       # 9 modules: handlers, handler-events, content, media,
                          # replies, album, commands, buckets, newchat
@@ -344,21 +344,21 @@ without touching WA.
 - `rate-limiter.ts`: one global FIFO queue per limiter; every `tg.api.*` call takes a slot; 429s
   retry unbounded (front-requeue, `retry_after + 500ms`, max 120s) so nothing is dropped; queue over
   500 applies producer backpressure.
-- WA->TG (`wa-to-tg.ts` facade + 26 modules): `relay.ts` attaches six socket listeners;
-  `incoming.ts` is the main loop (skip protocol/reaction/status, echo-dedupe via `reply_map`,
-  canonicalize LID/PN via `jid.ts`, resolve/create topic in the chat's group, mentions, media
-  download, special-content degrade, then hand off); `dispatch.ts` assembles the body (quote
-  resolve, label, entities, sticker fallback), routes album-or-direct and fires the classification
-  prompt for undecided chats; `chat.ts` owns name resolution (own pushName ignored for outgoing 1:1)
-  and topic creation; `topics.ts` owns the mapping ensure (per-JID in-flight lock, LID/PN alias
-  healing with bucket kept, outgoing never renames, 1:1 renames update the forum title);
-  `routing.ts` resolves the personal/business home group (`TELEGRAM_SUPERGROUP_PERSONAL/_BUSINESS`,
-  legacy fallback, single-group mode when equal); `move.ts` moves topics across groups (business:
-  clean cut, personal: newest-100 `copyMessage` replay sourced from each row's home group with
-  re-threading, old topic closed with pointer); `prompt.ts` posts the Personal/Business button
-  prompt once per new chat; `db.ts` `jid_aliases` maps user LID<->PN variants to the canonical JID
-  (group sender alts are never stored; boot purges mixed rows) plus
-  `bucket`/`telegram_chat_id`/`prompt_msg_id` routing columns and a composite
+- WA->TG (`wa-to-tg.ts` facade + 28 modules): `relay.ts` attaches seven socket listeners (upsert,
+  reaction, update, delete, call, group-participants, groups); `incoming.ts` is the main loop (skip
+  protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via `jid.ts`,
+  resolve/create topic in the chat's group, mentions, media download, special-content degrade, then
+  hand off); `dispatch.ts` assembles the body (quote resolve, label, entities, sticker fallback),
+  routes album-or-direct and fires the classification prompt for undecided chats; `chat.ts` owns
+  name resolution (own pushName ignored for outgoing 1:1) and topic creation; `topics.ts` owns the
+  mapping ensure (per-JID in-flight lock, LID/PN alias healing with bucket kept, outgoing never
+  renames, 1:1 renames update the forum title); `routing.ts` resolves the personal/business home
+  group (`TELEGRAM_SUPERGROUP_PERSONAL/_BUSINESS`, legacy fallback, single-group mode when equal);
+  `move.ts` moves topics across groups (business: clean cut, personal: newest-100 `copyMessage`
+  replay sourced from each row's home group with re-threading, old topic closed with pointer);
+  `prompt.ts` posts the Personal/Business button prompt once per new chat; `db.ts` `jid_aliases`
+  maps user LID<->PN variants to the canonical JID (group sender alts are never stored; boot purges
+  mixed rows) plus `bucket`/`telegram_chat_id`/`prompt_msg_id` routing columns and a composite
   `(tg_chat_id, tg_msg_id)` reply key; `text.ts` unwrap + `@Name (+phone)` annotation + owner
   `text_mention` spans (`@all` via `nonJidMentions`, direct via owner-JID match, merged into
   entities by `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download + size/ext;
@@ -371,9 +371,10 @@ without touching WA.
   stored snapshot, else hard delete + drop mapping); `reactions.ts` (emoji normalize,
   last-writer-wins, `REACTION_INVALID` -> heart retry); `pins.ts` (pin/unpin carriers resolve the
   mirror via `reply_map`, pin natively with a service line, TG echoes consumed via the
-  `pendingTgPins` guard); `special.ts` (location/contact/poll mapping);
-  `unsupported.ts`/`unsupported-preview.ts` friendly `type (rawKey) + preview + sender` notices;
-  `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never
+  `pendingTgPins` guard); `calls.ts` (one editable notice per call id across offer/ringing/
+  accept/reject/timeout/terminate, missed vs ended lines); `special.ts` (location/contact/poll
+  mapping); `unsupported.ts`/`unsupported-preview.ts` friendly `type (rawKey) + preview + sender`
+  notices; `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never
   throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
   mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering

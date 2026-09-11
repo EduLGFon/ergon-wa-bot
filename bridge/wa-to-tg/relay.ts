@@ -6,12 +6,13 @@
 import { handleGroupParticipants, handleGroupUpdates } from './chat.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
 import { handleWaReactions } from './reactions.ts'
+import { handleWaCalls } from './calls.ts'
 import { relayCtx, setRelayCtx } from './state.ts'
 import { handleWAMessages } from './incoming.ts'
 import { handleWaDeletes } from './deletes.ts'
 import { handleWaEdits } from './edits.ts'
+import type { proto, WACallEvent } from 'baileys'
 import type { BridgeDB } from '../db.ts'
-import type { proto } from 'baileys'
 import type { Bot } from 'grammy'
 import bot from '@plugin/bot.ts'
 
@@ -52,6 +53,15 @@ export function attachWaRelay(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateL
 			}
 		},
 	)
+	// Live call signaling on the same shared socket - each call id
+	// collapses into one editable topic notice (see calls.ts).
+	bot.sock.ev.on('call', async (calls: WACallEvent[]) => {
+		try {
+			await handleWaCalls(calls)
+		} catch (e) {
+			console.error('[BRIDGE] WA-TO-TG call handler failed:', e)
+		}
+	})
 	// Group membership / subject changes -> service lines in the topic.
 	bot.sock.ev.on('group-participants.update', async (upd: any) => {
 		try {
