@@ -5,6 +5,7 @@
 // row and delivers overflow captions as one follow-up text.
 import { extOf, storedEntities, storedText } from './media-utils.ts'
 import { relayCtx, tgCall } from './state.ts'
+import { msgSecretOf } from './polls.ts'
 import type { AlbumItem } from './album.ts'
 import { InputFile } from 'grammy'
 
@@ -62,6 +63,7 @@ export async function sendAlbumChunk(
 				storedEntities(it.entities),
 				{ chatId, replyTo: first.replyToTgId },
 			)
+			db!.saveMsgSecret(chatId, s.message_id, msgSecretOf(it.m))
 		}
 	})
 	// Captions beyond the first don't fit in a media group - deliver them
@@ -84,4 +86,5 @@ export async function sendAlbumChunk(
 		null,
 		{ chatId },
 	)
+	db!.saveMsgSecret(chatId, sent.message_id, msgSecretOf(last.m))
 }

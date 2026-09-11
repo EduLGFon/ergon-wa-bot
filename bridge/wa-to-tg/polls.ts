@@ -25,9 +25,9 @@ import { phoneOf } from './text.ts'
 import type { ReplyMapRow } from '../db.ts'
 import bot from '@plugin/bot.ts'
 
-// Poll crypto metadata captured at mirror time - the messageSecret encrypts
-// votes in both directions, the creator JID signs them.
-export function pollSecretOf(waMsg: proto.IWebMessageInfo): Uint8Array | null {
+// Original messageSecret captured at mirror time - seals poll votes and,
+// since newer clients encrypt every edit, MESSAGE_EDIT envelopes too.
+export function msgSecretOf(waMsg: proto.IWebMessageInfo): Uint8Array | null {
 	try {
 		const s = (waMsg?.message as any)?.messageContextInfo?.messageSecret
 		if (s && typeof s.length === 'number' && s.length > 0) return s as Uint8Array

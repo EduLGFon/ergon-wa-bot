@@ -12,7 +12,8 @@ import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
 import { handleWaReactionCarrier, reactionSummaryMode } from './reaction-summary.ts'
 import { getSpecialContent } from './special.ts'
-import { handleWaPollResults, handleWaPollVote } from './polls.ts'
+import { handleWaPollResults, handleWaPollVote, msgSecretOf } from './polls.ts'
+import { handleWaSecretEdit } from './secret-edits.ts'
 import { getRichNotice } from './rich.ts'
 import { handleWaPin } from './pins.ts'
 import { downloadWaMedia } from './media.ts'
@@ -65,6 +66,13 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 				await handleWaPollResults(m)
 				continue
 			}
+			// Secret-encrypted envelopes (newer clients seal every edit this
+			// way) decrypt against the stored original secret, or degrade to a
+			// calm line. Resolves its own mirror, no topic is created here.
+			if (findKey(m.message, 'secretEncryptedMessage')) {
+				await handleWaSecretEdit(m)
+				continue
+			}
 
 			const rawJid = m.key.remoteJid
 			if (!rawJid || rawJid === 'status@broadcast') continue
@@ -76,9 +84,18 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// are already in reply_map, so skip them - but messages sent from
 			// the phone/client are new (unmapped) and mirror with a `You:`
 			// label. The map check doubles as redelivery dedupe.
-			const echo = m.key.fromMe && !!m.key.id &&
-				!!db.getByWaMsgIdAny(m.key.id, [jid, ...aliases])
-			if (echo) continue
+			const echoRow = m.key.fromMe && !!m.key.id
+				? db.getByWaMsgIdAny(m.key.id, [jid, ...aliases])
+				: undefined
+			if (echoRow) {
+				// Own-send echo: the mirror already exists, but the echo may
+				// carry the messageSecret our send lacked - backfill it so later
+				// encrypted edits of this message can decrypt.
+				if (!echoRow.wa_msg_secret) {
+					db.saveMsgSecret(echoRow.tg_chat_id, echoRow.tg_msg_id, msgSecretOf(m))
+				}
+				continue
+			}
 			const isGroup = jid.endsWith('@g.us')
 			const chatType: '1:1' | 'group' = isGroup ? 'group' : '1:1'
 			const fromMe = !!m.key.fromMe

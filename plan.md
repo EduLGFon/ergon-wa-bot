@@ -83,7 +83,15 @@ formatted notices; `callLogMessage` -> text unless it duplicates a just-relayed 
 `reactionMessage` upsert carrier (`pushName` -> group metadata -> phone, never bare LID). Name-first
 rule also applies to poll vote and call author display. Env toggle `BRIDGE_REACTION_SUMMARY`.
 
+## 8. Encrypted message edits (secretEncryptedMessage)
+
+Newer WhatsApp clients seal every edit in a secretEncryptedMessage envelope (MESSAGE_EDIT),
+encrypted with the original message's messageSecret - Baileys has no handling. `reply_map` keeps
+`wa_msg_secret` for every mirror (plus echo backfill for own sends); `secret-edits.ts` decrypts
+(HKDF "Message Edit", empty AAD, LID/PN identity fallback) and replays through the normal edit path,
+degrading to a calm reply under the mirror when undecryptable.
+
 ## Order
 
 1. Emoji expansion, 2. mentions, 3. pins, 4. calls, 5. rich types,
-2. polls, 7. reaction summary.
+2. polls, 7. reaction summary, 8. secret edits.

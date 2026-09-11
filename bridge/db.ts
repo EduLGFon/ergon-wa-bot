@@ -59,6 +59,10 @@ export interface ReplyMapRow {
 	wa_poll_options: string | null
 	wa_poll_creator: string | null
 	tg_poll_id: string | null
+	// Original messageSecret for encrypted-edit decryption. Newer WhatsApp
+	// clients seal every edit in a secretEncryptedMessage envelope keyed by
+	// this secret - null on rows mirrored before it was captured.
+	wa_msg_secret: Uint8Array | null
 }
 
 // Mirror kinds stored in reply_map.tg_kind. Only WA→TG rows carry a real
@@ -217,6 +221,9 @@ export class BridgeDB {
 		}
 		if (!pollCols.some((c) => c.name === 'tg_poll_id')) {
 			this.db.exec(`ALTER TABLE reply_map ADD COLUMN tg_poll_id TEXT DEFAULT NULL`)
+		}
+		if (!pollCols.some((c) => c.name === 'wa_msg_secret')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_msg_secret BLOB DEFAULT NULL`)
 		}
 		this.db.exec(
 			'CREATE INDEX IF NOT EXISTS idx_reply_poll ON reply_map(tg_poll_id)',
@@ -523,6 +530,20 @@ export class BridgeDB {
 			tgChatId,
 			tgMsgId,
 		)
+	}
+
+	// Original messageSecret for a mirrored message - decrypts later
+	// secretEncryptedMessage (MESSAGE_EDIT) envelopes sealed against it.
+	// Skips nulls so rows mirrored before capture keep nothing.
+	saveMsgSecret(tgChatId: string, tgMsgId: number, secret: Uint8Array | null): void {
+		if (!secret) return
+		try {
+			this.db.prepare(
+				'UPDATE reply_map SET wa_msg_secret = ? WHERE tg_chat_id = ? AND tg_msg_id = ?',
+			).run(Buffer.from(secret), tgChatId, tgMsgId)
+		} catch {
+			// Best effort - a missing secret only loses encrypted edits.
+		}
 	}
 
 	// Reverse lookup for Telegram poll answers: poll_answer updates carry

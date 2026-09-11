@@ -5,7 +5,7 @@
 // long captions overflow - media-kind endpoints live in send-media.ts so
 // this router stays small.
 import { extOf, storedEntities, storedText } from './media-utils.ts'
-import { pollCreatorOf, pollSecretOf } from './polls.ts'
+import { msgSecretOf, pollCreatorOf } from './polls.ts'
 import { sendSpecial, type WaSpecial } from './special.ts'
 import { getRetryAfterSeconds } from '../rate-limiter.ts'
 import type { BridgeDB, MirrorKind } from '../db.ts'
@@ -43,6 +43,9 @@ export async function sendToTopic(
 	// Persist the mirror content alongside the mapping so a later revoke can
 	// re-edit the message into a spoiler tombstone instead of deleting it.
 	// The reply target travels too so a topic move can re-thread history.
+	// Every mirror keeps its messageSecret so later secretEncryptedMessage
+	// (MESSAGE_EDIT) envelopes sealed against it can decrypt.
+	const msgSecret = msgSecretOf(waMsg)
 	const save = (tgId: number, kind: MirrorKind): void => {
 		;(db as BridgeDB).saveReplyMap(
 			tgId,
@@ -54,6 +57,7 @@ export async function sendToTopic(
 			storedEntities(entities),
 			{ chatId, replyTo: quote.tgId },
 		)
+		;(db as BridgeDB).saveMsgSecret(chatId, tgId, msgSecret)
 	}
 
 	// Location / contact / poll have no caption concept: the content goes
@@ -68,7 +72,7 @@ export async function sendToTopic(
 			// resolve through the stored Telegram poll id.
 			if (special.kind === 'poll') {
 				db.savePollMeta(chatId, sent.msgId, {
-					secret: pollSecretOf(waMsg),
+					secret: msgSecret,
 					options: special.options,
 					creator: pollCreatorOf(waMsg),
 					pollId: sent.pollId,
