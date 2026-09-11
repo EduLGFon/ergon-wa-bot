@@ -59,6 +59,10 @@ export interface ReplyMapRow {
 	wa_poll_options: string | null
 	wa_poll_creator: string | null
 	tg_poll_id: string | null
+	// Live vote roster for the per-poll tally message (JSON: voter jid ->
+	// { name, opts }, plus the tally message id). Edited per vote instead
+	// of a reply per voter - null on polls with no tally yet.
+	wa_poll_tally: string | null
 	// Original messageSecret for encrypted-edit decryption. Newer WhatsApp
 	// clients seal every edit in a secretEncryptedMessage envelope keyed by
 	// this secret - null on rows mirrored before it was captured.
@@ -224,6 +228,9 @@ export class BridgeDB {
 		}
 		if (!pollCols.some((c) => c.name === 'wa_msg_secret')) {
 			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_msg_secret BLOB DEFAULT NULL`)
+		}
+		if (!pollCols.some((c) => c.name === 'wa_poll_tally')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_poll_tally TEXT DEFAULT NULL`)
 		}
 		this.db.exec(
 			'CREATE INDEX IF NOT EXISTS idx_reply_poll ON reply_map(tg_poll_id)',
@@ -532,6 +539,18 @@ export class BridgeDB {
 		)
 	}
 
+	// Live vote tally for a mirrored WA poll - the roster and the tally
+	// message id, replaced on every vote. null clears it (tally deleted).
+	savePollTally(tgChatId: string, tgMsgId: number, tally: string | null): void {
+		try {
+			this.db.prepare(
+				'UPDATE reply_map SET wa_poll_tally = ? WHERE tg_chat_id = ? AND tg_msg_id = ?',
+			).run(tally, tgChatId, tgMsgId)
+		} catch {
+			// Best effort - a lost tally only re-posts a fresh message.
+		}
+	}
+
 	// Original messageSecret for a mirrored message - decrypts later
 	// secretEncryptedMessage (MESSAGE_EDIT) envelopes sealed against it.
 	// Skips nulls so rows mirrored before capture keep nothing.
@@ -674,28 +693,6 @@ export class BridgeDB {
 	takeFollowUp(waMsgId: string): boolean {
 		if (!waMsgId || !this.pendingFollowUps.has(waMsgId)) return false
 		this.pendingFollowUps.delete(waMsgId)
-		return true
-	}
-
-	// In-memory echo guard for TG-initiated poll votes. A TG vote is relayed
-	// via relayMessage({pollUpdateMessage}), and the server echoes it back
-	// as a fromMe pollUpdateMessage upsert - indistinguishable from a genuine
-	// phone-side vote (same account). The TG side marks (jid, poll creation
-	// id) beforehand and the WA side consumes exactly one matching echo.
-	private pendingTgPollVotes = new Set<string>()
-
-	markTgPollVote(waJid: string, waMsgId: string): void {
-		if (this.pendingTgPollVotes.size > 1000) {
-			const oldest = this.pendingTgPollVotes.values().next().value
-			if (oldest !== undefined) this.pendingTgPollVotes.delete(oldest)
-		}
-		this.pendingTgPollVotes.add(`${waJid}\n${waMsgId}`)
-	}
-
-	takeTgPollVote(waJid: string, waMsgId: string): boolean {
-		const k = `${waJid}\n${waMsgId}`
-		if (!this.pendingTgPollVotes.has(k)) return false
-		this.pendingTgPollVotes.delete(k)
 		return true
 	}
 

@@ -3,11 +3,12 @@
 // Baileys can create polls but has no vote API, and its auto-decrypt of
 // incoming votes is disabled - so both directions are hand-rolled here on
 // the exact decryptPollVote scheme: incoming pollUpdateMessage carriers
-// decrypt against the poll secret stored at mirror time and land as a reply
-// under the Telegram poll, while Telegram answers rebuild the encrypted
-// vote and go out through relayMessage (sendMessage cannot carry votes).
-// The vote is always cast by the owner's account - exact for this
+// decrypt against the poll secret stored at mirror time and feed the
+// per-poll tally (poll-tally.ts), while Telegram answers rebuild the
+// encrypted vote and go out through relayMessage (sendMessage cannot carry
+// votes). The vote is always cast by the owner's account - exact for this
 // single-user bridge.
+import { applyPollTally } from './poll-tally.ts'
 import {
 	aesEncryptGCM,
 	decryptPollVote,
@@ -17,9 +18,9 @@ import {
 	sha256,
 } from 'baileys'
 import { candidatesOf, normalizeJid, selfJid } from './jid.ts'
-import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
+import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { waUnsupportedLine } from './unsupported.ts'
-import { chatForMapping, chatForReply } from './routing.ts'
+import { chatForMapping } from './routing.ts'
 import { findKey } from '@util/functions.ts'
 import { phoneOf } from './text.ts'
 import type { ReplyMapRow } from '../db.ts'
@@ -59,11 +60,11 @@ function voteSenderName(m: proto.IWebMessageInfo): string {
 		: (m.pushName || 'unknown')
 }
 
-// WhatsApp poll vote -> reply under the Telegram poll. Polls mirrored before
-// vote support (no stored secret) fall back to the unsupported line.
+// WhatsApp poll vote -> per-poll tally. Polls mirrored before vote support
+// (no stored secret) fall back to the unsupported line.
 export async function handleWaPollVote(m: proto.IWebMessageInfo): Promise<void> {
-	const { db, limiter, tg, groups } = relayCtx
-	if (!db || !limiter || !tg) return
+	const { db, groups } = relayCtx
+	if (!db) return
 	try {
 		const node = findKey(m.message, 'pollUpdateMessage')
 		const creationId = node?.pollCreationMessageKey?.id
@@ -74,9 +75,8 @@ export async function handleWaPollVote(m: proto.IWebMessageInfo): Promise<void> 
 			m && !m.archived && !m.muted
 		)
 		if (!mapping) return
-		// Echo of our own TG-TO-WA vote (marked before the relay) - the TG
-		// poll already shows it.
-		if (db.takeTgPollVote(mapping.whatsapp_jid, creationId)) return
+		// Echoes of our own TG-TO-WA votes need no guard: applying the same
+		// selection to the roster is idempotent, so the tally just updates.
 		const entry = db.getByWaMsgIdAny(creationId, [mapping.whatsapp_jid, ...cands])
 		const senderName = voteSenderName(m)
 		if (!entry || !entry.wa_poll_secret || !entry.wa_poll_options) {
@@ -118,19 +118,8 @@ export async function handleWaPollVote(m: proto.IWebMessageInfo): Promise<void> 
 		const names = (vote?.selectedOptions || [])
 			.map((o: unknown) => nameByHash.get(Buffer.from(o as Uint8Array).toString('hex')))
 			.filter((n: unknown): n is string => typeof n === 'string')
-		if (names.length === 0) return
-		const chatId = chatForReply(entry, mapping, groups)
-		await tgCall(
-			() =>
-				tg!.api.sendMessage(chatId, `🗳️ ${senderName} voted: ${names.join(', ')}`, {
-					message_thread_id: mapping.telegram_topic_id,
-					reply_parameters: {
-						message_id: entry.tg_msg_id,
-						allow_sending_without_reply: true,
-					},
-				}),
-			'poll-vote',
-		)
+		if (names.length === 0 && !entry.wa_poll_tally) return
+		await applyPollTally(entry, mapping, groups, voterJid, senderName, names)
 	} catch (e) {
 		console.error('[BRIDGE] failed to relay one WA poll vote:', e)
 	}

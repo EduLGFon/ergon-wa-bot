@@ -49,11 +49,11 @@ bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module di
   bridge/format.ts       # TG entities <-> WA markdown converters
   bridge/rate-limiter.ts # FIFO flood gate with 429 retry
   bridge/wa-to-tg.ts     # facade re-exporting wa-to-tg/
-  bridge/wa-to-tg/       # 32 modules: relay, state, incoming, dispatch, chat, topics, jid,
+  bridge/wa-to-tg/       # 33 modules: relay, state, incoming, dispatch, chat, topics, jid,
                          # routing, move, prompt, text, media, media-utils, send, send-media,
                          # quote, album, album-flush, album-send, edits, deletes, pins, calls,
-                         # reactions, reaction-summary, special, polls, rich, secret-edits,
-                         # unsupported, unsupported-preview, errors
+                         # reactions, reaction-summary, special, polls, poll-tally, rich,
+                         # secret-edits, unsupported, unsupported-preview, errors
   bridge/tg-to-wa/       # 9 modules: handlers, handler-events, content, media,
                          # replies, album, commands, buckets, newchat
 class/                   # domain models: baileys.ts, cmd.ts, collection.ts,
@@ -337,16 +337,17 @@ without touching WA.
   supergroup creator) for @all/@mention pings.
 - `db.ts`: SQLite WAL at `conf/gen/bridge.db`. `mappings` (WA JID <-> TG topic, chat type,
   archived/muted flags, last-active) and `reply_map` (TG msg <-> WA key + kind + text/entity
-  snapshot + poll crypto columns + per-message secret for encrypted edits, pruned past 7d).
-  In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`, `pendingTgPollVotes`,
-  1000-cap) suppress relaying our own TG edits/reactions/pins/votes back.
+  snapshot + poll crypto columns + live poll vote roster + per-message secret for encrypted edits,
+  pruned past 7d). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`,
+  `pendingFollowUps`, 1000-cap) suppress relaying our own TG edits/reactions/
+  pins/caption-follow-ups back.
 - `format.ts`: pure converters - TG entities (UTF-16 offsets) to WA inline markers (`*bold*`,
   `_italic_`, `~strike~`, `` `code` ``, triple-backtick pre, links, `> quote`) and back (pre -> bold
   -> italic -> strike -> code passes).
 - `rate-limiter.ts`: one global FIFO queue per limiter; every `tg.api.*` call takes a slot; 429s
   retry unbounded (front-requeue, `retry_after + 500ms`, max 120s) so nothing is dropped; queue over
   500 applies producer backpressure.
-- WA->TG (`wa-to-tg.ts` facade + 32 modules): `relay.ts` attaches seven socket listeners (upsert,
+- WA->TG (`wa-to-tg.ts` facade + 33 modules): `relay.ts` attaches seven socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups); `incoming.ts` is the main loop (skip
   protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via `jid.ts`,
   resolve/create topic in the chat's group, mentions, media download, special-content degrade, then
@@ -376,7 +377,8 @@ without touching WA.
   `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
   line, TG echoes consumed via the `pendingTgPins` guard); `calls.ts` (one editable notice per call
   id across offer/ringing/ accept/reject/timeout/terminate, missed vs ended lines); `polls.ts` (poll
-  crypto metadata, vote decrypt to poll replies, result lines, vote encrypt + relay); `rich.ts`
+  crypto metadata, vote decrypt, result lines, vote encrypt + relay); `poll-tally.ts` (live per-poll
+  tally - one edited message showing per-option counts, percentages and voters); `rich.ts`
   (contacts, invites, events, scheduled calls, sticker packs and offline call logs as text notices);
   `special.ts` (location/contact/poll mapping); `unsupported.ts`/`unsupported-preview.ts` friendly
   `type

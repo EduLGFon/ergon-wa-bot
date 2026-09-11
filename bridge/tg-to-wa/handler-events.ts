@@ -83,7 +83,8 @@ export function registerTgPinHandler(
 //
 // poll_answer updates carry the bot poll id but no chat, so the stored
 // Telegram poll id resolves the WA poll. The vote is cast by the owner's
-// account (single-user bridge) and echoed back guarded by markTgPollVote.
+// account (single-user bridge); its echo feeds the WA-side tally like any
+// other vote.
 export function registerTgPollAnswerHandler(
 	tg: Bot,
 	db: BridgeDB,
@@ -121,7 +122,6 @@ export function registerTgPollAnswerHandler(
 				)
 				return
 			}
-			db.markTgPollVote(entry.wa_jid, entry.wa_msg_id)
 			await waSend(() => sendWaPollVote(entry, names))
 			db.updateLastActive(entry.wa_jid)
 		} catch (e) {
