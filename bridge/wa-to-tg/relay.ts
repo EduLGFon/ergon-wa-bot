@@ -5,6 +5,7 @@
 // running singleton and must attach AFTER loadEvents clears listeners.
 import { handleGroupParticipants, handleGroupUpdates } from './chat.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
+import { reactionSummaryMode } from './reaction-summary.ts'
 import { handleWaReactions } from './reactions.ts'
 import { handleWaCalls } from './calls.ts'
 import { relayCtx, setRelayCtx } from './state.ts'
@@ -31,11 +32,13 @@ export function attachWaRelay(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateL
 	})
 	// Reactions ride a separate event on the same shared socket. Attached
 	// here (after loadEvents) for the same removeAllListeners reason.
+	// Skipped in summary mode - the upsert carriers own reactions there
+	// (they carry the author, this event does not).
 	bot.sock.ev.on(
 		'messages.reaction',
 		async (reactions: { key: proto.IMessageKey; reaction: proto.IReaction }[]) => {
 			try {
-				await handleWaReactions(reactions)
+				if (!reactionSummaryMode) await handleWaReactions(reactions)
 			} catch (e) {
 				console.error('[BRIDGE] WA-TO-TG reaction handler failed:', e)
 			}

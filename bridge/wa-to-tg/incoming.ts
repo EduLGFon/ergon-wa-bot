@@ -10,6 +10,7 @@ import { resolveChatName } from './chat.ts'
 import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
+import { handleWaReactionCarrier, reactionSummaryMode } from './reaction-summary.ts'
 import { getSpecialContent } from './special.ts'
 import { handleWaPollResults, handleWaPollVote } from './polls.ts'
 import { getRichNotice } from './rich.ts'
@@ -35,7 +36,14 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// getMsgText would otherwise relay as a bogus "You: ❤️" message -
 			// reactions travel via handleWaReactions only.
 			if (findKey(m.message, 'protocolMessage')) continue
-			if (findKey(m.message, 'reactionMessage')) continue
+			const reactionNode = findKey(m.message, 'reactionMessage')
+			if (reactionNode) {
+				// Summary mode attributes authors from the carrier itself (the
+				// messages.reaction event carries no author); otherwise
+				// reactions travel via handleWaReactions only (see relay.ts).
+				if (reactionSummaryMode) await handleWaReactionCarrier(m, reactionNode)
+				continue
+			}
 			// Pin carriers (pinInChatMessage) ride the same upsert event - they
 			// resolve the mirror and pin it natively instead of falling through
 			// to the unsupported notice below.

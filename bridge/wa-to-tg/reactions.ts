@@ -109,6 +109,57 @@ const WA_TO_TG_REACTION_FALLBACK: Record<string, string> = {
 	'❤‍🔥': '❤️‍🔥',
 }
 
+// Set (or clear, with null) the bot reaction on a Telegram mirror, retrying
+// REACTION_INVALID once with the default heart. Shared by the
+// last-writer-wins path below and the reaction-summary popular emoji.
+export async function applyTgReaction(
+	chatId: string,
+	tgMsgId: number,
+	emoji: string | null,
+): Promise<void> {
+	const { tg } = relayCtx
+	if (!tg) return
+	const payload = emoji ? [{ type: 'emoji' as const, emoji }] : []
+	try {
+		await tgCall(
+			() => tg!.api.setMessageReaction(chatId, tgMsgId, payload as any),
+			'reaction',
+		)
+	} catch (e) {
+		// REACTION_INVALID = the emoji isn't usable here (not a
+		// Telegram reaction at all, or disabled in this chat's
+		// Settings -> Reactions). Retry once with the default
+		// reaction so the sentiment still lands in the topic
+		// instead of being silently dropped. A failing default
+		// (reactions fully disabled?) gives up quietly - no
+		// recursion. Never rethrows - reactions must not spam
+		// the limiter log.
+		const desc = reactionErrorDescription(e)
+		if (desc.includes('REACTION_INVALID') && emoji) {
+			try {
+				await tgCall(
+					() =>
+						tg!.api.setMessageReaction(chatId, tgMsgId, [
+							{ type: 'emoji', emoji: DEFAULT_TG_REACTION },
+						] as any),
+					'reaction',
+				)
+			} catch {
+				// Default also rejected (reactions fully disabled?) - give up quietly.
+			}
+			if (!warnedReactions.has(emoji)) {
+				warnedReactions.add(emoji)
+				console.warn(
+					`[BRIDGE] reaction ${emoji} rejected by Telegram (REACTION_INVALID): ` +
+						`not a Telegram reaction emoji or disabled in this supergroup's Settings -> Reactions. Used default ${DEFAULT_TG_REACTION} instead.`,
+				)
+			}
+			return
+		}
+		throw e
+	}
+}
+
 // WhatsApp reaction -> Telegram reaction. Each side mirrors through a single
 // bot identity (bots get one reaction per message on Telegram, one react per
 // key on WhatsApp), so concurrent reactors are last-writer-wins by design.
@@ -145,46 +196,8 @@ export async function handleWaReactions(
 			if (db.takeTgReact(target.wa_jid, targetId, emoji || '')) {
 				continue
 			}
-			const payload = emoji ? [{ type: 'emoji' as const, emoji }] : []
 			const chatId = chatForReply(target, mapping, groups)
-			try {
-				await tgCall(
-					() => tg!.api.setMessageReaction(chatId, target.tg_msg_id, payload as any),
-					'reaction',
-				)
-			} catch (e) {
-				// REACTION_INVALID = the emoji isn't usable here (not a
-				// Telegram reaction at all, or disabled in this chat's
-				// Settings -> Reactions). Retry once with the default
-				// reaction so the sentiment still lands in the topic
-				// instead of being silently dropped. A failing default
-				// (reactions fully disabled?) gives up quietly - no
-				// recursion. Never rethrows - reactions must not spam
-				// the limiter log.
-				const desc = reactionErrorDescription(e)
-				if (desc.includes('REACTION_INVALID') && emoji) {
-					try {
-						await tgCall(
-							() =>
-								tg!.api.setMessageReaction(chatId, target.tg_msg_id, [
-									{ type: 'emoji', emoji: DEFAULT_TG_REACTION },
-								] as any),
-							'reaction',
-						)
-					} catch {
-						// Default also rejected (reactions fully disabled?) - give up quietly.
-					}
-					if (!warnedReactions.has(emoji)) {
-						warnedReactions.add(emoji)
-						console.warn(
-							`[BRIDGE] reaction ${emoji} rejected by Telegram (REACTION_INVALID): ` +
-								`not a Telegram reaction emoji or disabled in this supergroup's Settings -> Reactions. Used default ${DEFAULT_TG_REACTION} instead.`,
-						)
-					}
-					return
-				}
-				throw e
-			}
+			await applyTgReaction(chatId, target.tg_msg_id, emoji)
 		} catch (e) {
 			console.error('[BRIDGE] failed to relay one WA reaction:', e)
 		}
