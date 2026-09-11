@@ -102,8 +102,6 @@ export function previewUnsupportedContent(primary: string, node: any): string | 
 					(typeof node.response === 'string'
 						? truncateOneLine(`response ${node.response}`)
 						: null)
-			case 'pinInChatMessage':
-				return truncateOneLine(`type ${String(node.type ?? 'unknown')}`)
 			case 'callLogMessage':
 				return firstString(node, ['displayName']) ??
 					(typeof node.duration === 'number'

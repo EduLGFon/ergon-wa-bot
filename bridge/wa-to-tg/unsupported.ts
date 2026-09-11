@@ -31,7 +31,6 @@ export const WA_UNSUPPORTED_FRIENDLY: Record<string, string> = {
 	nativeFlowResponseMessage: 'interactive reply',
 	eventMessage: 'event',
 	eventResponseMessage: 'event response',
-	pinInChatMessage: 'pinned message',
 	keepInChatMessage: 'kept message',
 	callLogMessage: 'call log',
 	scheduledCallCreationMessage: 'scheduled call',

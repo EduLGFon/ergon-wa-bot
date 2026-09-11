@@ -11,6 +11,7 @@ import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
 import { getSpecialContent } from './special.ts'
+import { handleWaPin } from './pins.ts'
 import { downloadWaMedia } from './media.ts'
 import { findKey } from '@util/functions.ts'
 import { dispatchPrepared } from './dispatch.ts'
@@ -33,6 +34,13 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// reactions travel via handleWaReactions only.
 			if (findKey(m.message, 'protocolMessage')) continue
 			if (findKey(m.message, 'reactionMessage')) continue
+			// Pin carriers (pinInChatMessage) ride the same upsert event - they
+			// resolve the mirror and pin it natively instead of falling through
+			// to the unsupported notice below.
+			if (findKey(m.message, 'pinInChatMessage')) {
+				await handleWaPin(m)
+				continue
+			}
 
 			const rawJid = m.key.remoteJid
 			if (!rawJid || rawJid === 'status@broadcast') continue

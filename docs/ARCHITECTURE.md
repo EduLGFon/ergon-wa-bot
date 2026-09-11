@@ -49,9 +49,9 @@ bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module di
   bridge/format.ts       # TG entities <-> WA markdown converters
   bridge/rate-limiter.ts # FIFO flood gate with 429 retry
   bridge/wa-to-tg.ts     # facade re-exporting wa-to-tg/
-  bridge/wa-to-tg/       # 26 modules: relay, state, incoming, dispatch, chat, topics, jid,
+  bridge/wa-to-tg/       # 27 modules: relay, state, incoming, dispatch, chat, topics, jid,
                          # routing, move, prompt, text, media, media-utils, send, send-media,
-                         # quote, album, album-flush, album-send, edits, deletes,
+                         # quote, album, album-flush, album-send, edits, deletes, pins,
                          # reactions, special, unsupported, unsupported-preview, errors
   bridge/tg-to-wa/       # 9 modules: handlers, handler-events, content, media,
                          # replies, album, commands, buckets, newchat
@@ -331,7 +331,7 @@ without touching WA.
 - `mod.ts`: builds `BridgeDB`, TG (3000ms) and WA (500ms) `RateLimiter`s, grammy `Bot`, registers
   both directions, `tg.start` long-poll with
   `allowed_updates: message, edited_message, message_reaction`. `activeBridge` holds live refs for
-  reattach.
+  reattach. Boot warns when the bot lacks admin (reactions) or pin rights (pin sync).
 - `db.ts`: SQLite WAL at `conf/gen/bridge.db`. `mappings` (WA JID <-> TG topic, chat type,
   archived/muted flags, last-active) and `reply_map` (TG msg <-> WA key + kind + text/entity
   snapshot, pruned past 7d). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, 1000-cap)
@@ -366,14 +366,17 @@ without touching WA.
   `album-send.ts`); `edits.ts` (text in place, caption fallback, sticker/special skip); `deletes.ts`
   (spoiler tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard delete + drop
   mapping); `reactions.ts` (emoji normalize, last-writer-wins, `REACTION_INVALID` -> heart retry);
-  `special.ts` (location/contact/poll mapping); `unsupported.ts`/`unsupported-preview.ts` friendly
-  `type (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
-  `tgCall` queue + `notifyTopic` (never throws/loops).
+  `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
+  line, TG echoes consumed via the `pendingTgPins` guard); `special.ts` (location/contact/poll
+  mapping); `unsupported.ts`/`unsupported-preview.ts` friendly `type (rawKey) + preview + sender`
+  notices; `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never
+  throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
   mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering
   (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback header,
-  `waSend` + `saveReplyMap` (chat + reply target stored); `handler-events.ts` reaction/edit handlers
-  with echo marks; `buckets.ts` Personal/Business buttons (`callback_query`, chat resolved via
+  `waSend` + `saveReplyMap` (chat + reply target stored); `handler-events.ts` reaction/edit/pin
+  handlers with echo marks (pin resolves `pinned_message` service posts back to the WA original,
+  30-day duration); `buckets.ts` Personal/Business buttons (`callback_query`, chat resolved via
   stored prompt ID) plus `/personal` `/business` topic commands, serialized per chat (double-tap
   never opens two topics); `content.ts` WA payload builders (`Buffer.from` at boundary, webm->webp
   transcode, tgs->document, poll/contact text fallback); `media.ts` largest-photo pick + `getFile`
@@ -383,9 +386,10 @@ without touching WA.
 - Cross-cutting: pairing auto-creates on first WA sight (or `/new`) into the personal group as
   `undecided` until the buttons/commands classify it; renames sync, mute/archive pause both
   directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes no
-  delete event); reactions need bot admin + opt-in `allowed_updates` (now including
-  `callback_query`); every failure becomes a topic `warning` notice + log, never a throw or loop.
-  `scripts/bridge_buckets.ts` bulk-classifies existing chats (dry-run default, `--yes` applies).
+  delete event); pins sync both ways except TG->WA unpin (no Bot API update on unpin); reactions
+  need bot admin + opt-in `allowed_updates` (now including `callback_query`); every failure becomes
+  a topic `warning` notice + log, never a throw or loop. `scripts/bridge_buckets.ts` bulk-classifies
+  existing chats (dry-run default, `--yes` applies).
 
 ## 15. Setup wizard (`setup.ts` + `setup/`)
 

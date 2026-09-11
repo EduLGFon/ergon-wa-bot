@@ -34,6 +34,48 @@ export function registerTgReactionHandler(
 	})
 }
 
+// Telegram pin handler - pinned service messages in one place.
+//
+// Pinning a message posts a pinned_message service message (no text) which
+// the main message handler drops silently - this resolves the WA original
+// through reply_map and pins it for 30 days instead. Unpins emit no update
+// at all, so TG to WA unpin sync is impossible.
+export function registerTgPinHandler(
+	tg: Bot,
+	db: BridgeDB,
+	waSend: WaSend,
+	groups: GroupIds,
+): void {
+	tg.on('message', async (ctx) => {
+		try {
+			const msg: any = ctx.msg
+			const pinned = msg?.pinned_message
+			if (!pinned) return
+			const chatId = String(ctx.chat?.id ?? '')
+			if (bucketOfChat(chatId, groups) === null || msg.from?.is_bot) return
+			const topicId = msg.message_thread_id
+			if (!topicId) return
+			const mapping = db.getByTopic(chatId, topicId)
+			if (!mapping || mapping.archived || mapping.muted) return
+			const entry = db.getReplyMapAt(chatId, pinned.message_id)
+			if (!entry) return
+			const key = restoreWaKey(entry)
+			if (!key) return
+			db.markTgPin(entry.wa_jid, entry.wa_msg_id)
+			await waSend(async () => {
+				await bot.sock.sendMessage(entry.wa_jid, {
+					pin: key,
+					type: 1,
+					time: 2592000,
+				})
+				db.updateLastActive(entry.wa_jid)
+			})
+		} catch (e) {
+			console.error('[BRIDGE] TG->WA pin failed:', e)
+		}
+	})
+}
+
 export function registerTgEditHandler(
 	tg: Bot,
 	db: BridgeDB,

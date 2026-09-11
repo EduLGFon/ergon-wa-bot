@@ -99,18 +99,27 @@ function envNum(name: string, fallback: number): number {
 }
 
 // Non-blocking sanity check: reacting on Telegram only reaches the bridge
-// when the bot is an admin of the supergroup. Warns once instead of failing
-// the boot - messaging works fine without it, reactions just stay silent.
+// when the bot is an admin of the supergroup, and WA pin sync needs pin
+// rights on top. Warns instead of failing the boot - messaging works fine
+// without either, reactions and pins just stay silent.
 async function checkReactionPrereqs(tg: Bot, supergroupId: string): Promise<void> {
 	try {
 		const me = await tg.api.getMe()
 		const member = await tg.api.getChatMember(supergroupId, me.id).catch(() => null) as
-			| { status?: string }
+			| { status?: string; can_pin_messages?: boolean }
 			| null
-		if (member && member.status !== 'administrator' && member.status !== 'creator') {
+		if (!member) return
+		if (member.status !== 'administrator' && member.status !== 'creator') {
 			console.warn(
 				`[BRIDGE] Telegram reactions need the bot to be an administrator of the supergroup (currently: ${member.status}). ` +
 					'TG→WA reactions will not arrive until it is promoted.',
+			)
+			return
+		}
+		if (member.status === 'administrator' && member.can_pin_messages === false) {
+			console.warn(
+				'[BRIDGE] WA pin sync needs the bot to pin messages in the supergroup (currently disallowed). ' +
+					'WA pins will fail until pin rights are granted.',
 			)
 		}
 	} catch {

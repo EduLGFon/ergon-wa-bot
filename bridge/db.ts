@@ -571,4 +571,29 @@ export class BridgeDB {
 		this.pendingTgReacts.delete(k)
 		return true
 	}
+
+	// In-memory echo guard for TG-initiated pins. A TG pin is forwarded to
+	// WA via sendMessage({pin}), and the server echoes it back as a
+	// pinInChatMessage upsert with fromMe=true - indistinguishable from a
+	// genuine pin made on the owner's own phone (the bridge socket IS the
+	// owner's account, so those are fromMe too). The TG side marks (jid,
+	// target) synchronously beforehand and the WA side consumes exactly one
+	// matching echo. Marked synchronously before the WA send; unmarked pins
+	// always relay.
+	private pendingTgPins = new Set<string>()
+
+	markTgPin(waJid: string, waMsgId: string): void {
+		if (this.pendingTgPins.size > 1000) {
+			const oldest = this.pendingTgPins.values().next().value
+			if (oldest !== undefined) this.pendingTgPins.delete(oldest)
+		}
+		this.pendingTgPins.add(`${waJid}\n${waMsgId}`)
+	}
+
+	takeTgPin(waJid: string, waMsgId: string): boolean {
+		const k = `${waJid}\n${waMsgId}`
+		if (!this.pendingTgPins.has(k)) return false
+		this.pendingTgPins.delete(k)
+		return true
+	}
 }
