@@ -77,6 +77,33 @@ export function candidatesOf(key: {
 	return [...new Set([pickCanonical(primary, alts), primary, ...alts, ...extra].filter(Boolean))]
 }
 
+// Normalized JID variants identifying the bridge owner's own WA account -
+// a mention matching any of these is a mention of the owner. Includes the
+// bare account JID plus its device-stripped twin, and the LID twin when the
+// signal store already knows it (group mentions increasingly use LIDs).
+export async function ownerWaJids(): Promise<string[]> {
+	try {
+		const raw = (bot.sock as any)?.user?.id
+		if (!raw || typeof raw !== 'string') return []
+		const out = new Set<string>()
+		for (const j of [raw, raw.split(':')[0]]) {
+			const n = normalizeJid(j)
+			if (n) out.add(n)
+		}
+		try {
+			const pn = normalizeJid(raw)
+			const lid = await (bot.sock as any)?.signalRepository?.lidMapping?.getLIDForPN?.(pn)
+			const norm = normalizeJid(typeof lid === 'string' ? lid : '')
+			if (norm) out.add(norm)
+		} catch {
+			// LID twin unknown yet - PN matching still covers most mentions.
+		}
+		return [...out].filter(Boolean)
+	} catch {
+		return []
+	}
+}
+
 // Full canonical JID for an incoming key. Falls back to lidMapping when
 // the server sent a bare LID with no alt (first sighting of a contact).
 // Group keys stay on the group JID with no sender aliases.

@@ -63,11 +63,13 @@ export async function spoilerTgMirror(target: ReplyMapRow, chatId: string): Prom
 	try {
 		const parsed: unknown = JSON.parse(target.tg_entities || '[]')
 		if (Array.isArray(parsed)) {
+			// Stored snapshots predate the text_mention variant and tombstones drop
+			// the ping user anyway - the cast restores the validated shape.
 			kept = (parsed as any[]).filter((e) =>
 				e && typeof e.offset === 'number' && typeof e.length === 'number' &&
 				e.offset >= 0 && e.length > 0 && e.offset + e.length <= orig.length &&
 				typeof e.type === 'string'
-			).map((e) => ({ type: e.type as TgEntity['type'], offset: e.offset, length: e.length }))
+			).map((e) => ({ type: e.type, offset: e.offset, length: e.length }) as TgEntity)
 		}
 	} catch {
 		kept = []

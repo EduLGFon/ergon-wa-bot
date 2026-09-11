@@ -14,12 +14,19 @@ export type TgEntityType =
 	| 'pre'
 	| 'spoiler'
 	| 'blockquote'
+	| 'text_mention'
 
-export interface TgEntity {
-	type: TgEntityType
-	offset: number
-	length: number
-}
+// Plain formatting entities plus owner text_mention pings. The mention
+// variant carries a required user (Telegram rejects mentions without one),
+// so the whole union stays assignable to grammy's MessageEntity.
+export type TgEntity =
+	| { type: Exclude<TgEntityType, 'text_mention'>; offset: number; length: number }
+	| {
+		type: 'text_mention'
+		offset: number
+		length: number
+		user: { id: number; is_bot: boolean; first_name: string }
+	}
 
 // Telegram entities (UTF-16 offsets, as Bot API sends them) → WhatsApp-marker
 // text. Unmapped types (underline, spoiler, quotes, …) pass through as plain
@@ -95,7 +102,7 @@ export function waMarkdownToTgEntities(raw: string): { text: string; entities: T
 	interface Span {
 		start: number
 		end: number
-		type: TgEntityType
+		type: Exclude<TgEntityType, 'text_mention'>
 	}
 	// First pass: find spans in the ORIGINAL string (offsets refer to it).
 	const spans: Span[] = []
@@ -105,7 +112,11 @@ export function waMarkdownToTgEntities(raw: string): { text: string; entities: T
 		for (let i = s; i < e; i++) taken[i] = true
 		return true
 	}
-	const matchSpans = (marker: string, type: TgEntityType, multiline: boolean): void => {
+	const matchSpans = (
+		marker: string,
+		type: Exclude<TgEntityType, 'text_mention'>,
+		multiline: boolean,
+	): void => {
 		let i = 0
 		while (i < raw.length) {
 			const open = raw.indexOf(marker, i)

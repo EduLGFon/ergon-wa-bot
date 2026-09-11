@@ -13,12 +13,17 @@ export const relayCtx: {
 	limiter: RateLimiter | null
 	groups: GroupIds
 	attachedSock: unknown
+	// The owner's Telegram identity for @all/@mention pings - resolved once
+	// at boot (env override, else the personal supergroup creator). Null
+	// until resolved; owner mentions then stay plain text.
+	ownerTg: { id: number; is_bot: boolean; first_name: string } | null
 } = {
 	tg: null,
 	db: null,
 	limiter: null,
 	groups: { personal: '', business: '', legacy: '' },
 	attachedSock: null,
+	ownerTg: null,
 }
 
 export function setRelayCtx(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateLimiter): void {

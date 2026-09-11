@@ -4,11 +4,11 @@
 // mapping, degrades unmappable specials to text and routes photos through
 // album batching - quote resolution, empty notices and mapping live in
 // chat/quote/unsupported helpers so this loop stays small.
-import { annotateMentions, getMentionedJids, getMsgText, phoneOf } from './text.ts'
+import { annotateMentions, getMentionedJids, getMsgText, hasMentionAll, phoneOf } from './text.ts'
 import { ensureTopicMapping } from './topics.ts'
 import { resolveChatName } from './chat.ts'
 import { notifyTopic, relayCtx, shortErr } from './state.ts'
-import { canonicalChatJid } from './jid.ts'
+import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
 import { getSpecialContent } from './special.ts'
 import { handleWaPin } from './pins.ts'
@@ -78,7 +78,14 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// the catch-block notify, but everything below needs a number.
 			const tid: number = topicId
 
-			let text = annotateMentions(getMsgText(m.message), getMentionedJids(m))
+			// Owner mentions become real Telegram pings downstream: match
+			// individual mentions against the owner's WA JIDs, @all always
+			// includes them.
+			const annotated = annotateMentions(getMsgText(m.message), getMentionedJids(m), {
+				jids: await ownerWaJids(),
+				all: hasMentionAll(m.message),
+			})
+			let text = annotated.text
 			const dl = await downloadWaMedia(m)
 			const media = dl?.media ?? null
 			let special = getSpecialContent(m.message)
@@ -111,6 +118,7 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 				fromMe,
 				isGroup,
 				text,
+				ownerSpans: annotated.ownerSpans,
 				media,
 				special,
 			})

@@ -12,6 +12,7 @@ import { registerTgHandlers } from './tg-to-wa.ts'
 import { groupIds, isDual } from './wa-to-tg/routing.ts'
 import { findSupergroupId } from './find-id.ts'
 import { RateLimiter } from './rate-limiter.ts'
+import { relayCtx } from './wa-to-tg/state.ts'
 import { attachWaRelay } from './wa-to-tg.ts'
 import { BridgeDB } from './db.ts'
 import { Bot } from 'grammy'
@@ -68,6 +69,9 @@ export function startBridge(): Bot | null {
 	// The WA socket is already connected by wa.ts at this point.
 	attachWaRelay(tg, db, tgLimiter)
 	activeBridge = { tg, db, tgLimiter, waLimiter }
+	// Owner identity for @all/@mention pings - resolves in the background
+	// so boot never blocks on it; mentions stay plain text until it lands.
+	void resolveOwnerIdentity(tg, groups.personal)
 
 	tg.catch((e) => console.error('[BRIDGE] Telegram handler error:', e))
 	// Fire-and-forget: bot.start() long-polls until stopped; never await it
@@ -96,6 +100,33 @@ function envNum(name: string, fallback: number): number {
 	if (raw == null || raw.trim() === '') return fallback
 	const n = Number(raw)
 	return Number.isFinite(n) && n >= 0 ? n : fallback
+}
+
+// Resolve the owner's Telegram identity for @all/@mention notifications.
+// Explicit TELEGRAM_OWNER_ID wins; otherwise the personal supergroup creator
+// (the account that created the mirror supergroup). Stored on relayCtx;
+// failures just leave owner mentions as plain text.
+async function resolveOwnerIdentity(tg: Bot, supergroupId: string): Promise<void> {
+	try {
+		const envId = Number(Deno.env.get('TELEGRAM_OWNER_ID') || '')
+		if (Number.isFinite(envId) && envId > 0) {
+			relayCtx.ownerTg = { id: envId, is_bot: false, first_name: 'you' }
+			return
+		}
+		if (!supergroupId) return
+		const admins = await tg.api.getChatAdministrators(supergroupId).catch(() => null)
+		const creator = (admins || []).find((a: any) => a?.status === 'creator') as any
+		const u = creator?.user
+		if (u && typeof u.id === 'number') {
+			relayCtx.ownerTg = {
+				id: u.id,
+				is_bot: false,
+				first_name: String(u.first_name || 'you'),
+			}
+		}
+	} catch {
+		// Owner identity unknown - owner mentions just stay plain text.
+	}
 }
 
 // Non-blocking sanity check: reacting on Telegram only reaches the bridge

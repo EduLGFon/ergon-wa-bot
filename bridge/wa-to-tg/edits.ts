@@ -3,13 +3,14 @@
 // Edits arrive as `messages.update` with editedMessage payloads while revokes
 // arrive on the same event with null message - this routes each mirror to the
 // right Telegram endpoint and skips TG-initiated echoes to avoid 400 loops.
-import { annotateMentions, getMsgText, mentionedJidsOf, phoneOf } from './text.ts'
+import { annotateMentions, getMsgText, hasMentionAll, mentionedJidsOf, phoneOf } from './text.ts'
 import { describeErr, logEditFailure, routeEdit } from './errors.ts'
 import { chatForReply } from './routing.ts'
 import { type proto, WAMessageStubType } from 'baileys'
 import { waMarkdownToTgEntities } from '../format.ts'
-import { candidatesOf } from './jid.ts'
+import { candidatesOf, ownerWaJids } from './jid.ts'
 import { relayCtx, tgCall } from './state.ts'
+import { ownerMentionEntities } from './dispatch.ts'
 import { deleteTgMirror } from './deletes.ts'
 
 // WhatsApp message edit -> Telegram edit. Edits arrive as `messages.update`
@@ -80,14 +81,17 @@ export async function handleWaEdits(
 			const label = key.fromMe
 				? 'You: '
 				: (isGroup ? `${phoneOf(key.participant) || 'unknown'}: ` : '')
-			const parsed = waMarkdownToTgEntities(
-				annotateMentions(
-					getMsgText(edited as proto.IMessage),
-					mentionedJidsOf(edited),
-				),
+			const annotated = annotateMentions(
+				getMsgText(edited as proto.IMessage),
+				mentionedJidsOf(edited),
+				{ jids: await ownerWaJids(), all: hasMentionAll(edited as proto.IMessage) },
 			)
+			const parsed = waMarkdownToTgEntities(annotated.text)
 			const body = `${label}${parsed.text}`
-			const entities = parsed.entities.map((e) => ({ ...e, offset: e.offset + label.length }))
+			const entities = [
+				...parsed.entities.map((e) => ({ ...e, offset: e.offset + label.length })),
+				...ownerMentionEntities(annotated.ownerSpans, label.length),
+			].sort((a, b) => a.offset - b.offset)
 			const rich = entities.length > 0 ? { entities } : undefined
 
 			// Each attempt is its own limiter slot (never nested - a tgCall

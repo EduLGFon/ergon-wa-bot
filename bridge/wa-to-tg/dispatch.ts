@@ -5,12 +5,14 @@
 // album buffering vs immediate send, then the classification prompt.
 import { bufferAlbumItem, flushPendingAlbums } from './album-flush.ts'
 import { maybePromptClassification } from './prompt.ts'
-import { waMarkdownToTgEntities } from '../format.ts'
+import { type TgEntity, waMarkdownToTgEntities } from '../format.ts'
 import { resolveQuoteTarget } from './quote.ts'
 import { isAlbumEligible } from './album.ts'
+import type { OwnerMentionSpan } from './text.ts'
 import type { WaSpecial } from './special.ts'
 import type { AlbumItem } from './album.ts'
 import type { BridgeDB } from '../db.ts'
+import { relayCtx } from './state.ts'
 import { sendToTopic } from './send.ts'
 import type { proto } from 'baileys'
 
@@ -26,8 +28,28 @@ export interface PreparedDispatch {
 	fromMe: boolean
 	isGroup: boolean
 	text: string
+	ownerSpans: OwnerMentionSpan[]
 	media: AlbumItem['media'] | null
 	special: WaSpecial | null
+}
+
+// Owner @token spans -> Telegram text_mention entities so @all and direct
+// mentions actually notify. The owner identity is resolved once at boot;
+// without it the spans stay plain text.
+export function ownerMentionEntities(
+	spans: OwnerMentionSpan[],
+	shift: number,
+): TgEntity[] {
+	const owner = relayCtx.ownerTg
+	if (!owner || !spans || spans.length === 0) return []
+	return spans
+		.filter((s) => s && s.length > 0 && s.start >= 0)
+		.map((s) => ({
+			type: 'text_mention' as const,
+			offset: s.start + shift,
+			length: s.length,
+			user: owner,
+		}))
 }
 
 export async function dispatchPrepared(d: PreparedDispatch): Promise<void> {
@@ -51,7 +73,10 @@ export async function dispatchPrepared(d: PreparedDispatch): Promise<void> {
 	const parsed = waMarkdownToTgEntities(d.text)
 	const prefix = `${!stickerFallback && quoteHeader ? quoteHeader + '\n' : ''}${label}`
 	const body = `${prefix}${parsed.text}`
-	const entities = parsed.entities.map((e) => ({ ...e, offset: e.offset + prefix.length }))
+	const entities = [
+		...parsed.entities.map((e) => ({ ...e, offset: e.offset + prefix.length })),
+		...ownerMentionEntities(d.ownerSpans, prefix.length),
+	].sort((a, b) => a.offset - b.offset)
 	// Unmapped originals can't use reply_parameters - render the fallback
 	// header as a real Telegram quote block instead.
 	if (!stickerFallback && quoteHeader) {
