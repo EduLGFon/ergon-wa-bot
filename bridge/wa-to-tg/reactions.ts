@@ -53,11 +53,60 @@ const WA_TO_TG_REACTION_FALLBACK: Record<string, string> = {
 	'🫶': '❤',
 	'💖': '❤',
 	'💕': '❤',
+	'🫀': '❤',
+	'🤟': '❤',
 	// Observed as REACTION_INVALID in prod (not Telegram reactions or
 	// disabled): use the default heart instead of a failing roundtrip.
 	'✨': '❤',
 	'❓': '❤',
 	'💭': '❤',
+	// Laughing variants -> the verified laugh.
+	'🤭': '🤣',
+	'😹': '🤣',
+	'💀': '🤣',
+	'☠': '🤣',
+	// Affection variants -> the verified heart-smile.
+	'😘': '🥰',
+	'🤗': '🥰',
+	'🥹': '🥰',
+	'😻': '🥰',
+	// Grin variants -> the verified grin.
+	'😋': '😁',
+	'😜': '😁',
+	'🤪': '😁',
+	'😝': '😁',
+	'😬': '😁',
+	'🙈': '😁',
+	'🙉': '😁',
+	'🙊': '😁',
+	// Sad variants -> the verified tear.
+	'😭': '😢',
+	'😥': '😢',
+	// Shock variants -> the verified scream.
+	'😰': '😱',
+	'😵': '😱',
+	'🫣': '😱',
+	'🙀': '😱',
+	// Celebration variants -> the verified party.
+	'🎊': '🎉',
+	'🥳': '🎉',
+	'🥂': '🎉',
+	'🎈': '🎉',
+	'⭐': '🎉',
+	'🌟': '🎉',
+	'✌': '🎉',
+	// Agreement variants -> thumbs up/down.
+	'✅': '👍',
+	'✔': '👍',
+	'👌': '👍',
+	'❌': '👎',
+	// Rest -> verified calm, cool, hot and fire reactions.
+	'😴': '😇',
+	'🫡': '😎',
+	'🥵': '🔥',
+	// Heart-on-fire loses VS16 in normalization, so map the stripped form
+	// back to the full sequence Telegram accepts.
+	'❤‍🔥': '❤️‍🔥',
 }
 
 // WhatsApp reaction -> Telegram reaction. Each side mirrors through a single
