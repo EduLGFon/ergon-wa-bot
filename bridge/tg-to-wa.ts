@@ -1,7 +1,7 @@
 // Telegram -> WhatsApp relay - facade wiring submodules.
 // Sends through the shared WhatsApp socket - thin entry re-exporting API.
 import { registerTgEditHandler, registerTgReactionHandler } from './tg-to-wa/handler-events.ts'
-import { registerTgPinHandler } from './tg-to-wa/handler-events.ts'
+import { registerTgPinHandler, registerTgPollAnswerHandler } from './tg-to-wa/handler-events.ts'
 import { bucketOfChat, type GroupIds, groupIds } from './wa-to-tg/routing.ts'
 import { registerBucketHandlers } from './tg-to-wa/buckets.ts'
 import { registerTgMessageHandler } from './tg-to-wa/handlers.ts'
@@ -45,5 +45,6 @@ export function registerTgHandlers(
 	registerTgMessageHandler(tg, db, tgLimiter, waSend, groups)
 	registerTgEditHandler(tg, db, waSend, groups)
 	registerTgPinHandler(tg, db, waSend, groups)
+	registerTgPollAnswerHandler(tg, db, waSend, groups, tgLimiter)
 	registerBucketHandlers(tg, db, groups)
 }

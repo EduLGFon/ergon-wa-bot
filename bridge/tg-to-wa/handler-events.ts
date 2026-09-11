@@ -2,6 +2,9 @@
 // Split from handlers.ts so each file stays under the size budget.
 import { bucketOfChat, type GroupIds } from '../wa-to-tg/routing.ts'
 import { restoreWaKey, tgReactionToWaEmoji } from './content.ts'
+import { sendWaPollVote } from '../wa-to-tg/polls.ts'
+import type { RateLimiter } from '../rate-limiter.ts'
+import { notifyTopic } from './replies.ts'
 import { tgEntitiesToWa } from '../format.ts'
 import type { BridgeDB } from '../db.ts'
 import type { Bot } from 'grammy'
@@ -72,6 +75,57 @@ export function registerTgPinHandler(
 			})
 		} catch (e) {
 			console.error('[BRIDGE] TG->WA pin failed:', e)
+		}
+	})
+}
+
+// Telegram poll-answer handler - votes on mirrored WA polls in one place.
+//
+// poll_answer updates carry the bot poll id but no chat, so the stored
+// Telegram poll id resolves the WA poll. The vote is cast by the owner's
+// account (single-user bridge) and echoed back guarded by markTgPollVote.
+export function registerTgPollAnswerHandler(
+	tg: Bot,
+	db: BridgeDB,
+	waSend: WaSend,
+	groups: GroupIds,
+	tgLimiter: RateLimiter,
+): void {
+	tg.on('poll_answer', async (ctx) => {
+		try {
+			const ans: any = ctx.pollAnswer
+			if (!ans || ans.user?.is_bot || !ans.poll_id) return
+			const entry = db.getReplyMapByPollId(ans.poll_id)
+			if (!entry) return
+			const mapping = db.getByJid(entry.wa_jid)
+			if (!mapping || mapping.archived || mapping.muted) return
+			const chatId = mapping.telegram_chat_id || groups.personal
+			const topicId = mapping.telegram_topic_id
+			let options: string[] = []
+			try {
+				const parsed: unknown = JSON.parse(entry.wa_poll_options || '[]')
+				if (Array.isArray(parsed)) options = parsed.filter((o) => typeof o === 'string')
+			} catch {
+				options = []
+			}
+			const names = (Array.isArray(ans.option_ids) ? ans.option_ids : [])
+				.map((i: number) => options[i])
+				.filter((n: unknown): n is string => typeof n === 'string' && n.length > 0)
+			if (!entry.wa_poll_secret || names.length === 0) {
+				await notifyTopic(
+					tg,
+					tgLimiter,
+					chatId,
+					topicId,
+					`⚠️ Couldn't vote on that poll from Telegram (unknown options or key).`,
+				)
+				return
+			}
+			db.markTgPollVote(entry.wa_jid, entry.wa_msg_id)
+			await waSend(() => sendWaPollVote(entry, names))
+			db.updateLastActive(entry.wa_jid)
+		} catch (e) {
+			console.error('[BRIDGE] TG->WA poll vote failed:', e)
 		}
 	})
 }

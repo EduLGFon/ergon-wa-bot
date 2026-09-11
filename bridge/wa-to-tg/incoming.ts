@@ -11,6 +11,7 @@ import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
 import { getSpecialContent } from './special.ts'
+import { handleWaPollResults, handleWaPollVote } from './polls.ts'
 import { getRichNotice } from './rich.ts'
 import { handleWaPin } from './pins.ts'
 import { downloadWaMedia } from './media.ts'
@@ -40,6 +41,20 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// to the unsupported notice below.
 			if (findKey(m.message, 'pinInChatMessage')) {
 				await handleWaPin(m)
+				continue
+			}
+			// Poll votes and result snapshots ride the same upsert event - votes
+			// decrypt against the stored poll secret, snapshots render as
+			// results. Both resolve their own mirror, no topic is created here.
+			if (findKey(m.message, 'pollUpdateMessage')) {
+				await handleWaPollVote(m)
+				continue
+			}
+			if (
+				findKey(m.message, 'pollResultSnapshotMessage') ||
+				findKey(m.message, 'pollResultSnapshotMessageV3')
+			) {
+				await handleWaPollResults(m)
 				continue
 			}
 

@@ -49,13 +49,17 @@ export function getSpecialContent(message: proto.IMessage | undefined | null): W
 				phone,
 			}
 		}
-		if (raw.pollCreationMessage) {
-			const options = (raw.pollCreationMessage.options || [])
+		// V1/V3/V5 share the PollCreationMessage shape (name + options) -
+		// only the version tag differs.
+		const pollNode = raw.pollCreationMessage || raw.pollCreationMessageV3 ||
+			raw.pollCreationMessageV5
+		if (pollNode) {
+			const options = (pollNode.options || [])
 				.map((o: any) => String(o?.optionName || '').trim())
 				.filter((o: string) => o.length > 0)
 			return {
 				kind: 'poll',
-				question: String(raw.pollCreationMessage.name || 'Poll'),
+				question: String(pollNode.name || 'Poll'),
 				options,
 			}
 		}
@@ -63,6 +67,13 @@ export function getSpecialContent(message: proto.IMessage | undefined | null): W
 	} catch {
 		return null
 	}
+}
+
+// Sent special content reference - the message id plus, for polls, the
+// Telegram poll id that later links poll_answer updates back to the WA poll.
+export interface SentSpecial {
+	msgId: number
+	pollId: string | null
 }
 
 // Sends a location/contact/poll content message. Returns the sent Telegram
@@ -74,7 +85,7 @@ export async function sendSpecial(
 	reply:
 		| { reply_parameters: { message_id: number; allow_sending_without_reply: boolean } }
 		| undefined,
-): Promise<number | null> {
+): Promise<SentSpecial | null> {
 	const { tg } = relayCtx
 	if (!tg) return null
 	const api = tg.api
@@ -88,7 +99,7 @@ export async function sendSpecial(
 					special.longitude,
 					{ ...thread, ...reply },
 				), 'location')
-			return sent.message_id
+			return { msgId: sent.message_id, pollId: null }
 		}
 		case 'contact': {
 			const sent = await tgCall(
@@ -99,7 +110,7 @@ export async function sendSpecial(
 					}),
 				'contact',
 			)
-			return sent.message_id
+			return { msgId: sent.message_id, pollId: null }
 		}
 		case 'poll': {
 			const question = special.question.slice(0, 300) || 'Poll'
@@ -121,7 +132,7 @@ export async function sendSpecial(
 						...reply,
 					},
 				), 'poll')
-			return sent.message_id
+			return { msgId: sent.message_id, pollId: sent.poll?.id ?? null }
 		}
 	}
 }

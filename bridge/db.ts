@@ -51,6 +51,14 @@ export interface ReplyMapRow {
 	// (the TG side is a user message the bot can't edit) and legacy rows.
 	tg_text: string | null
 	tg_entities: string | null
+	// Poll metadata for vote relay (poll mirrors only, null otherwise):
+	// the poll's messageSecret for vote encrypt/decrypt, the ordered option
+	// names (TG answers carry indexes), the creator JID for the vote
+	// signature, and the Telegram poll id linking poll_answer updates.
+	wa_poll_secret: Uint8Array | null
+	wa_poll_options: string | null
+	wa_poll_creator: string | null
+	tg_poll_id: string | null
 }
 
 // Mirror kinds stored in reply_map.tg_kind. Only WA→TG rows carry a real
@@ -194,6 +202,25 @@ export class BridgeDB {
 		} else if (!replyCols.some((c) => c.name === 'tg_reply_to')) {
 			this.db.exec(`ALTER TABLE reply_map ADD COLUMN tg_reply_to INTEGER DEFAULT NULL`)
 		}
+		// Poll vote metadata (safe-ADD pattern for existing DBs).
+		const pollCols = this.db.prepare(`PRAGMA table_info(reply_map)`).all() as {
+			name: string
+		}[]
+		if (!pollCols.some((c) => c.name === 'wa_poll_secret')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_poll_secret BLOB DEFAULT NULL`)
+		}
+		if (!pollCols.some((c) => c.name === 'wa_poll_options')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_poll_options TEXT DEFAULT NULL`)
+		}
+		if (!pollCols.some((c) => c.name === 'wa_poll_creator')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_poll_creator TEXT DEFAULT NULL`)
+		}
+		if (!pollCols.some((c) => c.name === 'tg_poll_id')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN tg_poll_id TEXT DEFAULT NULL`)
+		}
+		this.db.exec(
+			'CREATE INDEX IF NOT EXISTS idx_reply_poll ON reply_map(tg_poll_id)',
+		)
 		// JID aliases: one contact can arrive as @lid or @s.whatsapp.net.
 		// The alias table maps every seen variant to the canonical JID so
 		// both variants resolve to the same topic instead of splitting.
@@ -472,6 +499,43 @@ export class BridgeDB {
 		}
 	}
 
+	// Poll metadata for a mirrored WA poll - messageSecret (vote crypto),
+	// ordered option names (TG answers carry indexes), creator JID (vote
+	// signature) and the Telegram poll id. Runs right after the native
+	// sendPoll mirror so votes in either direction resolve.
+	savePollMeta(
+		tgChatId: string,
+		tgMsgId: number,
+		meta: {
+			secret: Uint8Array | null
+			options: string[]
+			creator: string
+			pollId: string | null
+		},
+	): void {
+		this.db.prepare(
+			'UPDATE reply_map SET wa_poll_secret = ?, wa_poll_options = ?, wa_poll_creator = ?, tg_poll_id = ? WHERE tg_chat_id = ? AND tg_msg_id = ?',
+		).run(
+			meta.secret ? Buffer.from(meta.secret) : null,
+			JSON.stringify(meta.options),
+			meta.creator || null,
+			meta.pollId,
+			tgChatId,
+			tgMsgId,
+		)
+	}
+
+	// Reverse lookup for Telegram poll answers: poll_answer updates carry
+	// the bot poll id but no chat, so the id alone resolves the WA poll.
+	getReplyMapByPollId(pollId: string): ReplyMapRow | undefined {
+		if (!pollId) return undefined
+		const row = this.db.prepare(
+			'SELECT * FROM reply_map WHERE tg_poll_id = ?',
+		).get(pollId) as Record<string, unknown> | undefined
+		if (!row) return undefined
+		return row as unknown as ReplyMapRow
+	}
+
 	// Group-scoped reply lookup: message IDs collide across supergroups.
 	getReplyMapAt(chatId: string, tgMsgId: number): ReplyMapRow | undefined {
 		const row = this.db.prepare(
@@ -569,6 +633,28 @@ export class BridgeDB {
 		const k = `${waJid}\n${waMsgId}\n${emoji}`
 		if (!this.pendingTgReacts.has(k)) return false
 		this.pendingTgReacts.delete(k)
+		return true
+	}
+
+	// In-memory echo guard for TG-initiated poll votes. A TG vote is relayed
+	// via relayMessage({pollUpdateMessage}), and the server echoes it back
+	// as a fromMe pollUpdateMessage upsert - indistinguishable from a genuine
+	// phone-side vote (same account). The TG side marks (jid, poll creation
+	// id) beforehand and the WA side consumes exactly one matching echo.
+	private pendingTgPollVotes = new Set<string>()
+
+	markTgPollVote(waJid: string, waMsgId: string): void {
+		if (this.pendingTgPollVotes.size > 1000) {
+			const oldest = this.pendingTgPollVotes.values().next().value
+			if (oldest !== undefined) this.pendingTgPollVotes.delete(oldest)
+		}
+		this.pendingTgPollVotes.add(`${waJid}\n${waMsgId}`)
+	}
+
+	takeTgPollVote(waJid: string, waMsgId: string): boolean {
+		const k = `${waJid}\n${waMsgId}`
+		if (!this.pendingTgPollVotes.has(k)) return false
+		this.pendingTgPollVotes.delete(k)
 		return true
 	}
 

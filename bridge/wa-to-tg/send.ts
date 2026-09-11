@@ -5,6 +5,7 @@
 // long captions overflow - media-kind endpoints live in send-media.ts so
 // this router stays small.
 import { extOf, storedEntities, storedText } from './media-utils.ts'
+import { pollCreatorOf, pollSecretOf } from './polls.ts'
 import { sendSpecial, type WaSpecial } from './special.ts'
 import { getRetryAfterSeconds } from '../rate-limiter.ts'
 import type { BridgeDB, MirrorKind } from '../db.ts'
@@ -59,8 +60,21 @@ export async function sendToTopic(
 	// first (carrying the native reply), then any text as a follow-up.
 	// Each API call is its own limiter slot.
 	if (special) {
-		const sentId = await sendSpecial(topicId, chatId, special, reply)
-		if (sentId) save(sentId, 'special')
+		const sent = await sendSpecial(topicId, chatId, special, reply)
+		if (sent) {
+			save(sent.msgId, 'special')
+			// Poll mirrors keep their crypto metadata so votes relay both
+			// ways (decrypt incoming, sign outgoing) and poll_answer updates
+			// resolve through the stored Telegram poll id.
+			if (special.kind === 'poll') {
+				db.savePollMeta(chatId, sent.msgId, {
+					secret: pollSecretOf(waMsg),
+					options: special.options,
+					creator: pollCreatorOf(waMsg),
+					pollId: sent.pollId,
+				})
+			}
+		}
 		if (body) {
 			const sent = await tgCall(() =>
 				api.sendMessage(chatId, body, {

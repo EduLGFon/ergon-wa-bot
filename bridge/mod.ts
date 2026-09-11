@@ -83,7 +83,13 @@ export function startBridge(): Bot | null {
 	// The bot must also be an administrator in the supergroup, otherwise
 	// Telegram withholds these updates too (checked below, non-fatal warn).
 	tg.start({
-		allowed_updates: ['message', 'edited_message', 'message_reaction', 'callback_query'],
+		allowed_updates: [
+			'message',
+			'edited_message',
+			'message_reaction',
+			'callback_query',
+			'poll_answer',
+		],
 	}).catch((e) => console.error('[BRIDGE] Telegram polling stopped:', e))
 	for (const gid of [...new Set([groups.personal, groups.business])]) {
 		void checkReactionPrereqs(tg, gid)
