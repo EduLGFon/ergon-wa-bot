@@ -366,25 +366,26 @@ without touching WA.
   `text_mention` spans (`@all` via `nonJidMentions`, direct via owner-JID match, merged into
   entities by `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download + size/ext;
   `send.ts`/`send-media.ts` route by kind (photo/video/animation/voice/audio/sticker/document,
-  1024-char caption overflow follow-ups, round video-note fallback); `quote.ts` reply-target gated
-  on the destination group (stranded pre-move rows degrade to the header) or `author: preview`
-  header; `album.ts`/`album-flush.ts` 1.5s window -> `sendMediaGroup` (singletons arrive ~1.5s late
-  by design, chunk send + caption follow-up in `album-send.ts`); `edits.ts` (text in place, caption
-  fallback, sticker/special skip); `deletes.ts` (spoiler tombstone `... Deleted on WhatsApp` reusing
-  stored snapshot, else hard delete + drop mapping); `reactions.ts` (emoji normalize,
-  last-writer-wins, `REACTION_INVALID` -> heart retry, shared `applyTgReaction`);
-  `reaction-summary.ts` (opt-in author-attributed summary beside the popular-emoji mirror);
-  `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
-  line, TG echoes consumed via the `pendingTgPins` guard); `calls.ts` (one editable notice per call
-  id across offer/ringing/ accept/reject/timeout/terminate, missed vs ended lines); `polls.ts` (poll
-  crypto metadata, vote decrypt, result lines, vote encrypt + relay); `poll-tally.ts` (live per-poll
-  tally - one edited message showing per-option counts, percentages and voters, folding to a one-off
-  per-vote reply line when no tally message can be posted); `rich.ts` (contacts, invites, events,
-  scheduled calls, sticker packs and offline call logs as text notices); `special.ts`
-  (location/contact/poll mapping); `unsupported.ts`/`unsupported-preview.ts` friendly
-  `type
-  (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
-  `tgCall` queue + `notifyTopic` (never throws/loops).
+  1024-char caption overflow follow-ups, 4096-char body chunking into split messages via `chunk.ts`,
+  round video-note fallback); `quote.ts` reply-target gated on the destination group (stranded
+  pre-move rows degrade to the header) or `author: preview` header; `album.ts`/`album-flush.ts` 1.5s
+  window -> `sendMediaGroup` (singletons arrive ~1.5s late by design, chunk send + caption follow-up
+  in `album-send.ts`); `edits.ts` (text in place, caption fallback, sticker/special skip);
+  `deletes.ts` (spoiler tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard
+  delete + drop mapping); `reactions.ts` (emoji normalize, last-writer-wins, `REACTION_INVALID` ->
+  heart retry, shared `applyTgReaction`); `reaction-summary.ts` (opt-in author-attributed summary
+  beside the popular-emoji mirror); `pins.ts` (pin/unpin carriers resolve the mirror via
+  `reply_map`, pin natively with a service line, TG echoes consumed via the `pendingTgPins` guard);
+  `calls.ts` (one editable notice per call id across offer/ringing/ accept/reject/timeout/terminate,
+  missed vs ended lines); `polls.ts` (poll crypto metadata, vote decrypt, result lines, vote
+  encrypt + relay); `poll-tally.ts` (live per-poll tally - one edited message showing per-option
+  counts, percentages and voters, folding to a one-off per-vote reply line when no tally message can
+  be posted); `rich.ts` (contacts, invites, events, scheduled calls, sticker packs and offline call
+  logs as text notices); `special.ts` (location/contact/poll mapping);
+  `unsupported.ts`/`unsupported-preview.ts` friendly `type
+  (rawKey) + preview + sender` notices;
+  `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never
+  throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
   mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering
   (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback header,

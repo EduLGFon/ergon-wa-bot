@@ -3,8 +3,10 @@
 // Animations, voices and stickers each need their own Bot API method with
 // flood-aware fallback - this keeps the kind switch out of the main send
 // flow so send.ts stays under the file-size budget.
+import { sendTgText } from './chunk.ts'
 import { getRetryAfterSeconds } from '../rate-limiter.ts'
 import { tgCall } from './state.ts'
+import type { TgEntity } from '../format.ts'
 import type { InputFile } from 'grammy'
 
 export interface MediaDispatch {
@@ -17,15 +19,26 @@ export interface MediaDispatch {
 		| { reply_parameters: { message_id: number; allow_sending_without_reply: boolean } }
 		| undefined
 	body: string
-	rich: { entities: any[] } | undefined
+	entities: TgEntity[]
 	caption: string | undefined
 	captionEntities: { caption_entities: any[] } | undefined
 	save: (tgId: number, kind: any) => void
 }
 
 export async function dispatchKind(d: MediaDispatch): Promise<void> {
-	const { api, chatId, media, file, thread, reply, body, rich, caption, captionEntities, save } =
-		d
+	const {
+		api,
+		chatId,
+		media,
+		file,
+		thread,
+		reply,
+		body,
+		entities,
+		caption,
+		captionEntities,
+		save,
+	} = d
 	let sent: { message_id: number }
 
 	switch (media.kind) {
@@ -108,17 +121,17 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 	}
 	save(sent.message_id, media.kind === 'sticker' ? 'sticker' : 'media')
 
-	// Captions are capped at 1024 chars - send the overflow as a follow-up.
+	// Captions are capped at 1024 chars - send the overflow as a follow-up,
+	// chunked so a long caption can never be rejected whole.
 	if (caption === undefined && body) {
-		const overflow = await tgCall(
-			() =>
-				api.sendMessage(chatId, body, {
-					message_thread_id: thread.message_thread_id,
-					...rich,
-					...reply,
-				}),
-			'message',
-		) as { message_id: number }
-		save(overflow.message_id, 'text')
+		await sendTgText(
+			api,
+			chatId,
+			thread.message_thread_id,
+			body,
+			entities,
+			reply,
+			(msgId) => save(msgId, 'text'),
+		)
 	}
 }

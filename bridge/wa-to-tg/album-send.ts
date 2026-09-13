@@ -3,6 +3,7 @@
 // Split from album-flush.ts so the flush worker stays under the file
 // budget: builds the input media, sends the group, records every mirror
 // row and delivers overflow captions as one follow-up text.
+import { sendTgText } from './chunk.ts'
 import { extOf, storedEntities, storedText } from './media-utils.ts'
 import { relayCtx, tgCall } from './state.ts'
 import { msgSecretOf } from './polls.ts'
@@ -67,24 +68,23 @@ export async function sendAlbumChunk(
 		}
 	})
 	// Captions beyond the first don't fit in a media group - deliver them
-	// as one follow-up instead of dropping them.
+	// as one follow-up instead of dropping them, chunked so a very long
+	// combined caption can't be rejected whole.
 	const extras = chunk.slice(1).map((it) => it.body).filter((b) => b)
 	if (extras.length === 0) return
 	const followBody = extras.join('\n')
-	const sent = await tgCall(() =>
-		tg!.api.sendMessage(chatId, followBody, {
-			message_thread_id: first.topicId,
-		}), 'message')
 	const last = chunk[chunk.length - 1]
-	db!.saveReplyMap(
-		sent.message_id,
-		jid,
-		last.m.key?.id || '',
-		JSON.stringify(last.m.key || {}),
-		'text',
-		storedText(followBody),
-		null,
-		{ chatId },
-	)
-	db!.saveMsgSecret(chatId, sent.message_id, msgSecretOf(last.m))
+	await sendTgText(tg.api, chatId, first.topicId, followBody, [], undefined, (msgId) => {
+		db!.saveReplyMap(
+			msgId,
+			jid,
+			last.m.key?.id || '',
+			JSON.stringify(last.m.key || {}),
+			'text',
+			storedText(followBody),
+			null,
+			{ chatId },
+		)
+		db!.saveMsgSecret(chatId, msgId, msgSecretOf(last.m))
+	})
 }

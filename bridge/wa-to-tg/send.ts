@@ -4,13 +4,14 @@
 // native reply, stickers without captions get quote headers separately and
 // long captions overflow - media-kind endpoints live in send-media.ts so
 // this router stays small.
+import { sendTgText } from './chunk.ts'
 import { extOf, storedEntities, storedText } from './media-utils.ts'
 import { msgSecretOf, pollCreatorOf } from './polls.ts'
 import { sendSpecial, type WaSpecial } from './special.ts'
 import { getRetryAfterSeconds } from '../rate-limiter.ts'
 import type { BridgeDB, MirrorKind } from '../db.ts'
-import { dispatchKind } from './send-media.ts'
 import { relayCtx, tgCall } from './state.ts'
+import { dispatchKind } from './send-media.ts'
 import type { TgEntity } from '../format.ts'
 import type { proto } from 'baileys'
 import { InputFile } from 'grammy'
@@ -38,7 +39,6 @@ export async function sendToTopic(
 	const reply = quote.tgId
 		? { reply_parameters: { message_id: quote.tgId, allow_sending_without_reply: true } }
 		: undefined
-	const rich = entities.length > 0 ? { entities } : undefined
 	const thread = { message_thread_id: topicId } as const
 	// Persist the mirror content alongside the mapping so a later revoke can
 	// re-edit the message into a spoiler tombstone instead of deleting it.
@@ -80,25 +80,29 @@ export async function sendToTopic(
 			}
 		}
 		if (body) {
-			const sent = await tgCall(() =>
-				api.sendMessage(chatId, body, {
-					...thread,
-					...rich,
-					...reply,
-				}), 'message')
-			save(sent.message_id, 'text')
+			await sendTgText(
+				api,
+				chatId,
+				topicId,
+				body,
+				entities,
+				reply,
+				(msgId) => save(msgId, 'text'),
+			)
 		}
 		return
 	}
 
 	if (!media) {
-		const sent = await tgCall(() =>
-			api.sendMessage(chatId, body, {
-				message_thread_id: topicId,
-				...rich,
-				...reply,
-			}), 'message')
-		save(sent.message_id, 'text')
+		await sendTgText(
+			api,
+			chatId,
+			topicId,
+			body,
+			entities,
+			reply,
+			(msgId) => save(msgId, 'text'),
+		)
 		return
 	}
 
@@ -143,11 +147,15 @@ export async function sendToTopic(
 		}
 		save(sentNote.message_id, 'media')
 		if (body) {
-			const sent = await tgCall(
-				() => api.sendMessage(chatId, body, { ...thread, ...rich, ...reply }),
-				'message',
+			await sendTgText(
+				api,
+				chatId,
+				topicId,
+				body,
+				entities,
+				reply,
+				(msgId) => save(msgId, 'text'),
 			)
-			save(sent.message_id, 'text')
 		}
 		return
 	}
@@ -160,7 +168,7 @@ export async function sendToTopic(
 		thread,
 		reply,
 		body,
-		rich,
+		entities,
 		caption,
 		captionEntities,
 		save,
