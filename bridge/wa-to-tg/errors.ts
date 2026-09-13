@@ -23,6 +23,22 @@ export function reactionErrorDescription(err: unknown): string {
 	return ''
 }
 
+// True when Telegram rejected the call because the target message is gone
+// (revoked on WA, pruned by Telegram, topic closed/deleted) rather than
+// because of a bug - the mirror row outlives a deleted/expired message, so
+// reactions, edits and notices racing that disappear are expected, not
+// faults. Callers log these quietly (or not at all) instead of at error.
+export function isTargetGone(err: unknown): boolean {
+	const desc = reactionErrorDescription(err).toLowerCase()
+	return (
+		desc.includes('message to react not found') ||
+		desc.includes('message thread not found') ||
+		desc.includes('message is not modified') ||
+		desc.includes('topic_id_invalid') ||
+		desc.includes('not found')
+	)
+}
+
 // Which Telegram edit endpoint a mirror kind needs. Stickers, polls,
 // venues, contacts and locations have no bot-editable representation -
 // attempting them only produces 400s, so they are skipped up front.

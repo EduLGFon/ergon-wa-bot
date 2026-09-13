@@ -3,7 +3,7 @@
 // Each side mirrors through a single bot identity so concurrent reactors are
 // last-writer-wins by design - this normalizes WA emojis for Telegram, skips
 // TG-initiated echoes and retries REACTION_INVALID with the default heart.
-import { reactionErrorDescription } from './errors.ts'
+import { isTargetGone, reactionErrorDescription } from './errors.ts'
 import { chatForReply } from './routing.ts'
 import { candidatesOf } from './jid.ts'
 import { relayCtx, tgCall } from './state.ts'
@@ -134,6 +134,10 @@ export async function applyTgReaction(
 		// (reactions fully disabled?) gives up quietly - no
 		// recursion. Never rethrows - reactions must not spam
 		// the limiter log.
+		// The mirror may also be gone by now (revoked on the WA
+		// side or deleted in TG after the row was written) -
+		// "message to react not found" is expected, not a fault.
+		if (isTargetGone(e)) return
 		const desc = reactionErrorDescription(e)
 		if (desc.includes('REACTION_INVALID') && emoji) {
 			try {
