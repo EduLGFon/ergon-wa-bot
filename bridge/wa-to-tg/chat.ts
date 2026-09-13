@@ -38,6 +38,16 @@ export async function resolveChatName(
 	return pushName || phoneOf(jid) || jid.split('@')[0]
 }
 
+// Telegram topic titles reject invisible-only names (TOPIC_TITLE_EMPTY):
+// strip zero-width/format chars (ZWSP, ZWJ, BOM, Hangul filler U+3164, soft
+// hyphen...) after the existing newline/space cleanup, defaulting to the
+// caller's 'Unknown' when nothing readable remains.
+const INVISIBLE_RE = /[\u200B-\u200F\u2060\uFEFF\u3164\u00AD]/g
+
+export function sanitizeTopicName(name: string): string {
+	return (name || '').replace(/[\n\r]+/g, ' ').replace(INVISIBLE_RE, '').trim().slice(0, 128)
+}
+
 export async function createForumTopic(
 	displayName: string,
 	_isGroup: boolean,
@@ -45,8 +55,7 @@ export async function createForumTopic(
 ): Promise<number> {
 	const { tg } = relayCtx
 	if (!tg) throw new Error('Telegram bot not initialized')
-	const name = (displayName || 'Unknown').replace(/[\n\r]+/g, ' ').trim().slice(0, 128) ||
-		'Unknown'
+	const name = sanitizeTopicName(displayName) || 'Unknown'
 	// Topic creation is a Bot API call like any other - it goes through the
 	// limiter so a burst of new chats can't flood the supergroup budget.
 	const topic = await tgCall(() => tg!.api.createForumTopic(chatId, name), 'new-topic')
@@ -119,7 +128,7 @@ export async function handleGroupUpdates(
 						chatForMapping(mapping, groups),
 						mapping.telegram_topic_id,
 						{
-							name: u.subject!.slice(0, 128),
+							name: sanitizeTopicName(u.subject!) || mapping.display_name,
 						},
 					).catch(() => false),
 				'edit-topic',

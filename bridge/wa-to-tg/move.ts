@@ -7,7 +7,7 @@
 // replies whose target was also copied. Uncopied rows keep their old
 // group, so edits/deletes of pre-move messages still land correctly.
 import { chatOfBucket } from './routing.ts'
-import { createForumTopic } from './chat.ts'
+import { createForumTopic, sanitizeTopicName } from './chat.ts'
 import { relayCtx, tgCall } from './state.ts'
 import type { Bucket } from '../db.ts'
 
@@ -142,7 +142,7 @@ async function retireOldTopic(
 	await tgCall(() => tg!.api.closeForumTopic(fromChat, fromTopic), 'close-topic').catch(() =>
 		null
 	)
-	const name = `moved ${displayName}`.replace(/[\n\r]+/g, ' ').trim().slice(0, 128)
+	const name = sanitizeTopicName(`moved ${displayName}`)
 	await tgCall(
 		() => tg!.api.editForumTopic(fromChat, fromTopic, { name }).catch(() => false),
 		'edit-topic',

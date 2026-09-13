@@ -6,7 +6,7 @@
 // rename, and real contact renames update the Telegram topic title too.
 import { inflightTopics, relayCtx, tgCall } from './state.ts'
 import { chatForMapping, chatOfBucket } from './routing.ts'
-import { createForumTopic } from './chat.ts'
+import { createForumTopic, sanitizeTopicName } from './chat.ts'
 
 // Ensure a forum topic mapping exists - creates or refreshes it, updates
 // activity and returns null when muted so the caller skips silently.
@@ -125,7 +125,7 @@ async function createOrRefreshMapping(
 						chatForMapping(mapping!, groups),
 						mapping!.telegram_topic_id,
 						{
-							name: displayName.slice(0, 128),
+							name: sanitizeTopicName(displayName) || mapping!.display_name,
 						},
 					).catch(() => false),
 				'edit-topic',
