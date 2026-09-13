@@ -13,6 +13,11 @@ import type { Bucket } from '../db.ts'
 
 export const PERSONAL_REPLAY_CAP = 100
 
+// Dedup concurrent moves for the same JID: a second classification-button
+// tap or /personal command while the first move is replaying would open a
+// duplicate topic otherwise. Same pattern as inflightTopics in state.ts.
+const inflightMoves = new Map<string, Promise<MoveResult | null>>()
+
 export interface MoveResult {
 	moved: boolean
 	chatId: string
@@ -21,7 +26,25 @@ export interface MoveResult {
 	skipped: number
 }
 
+// Move a chat's topic into the bucket's home supergroup. Concurrent calls
+// for the same JID collapse onto the first in-flight move; callers that
+// awaited the same chat re-read the fresh mapping instead of moving again.
 export async function moveTopic(
+	jid: string,
+	bucket: Exclude<Bucket, 'undecided'>,
+): Promise<MoveResult | null> {
+	const pending = inflightMoves.get(jid)
+	if (pending) return pending
+	const task = moveTopicUnsafe(jid, bucket)
+	inflightMoves.set(jid, task)
+	try {
+		return await task
+	} finally {
+		if (inflightMoves.get(jid) === task) inflightMoves.delete(jid)
+	}
+}
+
+async function moveTopicUnsafe(
 	jid: string,
 	bucket: Exclude<Bucket, 'undecided'>,
 ): Promise<MoveResult | null> {
