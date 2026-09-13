@@ -5,7 +5,7 @@
 - Avoid AI tropes and excessive AI fingerprints such as em-dashes ("—"), headline biscuit pills,
   overly robotic filler, and unnatural prose in message templates and generated outputs. Prefer
   clean, standard hyphens ("-") and natural human-like formatting.
-- Be concise and direct in your responses.
+- Be concise and direct in your responses. Avoid verbosity.
 
 ## Code rules
 
