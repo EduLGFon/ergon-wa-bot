@@ -34,13 +34,6 @@ export function getErrorDescription(e: unknown): string {
 	return ''
 }
 
-// True when Telegram rejected the call because the reaction emoji is not
-// usable here (unknown to Telegram or disabled in chat settings). Callers
-// fall back to the default reaction, so this must stay quiet in the queue.
-export function isReactionInvalid(e: unknown): boolean {
-	return getErrorDescription(e).includes('REACTION_INVALID')
-}
-
 // Extract Telegram's "retry after N seconds" from a GrammyError (or any
 // error shaped like one). Returns seconds, or null when this is not a 429.
 export function getRetryAfterSeconds(e: unknown): number | null {
@@ -167,12 +160,13 @@ export class RateLimiter {
 								`queue=${this.queue.length})`,
 						)
 					} else {
-						// REACTION_INVALID is expected: the caller falls back to the
-						// default reaction and logs a one-line warn. Keep the queue
-						// quiet instead of dumping the full GrammyError stack.
-						if (!isReactionInvalid(e)) {
-							console.error(`[BRIDGE] queued ${item.label} failed:`, e)
-						}
+						// Callers keep their own triage (edits, deletes and
+						// reactions already log at the right level).
+						// REACTION_INVALID and target-gone 400s are expected
+						// too - the caller swallows them, so the queue must
+						// stay quiet instead of dumping the full stack. A
+						// 429 retry is logged above; everything else is the
+						// caller's job.
 						this.lastRun = Date.now()
 						item.reject(e)
 					}
