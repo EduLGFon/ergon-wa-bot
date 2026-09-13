@@ -51,7 +51,11 @@ const allMsgTypes = {
 
 	// Polls
 	pollCreationMessage: 'poll',
+	pollCreationMessageV2: 'poll',
 	pollCreationMessageV3: 'poll',
+	pollCreationMessageV4: 'poll',
+	pollCreationMessageV5: 'poll',
+	pollCreationOptionImageMessage: 'poll',
 	pollUpdateMessage: 'pollUpdate',
 }
 

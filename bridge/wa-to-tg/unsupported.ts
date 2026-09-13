@@ -16,6 +16,10 @@ import { unwrap } from './text.ts'
 export const WA_UNSUPPORTED_FRIENDLY: Record<string, string> = {
 	albumMessage: 'album',
 	pollUpdateMessage: 'poll vote',
+	pollCreationMessageV2: 'poll creation',
+	pollCreationMessageV4: 'poll creation',
+	pollCreationMessageV5: 'poll creation',
+	pollCreationOptionImageMessage: 'poll creation',
 	buttonsMessage: 'interactive message',
 	buttonsResponseMessage: 'button reply',
 	templateMessage: 'template message',

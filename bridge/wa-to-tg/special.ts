@@ -25,6 +25,20 @@ export interface WaSpecialPoll {
 }
 export type WaSpecial = WaSpecialLocation | WaSpecialContact | WaSpecialPoll
 
+// All poll-creation versions share the PollCreationMessage shape (name +
+// options) - only the version tag differs. V4 and the option-image variant
+// wrap the real payload in a FutureProofMessage envelope (`.message`), so
+// probe recursively instead of listing every field. Unknown versions fall
+// back to null and reach the "no Telegram equivalent" notifier.
+function pollNodeOf(raw: any): any | null {
+	if (!raw || typeof raw !== 'object') return null
+	const direct = raw.pollCreationMessage || raw.pollCreationMessageV2 ||
+		raw.pollCreationMessageV3 || raw.pollCreationMessageV5
+	if (direct) return direct
+	const wrapped = raw.pollCreationMessageV4 || raw.pollCreationOptionImageMessage
+	return wrapped ? pollNodeOf(unwrap(wrapped.message)) : null
+}
+
 export function getSpecialContent(message: proto.IMessage | undefined | null): WaSpecial | null {
 	try {
 		const raw = unwrap(message)
@@ -49,10 +63,7 @@ export function getSpecialContent(message: proto.IMessage | undefined | null): W
 				phone,
 			}
 		}
-		// V1/V3/V5 share the PollCreationMessage shape (name + options) -
-		// only the version tag differs.
-		const pollNode = raw.pollCreationMessage || raw.pollCreationMessageV3 ||
-			raw.pollCreationMessageV5
+		const pollNode = pollNodeOf(raw)
 		if (pollNode) {
 			const options = (pollNode.options || [])
 				.map((o: any) => String(o?.optionName || '').trim())

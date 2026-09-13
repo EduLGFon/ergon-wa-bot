@@ -4,10 +4,9 @@ High viability (small, well-supported APIs on both ends)
    send from your phone never appears in the topic. Fixable: relay fromMe messages whose ID isn't in
    reply_map (i.e. not a TG→WA echo) with a You: label. Viability: high. Only subtlety is the echo
    race (save the sent-ID synchronously or keep a pending set).
-2. WhatsApp location/contact/live-location/poll are silently dropped — WA→TG only extracts text +
-   media, so locationMessage, contactMessage, pollCreationMessage hit continue and vanish (TG→WA
-   already handles them as text). Telegram has sendVenue, sendContact, native sendPoll. Viability:
-   high.
+2. WhatsApp location/contact/live-location/poll mapping — now handled natively (venue/contact/native
+   sendPoll) for every poll-creation version; only exotic variants without a Telegram equivalent
+   post a ⚠️ notice.
 3. Message edits duplicate instead of updating — neither unwrap() peels editedMessage nor is there
    an edit path, so a WA edit relays as a second new message; TG edited_message updates are ignored
    entirely. Mapping exists, so editMessageText/Caption (TG, 48h window) and Baileys edit-of-own

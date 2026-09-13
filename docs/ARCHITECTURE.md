@@ -381,7 +381,8 @@ without touching WA.
   encrypt + relay); `poll-tally.ts` (live per-poll tally - one edited message showing per-option
   counts, percentages and voters, folding to a one-off per-vote reply line when no tally message can
   be posted); `rich.ts` (contacts, invites, events, scheduled calls, sticker packs and offline call
-  logs as text notices); `special.ts` (location/contact/poll mapping);
+  logs as text notices); `special.ts` (location/contact/poll mapping - every poll-creation version,
+  V4 and the option-image variant unwrapped via `pollNodeOf`);
   `unsupported.ts`/`unsupported-preview.ts` friendly `type
   (rawKey) + preview + sender` notices;
   `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never

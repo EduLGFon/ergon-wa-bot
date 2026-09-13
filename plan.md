@@ -64,7 +64,9 @@ formatted notices; `callLogMessage` -> text unless it duplicates a just-relayed 
 
 ## 6. Polls - creation, votes, results
 
-- `pollCreationMessageV3` in `getSpecialContent` (`special.ts`), same as V1.
+- All poll-creation versions (`pollCreationMessage` V1/V2/V3/V5 plus the FutureProof-wrapped V4 and
+  option-image variant) handled in `getSpecialContent` (`special.ts`) via `pollNodeOf` - same
+  `name + options` shape, V4/option-image recurse into the envelope's `message`.
 - Persist at mirror time (new `reply_map` columns, safe-ADD migration in `db.ts`): `wa_poll_secret`
   (`messageContextInfo.messageSecret`), `wa_poll_options` (ordered names, JSON), `wa_poll_creator`,
   `tg_poll_id`.
