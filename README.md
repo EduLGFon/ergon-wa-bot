@@ -20,6 +20,7 @@
 - [x] Mention all users in a group in a single msg;
 - [x] Run code in multiple programming languages;
 - [x] Download videos and audios from many websites;
+- [x] Bidirectional WhatsApp↔Telegram bridge (forum topics, native polls with live votes);
 
 **and more.**
 

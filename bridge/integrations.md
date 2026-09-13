@@ -34,9 +34,10 @@ finicky. Viability: medium. 11. Per-chat controls — no allowlist/blocklist, no
 /ignore. Trivial DB + command work, purely a product decision. Viability: medium-high. 12. Error
 visibility — relay failures only hit server logs; the topic never finds out a photo silently didn't
 cross (e.g. TG's 20MB bot download cap, WA size limits). Posting a small ⚠️ notice to the affected
-topic is easy. Viability: high technically, medium as a priority call. 13. Live polls — TG→WA is
-already flattened to text (content preserved); true two-way live polls with vote counts would need
-periodic re-edits and voter mapping. Viability: low-medium; the text fallback arguably suffices.
+topic is easy. Viability: high technically, medium as a priority call. 13. Live polls — now
+implemented: native WA polls both ways plus live vote sync via a tally message (`plan.md` §6).
+Remaining limits: a sent TG poll can't be re-edited and WA poll payloads are immutable, so
+close/stop isn't mirrored.
 
 Low viability / out of scope (platform won't allow it properly) 14. Read receipts / presence — Bot
 API can't mark arbitrary messages as read or observe reads; typing indicators (sendChatAction) are

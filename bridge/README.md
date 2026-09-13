@@ -120,9 +120,11 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   attachment kind and size (documents include the file name), Telegram files over the 20 MB bot
   download limit are skipped up front with a notice naming the cap, and album failures say which
   item (`item 3 of 5`) or how many photos stalled. The notice itself never throws or loops.
-- Polls stay a text fallback TG→WA and a native (non-anonymous) TG poll WA→TG. Live vote sync is
-  platform-blocked both ways: WA polls are immutable after creation and TG polls can't be edited
-  after sending (only stopped).
+- Polls cross natively both ways with live vote sync: WA creation mirrors as a non-anonymous TG poll
+  (every payload version, option images unwrapped to text), TG-created polls become native WA polls,
+  and votes on either side decrypt/encrypt into the other via the `reply_map` poll metadata (see
+  `plan.md` §6), with a live tally message (counts, percentages, voters). Sent TG polls can't be
+  re-edited and WA poll payloads are immutable, so close/stop isn't mirrored.
 - Group joins/leaves/admin changes post service lines; renames also rename the topic.
 - `General`-topic messages (no `message_thread_id`) are ignored except commands.
 - Captions over 1024 chars arrive as media + follow-up text message.
