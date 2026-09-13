@@ -91,7 +91,9 @@ export async function main() {
 					'  2. Medium: Light setup + Python dependencies (Background removal and Video download)',
 				)
 				console.log('  3. Strong: Medium setup + Database migration (Drizzle push)')
-				console.log('  4. Re-configure Environment (.env and defaults.json)')
+				console.log(
+					'  4. Re-configure Environment (.env, defaults.json and Telegram bridge)',
+				)
 				console.log('  5. Back')
 				const setupChoice = prompt('\nChoose setup level [1-5]: ')
 				if (setupChoice === '1') await runLightSetup()

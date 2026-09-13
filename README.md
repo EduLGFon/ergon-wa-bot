@@ -82,8 +82,8 @@ deno task wizard
 
 Using the wizard, you can also manage the bot lifecycle:
 
-- **Configure**: Set up environment variables, timezone, language, prefix, database URL, and Gemini
-  API keys.
+- **Configure**: Set up environment variables, timezone, language, prefix, database URL, Gemini API
+  keys, and the optional Telegram bridge.
 - **Install/Setup**: Choose Light, Medium, or Strong setup levels.
 - **Update**: Run a full update that pulls latest repository commits, updates npm/pip packages, and
   re-generates schemas.

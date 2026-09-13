@@ -42,7 +42,7 @@ directory, file, data flow, and convention so you can locate code fast.
 
 ```
 wa.ts                    # prod entry point
-setup.ts + setup/        # interactive installer/manager (wizard, env, runners, reset)
+setup.ts + setup/        # interactive installer/manager (wizard, env, bridge, runners, reset)
 bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module dirs)
   bridge/mod.ts          # orchestration: startBridge, reattachBridge, findSupergroupId
   bridge/db.ts           # SQLite pairing + reply map + echo guards
@@ -412,11 +412,12 @@ without touching WA.
 
 `deno task wizard` runs `setup/wizard.ts:main()` - a 6-option loop (setup, update, start/restart
 foreground vs PM2, stop, reset, exit). `env.ts` prompts language (discovers `locale/*.json`),
-prefix, TZ, `DATABASE_URL`, `DEVS`, Gemini keys, preserves unknown keys, writes `conf/.env` +
-`defaults.json`. `runners.ts` implements Light (deps), Medium (+ Python venv), Strong (+ `db:push`)
-setups and `git pull + reinstall + db:gen` updates without a shell. `reset.ts` does Light reset
-(wipe `conf/gen/{auth,cache,temp}`) and Strong reset (truncate auth tables), plus a manual `.env`
-parser.
+prefix, TZ, `DATABASE_URL`, `DEVS`, Gemini keys, and optionally the Telegram bridge (token,
+personal/business supergroup IDs, owner id, rate-limit tuning via `bridge.ts`); preserves unknown
+keys, writes `conf/.env` + `defaults.json`. `runners.ts` implements Light (deps), Medium (+ Python
+venv), Strong (+ `db:push`) setups and `git pull + reinstall + db:gen` updates without a shell.
+`reset.ts` does Light reset (wipe `conf/gen/{auth,cache,temp}`) and Strong reset (truncate auth
+tables), plus a manual `.env` parser.
 
 ## 16. Conventions AI agents must follow (`agents.md`)
 
