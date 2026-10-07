@@ -12,14 +12,40 @@ import bot from '@plugin/bot.ts'
 // unhandled rejections. Prod logs prove these are transient (WhatsApp 428/503/408,
 // fetch body torn mid-stream, Baileys background iq queries) and must not kill the
 // process. The SOCK close handler owns reconnects; only loggedOut exits explicitly.
+//
+// Bound: 3+ crashes in 5min or RSS over 2GB exits non-zero so PM2 restarts
+// cleanly instead of limping at 5GB (15/09 prod spike kept alive at 4.9GB).
+const crashTimes: number[] = []
+function recordCrash(kind: string, msg: string): void {
+	const nowMs = Date.now()
+	crashTimes.push(nowMs)
+	while (crashTimes.length && crashTimes[0] < nowMs - 5 * 60_000) crashTimes.shift()
+	if (typeof globalThis.print === 'function') {
+		print('CRASH', `${kind} kept alive: ${msg} (${crashTimes.length}/3 in 5min)`, 'red')
+	} else console.error(`${kind} kept alive:`, msg)
+	try {
+		const rss = (Deno.memoryUsage().rss as number) ?? 0
+		if (rss > 2 * 1024 * 1024 * 1024) {
+			console.error(
+				`[CRASH] RSS ${(rss / 1024 ** 3).toFixed(2)}GB over 2GB, exiting for PM2 restart`,
+			)
+			setTimeout(() => Deno.exit(1), 500).unref?.()
+			return
+		}
+	} catch {
+		// memory read failed - ignore
+	}
+	if (crashTimes.length >= 3) {
+		console.error('[CRASH] 3 crashes in 5min, exiting for PM2 backoff restart')
+		setTimeout(() => Deno.exit(1), 500).unref?.()
+	}
+}
 globalThis.addEventListener('unhandledrejection', (e) => {
 	e.preventDefault()
 	try {
 		const reason = (e as PromiseRejectionEvent).reason as any
 		const msg = reason?.message || reason?.output?.payload?.message || String(reason)
-		if (typeof globalThis.print === 'function') {
-			print('CRASH', `Unhandled rejection kept alive: ${msg}`, 'red')
-		} else console.error('Unhandled rejection kept alive:', reason)
+		recordCrash('Unhandled rejection', msg)
 	} catch {
 		// Never throw from the crash handler itself.
 	}
@@ -35,9 +61,7 @@ globalThis.addEventListener('error', (e) => {
 		const msg = (err as any)?.message || String(err)
 		// Deno runtime stream errors (e.g. "error reading a body from connection")
 		// arrive here without a timestamp; keep alive and let SOCK reconnect own recovery.
-		if (typeof globalThis.print === 'function') {
-			print('CRASH', `Uncaught kept alive: ${msg}`, 'red')
-		} else console.error('Uncaught kept alive:', err)
+		recordCrash('Uncaught', msg)
 	} catch {
 		// Never throw from the crash handler itself.
 	}
@@ -56,6 +80,15 @@ async function start() {
 	await loadCmds()
 	await cache.resume()
 	await loadEvents()
+
+	// Deaf-session watchdog: attaches after loadEvents (which resets listeners) and
+	// re-attaches from the reconnect path whenever the socket is recreated.
+	try {
+		const { attachHealthWatchdog } = await import('@plugin/health.ts')
+		attachHealthWatchdog()
+	} catch (e) {
+		print('HEALTH', `watchdog disabled: ${(e as Error)?.message || e}`, 'yellow')
+	}
 
 	// Telegram bridge shares this process's WhatsApp socket (no 2nd connection).
 	// Must start AFTER loadEvents(), which resets event listeners.

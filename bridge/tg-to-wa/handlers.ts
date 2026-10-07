@@ -21,7 +21,22 @@ export function registerTgMessageHandler(
 	waSend: WaSend,
 	groups: GroupIds,
 ): void {
+	// Throttle map for muted/archived notices: 1h per topic, capped so a
+	// long-lived process never grows it without bound (one entry per
+	// muted topic ever seen).
 	const mutedNoticeAt = new Map<string, number>()
+	const MUTED_NOTICE_MAX = 1000
+	const rememberMutedNotice = (key: string): void => {
+		mutedNoticeAt.set(key, Date.now())
+		if (mutedNoticeAt.size <= MUTED_NOTICE_MAX) return
+		// Evict oldest first, then drop any entry older than the 1h throttle.
+		const cutoff = Date.now() - 3_600_000
+		for (const [k, ts] of mutedNoticeAt) {
+			if (mutedNoticeAt.size <= MUTED_NOTICE_MAX && ts >= cutoff) break
+			mutedNoticeAt.delete(k)
+			if (mutedNoticeAt.size <= MUTED_NOTICE_MAX * 0.9) break
+		}
+	}
 	tg.on('message', async (ctx) => {
 		let chatId = ''
 		try {
@@ -36,7 +51,7 @@ export function registerTgMessageHandler(
 				const noticeKey = `${chatId}:${topicId}`
 				const last = mutedNoticeAt.get(noticeKey) ?? 0
 				if (Date.now() - last > 3_600_000) {
-					mutedNoticeAt.set(noticeKey, Date.now())
+					rememberMutedNotice(noticeKey)
 					const line = !mapping || mapping.archived
 						? '⚠️ This chat is archived - relay is paused. Use /reopen to resume.'
 						: '⚠️ This chat is muted - relay is paused. Use /unmute to resume.'

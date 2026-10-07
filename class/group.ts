@@ -46,14 +46,31 @@ export default class Group {
 		// +1 to group member msgs count
 		this.msgs.add(msg.key.id!, msg) // add it to cache
 		if (!Deno.env.get('DATABASE_URL') || msg.isBot) return
+		if (!db) return
 
-		await db?.insert(msgs).values({
-			author: msg.author,
-			group: this.id.parsePhone(),
-		}).onConflictDoUpdate({
-			target: [msgs.author, msgs.group],
-			set: { count: sql`${msgs.count} + 1` },
-		})
+		// Retry once after a short pause: prod showed transient Postgres
+		// blips (15/09 5x UPSERT failures) that succeed on second try.
+		try {
+			await db?.insert(msgs).values({
+				author: msg.author,
+				group: this.id.parsePhone(),
+			}).onConflictDoUpdate({
+				target: [msgs.author, msgs.group],
+				set: { count: sql`${msgs.count} + 1` },
+			})
+		} catch (e) {
+			await new Promise((r) => setTimeout(r, 1_000))
+			await db?.insert(msgs).values({
+				author: msg.author,
+				group: this.id.parsePhone(),
+			}).onConflictDoUpdate({
+				target: [msgs.author, msgs.group],
+				set: { count: sql`${msgs.count} + 1` },
+			}).catch((retryErr) => {
+				// Caller logs once; rethrow to keep the UPSERT/countMsg tag.
+				throw retryErr instanceof Error ? retryErr : new Error(String(retryErr ?? e))
+			})
+		}
 	}
 
 	async getCountedMsgs() {

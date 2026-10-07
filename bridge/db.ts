@@ -360,8 +360,13 @@ export class BridgeDB {
 	}
 
 	// Remember that an alias JID means the same chat as the canonical one.
+	// Group JIDs are never aliases: a past bug stored participant alts as
+	// chat aliases (user PN -> group) and heal moves then stole group topics.
 	addAlias(alias: string, canonical: string): void {
 		if (!alias || !canonical || alias === canonical) return
+		if (alias.endsWith('@g.us') || canonical.endsWith('@g.us')) return
+		const isUser = (j: string) => j.endsWith('@lid') || j.endsWith('@s.whatsapp.net')
+		if (!isUser(alias) || !isUser(canonical)) return
 		try {
 			this.db.prepare(
 				'INSERT OR REPLACE INTO jid_aliases (alias, canonical) VALUES (?, ?)',
@@ -476,6 +481,7 @@ export class BridgeDB {
 	}
 
 	private lastReplyPrune = 0
+	private lastVacuum = 0
 
 	saveReplyMap(
 		tgMsgId: number,
@@ -510,6 +516,17 @@ export class BridgeDB {
 			this.db.prepare(
 				'DELETE FROM reply_map WHERE created_at < ?',
 			).run(now - 7 * 24 * 60 * 60 * 1000)
+			// Weekly VACUUM reclaims the freed pages (WAL + deletes bloat
+			// the file otherwise). Runs at most once per 7d, best-effort.
+			if (now - this.lastVacuum > 7 * 24 * 60 * 60 * 1000) {
+				this.lastVacuum = now
+				try {
+					this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
+					this.db.exec('VACUUM')
+				} catch {
+					// VACUUM needs a write lock - skip when busy
+				}
+			}
 		}
 	}
 

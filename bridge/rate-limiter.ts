@@ -58,6 +58,19 @@ export function getRetryAfterSeconds(e: unknown): number | null {
 	return null
 }
 
+// True when an enqueue rejection is an intentional load-shed (deep queue,
+// too many waiters, parked too long) rather than a real send failure.
+// Callers for droppable ops should swallow these silently.
+export function isQueueDrop(e: unknown): boolean {
+	try {
+		const msg = typeof e === 'string' ? e : String((e as { message?: unknown })?.message ?? e)
+		return msg.includes('dropping op=') || msg.includes('queue deep') ||
+			msg.includes('parked too long')
+	} catch {
+		return false
+	}
+}
+
 interface QueueItem {
 	fn: () => Promise<unknown>
 	resolve: (v: unknown) => void
@@ -67,11 +80,25 @@ interface QueueItem {
 }
 
 // Backpressure cap: enqueue waits for space instead of rejecting, so info
-// is slowed down but never dropped. 500 slots × Telegram spacing bounds
-// memory while a flood drains.
+// is slowed down but never dropped. 500 slots x Telegram spacing bounds
+// memory while a flood drains. Waiters (producers parked on a full queue)
+// are bounded separately: beyond MAX_WAITERS even important ops drop rather
+// than accumulating unbounded setTimeout loops and promise closures.
 const MAX_QUEUE = 500
+const MAX_WAITERS = 1000
+// When the queue is this deep, low-value ops (notices, service lines,
+// prompts) drop immediately instead of adding hours of backlog. Messages,
+// media and voices always wait - they are the relay payload.
+const DROP_WHEN_DEEP = 400
+const DROPPABLE_LABELS = new Set(['notice', 'service-line', 'prompt', 'edit-topic', 'new-topic'])
+// Low-value ops give up after N flood retries; payload ops retry unbounded.
+const FLOOD_MAX_RETRIES_LOW = 3
+// A parked producer waits at most this long for space before it drops
+// (low-value) or rejects (payload) instead of waiting forever.
+const MAX_PARK_MS = 60_000
 
 export class RateLimiter {
+	private baseLimitMs: number
 	private limitMs: number
 	private maxWaitMs: number
 	private defaultRetryAfterMs: number
@@ -80,11 +107,16 @@ export class RateLimiter {
 	private running = false
 	private lastRun = 0
 	private blockedUntil = 0
+	private waiters = 0
+	private dropped = 0
+	private floodRetries = 0
+	private successStreak = 0
 
 	constructor(limitMs: number = 3000, opts: RateLimiterOptions = {}) {
+		this.baseLimitMs = limitMs
 		this.limitMs = limitMs
-		// NB: opts.maxRetries is accepted for compat but 429 retries are
-		// unbounded by design (slow delivery, never drop).
+		// NB: opts.maxRetries is accepted for compat but payload 429 retries
+		// are unbounded by design (slow delivery, never drop).
 		void opts.maxRetries
 		this.maxWaitMs = opts.maxWaitMs ?? 120_000
 		this.defaultRetryAfterMs = opts.defaultRetryAfterMs ?? 5_000
@@ -92,6 +124,20 @@ export class RateLimiter {
 	}
 
 	enqueue<T>(fn: () => Promise<T>, label = 'send'): Promise<T> {
+		// Deep backlog: shed low-value load immediately so user messages
+		// keep flowing. 500 x 3s is already ~25min of delay.
+		if (this.queue.length >= DROP_WHEN_DEEP && DROPPABLE_LABELS.has(label)) {
+			this.dropped++
+			return Promise.reject(
+				new Error(`[BRIDGE] queue deep (${this.queue.length}), dropping op=${label}`),
+			)
+		}
+		if (this.waiters >= MAX_WAITERS && DROPPABLE_LABELS.has(label)) {
+			this.dropped++
+			return Promise.reject(
+				new Error(`[BRIDGE] too many waiters (${this.waiters}), dropping op=${label}`),
+			)
+		}
 		return new Promise<T>((resolve, reject) => {
 			const item = {
 				fn: fn as () => Promise<unknown>,
@@ -102,14 +148,33 @@ export class RateLimiter {
 			}
 			if (this.queue.length >= MAX_QUEUE) {
 				// Full: slow the producer instead of dropping. Poll for space;
-				// drain() frees slots as floods clear.
+				// drain() frees slots as floods clear. Parked time is capped
+				// so a stuck flood cannot accumulate unbounded waiters.
+				if (this.waiters >= MAX_WAITERS) {
+					this.dropped++
+					console.warn(
+						`[BRIDGE] queue full (${this.queue.length}) waiters=${this.waiters}, dropping op=${label}`,
+					)
+					reject(new Error(`[BRIDGE] queue full, dropping op=${label}`))
+					return
+				}
+				this.waiters++
+				const parkedAt = Date.now()
 				console.warn(
 					`[BRIDGE] queue full (${this.queue.length}), slowing op=${label} instead of dropping`,
 				)
 				const waitForSpace = (): void => {
 					if (this.queue.length < MAX_QUEUE) {
+						this.waiters = Math.max(0, this.waiters - 1)
 						this.queue.push(item)
 						void this.drain()
+					} else if (Date.now() - parkedAt > MAX_PARK_MS) {
+						this.waiters = Math.max(0, this.waiters - 1)
+						this.dropped++
+						console.warn(
+							`[BRIDGE] parked op=${label} waited >${MAX_PARK_MS / 1000}s, dropping`,
+						)
+						reject(new Error(`[BRIDGE] parked too long, dropping op=${label}`))
 					} else {
 						setTimeout(waitForSpace, 1000)
 					}
@@ -127,6 +192,62 @@ export class RateLimiter {
 		return this.queue.length
 	}
 
+	/** Parked producers waiting for queue space. */
+	get parked(): number {
+		return this.waiters
+	}
+
+	/** Total pressure: queued + parked. */
+	get pressure(): number {
+		return this.queue.length + this.waiters
+	}
+
+	/** Counters for HEALTH lines. */
+	stats(): {
+		depth: number
+		parked: number
+		dropped: number
+		floodRetries: number
+		spacing: number
+	} {
+		return {
+			depth: this.queue.length,
+			parked: this.waiters,
+			dropped: this.dropped,
+			floodRetries: this.floodRetries,
+			spacing: this.limitMs,
+		}
+	}
+
+	/** Current per-call spacing (ms). */
+	get spacing(): number {
+		return this.limitMs
+	}
+
+	/** Change the per-call spacing (used to widen spacing during post-reconnect catch-up). */
+	setSpacing(ms: number): void {
+		this.limitMs = ms
+		this.baseLimitMs = ms
+	}
+
+	private noteSuccess(): void {
+		// Adaptive pacing: after a clean streak, ease back toward base so a
+		// past flood does not keep the relay slow forever.
+		this.successStreak++
+		if (this.successStreak >= 50 && this.limitMs > this.baseLimitMs) {
+			this.successStreak = 0
+			this.limitMs = Math.max(this.baseLimitMs, this.limitMs - 100)
+		}
+	}
+
+	private noteFlood(): void {
+		// Widen spacing slightly on each flood so the next burst starts
+		// slower instead of 429ing in lockstep again (capped at 5s).
+		this.successStreak = 0
+		this.floodRetries++
+		if (this.limitMs < 5_000) this.limitMs = Math.min(5_000, this.limitMs + 500)
+	}
+
 	private async drain(): Promise<void> {
 		if (this.running) return
 		this.running = true
@@ -142,15 +263,27 @@ export class RateLimiter {
 				try {
 					item.resolve(await item.fn())
 					this.lastRun = Date.now()
+					this.noteSuccess()
 				} catch (e) {
 					const retryAfter = getRetryAfterSeconds(e)
 					if (retryAfter !== null) {
-						// Never drop on flood: requeue at the FRONT to preserve
-						// global FIFO order and slow the whole queue down.
+						// Flood: low-value ops give up after N retries so one
+						// noisy topic cannot stall payload forever; payload
+						// requeues at FRONT to preserve global FIFO order.
 						item.attempts += 1
+						if (
+							DROPPABLE_LABELS.has(item.label) &&
+							item.attempts > FLOOD_MAX_RETRIES_LOW
+						) {
+							this.dropped++
+							this.lastRun = Date.now()
+							item.reject(e)
+							continue
+						}
 						const baseMs = retryAfter > 0 ? retryAfter * 1000 : this.defaultRetryAfterMs
 						const waitMs = Math.min(baseMs + this.retryBufferMs, this.maxWaitMs)
 						this.blockedUntil = Date.now() + waitMs
+						this.noteFlood()
 						this.queue.unshift(item)
 						console.warn(
 							`[BRIDGE] Telegram flood control: retry after ${

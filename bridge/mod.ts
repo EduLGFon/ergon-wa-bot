@@ -25,9 +25,33 @@ export { findSupergroupId }
 let activeBridge: { tg: Bot; db: BridgeDB; tgLimiter: RateLimiter; waLimiter: RateLimiter } | null =
 	null
 
+// Catch-up pacing: right after a reconnect the WhatsApp backlog relays at once and Telegram
+// answers 429 to everything. For the first CATCH_UP_WINDOW_MS after a reattach we widen the
+// per-call spacing (CATCH_UP_SPACING_MS), then restore the configured base, so the burst
+// drains slowly instead of cascading into a flood-retry storm. Kept short
+// (30s at 4s) so reconnects do not add minutes of delay - the limiter also
+// sheds notices/service-lines when deep and adapts spacing on 429s.
+const CATCH_UP_SPACING_MS = 4_000
+const CATCH_UP_WINDOW_MS = 30_000
+let tgBaseSpacing = 3_000
+let catchUpRestoreTimer: ReturnType<typeof setTimeout> | undefined
+
+function slowFloodCatchUp(tgLimiter: RateLimiter): void {
+	if (catchUpRestoreTimer) {
+		clearTimeout(catchUpRestoreTimer)
+		catchUpRestoreTimer = undefined
+	}
+	tgLimiter.setSpacing(CATCH_UP_SPACING_MS)
+	catchUpRestoreTimer = setTimeout(() => {
+		tgLimiter.setSpacing(tgBaseSpacing)
+		catchUpRestoreTimer = undefined
+	}, CATCH_UP_WINDOW_MS)
+}
+
 export function reattachBridge(): void {
 	if (!activeBridge) return
 	attachWaRelay(activeBridge.tg, activeBridge.db, activeBridge.tgLimiter)
+	slowFloodCatchUp(activeBridge.tgLimiter)
 }
 
 export function startBridge(): Bot | null {
@@ -53,13 +77,11 @@ export function startBridge(): Bot | null {
 	// stricter than 1 msg/s (~20/min per group + burst penalties with
 	// retry_after up to tens of seconds), hence the conservative 3s default.
 	// TELEGRAM_RATE_LIMIT_MS overrides the legacy RATE_LIMIT_MS name.
-	const tgLimiter = new RateLimiter(
-		envNum('TELEGRAM_RATE_LIMIT_MS', envNum('RATE_LIMIT_MS', 3000)),
-		{
-			maxRetries: envNum('RATE_LIMIT_MAX_RETRIES', 5),
-			maxWaitMs: envNum('RATE_LIMIT_MAX_WAIT_MS', 120_000),
-		},
-	)
+	tgBaseSpacing = envNum('TELEGRAM_RATE_LIMIT_MS', envNum('RATE_LIMIT_MS', 3000))
+	const tgLimiter = new RateLimiter(tgBaseSpacing, {
+		maxRetries: envNum('RATE_LIMIT_MAX_RETRIES', 5),
+		maxWaitMs: envNum('RATE_LIMIT_MAX_WAIT_MS', 120_000),
+	})
 	// WhatsApp sends don't consume Telegram budget - light spacing only, so a
 	// Telegram flood never stalls the TG→WA direction (and vice versa).
 	const waLimiter = new RateLimiter(envNum('WHATSAPP_RATE_LIMIT_MS', 500))

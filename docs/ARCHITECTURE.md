@@ -80,22 +80,41 @@ scripts/                 # agent scratch + dev diagnostics (dump_calendar.ts)
 ## 4. Boot and process lifecycle
 
 `wa.ts` order matters: `proto()` (globals) -> `locale()` (i18n) -> `start()` -> `bot.connect()` ->
-`loadCmds()` -> `cache.resume()` -> `loadEvents()` -> dynamic
-`import('./bridge/mod.ts'):startBridge()` -> `scheduleURMenuMsg()` only if `GROUPS1` is set.
+`loadCmds()` -> `cache.resume()` -> `loadEvents()` -> `attachHealthWatchdog()` (`plugin/health.ts`,
+deaf-session watchdog) -> dynamic `import('./bridge/mod.ts'):startBridge()` -> `scheduleURMenuMsg()`
+only if `GROUPS1` is set.
 
 - Crash guards: `unhandledrejection` and `error` listeners call `preventDefault()` and log
   `CRASH ... kept alive`. Rationale: prod showed transient WA 428/503/408 errors and torn fetch
-  bodies that must not kill the process. Only an explicit `loggedOut` exits; startup failure
-  exits 1.
+  bodies that must not kill the process. Bound: 3+ crashes in 5min or RSS over 2GB exits non-zero so
+  PM2 restarts cleanly instead of limping at 5GB. Only an explicit `loggedOut` exits; startup
+  failure exits 1.
 - Signals: `SIGINT`/`SIGTERM` -> `cache.save()` + `shutdownStickers()` -> `Deno.exit(0)`. PM2
   `kill_timeout: 10s` gives the flush time to finish.
-- Reconnect (`event/connection/update.ts`): QR printed to console; `open` logs stabilized; `close`
-  checks `DisconnectReason.loggedOut` (exit 0, no retry). Reentrancy guard `isReconnecting`, sliding
-  window (3+ reconnects/min -> wait 60s), teardown (`removeAllListeners`, `ws.close`, `end`), random
-  1-10s delay, `bot.connect()` with one retry after 15s, then `loadEvents()` + `reattachBridge()`.
+- Reconnect (`event/connection/update.ts`): QR printed to console; `open` logs stabilized and resets
+  both the flap gauges (sliding reconnect window + consecutive-failure counter); `close` checks
+  `DisconnectReason.loggedOut` (exit 0, no retry). Reentrancy guard `isReconnecting`, sliding window
+  (3+ reconnects/min -> wait 60s), teardown (`removeAllListeners`, `ws.close`, `end`), code-aware
+  backoff (2/2/4/8/15s base per DisconnectReason, x2 per attempt, capped 30s, +/-50% jitter),
+  `bot.connect()` with one retry after 15s, then `loadEvents()` + `reattachBridge()` + watchdog
+  re-bind. After `MAX_CONSECUTIVE_RECONNECTS` (8) it exits non-zero so PM2's exponential backoff
+  restart owns the recovery.
+- Socket stability (`class/baileys.ts`): advertises `Browsers.macOS('Chrome')` by default
+  (`WA_BROWSER` env overrides for A/B: ubuntu-chrome, windows-chrome, ubuntu-firefox - WA terminates
+  the `Desktop`/DARWIN tuple with 428 since mid-2026) and resolves the WA Web version live (Baileys
+  repo -> `web.whatsapp.com/sw.js` -> pinned fallback) instead of a hardcoded pin. Retry counters
+  capped at 500 keys with oldest-first eviction.
+- Watchdog (`plugin/health.ts`): tracks the last real inbound event; after 5min of silence while
+  connected it probes `sock.onWhatsApp(ownNumber)` on a randomized 60-120s schedule; a failed probe
+  calls `sock.end()`, funnelling into the guarded reconnect above. Re-binds after every reconnect
+  (listeners die with the old socket). Same loop emits a periodic HEALTH line (RSS + heap + loop lag
+  - queue depth/parked/dropped + disconnect counters + signal error counts).
+- Disconnect stats (`event/connection/update.ts`): per-code counters (428 vs 503) exposed for
+  HEALTH.
 - PM2 (`conf/ecosystem.config.cjs`): app `wa`, `interpreter: deno`,
   `--v8-flags=--expose-gc --env=conf/.env`, `autorestart`, `min_uptime: 10s`, exponential backoff,
-  `log_file: conf/gen/out.log`.
+  `log_file: conf/gen/out.log` + split `error_file: conf/gen/err.log`, pm2-logrotate via
+  `scripts/setup-logrotate.sh` (50M, retain 7, compress).
 
 ## 5. Configuration
 
@@ -137,8 +156,8 @@ scripts/                 # agent scratch + dev diagnostics (dump_calendar.ts)
 - `class/user.ts`: per-user prefs + history. Lazy DB write-through setters (`name/lang/prefix`),
   `cmds` counter (`sql +1`), `memories` (JSON string), `gemini` (in-memory chat history, not
   persisted), `msgs` collection.
-- `class/group.ts`: group metadata cache + `countMsg` (cache add plus `msgs` table upsert `count+1`,
-  skipped without DB or for bot msgs) and `getCountedMsgs` (desc, feeds `rank`).
+- `class/group.ts`: group metadata cache + `countMsg` (cache add plus `msgs` table upsert `count+1`
+  with one retry, skipped without DB or for bot msgs) and `getCountedMsgs` (desc, feeds `rank`).
 
 ## 7. Shared types (`conf/types/`)
 
@@ -159,17 +178,19 @@ scripts/                 # agent scratch + dev diagnostics (dump_calendar.ts)
   must equal a Baileys event name. `loadCmds` fills `cache.cmds`; `loadEvents` fills `cache.events`,
   `removeAllListeners(name)` then `ev.on(name, guarded dispatch)` so a bad handler or mid-reconnect
   `clear()` never throws synchronously.
-- `proto.ts`: installs `global.print` logger (`[date|rss|TAG] - msg`, filters Baileys session
-  noise), silent Baileys `logger` stub, `now()` (TZ-aware via defaults), `shortDuration()`, all
+- `proto.ts`: installs `global.print` logger (`[date|rss h:heap l:lag|TAG] - msg`, filters Baileys
+  session noise, throttles libsignal Bad MAC/decrypt/closed-session to 1/h with counters for
+  HEALTH), silent Baileys `logger` stub, `now()` (TZ-aware via defaults), `shortDuration()`, all
   `String`/`Number` prototype helpers.
 - `locale.ts` + `locale/*.json`: i18next with Deno `readTextFile` backend, `preload` all five langs,
   `fallbackLng: en`. Access via `'key'.t(lang)` or `getFixedT(lang)(key, vars)`; `sendMsg`
   auto-localizes lookup keys.
 - `msgTools.ts`: inbound core. `getCtx(raw)` builds `CmdCtx` (chat/author/type filter, group+user
   resolution, LID handling, pushName sync, media/quote download, prefix parse via `getInput` incl.
-  quoted-text fallback for `.g`). `downloadMedia` unwraps view-once/ephemeral wrappers, caps
-  `cache.media` at 20MB. `rescueOrphanQuote`/`deletedStore.savePendingQuote` handle replies to
-  uncached messages.
+  quoted-text fallback for `.g`). `downloadMedia` unwraps view-once/ephemeral wrappers, never
+  buffers heavy video/document over 8MB into `cache.media` (keys only).
+  `rescueOrphanQuote`/`deletedStore.savePendingQuote` handle replies to uncached messages (silent,
+  no GOTCHA logs).
 - `msgAbstractions.ts`: the only outbound touchpoint. `sendMsg` localizes `usage.*` keys through the
   `help` command and other keys via i18n, then `sock.sendMessage` and returns a fresh `getCtx`.
   `reactToMsg` maps names through `emojis.ts`. `getMedia` prefers quoted media with cache fallback.
@@ -203,7 +224,8 @@ Loader sets `cmd.name` from filename; category dir is informational.
 - `config/prefix.ts` (`prefix`): per-user trigger, max 3 chars, DB-synced.
 - `dev/ping.ts` (`ping`, alias `p`, public): WA latency via reaction round-trip plus DB latency,
   `-1` when no DB.
-- `dev/memory.ts` (`memory`, restrict): `Deno.memoryUsage()` formatted with `.bytes()`.
+- `dev/memory.ts` (`memory`, restrict): `Deno.memoryUsage()` formatted with `.bytes()` plus bridge
+  queue pressure and cache sizes; `.memory gc` forces collection (tests leak vs bloat).
 - `dev/execute.ts` (`execute`, alias `run`, restrict, no cooldown): bash exec with duration + RSS
   header.
 - `dev/eval.ts` (`eval`, alias `e`, restrict, no cooldown): polyglot eval via `runCode`; first arg
@@ -274,8 +296,9 @@ when under 10s, then `delay(timeout)` before `run`.
   metrics.json`); `resume()` on boot, `save()` on exit and menu
   updates.
 - `plugin/deletedStore.ts`: disk cache for `gotcha`: `conf/gen/deleted/<JID_SAFE>/index.json` +
-  `media/` files, 100 entries per chat, pending-quote speculation + promotion,
-  `downloadContentFromMessage` retry fetch for expired buffers.
+  `media/` files, 100 entries per chat, max 200 chats (oldest pruned hourly), pending-quote
+  speculation + promotion, `downloadContentFromMessage` retry fetch for expired buffers. Silent (no
+  GOTCHA logs).
 - `conf/gen/` runtime layout: `auth/` (file auth), `cache/` (metrics, menu.txt, calendar JSON,
   bulletin state), `temp/` (calendar PDFs, runCode sources, sticker intermediates), `deleted/`
   (recovery cache), `bridge.db` (Telegram pairing), `cookies.txt` (yt-dlp sessions), `out.log`,
@@ -338,15 +361,18 @@ without touching WA.
 - `db.ts`: SQLite WAL at `conf/gen/bridge.db`. `mappings` (WA JID <-> TG topic, chat type,
   archived/muted flags, last-active) and `reply_map` (TG msg <-> WA key + kind + text/entity
   snapshot + poll crypto columns + live poll vote roster + per-message secret for encrypted edits,
-  pruned past 7d). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`,
+  pruned past 7d, weekly VACUUM). `jid_aliases` maps user LID<->PN only (group JIDs refused, boot
+  purges mixed rows). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`,
   `pendingFollowUps`, 1000-cap) suppress relaying our own TG edits/reactions/
   pins/caption-follow-ups back.
 - `format.ts`: pure converters - TG entities (UTF-16 offsets) to WA inline markers (`*bold*`,
   `_italic_`, `~strike~`, `` `code` ``, triple-backtick pre, links, `> quote`) and back (pre -> bold
   -> italic -> strike -> code passes).
 - `rate-limiter.ts`: one global FIFO queue per limiter; every `tg.api.*` call takes a slot; 429s
-  retry unbounded (front-requeue, `retry_after + 500ms`, max 120s) so nothing is dropped; queue over
-  500 applies producer backpressure.
+  retry with adaptive spacing (widens on flood, eases back after 50 clean sends, max 120s wait).
+  Payload (message/media/voice) retries unbounded, droppable (notice/service-line/prompt/topic)
+  gives up after 3 flood retries and sheds immediately when depth over 400. Queue cap 500, parked
+  waiters cap 1000 with 60s max park, `isQueueDrop` marks intentional sheds.
 - WA->TG (`wa-to-tg.ts` facade + 33 modules): `relay.ts` attaches seven socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups); `incoming.ts` is the main loop (skip
   protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via `jid.ts`,
@@ -364,29 +390,31 @@ without touching WA.
   mixed rows) plus `bucket`/`telegram_chat_id`/`prompt_msg_id` routing columns and a composite
   `(tg_chat_id, tg_msg_id)` reply key; `text.ts` unwrap + `@Name (+phone)` annotation + owner
   `text_mention` spans (`@all` via `nonJidMentions`, direct via owner-JID match, merged into
-  entities by `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download + size/ext;
-  `send.ts`/`send-media.ts` route by kind (photo/video/animation/voice/audio/sticker/document,
-  1024-char caption overflow follow-ups, 4096-char body chunking into split messages via `chunk.ts`,
-  round video-note fallback); `quote.ts` reply-target gated on the destination group (stranded
-  pre-move rows degrade to the header) or `author: preview` header; `album.ts`/`album-flush.ts` 1.5s
-  window -> `sendMediaGroup` (singletons arrive ~1.5s late by design, chunk send + caption follow-up
-  in `album-send.ts`); `edits.ts` (text in place, caption fallback, sticker/special skip);
-  `deletes.ts` (spoiler tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard
-  delete + drop mapping); `reactions.ts` (emoji normalize, last-writer-wins, `REACTION_INVALID` ->
-  heart retry, shared `applyTgReaction`); `reaction-summary.ts` (opt-in author-attributed summary
-  beside the popular-emoji mirror); `pins.ts` (pin/unpin carriers resolve the mirror via
-  `reply_map`, pin natively with a service line, TG echoes consumed via the `pendingTgPins` guard);
-  `calls.ts` (one editable notice per call id across offer/ringing/ accept/reject/timeout/terminate,
-  missed vs ended lines); `polls.ts` (poll crypto metadata, vote decrypt, result lines, vote
-  encrypt + relay); `poll-tally.ts` (live per-poll tally - one edited message showing per-option
-  counts, percentages and voters, folding to a one-off per-vote reply line when no tally message can
-  be posted); `rich.ts` (contacts, invites, events, scheduled calls, sticker packs and offline call
-  logs as text notices); `special.ts` (location/contact/poll mapping - every poll-creation version,
-  V4 and the option-image variant unwrapped via `pollNodeOf`);
-  `unsupported.ts`/`unsupported-preview.ts` friendly `type
-  (rawKey) + preview + sender` notices;
-  `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue + `notifyTopic` (never
-  throws/loops).
+  entities by `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download with 45MB cap,
+  fileLength pre-check and max 3 concurrent buffers (large videos fail fast with a notice instead of
+  spiking RSS); `send.ts`/`send-media.ts` route by kind
+  (photo/video/animation/voice/audio/sticker/document, 1024-char caption overflow follow-ups,
+  4096-char body chunking into split messages via `chunk.ts`, round video-note fallback, stale-topic
+  heal: thread-not-found recreates the forum topic once and retries); `quote.ts` reply-target gated
+  on the destination group (stranded pre-move rows degrade to the header) or `author: preview`
+  header; `album.ts`/`album-flush.ts` 1.5s window -> `sendMediaGroup` (singletons arrive ~1.5s late
+  by design, chunk send + caption follow-up in `album-send.ts`); `edits.ts` (text in place, caption
+  fallback, sticker/special skip); `deletes.ts` (spoiler tombstone `... Deleted on WhatsApp` reusing
+  stored snapshot, else hard delete + drop mapping); `reactions.ts` (emoji normalize,
+  last-writer-wins, `REACTION_INVALID` -> heart retry, shared `applyTgReaction`);
+  `reaction-summary.ts` (opt-in author-attributed summary beside the popular-emoji mirror);
+  `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
+  line, TG echoes consumed via the `pendingTgPins` guard); `calls.ts` (one editable notice per call
+  id across offer/ringing/ accept/reject/timeout/terminate, missed vs ended lines); `polls.ts` (poll
+  crypto metadata, vote decrypt, result lines, vote encrypt + relay); `poll-tally.ts` (live per-poll
+  tally - one edited message showing per-option counts, percentages and voters, folding to a one-off
+  per-vote reply line when no tally message can be posted); `rich.ts` (contacts, invites, events,
+  scheduled calls, sticker packs and offline call logs as text notices); `special.ts`
+  (location/contact/poll mapping - every poll-creation version, V4 and the option-image variant
+  unwrapped via `pollNodeOf`); `unsupported.ts`/`unsupported-preview.ts` friendly
+  `type
+  (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
+  `tgCall` queue + `notifyTopic` (never throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
   mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering
   (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback header,
@@ -466,7 +494,9 @@ tables), plus a manual `.env` parser.
 - `user.lid` vs phone JID: `checkMatch` merges `@lid` / `@s.whatsapp.net` duplicates; always compare
   via LID where possible.
 - `rank` and `needsDb` commands silently degrade without `DATABASE_URL`.
-- `cache.media` 20MB cap and bridge 20MB TG cap: large media produce failure lines, not crashes.
+- `cache.media` 20MB cap (8MB for cached video/document, heavy types return keys only) and bridge
+  20MB TG cap plus 45MB WA cap with concurrency limit: large media produce failure lines, not
+  crashes.
 - Random delays are intentional anti-ban pacing; do not remove.
 - `sticker`/`Buffer`: `Buf` is `Uint8Array` everywhere except the sharp/webpmux/Baileys boundary,
   which needs real `Buffer`.

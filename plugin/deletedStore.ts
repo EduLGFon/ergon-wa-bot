@@ -36,6 +36,37 @@ export interface DeletedEntry {
 
 const BASE = 'conf/gen/deleted'
 const KEEP_PER_CHAT = 100
+// Bound total disk usage: per-chat cap alone still grows without bound in
+// the number of chats. Prune oldest chat dirs past this count hourly.
+const MAX_STORED_CHATS = 200
+let lastChatPrune = 0
+
+// Drop oldest chat dirs beyond MAX_STORED_CHATS (by index mtime).
+async function pruneOldChats(): Promise<void> {
+	const now = Date.now()
+	if (now - lastChatPrune < 3_600_000) return
+	lastChatPrune = now
+	try {
+		const entries: { name: string; mtime: number }[] = []
+		for await (const e of Deno.readDir(BASE)) {
+			if (!e.isDirectory) continue
+			try {
+				const st = await Deno.stat(`${BASE}/${e.name}/index.json`)
+				entries.push({ name: e.name, mtime: st.mtime?.getTime() ?? 0 })
+			} catch {
+				// no index - candidate for removal when over cap
+				entries.push({ name: e.name, mtime: 0 })
+			}
+		}
+		if (entries.length <= MAX_STORED_CHATS) return
+		entries.sort((a, b) => a.mtime - b.mtime)
+		for (const victim of entries.slice(0, entries.length - MAX_STORED_CHATS)) {
+			await Deno.remove(`${BASE}/${victim.name}`, { recursive: true }).catch(() => {})
+		}
+	} catch {
+		// base dir missing - nothing to prune
+	}
+}
 
 // Make a chat JID safe for use as a directory name.
 function chatSafe(chat: str): str {
@@ -173,7 +204,6 @@ async function persistEntry(
 			viaQuote,
 		})
 		await writeIndex(chat, entries)
-		print('GOTCHA', `rescued ${chat} ${entry.id} (${entry.type} via quote)`, 'green')
 		return existing
 	}
 
@@ -200,6 +230,7 @@ async function persistEntry(
 		}
 	}
 	await writeIndex(chat, entries)
+	void pruneOldChats().catch(() => {})
 	return entry
 }
 
@@ -282,7 +313,6 @@ async function promotePendingDelete(chat: str, id: str): Promise<DeletedEntry | 
 	if (!hit) return null
 	hit.pending = false
 	await writeIndex(chat, entries)
-	print('GOTCHA', `rescued ${chat} ${id} (${hit.type} via quote)`, 'green')
 	return hit
 }
 
@@ -347,10 +377,8 @@ async function fetchMissingMedia(entry: DeletedEntry): Promise<Buf | null> {
 		}
 		entry.mediaFile = file
 		entry.unavailable = false
-		print('GOTCHA', `re-downloaded ${entry.chat} ${entry.id}`, 'green')
 		return buf
-	} catch (e) {
-		print('GOTCHA/fetch', (e as Error)?.message || e, 'red')
+	} catch {
 		return null
 	}
 }

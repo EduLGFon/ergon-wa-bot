@@ -5,6 +5,7 @@
 // taps once instead of typing a command. Button taps resolve the chat
 // through the stored prompt message ID (callback payloads cap at 64
 // bytes). Single-group setups never prompt - there is nowhere to move to.
+import { isQueueDrop } from '../rate-limiter.ts'
 import { isDual } from './routing.ts'
 import { relayCtx, tgCall } from './state.ts'
 import { InlineKeyboard } from 'grammy'
@@ -43,6 +44,8 @@ export async function maybePromptClassification(
 		)
 		if (sent?.message_id) db.setPromptMsgId(jid, sent.message_id)
 	} catch (e) {
+		// Load-shed drops during deep backlogs are intentional - stay silent.
+		if (isQueueDrop(e)) return
 		console.error('[BRIDGE] classification prompt failed:', e)
 	}
 }

@@ -3,11 +3,21 @@
 // Media nodes carry only metadata until downloaded - this resolves the node
 // kind, guards missing urls and returns buffers plus failure labels so the
 // caller can notify the topic instead of dropping silently.
+//
+// Memory note: downloadMediaMessage buffers the whole file in RAM. Large
+// videos spike RSS (5GB spike in prod logs). WA_DOWNLOAD_CAP_BYTES caps at
+// 45MB (Telegram Bot API send limit is 50MB) with a fileLength pre-check so
+// huge files fail fast without ever allocating. Concurrency is capped at 3
+// simultaneous downloads for the same reason.
 import { downloadMediaMessage, type proto } from 'baileys'
 import { waBytes } from './media-utils.ts'
 import { logger } from '@util/proto.ts'
 import { unwrap } from './text.ts'
 import bot from '@plugin/bot.ts'
+
+export const WA_DOWNLOAD_CAP_BYTES = 45_000_000
+const MAX_CONCURRENT_DOWNLOADS = 3
+let inflightDownloads = 0
 
 export interface WaMedia {
 	kind: 'image' | 'video' | 'round' | 'gif' | 'voice' | 'audio' | 'sticker' | 'document'
@@ -69,14 +79,29 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 		const bytes = waBytes(node?.fileLength)
 		const fail = (): WaDownload => ({ media: null, label, bytes })
 		if (!node?.url && !node?.directPath) return fail()
+		// Fail fast on declared size: a 200MB video must not allocate RAM.
+		if (bytes != null && bytes > WA_DOWNLOAD_CAP_BYTES) return fail()
 
-		const buffer = await downloadMediaMessage(
-			m as any,
-			'buffer',
-			{},
-			{ reuploadRequest: bot.sock.updateMediaMessage, logger },
-		).catch(() => null) as Buffer | Uint8Array | null
+		// Cap concurrent full-file buffers: a burst of videos would otherwise
+		// stack multiple 45MB buffers in RAM at once.
+		while (inflightDownloads >= MAX_CONCURRENT_DOWNLOADS) {
+			await new Promise((r) => setTimeout(r, 200))
+		}
+		inflightDownloads++
+		let buffer: Buffer | Uint8Array | null
+		try {
+			buffer = await downloadMediaMessage(
+				m as any,
+				'buffer',
+				{},
+				{ reuploadRequest: bot.sock.updateMediaMessage, logger },
+			).catch(() => null) as Buffer | Uint8Array | null
+		} finally {
+			inflightDownloads = Math.max(0, inflightDownloads - 1)
+		}
 		if (!buffer) return fail()
+		// Double-check actual size: declared fileLength can lie.
+		if ((buffer as Uint8Array).length > WA_DOWNLOAD_CAP_BYTES) return fail()
 
 		return {
 			media: {

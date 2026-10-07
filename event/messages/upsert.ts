@@ -35,22 +35,12 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 				const orig = findCachedOriginal(chatId, protoMsg.key.id)
 				if (!orig) {
 					// Original never cached: a stashed quote copy may exist - promote it.
-					const rescued = await promotePendingDelete(chatId, protoMsg.key.id).catch(() =>
-						null
-					)
-					if (!rescued) {
-						print(
-							'GOTCHA',
-							`miss ${chatId} ${protoMsg.key.id} (original not in cache)`,
-							'yellow',
-						)
-					}
+					await promotePendingDelete(chatId, protoMsg.key.id).catch(() => null)
 				} else if (!orig.isBot) {
-					const saved = await saveDeleted(orig)
-					if (!saved) print('GOTCHA', `dupe ${chatId} ${protoMsg.key.id}`, 'yellow')
+					await saveDeleted(orig)
 				}
-			} catch (e) {
-				print('GOTCHA/upsert', (e as Error)?.message || e, 'red')
+			} catch {
+				// best-effort archiving - never break the upsert loop
 			}
 			continue
 		}
@@ -79,9 +69,14 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 			if (group) {
 				group.countMsg(msg).catch((e: Error) => print('UPSERT/countMsg', e.message, 'red'))
 			} else {
-				const chat = await getUser({ lid: msg.chat })
-				// store msgs for searching images on sticker cmd
-				chat!.msgs.add(msg.key.id!, msg)
+				try {
+					const chat = await getUser({ lid: msg.chat })
+					// getUser with lid always creates, but guard anyway: a
+					// null chat must not throw and drop the batch.
+					if (chat && msg.key.id) await chat.msgs.add(msg.key.id, msg)
+				} catch (e) {
+					print('UPSERT/dmCache', (e as Error)?.message || e, 'red')
+				}
 			}
 		}
 

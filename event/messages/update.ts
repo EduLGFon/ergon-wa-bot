@@ -37,10 +37,9 @@ export default async function (updates: WAMessageUpdate[], _event: str) {
 				continue
 			}
 			if (orig.isBot) continue
-			const saved = await saveDeleted(orig)
-			if (!saved) print('GOTCHA', `dupe ${chat} ${deletedId} (already archived)`, 'yellow')
-		} catch (e) {
-			print('GOTCHA/update', (e as Error)?.message || e, 'red')
+			await saveDeleted(orig)
+		} catch {
+			// best-effort archiving - never break the update loop
 		}
 	}
 }

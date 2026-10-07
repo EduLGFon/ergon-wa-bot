@@ -5,10 +5,11 @@
 // long captions overflow - media-kind endpoints live in send-media.ts so
 // this router stays small.
 import { sendTgText } from './chunk.ts'
+import { createForumTopic } from './chat.ts'
 import { extOf, storedEntities, storedText } from './media-utils.ts'
 import { msgSecretOf, pollCreatorOf } from './polls.ts'
 import { sendSpecial, type WaSpecial } from './special.ts'
-import { getRetryAfterSeconds } from '../rate-limiter.ts'
+import { getRetryAfterSeconds, isQueueDrop } from '../rate-limiter.ts'
 import type { BridgeDB, MirrorKind } from '../db.ts'
 import { relayCtx, tgCall } from './state.ts'
 import { dispatchKind } from './send-media.ts'
@@ -16,7 +17,95 @@ import type { TgEntity } from '../format.ts'
 import type { proto } from 'baileys'
 import { InputFile } from 'grammy'
 
+// True when Telegram rejected the send because the forum topic itself is
+// gone (closed/deleted), not because the message was bad. Those mappings
+// must heal to a fresh topic instead of failing every later message.
+function isThreadGone(e: unknown): boolean {
+	try {
+		const anyErr = e as { description?: unknown; message?: unknown }
+		const desc = typeof anyErr?.description === 'string'
+			? anyErr.description
+			: typeof anyErr?.message === 'string'
+			? anyErr.message
+			: String(e)
+		const low = desc.toLowerCase()
+		return low.includes('message thread not found') || low.includes('topic_id_invalid') ||
+			low.includes('thread not found') || low.includes('chat not found')
+	} catch {
+		return false
+	}
+}
+
 export async function sendToTopic(
+	topicId: number,
+	chatId: string,
+	body: string,
+	entities: TgEntity[],
+	media:
+		| { kind: string; buffer: Uint8Array; mime?: string; fileName?: string; ptt?: boolean }
+		| null,
+	special: WaSpecial | null,
+	waJid: string,
+	waMsg: proto.IWebMessageInfo,
+	quote: { tgId: number | null; header: string | null },
+	retried = false,
+): Promise<void> {
+	const { tg, db } = relayCtx
+	if (!tg || !db) return
+	try {
+		await sendToTopicInner(topicId, chatId, body, entities, media, special, waJid, waMsg, quote)
+	} catch (e) {
+		// Load-shed drops are intentional - the caller logs at most once.
+		if (isQueueDrop(e)) throw e
+		// Stale topic mapping (96x "thread not found" in 24d of logs): heal
+		// to a fresh topic once and retry, so one deleted topic does not
+		// fail every later message to that chat.
+		if (!retried && isThreadGone(e)) {
+			const healed = await healThreadMapping(waJid, chatId, topicId).catch(() => null)
+			if (healed) {
+				return sendToTopic(
+					healed.topicId,
+					healed.chatId,
+					body,
+					entities,
+					media,
+					special,
+					waJid,
+					waMsg,
+					quote,
+					true,
+				)
+			}
+		}
+		throw e
+	}
+}
+
+// Recreate the forum topic for a chat whose Telegram topic was deleted.
+// Returns the fresh ids, or null when healing is impossible.
+async function healThreadMapping(
+	waJid: string,
+	chatId: string,
+	staleTopicId: number,
+): Promise<{ topicId: number; chatId: string } | null> {
+	const { db } = relayCtx
+	if (!db) return null
+	try {
+		const mapping = db.getByJidOrAlias(waJid)
+		if (!mapping || mapping.telegram_topic_id !== staleTopicId) return null
+		const isGroup = waJid.endsWith('@g.us')
+		const freshId = await createForumTopic(mapping.display_name || waJid, isGroup, chatId)
+			.catch(() => null)
+		if (!freshId) return null
+		db.getOrCreate(waJid, freshId, mapping.display_name, mapping.chat_type, chatId)
+		console.log(`[BRIDGE] healed stale topic ${staleTopicId} -> ${freshId} for ${waJid}`)
+		return { topicId: freshId, chatId }
+	} catch {
+		return null
+	}
+}
+
+async function sendToTopicInner(
 	topicId: number,
 	chatId: string,
 	body: string,

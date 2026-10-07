@@ -3,6 +3,7 @@
 // Each WhatsApp chat mirrors to its own forum topic - this resolves display
 // names (with caching), creates topics through the flood queue and relays
 // membership and subject changes as service lines.
+import { isQueueDrop } from '../rate-limiter.ts'
 import { cacheGroupName, groupNameCache, relayCtx, tgCall } from './state.ts'
 import { chatForMapping } from './routing.ts'
 import { phoneOf } from './text.ts'
@@ -96,9 +97,14 @@ export async function handleGroupParticipants(upd: {
 		await tgCall(() =>
 			tg!.api.sendMessage(chatForMapping(mapping, groups), line!, {
 				message_thread_id: mapping.telegram_topic_id,
-			}), 'service-line')
+			}), 'service-line').catch((e) => {
+				// Load-shed during deep backlogs - membership lines are droppable.
+				if (!isQueueDrop(e)) {
+					console.error('[BRIDGE] failed to relay group participants:', e)
+				}
+			})
 	} catch (e) {
-		console.error('[BRIDGE] failed to relay group participants:', e)
+		if (!isQueueDrop(e)) console.error('[BRIDGE] failed to relay group participants:', e)
 	}
 }
 

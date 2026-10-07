@@ -149,7 +149,11 @@ function findMediaNode(content: any): any {
 }
 
 // download msg media
+// Memory note: buffers stay in cache.media (100 slots). Videos/documents
+// are never cached in RAM - only their keys are returned - because a few
+// 20MB videos exhaust the heap. Images/stickers/audio cap at 8MB cached.
 const MEDIA_CACHE_MAX_BYTES = 20 * 1024 * 1024
+const MEDIA_CACHE_IMAGE_MAX_BYTES = 8 * 1024 * 1024
 async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	if (!isMedia(types[0])) return
 	const inner = unwrapContent(raw?.message || raw)
@@ -167,7 +171,12 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	}
 
 	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
+	// Large video/document: return keys only, never buffer into RAM here.
+	// The bridge path (bridge/wa-to-tg/media.ts) owns capped downloads with
+	// concurrency limits; command paths re-download on demand.
+	const isHeavy = types[0] === 'video' || types[0] === 'document'
 	const declaredSize = Number(msg.fileLength?.low ?? msg.fileLength ?? 0)
+	if (isHeavy && declaredSize > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
 	const skipCache = declaredSize > MEDIA_CACHE_MAX_BYTES
 	const buffer = await downloadMediaMessage(
 		raw.message ? raw : { message: raw },
@@ -181,6 +190,8 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 
 	if (!buffer) return
 	if (skipCache || (buffer as Buffer).length > MEDIA_CACHE_MAX_BYTES) return keyObj
+	// Heavy types stay out of RAM cache past 8MB even when declared small.
+	if (isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
 
 	// media cache
 	cache.media.add(msg.url, {
@@ -254,9 +265,7 @@ async function getQuoted(raw: proto.IWebMessageInfo) {
 		// stanzaId; it stays hidden until a revoke for it arrives. Real
 		// view-once quotes arrive normalized (plain imageMessage), so no
 		// wrapper sniffing here - the stanzaId correlation is what matters.
-		await rescueOrphanQuote(raw, quotedOrig, quoted, types).catch((e) =>
-			print('GOTCHA/quote', (e as Error)?.message || e, 'red')
-		)
+		await rescueOrphanQuote(raw, quotedOrig, quoted, types).catch(() => {})
 	}
 
 	return quoted
@@ -275,10 +284,7 @@ async function rescueOrphanQuote(
 	const ctxInfo = findKey(raw.message, 'contextInfo')
 	const stanzaId = ctxInfo?.stanzaId as str | undefined
 	const participant = ctxInfo?.participant as str | undefined
-	if (!stanzaId) {
-		print('GOTCHA', 'quote without stanzaId, skipped', 'yellow')
-		return
-	}
+	if (!stanzaId) return
 
 	const chat = ctxInfo?.remoteJid || raw.key?.remoteJid!
 	if (findCachedOriginal(chat, stanzaId)) return // revoke path owns it

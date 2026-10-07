@@ -31,6 +31,12 @@ export function setRelayCtx(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateLim
 	relayCtx.db = bridgeDb
 	relayCtx.limiter = rateLimiter
 	relayCtx.groups = groupIds()
+	// Expose for the HEALTH periodic line without an import cycle.
+	try {
+		;(globalThis as any).__relayCtxMod = { relayCtx }
+	} catch {
+		// ignore
+	}
 	// Single-group DBs predate per-group identity - stamp their rows onto
 	// the legacy supergroup so scoped lookups keep resolving.
 	bridgeDb.backfillLegacyChat(relayCtx.groups.legacy || relayCtx.groups.personal)
