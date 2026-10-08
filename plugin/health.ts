@@ -153,7 +153,7 @@ function logHealth(): void {
 	}
 }
 
-// Lazy requires avoid import cycles (health <-> bridge/state <-> bot).
+// Lazy requires avoid import cycles (health <-> plugin/bridge/state <-> bot).
 function requireRelayCtx(): { relayCtx: any } {
 	// @ts-ignore dynamic require for cycle avoidance
 	try {

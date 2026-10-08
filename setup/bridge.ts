@@ -43,7 +43,7 @@ export function promptBridge(nextEnv: Map<string, string>): void {
 	console.log(
 		'\nSupergroup IDs: enable Topics in each supergroup, add the bot as an\n' +
 			'admin (can_manage_topics), then run:\n' +
-			'  deno run -A --env=conf/.env bridge/mod.ts -- --find-id',
+			'  deno run -A --env=conf/.env plugin/bridge/mod.ts -- --find-id',
 	)
 	const personal = prompt('\nEnter Personal supergroup ID: ')
 	const business = dual ? prompt('\nEnter Business supergroup ID: ') : null

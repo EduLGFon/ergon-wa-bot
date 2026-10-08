@@ -9,7 +9,7 @@
 // removeAllListeners() per event, so attaching earlier would wipe our hook.
 //
 // Thin facade - all logic lives in ./wa-to-tg/*.ts, this only preserves the
-// public API so bridge/mod.ts keeps working unchanged.
+// public API so plugin/bridge/mod.ts keeps working unchanged.
 export type {
 	WaSpecial,
 	WaSpecialContact,

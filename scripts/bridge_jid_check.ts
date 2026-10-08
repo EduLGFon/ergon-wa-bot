@@ -4,7 +4,7 @@
 // messages into DM topics) while DM LID<->PN merging still works:
 //
 //   deno run -A scripts/bridge_jid_check.ts
-import { altJidsOf, candidatesOf, pickCanonical } from '../bridge/wa-to-tg/jid.ts'
+import { altJidsOf, candidatesOf, pickCanonical } from '../plugin/bridge/wa-to-tg/jid.ts'
 
 function assert(cond: boolean, msg: string): void {
 	if (!cond) throw new Error(`FAIL: ${msg}`)

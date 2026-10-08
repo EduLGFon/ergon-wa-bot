@@ -43,19 +43,6 @@ directory, file, data flow, and convention so you can locate code fast.
 ```
 wa.ts                    # prod entry point
 setup.ts + setup/        # interactive installer/manager (wizard, env, bridge, runners, reset)
-bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module dirs)
-  bridge/mod.ts          # orchestration: startBridge, reattachBridge, stopBridge, findSupergroupId
-  bridge/db.ts           # SQLite pairing + reply map + echo guards
-  bridge/format.ts       # TG entities <-> WA markdown converters
-  bridge/rate-limiter.ts # FIFO flood gate with 429 retry
-  bridge/wa-to-tg.ts     # facade re-exporting wa-to-tg/
-  bridge/wa-to-tg/       # 33 modules: relay, state, incoming, dispatch, chat, topics, jid,
-                         # routing, move, prompt, text, media, media-utils, send, send-media,
-                         # quote, album, album-flush, album-send, edits, deletes, pins, calls,
-                         # reactions, reaction-summary, special, polls, poll-tally, rich,
-                         # secret-edits, unsupported, unsupported-preview, errors
-  bridge/tg-to-wa/       # 9 modules: handlers, handler-events, content, media,
-                         # replies, album, commands, buckets, newchat
 class/                   # domain models: baileys.ts, cmd.ts, collection.ts,
                          # group.ts, user.ts
 cmd/ (18 files)          # commands: config/{help,language,prefix}, dev/{eval,execute,
@@ -70,7 +57,9 @@ conf/                    # schema.ts, defaults.json, .env(.example),
 plugin/                  # services: bot, authState, db, cache, deletedStore,
                          # memories, menuScraping, groupAnnouncer, runCode,
                          # calendarParser + calendar/, sticker/, removeBg.py,
-                         # bridge (plugin facade owning the bridge lifecycle)
+                         # bridge.ts (bridge plugin facade) + bridge/ (WA<->TG
+                         # relay: own deno.jsonc, mod/db/format/rate-limiter
+                         # facades, wa-to-tg/ (33 modules), tg-to-wa/ (9 modules))
 util/ (14 files)         # handler, proto, locale, msgTools, msgAbstractions,
                          # geminiApi, functions, emojis, weather, menuParser,
                          # calendarAnalytics, bulletinTitles, dailySummary
@@ -126,7 +115,7 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   (`conf/types/global.d.ts`), tasks: `setup`, `setup:medium`, `setup:strong`, `wizard`, `update`,
   `start`, `start:dev`, `restart`, `stop`, `db:gen/push/pull`, `reset`, `check`, `lint`, `fmt`,
   `verify`, `dev`, `translate`.
-- `bridge/deno.jsonc`: same style config scoped to the bridge, same dep pins.
+- `plugin/bridge/deno.jsonc`: same style config scoped to the bridge, same dep pins.
 - `conf/.env` (see `conf/.env.example`): `TZ`, `DEVS` (owner LIDs, `|` split), `GROUPS1`/`GROUPS2`
   (announcement targets), optional `DATABASE_URL`, `GEMINI`, `TELEGRAM_BOT_TOKEN`,
   `TELEGRAM_SUPERGROUP_PERSONAL`/`_BUSINESS` (legacy `TELEGRAM_SUPERGROUP_ID` fallback),
@@ -312,9 +301,9 @@ when under 10s, then `delay(timeout)` before `run`.
 - `plugin/bot.ts`: one-line `new Baileys()` singleton shared by WA core and bridge (sharing avoids
   stream-conflict logouts a second socket would cause).
 - `plugin/bridge.ts`: the bridge plugin facade. Re-exports
-  `startBridge`/`reattachBridge`/`stopBridge` plus `relayCtx`/`groupNameCache` from `bridge/` so the
-  bot owns the mirror lifecycle (boot, reconnect reattach, SIGINT/SIGTERM stop, pressure reads)
-  through one entry instead of deep bridge imports.
+  `startBridge`/`reattachBridge`/`stopBridge` plus `relayCtx`/`groupNameCache` from `plugin/bridge/`
+  so the bot owns the mirror lifecycle (boot, reconnect reattach, SIGINT/SIGTERM stop, pressure
+  reads) through one entry instead of deep bridge imports.
 - `plugin/memories.ts`: `{MEMORY:..}` protocol - extracts facts from AI output into `user.memories`
   (DB write-through), strips placeholders from reply text.
 - `plugin/menuScraping.ts`: RU bulletin scheduler (Deno.cron: 6h BRT daily, 15-min weekday change
@@ -351,7 +340,7 @@ thinking, PT system prompt with memory protocol + stored facts) -> `sendMessage`
 `user.gemini = getHistory()` -> `sendMsg` quoted reply. Model chain in `defaults.json`
 (`gemini_chain[1]` default, `gemini_pro` for `.g pro`).
 
-## 14. Telegram bridge (`bridge/`)
+## 14. Telegram bridge (`plugin/bridge/`)
 
 Same-process design: `wa.ts` starts `startBridge()` after `loadEvents()` (which resets listeners),
 and `connection/update.ts` calls `reattachBridge()` after every reconnect - both through the
@@ -491,8 +480,8 @@ tables), plus a manual `.env` parser.
   `image.ts`/`ffmpeg.ts`/`pool.ts`/`exif.ts`.
 - Bulletin wrong: `plugin/menuScraping.ts` -> `util/menuParser.ts`, `util/weather.ts`,
   `plugin/calendar/cache.ts`, `util/calendarAnalytics.ts`, `util/dailySummary.ts`.
-- Bridge WA->TG: `bridge/wa-to-tg/relay.ts` -> `incoming.ts` -> `send.ts`; TG->WA:
-  `bridge/tg-to-wa/handlers.ts` -> `content.ts`; pairing: `bridge/db.ts`.
+- Bridge WA->TG: `plugin/bridge/wa-to-tg/relay.ts` -> `incoming.ts` -> `send.ts`; TG->WA:
+  `plugin/bridge/tg-to-wa/handlers.ts` -> `content.ts`; pairing: `plugin/bridge/db.ts`.
 - Deleted recovery: `plugin/deletedStore.ts` + `cmd/util/gotcha.ts` + `event/messages/update.ts`.
 - Env/setup: `conf/.env.example` + `setup/env.ts` + `setup/runners.ts`.
 

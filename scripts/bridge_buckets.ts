@@ -10,11 +10,11 @@
 // buckets.txt lines look like `12345@g.us=business` (# comments allowed).
 // Unlisted chats keep their bucket (use --default to stamp the rest).
 // Dry-run by default - nothing moves without --yes.
-import { chatOfBucket, groupIds, isDual } from '../bridge/wa-to-tg/routing.ts'
-import { setRelayCtx } from '../bridge/wa-to-tg/state.ts'
-import { moveTopic } from '../bridge/wa-to-tg/move.ts'
-import { RateLimiter } from '../bridge/rate-limiter.ts'
-import { BridgeDB } from '../bridge/db.ts'
+import { chatOfBucket, groupIds, isDual } from '../plugin/bridge/wa-to-tg/routing.ts'
+import { setRelayCtx } from '../plugin/bridge/wa-to-tg/state.ts'
+import { moveTopic } from '../plugin/bridge/wa-to-tg/move.ts'
+import { RateLimiter } from '../plugin/bridge/rate-limiter.ts'
+import { BridgeDB } from '../plugin/bridge/db.ts'
 import { Bot } from 'grammy'
 
 const DB_PATH = 'conf/gen/bridge.db'

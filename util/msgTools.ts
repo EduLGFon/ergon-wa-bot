@@ -172,7 +172,7 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 
 	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
 	// Large video/document: return keys only, never buffer into RAM here.
-	// The bridge path (bridge/wa-to-tg/media.ts) owns capped downloads with
+	// The bridge path (plugin/bridge/wa-to-tg/media.ts) owns capped downloads with
 	// concurrency limits; command paths re-download on demand.
 	const isHeavy = types[0] === 'video' || types[0] === 'document'
 	const declaredSize = Number(msg.fileLength?.low ?? msg.fileLength ?? 0)

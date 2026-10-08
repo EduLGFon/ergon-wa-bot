@@ -39,9 +39,9 @@ previous standalone approach.
 3. Add the bot to both, make it **admin** with `can_manage_topics` in each.
 4. Send any message in a group, then discover its ID (repeat per group):
    ```bash
-   deno run -A --env-file=conf/.env bridge/mod.ts -- --find-id
+   deno run -A --env-file=conf/.env plugin/bridge/mod.ts -- --find-id
    ```
-5. Put the values in `conf/.env` (NOT `bridge/.env` — the bot loads `conf/.env`):
+5. Put the values in `conf/.env` (NOT `plugin/bridge/.env` — the bot loads `conf/.env`):
    ```env
    TELEGRAM_BOT_TOKEN='your-bot-token'
    TELEGRAM_SUPERGROUP_PERSONAL='-1001111111111'

@@ -5,7 +5,7 @@
 // 1. Embedded (normal): wa.ts calls `startBridge()` AFTER bot.connect() +
 //    loadEvents(). The bridge shares the running WhatsApp socket - no second
 //    connection, no auth duplication.
-// 2. Standalone helper: `deno run -A bridge/mod.ts -- --find-id` prints the
+// 2. Standalone helper: `deno run -A plugin/bridge/mod.ts -- --find-id` prints the
 //    supergroup ID so you can put it in conf/.env. This mode never touches
 //    WhatsApp.
 import { registerTgHandlers } from './tg-to-wa.ts'
@@ -246,7 +246,7 @@ if (import.meta.main) {
 		await findSupergroupId()
 	} else {
 		console.error('This module runs embedded in the WhatsApp bot (see wa.ts).')
-		console.error('Helper: deno run -A --env-file=conf/.env bridge/mod.ts -- --find-id')
+		console.error('Helper: deno run -A --env-file=conf/.env plugin/bridge/mod.ts -- --find-id')
 		Deno.exit(1)
 	}
 }

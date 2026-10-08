@@ -1,6 +1,6 @@
 // Standalone helper: print a supergroup ID for conf/.env.
 //
-// `deno run -A bridge/mod.ts -- --find-id` never touches WhatsApp - it
+// `deno run -A plugin/bridge/mod.ts -- --find-id` never touches WhatsApp - it
 // reads recent bot updates and prints the first group chat found. Run it
 // once per group (personal, business) after adding the bot and sending a
 // message there.
