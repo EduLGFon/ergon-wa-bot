@@ -91,9 +91,10 @@ async function start() {
 	}
 
 	// Telegram bridge shares this process's WhatsApp socket (no 2nd connection).
-	// Must start AFTER loadEvents(), which resets event listeners.
+	// Must start AFTER loadEvents(), which resets event listeners. Owned via
+	// the plugin entry so shutdown and reattach stay in one place.
 	try {
-		const { startBridge } = await import('./bridge/mod.ts')
+		const { startBridge } = await import('@plugin/bridge.ts')
 		await startBridge()
 	} catch (e) {
 		print('BRIDGE', `disabled: ${(e as Error)?.message || e}`, 'red')
@@ -104,6 +105,12 @@ async function start() {
 
 // Save cache on both SIGINT (Ctrl+C) and SIGTERM (PM2 stop/restart)
 const onExit = async () => {
+	try {
+		const { stopBridge } = await import('@plugin/bridge.ts')
+		stopBridge()
+	} catch {
+		// bridge never started or already stopped; nothing to shut down
+	}
 	await cache.save()
 	try {
 		const { shutdownStickers } = await import('@plugin/sticker/index.ts')

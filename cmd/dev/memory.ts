@@ -1,6 +1,6 @@
 // Dev-only memory report - shows Deno.memoryUsage plus bridge pressure.
 // Needed to track RAM leaks and runtime health without SSH log parsing.
-import { groupNameCache, relayCtx } from '../../bridge/wa-to-tg/state.ts'
+import { groupNameCache, relayCtx } from '@plugin/bridge.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import cache from '@plugin/cache.ts'
 import Cmd from '@class/cmd.ts'

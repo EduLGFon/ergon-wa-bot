@@ -10,11 +10,11 @@ topic); business moves start clean, personal moves replay up to 100 recent messa
 
 ## Architecture (single process)
 
-The bridge runs **embedded in the WhatsApp bot process** (`wa.ts` calls `startBridge()` after
-`bot.connect()` + `loadEvents()`). It reuses the already connected Baileys socket — there is
-intentionally **no second WhatsApp connection**, because two sockets sharing one auth state kick
-each other off (stream conflict / repeated logouts). That was the failure of the previous standalone
-approach.
+The bridge runs **embedded in the WhatsApp bot process** (`wa.ts` calls `startBridge()` via
+`plugin/bridge.ts` after `bot.connect()` + `loadEvents()`). It reuses the already connected Baileys
+socket — there is intentionally **no second WhatsApp connection**, because two sockets sharing one
+auth state kick each other off (stream conflict / repeated logouts). That was the failure of the
+previous standalone approach.
 
 - **WhatsApp → Telegram** (`wa-to-tg.ts`): extra `messages.upsert` listener on the shared socket.
   Looks up `whatsapp_jid → topic`, auto-creates the forum topic on first sight, relays text + media

@@ -146,7 +146,7 @@ export default async function (event: Partial<ConnectionState>) {
 					print('HANDLER', 'loadEvents failed:', (e as Error)?.stack || String(e), 'red')
 				}
 				try {
-					const { reattachBridge } = await import('../../bridge/mod.ts')
+					const { reattachBridge } = await import('@plugin/bridge.ts')
 					reattachBridge()
 				} catch (e) {
 					print('BRIDGE', `reattach failed: ${(e as Error)?.message || e}`, 'red')

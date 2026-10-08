@@ -44,7 +44,7 @@ directory, file, data flow, and convention so you can locate code fast.
 wa.ts                    # prod entry point
 setup.ts + setup/        # interactive installer/manager (wizard, env, bridge, runners, reset)
 bridge/                  # WA<->TG bridge (own deno.jsonc, facades + 2 module dirs)
-  bridge/mod.ts          # orchestration: startBridge, reattachBridge, findSupergroupId
+  bridge/mod.ts          # orchestration: startBridge, reattachBridge, stopBridge, findSupergroupId
   bridge/db.ts           # SQLite pairing + reply map + echo guards
   bridge/format.ts       # TG entities <-> WA markdown converters
   bridge/rate-limiter.ts # FIFO flood gate with 429 retry
@@ -69,7 +69,8 @@ conf/                    # schema.ts, defaults.json, .env(.example),
                          # smufesrootca.pem, types/, gen/
 plugin/                  # services: bot, authState, db, cache, deletedStore,
                          # memories, menuScraping, groupAnnouncer, runCode,
-                         # calendarParser + calendar/, sticker/, removeBg.py
+                         # calendarParser + calendar/, sticker/, removeBg.py,
+                         # bridge (plugin facade owning the bridge lifecycle)
 util/ (14 files)         # handler, proto, locale, msgTools, msgAbstractions,
                          # geminiApi, functions, emojis, weather, menuParser,
                          # calendarAnalytics, bulletinTitles, dailySummary
@@ -81,24 +82,24 @@ scripts/                 # agent scratch + dev diagnostics (dump_calendar.ts)
 
 `wa.ts` order matters: `proto()` (globals) -> `locale()` (i18n) -> `start()` -> `bot.connect()` ->
 `loadCmds()` -> `cache.resume()` -> `loadEvents()` -> `attachHealthWatchdog()` (`plugin/health.ts`,
-deaf-session watchdog) -> dynamic `import('./bridge/mod.ts'):startBridge()` -> `scheduleURMenuMsg()`
-only if `GROUPS1` is set.
+deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
+`scheduleURMenuMsg()` only if `GROUPS1` is set.
 
 - Crash guards: `unhandledrejection` and `error` listeners call `preventDefault()` and log
   `CRASH ... kept alive`. Rationale: prod showed transient WA 428/503/408 errors and torn fetch
   bodies that must not kill the process. Bound: 3+ crashes in 5min or RSS over 2GB exits non-zero so
   PM2 restarts cleanly instead of limping at 5GB. Only an explicit `loggedOut` exits; startup
   failure exits 1.
-- Signals: `SIGINT`/`SIGTERM` -> `cache.save()` + `shutdownStickers()` -> `Deno.exit(0)`. PM2
-  `kill_timeout: 10s` gives the flush time to finish.
+- Signals: `SIGINT`/`SIGTERM` -> `stopBridge()` + `cache.save()` + `shutdownStickers()` ->
+  `Deno.exit(0)`. PM2 `kill_timeout: 10s` gives the flush time to finish.
 - Reconnect (`event/connection/update.ts`): QR printed to console; `open` logs stabilized and resets
   both the flap gauges (sliding reconnect window + consecutive-failure counter); `close` checks
   `DisconnectReason.loggedOut` (exit 0, no retry). Reentrancy guard `isReconnecting`, sliding window
   (3+ reconnects/min -> wait 60s), teardown (`removeAllListeners`, `ws.close`, `end`), code-aware
   backoff (2/2/4/8/15s base per DisconnectReason, x2 per attempt, capped 30s, +/-50% jitter),
-  `bot.connect()` with one retry after 15s, then `loadEvents()` + `reattachBridge()` + watchdog
-  re-bind. After `MAX_CONSECUTIVE_RECONNECTS` (8) it exits non-zero so PM2's exponential backoff
-  restart owns the recovery.
+  `bot.connect()` with one retry after 15s, then `loadEvents()` + `reattachBridge()` (via
+  `@plugin/bridge.ts`) + watchdog re-bind. After `MAX_CONSECUTIVE_RECONNECTS` (8) it exits non-zero
+  so PM2's exponential backoff restart owns the recovery.
 - Socket stability (`class/baileys.ts`): advertises `Browsers.macOS('Chrome')` by default
   (`WA_BROWSER` env overrides for A/B: ubuntu-chrome, windows-chrome, ubuntu-firefox - WA terminates
   the `Desktop`/DARWIN tuple with 428 since mid-2026) and resolves the WA Web version live (Baileys
@@ -310,6 +311,10 @@ when under 10s, then `delay(timeout)` before `run`.
 
 - `plugin/bot.ts`: one-line `new Baileys()` singleton shared by WA core and bridge (sharing avoids
   stream-conflict logouts a second socket would cause).
+- `plugin/bridge.ts`: the bridge plugin facade. Re-exports
+  `startBridge`/`reattachBridge`/`stopBridge` plus `relayCtx`/`groupNameCache` from `bridge/` so the
+  bot owns the mirror lifecycle (boot, reconnect reattach, SIGINT/SIGTERM stop, pressure reads)
+  through one entry instead of deep bridge imports.
 - `plugin/memories.ts`: `{MEMORY:..}` protocol - extracts facts from AI output into `user.memories`
   (DB write-through), strips placeholders from reply text.
 - `plugin/menuScraping.ts`: RU bulletin scheduler (Deno.cron: 6h BRT daily, 15-min weekday change
@@ -349,7 +354,8 @@ thinking, PT system prompt with memory protocol + stored facts) -> `sendMessage`
 ## 14. Telegram bridge (`bridge/`)
 
 Same-process design: `wa.ts` starts `startBridge()` after `loadEvents()` (which resets listeners),
-and `connection/update.ts` calls `reattachBridge()` after every reconnect. Missing
+and `connection/update.ts` calls `reattachBridge()` after every reconnect - both through the
+`plugin/bridge.ts` entry, which also owns `stopBridge()` on shutdown. Missing
 `TELEGRAM_BOT_TOKEN`/`TELEGRAM_SUPERGROUP_PERSONAL` (legacy `TELEGRAM_SUPERGROUP_ID`) disables the
 bridge (`null`) without stopping WA. `-- --find-id` CLI prints supergroup ids via `getUpdates`
 without touching WA.
