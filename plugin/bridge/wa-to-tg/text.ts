@@ -117,19 +117,32 @@ export function hasMentionAll(message: proto.IMessage): boolean {
 	return false
 }
 
+// Resolver turning a mentioned JID into a display name (learned directory).
+// Null/missing means "no name known" - the token keeps its old rendering.
+export type MentionNameResolver = (
+	jid: string,
+) => Promise<string | null> | string | null
+
+// Bare-number token: only digits and phone punctuation after the @. These
+// are the terrible "@1234567890" renders - the only tokens a resolved name
+// ever replaces (readable tokens keep the sender's wording, even nicknames).
+const NUMERIC_TOKEN_RE = /^@[\d\s().+-]+$/
+
 // Annotate `@name` mentions with the member's phone number: WhatsApp shows
 // the contact name but Telegram can't resolve the identity, so
 // "hi @John" + mentionedJid 1555@s.whatsapp.net becomes
 // "hi @John (+1555...)". Pairs @tokens in order with the JID list (which is
 // how WhatsApp orders them); tokens already containing the number and
-// unresolvable JIDs pass through untouched. Runs BEFORE entity parsing so
-// formatting offsets stay consistent. Owner @tokens are additionally
-// reported as spans for text_mention entities.
-export function annotateMentions(
+// unresolvable JIDs pass through untouched. When a resolver knows the
+// member, a bare-number token becomes @Name instead (owner direction).
+// Runs BEFORE entity parsing so formatting offsets stay consistent. Owner
+// @tokens are additionally reported as spans for text_mention entities.
+export async function annotateMentions(
 	text: string,
 	mentionedJids: string[],
 	owner?: MentionOwner | null,
-): AnnotatedMentions {
+	resolveName?: MentionNameResolver | null,
+): Promise<AnnotatedMentions> {
 	const empty: AnnotatedMentions = { text, ownerSpans: [] }
 	if (!text) return empty
 	const jids = Array.isArray(mentionedJids) ? mentionedJids : []
@@ -137,37 +150,72 @@ export function annotateMentions(
 	// when the owner could still be mentioned through it.
 	if (jids.length === 0 && !owner?.all) return empty
 	const ownerSet = new Set((owner?.jids ?? []).map(ownerKey).filter(Boolean))
-	const ownerSpans: OwnerMentionSpan[] = []
-	let ji = 0
-	let out = ''
-	let last = 0
-	let firstStart = -1
-	let firstLen = 0
+	// Pair @tokens with JIDs in order first - name resolution is parallel,
+	// output assembly stays sequential so offsets match the final text.
 	TOKEN_RE.lastIndex = 0
+	const toks: { tok: string; jid: string | null; plain: string }[] = []
+	let last = 0
+	let ji = 0
 	let mt: RegExpExecArray | null
-	// Trailing punctuation (,@John, ...) stays outside the token so the phone
-	// lands next to the name: "@John, hi" -> "@John (+...), hi".
 	while ((mt = TOKEN_RE.exec(text)) !== null) {
-		const tok = mt[0]
-		out += text.slice(last, mt.index)
-		const start = out.length
-		if (firstStart < 0) {
-			firstStart = start
-			firstLen = tok.length
-		}
-		const jid = ji < jids.length ? jids[ji++] : null
-		const phone = jidPhone(jid)
-		let tokOut = tok
-		if (phone && !tok.replace(/\D/g, '').endsWith(phone.slice(-7))) {
-			tokOut = `${tok} (${phone})`
-		}
-		out += tokOut
-		last = mt.index + tok.length
-		if (jid && ownerSet.has(ownerKey(jid))) {
-			ownerSpans.push({ start, length: tok.length })
+		toks.push({
+			tok: mt[0],
+			jid: ji < jids.length ? jids[ji++] : null,
+			plain: text.slice(last, mt.index),
+		})
+		last = mt.index + mt[0].length
+	}
+	const tail = text.slice(last)
+	const names = new Map<string, string>()
+	if (resolveName) {
+		const uniq = [...new Set(toks.map((t) => t.jid).filter((j): j is string => !!j))]
+		const got = await Promise.all(
+			uniq.map(async (j) => {
+				try {
+					return [j, await resolveName(j)] as const
+				} catch {
+					return [j, null] as const
+				}
+			}),
+		)
+		for (const [j, n] of got) {
+			if (n) names.set(j, n)
 		}
 	}
-	out += text.slice(last)
+	let out = ''
+	const ownerSpans: OwnerMentionSpan[] = []
+	let firstStart = -1
+	let firstLen = 0
+	for (const { tok, jid, plain } of toks) {
+		out += plain
+		const start = out.length
+		// Span covers the mention as finally rendered: the bare token for
+		// phone-suffixed and untouched tokens, the @Name for replacements.
+		let len = tok.length
+		let tokOut = tok
+		const phone = jidPhone(jid)
+		if (phone && !tok.replace(/\D/g, '').endsWith(phone.slice(-7))) {
+			// Trailing punctuation (,@John, ...) stays outside the token so
+			// the phone lands next to the name: "@John, hi" ->
+			// "@John (+...), hi".
+			tokOut = `${tok} (${phone})`
+		} else if (resolveName && jid) {
+			const known = names.get(jid)
+			if (known && NUMERIC_TOKEN_RE.test(tok)) {
+				tokOut = `@${known}`
+				len = tokOut.length
+			}
+		}
+		if (firstStart < 0) {
+			firstStart = start
+			firstLen = len
+		}
+		out += tokOut
+		if (jid && ownerSet.has(ownerKey(jid))) {
+			ownerSpans.push({ start, length: len })
+		}
+	}
+	out += tail
 	// @all includes the owner but adds no JID entry: with no individual
 	// owner hit, anchor the ping on the first @token. The notification fires
 	// either way - only the highlighted word depends on this choice.

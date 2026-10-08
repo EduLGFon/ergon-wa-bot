@@ -59,3 +59,16 @@ no pointer and no confirm per owner direction), opens a fresh business topic wit
 profile card plus a summary line. Personal moves are unchanged (replay plus pointer). Cleanup
 deletes use a new droppable `cleanup` queue label so a wipe never stalls relay. Verified:
 `deno task verify` chain only (no live WA/TG smoke in this environment).
+
+## D06 - Learned @Name mention rendering (2026-10-08)
+
+Bare-number mention tokens (`@1234567890`) relayed terribly because the bridge knew no member names.
+Every relayed group message now teaches a speaker directory (participant JID to pushName); mentions
+pairing a numeric token with a known JID render as `@Name`, readable tokens keep the sender's
+wording. Learned only per owner direction: the owner's address book (`contacts.upsert`, history-sync
+contacts) is never read. Storage is a new `contact_names` table (jid PK, name, updated_at,
+LRU-capped at 2000 rows) plus a 500-entry memory cache, so per-message cost is one Map lookup and
+SQLite is written only on new or changed names. Lookups try the normalized JID plus its LID/PN
+counterpart via the Baileys signal store. Output stays plain text (no Telegram entities), so nobody
+gets false-pinged; owner-ping spans are recomputed after replacement. Same contract in `incoming.ts`
+and `edits.ts`. Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).

@@ -60,7 +60,7 @@ plugin/                  # services: bot, authState, db, cache, deletedStore,
                          # calendarParser + calendar/, sticker/, removeBg.py,
                          # bridge.ts (bridge plugin facade) + bridge/ (WA<->TG
                          # relay: own deno.jsonc, mod/db/format/rate-limiter
-                         # facades, wa-to-tg/ (34 modules), tg-to-wa/ (9 modules))
+                         # facades, wa-to-tg/ (35 modules), tg-to-wa/ (9 modules))
 util/ (14 files)         # handler, proto, locale, msgTools, msgAbstractions,
                          # geminiApi, functions, emojis, weather, menuParser,
                          # calendarAnalytics, bulletinTitles, dailySummary
@@ -364,7 +364,8 @@ without touching WA.
   purges mixed rows). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`,
   `pendingFollowUps`, 1000-cap) suppress relaying our own TG edits/reactions/
   pins/caption-follow-ups back. `mappings` also keeps the pinned profile card state
-  (`profile_pic_url`, `profile_about`, `profile_msg_id`, see D04).
+  (`profile_pic_url`, `profile_about`, `profile_msg_id`, see D04). `contact_names` maps speaker JIDs
+  to learned display names for @Name mention rendering (see D06).
 - `format.ts`: pure converters - TG entities (UTF-16 offsets) to WA inline markers (`*bold*`,
   `_italic_`, `~strike~`, `` `code` ``, triple-backtick pre, links, `> quote`) and back (pre -> bold
   -> italic -> strike -> code passes).
@@ -374,7 +375,7 @@ without touching WA.
   retries unbounded, droppable (notice/service-line/prompt/edit-topic/new-topic/cleanup) gives up
   after 3 flood retries and sheds immediately when depth over 400. Queue cap 500, parked waiters cap
   1000 with 60s max park, `isQueueDrop` marks intentional sheds.
-- WA->TG (`wa-to-tg.ts` facade + 34 modules): `relay.ts` attaches eight socket listeners (upsert,
+- WA->TG (`wa-to-tg.ts` facade + 35 modules): `relay.ts` attaches eight socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups, contacts); `incoming.ts` is the main
   loop (skip protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via
   `jid.ts`, resolve/create topic in the chat's group, mentions, media download, special-content
@@ -391,11 +392,12 @@ without touching WA.
     for undecided chats; `db.ts` `jid_aliases` maps user LID<->PN variants to the canonical JID
     (group sender alts are never stored; boot purges mixed rows) plus
     `bucket`/`telegram_chat_id`/`prompt_msg_id` routing columns and a composite
-    `(tg_chat_id, tg_msg_id)` reply key; `text.ts` unwrap + `@Name (+phone)` annotation + owner
-    `text_mention` spans (`@all` via `nonJidMentions`, direct via owner-JID match, merged into
-    entities by `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download with 45MB cap,
-    fileLength pre-check and max 3 concurrent buffers (large videos fail fast with a notice instead
-    of spiking RSS); `send.ts`/`send-media.ts` route by kind
+    `(tg_chat_id, tg_msg_id)` reply key; `contact-names.ts` learned speaker directory (bare-number
+    tokens render as @Name); `text.ts` unwrap + `@Name (+phone)` annotation + owner `text_mention`
+    spans (`@all` via `nonJidMentions`, direct via owner-JID match, merged into entities by
+    `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download with 45MB cap, fileLength
+    pre-check and max 3 concurrent buffers (large videos fail fast with a notice instead of spiking
+    RSS); `send.ts`/`send-media.ts` route by kind
     (photo/video/animation/voice/audio/sticker/document, 1024-char caption overflow follow-ups,
     4096-char body chunking into split messages via `chunk.ts`, round video-note fallback,
     stale-topic heal: thread-not-found recreates the forum topic once and retries); `quote.ts`

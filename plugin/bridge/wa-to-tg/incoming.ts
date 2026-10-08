@@ -16,6 +16,7 @@ import { handleWaPollResults, handleWaPollVote, msgSecretOf } from './polls.ts'
 import { handleWaSecretEdit } from './secret-edits.ts'
 import { getRichNotice } from './rich.ts'
 import { handleWaPin } from './pins.ts'
+import { learnContactName, resolveContactName } from './contact-names.ts'
 import { syncProfileCard } from './profile.ts'
 import { downloadWaMedia } from './media.ts'
 import { findKey } from '@util/functions.ts'
@@ -141,11 +142,21 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 
 			// Owner mentions become real Telegram pings downstream: match
 			// individual mentions against the owner's WA JIDs, @all always
-			// includes them.
-			const annotated = annotateMentions(getMsgText(m.message), getMentionedJids(m), {
-				jids: await ownerWaJids(),
-				all: hasMentionAll(m.message),
-			})
+			// includes them. Bare-number tokens (@1234...) render as @Name
+			// for members the directory learned from earlier traffic.
+			// Group speakers teach the directory on every message.
+			if (isGroup && m.key.participant) {
+				learnContactName(m.key.participant, m.pushName)
+			}
+			const annotated = await annotateMentions(
+				getMsgText(m.message),
+				getMentionedJids(m),
+				{
+					jids: await ownerWaJids(),
+					all: hasMentionAll(m.message),
+				},
+				resolveContactName,
+			)
 			let text = annotated.text
 			const dl = await downloadWaMedia(m)
 			const media = dl?.media ?? null

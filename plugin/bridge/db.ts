@@ -79,6 +79,10 @@ export interface ReplyMapRow {
 // kind; TG→WA rows keep 'unknown'.
 export type MirrorKind = 'text' | 'media' | 'sticker' | 'special' | 'unknown'
 
+// Cap for the learned member-name directory - oldest-seen JIDs fall out
+// first, so the table stays bounded in the busiest groups.
+export const CONTACT_NAMES_CAP = 2000
+
 function toMapping(row: Record<string, unknown>): MappingRow {
 	return {
 		whatsapp_jid: row.whatsapp_jid as string,
@@ -262,6 +266,16 @@ export class BridgeDB {
 			CREATE TABLE IF NOT EXISTS jid_aliases (
 				alias TEXT PRIMARY KEY,
 				canonical TEXT NOT NULL
+			)
+		`)
+		// Learned member names (see DECISIONS.md#D06): participant JID to
+		// display name, taught by relayed traffic. Lets bare-number mention
+		// tokens render as @Name. LRU-capped in setContactName.
+		this.db.exec(`
+			CREATE TABLE IF NOT EXISTS contact_names (
+				jid TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
+				updated_at INTEGER NOT NULL
 			)
 		`)
 		this.purgePoisonedAliases()
@@ -465,6 +479,36 @@ export class BridgeDB {
 			).run(picUrl, about, msgId, jid)
 		} catch {
 			// Best effort - a lost card only re-sends on the next change.
+		}
+	}
+
+	// Learned member name for a JID (see DECISIONS.md#D06). Null when
+	// unknown - callers fall back to phone rendering.
+	getContactName(jid: string): string | null {
+		if (!jid) return null
+		try {
+			const row = this.db.prepare('SELECT name FROM contact_names WHERE jid = ?').get(
+				jid,
+			) as { name?: unknown } | undefined
+			return typeof row?.name === 'string' && row.name ? row.name : null
+		} catch {
+			return null
+		}
+	}
+
+	// Upsert a learned member name, LRU-capping the table so the directory
+	// stays bounded no matter how many strangers speak.
+	setContactName(jid: string, name: string): void {
+		if (!jid || !name) return
+		try {
+			this.db.prepare(
+				'INSERT INTO contact_names (jid, name, updated_at) VALUES (?, ?, ?) ON CONFLICT(jid) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at',
+			).run(jid, name, Date.now())
+			this.db.prepare(
+				'DELETE FROM contact_names WHERE jid NOT IN (SELECT jid FROM contact_names ORDER BY updated_at DESC LIMIT ?)',
+			).run(CONTACT_NAMES_CAP)
+		} catch {
+			// Best effort - a lost name only degrades one mention.
 		}
 	}
 

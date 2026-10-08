@@ -4,6 +4,7 @@
 // arrive on the same event with null message - this routes each mirror to the
 // right Telegram endpoint and skips TG-initiated echoes to avoid 400 loops.
 import { annotateMentions, getMsgText, hasMentionAll, mentionedJidsOf, phoneOf } from './text.ts'
+import { resolveContactName } from './contact-names.ts'
 import { TG_TEXT_LIMIT } from './chunk.ts'
 import { describeErr, logEditFailure, routeEdit } from './errors.ts'
 import { chatForReply } from './routing.ts'
@@ -82,10 +83,11 @@ export async function handleWaEdits(
 			const label = key.fromMe
 				? 'You: '
 				: (isGroup ? `${phoneOf(key.participant) || 'unknown'}: ` : '')
-			const annotated = annotateMentions(
+			const annotated = await annotateMentions(
 				getMsgText(edited as proto.IMessage),
 				mentionedJidsOf(edited),
 				{ jids: await ownerWaJids(), all: hasMentionAll(edited as proto.IMessage) },
+				resolveContactName,
 			)
 			const parsed = waMarkdownToTgEntities(annotated.text)
 			const body = `${label}${parsed.text}`
