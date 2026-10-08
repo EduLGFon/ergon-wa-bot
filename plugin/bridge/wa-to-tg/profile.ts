@@ -12,8 +12,9 @@
 // the local bridge DB (same trust level as reply_map content) and never
 // logged. A hidden photo (401/404 from Baileys) degrades to a text-only card.
 import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
+import { isDual } from './routing.ts'
 import { phoneOf } from './text.ts'
-import { InputFile } from 'grammy'
+import { InlineKeyboard, InputFile } from 'grammy'
 import bot from '@plugin/bot.ts'
 
 // Profile photos are small - refuse anything abnormal before buffering it
@@ -88,6 +89,15 @@ function buildCardText(
 	return `${who}${contact}${bio}`.slice(0, 1000)
 }
 
+// Personal/Business buttons riding on the profile card itself (see
+// DECISIONS.md#D05). Button taps resolve the chat through the stored card
+// message ID (callback payloads cap at 64 bytes).
+export function classificationKeyboard(): InlineKeyboard {
+	return new InlineKeyboard()
+		.text('Personal', 'bucket:personal')
+		.text('Business', 'bucket:business')
+}
+
 // Send and pin the profile card for a topic. Never throws: failures land as
 // a topic notice or a server log, never break the message relay. Skips when
 // nothing changed (same pic URL plus same about) unless forced.
@@ -111,6 +121,13 @@ export async function syncProfileCard(
 			return
 		}
 		const phone = !input.isGroup ? (phoneOf(input.jid) || '') : ''
+		// Undecided chats in a dual-group setup carry the Personal/Business
+		// buttons on the card itself - one message, one working button pair,
+		// so the old duplicate-prompt race (two prompts, stale one answering
+		// chat not found) cannot happen.
+		const buttons = mapping.bucket === 'undecided' && isDual(relayCtx.groups)
+			? { reply_markup: classificationKeyboard() }
+			: undefined
 		let picBytes: Uint8Array | null = null
 		if (picUrl) {
 			try {
@@ -130,7 +147,7 @@ export async function syncProfileCard(
 		if (picBytes) {
 			const file = new InputFile(picBytes, 'profile.jpg')
 			const sent = await tgCall(
-				() => api.sendPhoto(input.chatId, file, { ...thread, caption }),
+				() => api.sendPhoto(input.chatId, file, { ...thread, caption, ...buttons }),
 				'profile-photo',
 				input.chatId,
 			).catch((e) => {
@@ -141,7 +158,7 @@ export async function syncProfileCard(
 		}
 		if (msgId === null) {
 			const sent = await tgCall(
-				() => api.sendMessage(input.chatId, caption, { ...thread }),
+				() => api.sendMessage(input.chatId, caption, { ...thread, ...buttons }),
 				'profile-text',
 				input.chatId,
 			).catch((e) => {

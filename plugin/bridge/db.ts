@@ -20,8 +20,8 @@ export interface MappingRow {
 	// Personal/business routing. New chats start 'undecided' in the
 	// default (personal) group until the owner picks via topic buttons.
 	bucket: Bucket
-	// Bot prompt message asking personal-or-business (button taps resolve
-	// the chat through this ID - callback payloads are capped at 64 bytes).
+	// Legacy standalone prompt id (pre-D05 button message; button taps now
+	// resolve through prompt_msg_id or profile_msg_id - see getByButtonMsg).
 	prompt_msg_id: number | null
 	// Pinned profile card state (see DECISIONS.md#D04): last seen WA pic URL
 	// plus about/desc text plus the Telegram card message id, so picture
@@ -429,12 +429,13 @@ export class BridgeDB {
 		return toMapping(row)
 	}
 
-	// Resolve a classification-button tap: the prompt message ID is stored
-	// on the mapping because callback payloads are capped at 64 bytes.
-	getByPrompt(chatId: string, msgId: number): MappingRow | undefined {
+	// Resolve a classification-button tap: the button message is the profile
+	// card (or a legacy standalone prompt), whose id is stored on the
+	// mapping because callback payloads are capped at 64 bytes.
+	getByButtonMsg(chatId: string, msgId: number): MappingRow | undefined {
 		const row = this.db.prepare(
-			'SELECT * FROM mappings WHERE telegram_chat_id = ? AND prompt_msg_id = ? AND archived = 0',
-		).get(chatId, msgId) as Record<string, unknown> | undefined
+			'SELECT * FROM mappings WHERE telegram_chat_id = ? AND (prompt_msg_id = ? OR profile_msg_id = ?) AND archived = 0',
+		).get(chatId, msgId, msgId) as Record<string, unknown> | undefined
 		if (!row) return undefined
 		return toMapping(row)
 	}

@@ -3,7 +3,7 @@
 // Split from commands.ts so each file stays under the size budget.
 // Verifies the number on WhatsApp, creates the forum topic + mapping -
 // the first message written in that topic relays like any other. A chat
-// born in a group inherits that group's bucket, so no prompt follows.
+// born in a group inherits that group's bucket, so no buttons follow.
 import { bucketOfChat, type GroupIds } from '../wa-to-tg/routing.ts'
 import { normalizeJid } from '../wa-to-tg/jid.ts'
 import type { InSupergroup, TgCall } from './commands.ts'

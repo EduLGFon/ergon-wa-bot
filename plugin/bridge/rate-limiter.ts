@@ -90,7 +90,14 @@ const MAX_WAITERS = 1000
 // prompts) drop immediately instead of adding hours of backlog. Messages,
 // media and voices always wait - they are the relay payload.
 const DROP_WHEN_DEEP = 400
-const DROPPABLE_LABELS = new Set(['notice', 'service-line', 'prompt', 'edit-topic', 'new-topic'])
+const DROPPABLE_LABELS = new Set([
+	'notice',
+	'service-line',
+	'prompt',
+	'edit-topic',
+	'new-topic',
+	'cleanup',
+])
 // Low-value ops give up after N flood retries; payload ops retry unbounded.
 const FLOOD_MAX_RETRIES_LOW = 3
 // A parked producer waits at most this long for space before it drops

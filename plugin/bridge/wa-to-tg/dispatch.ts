@@ -2,9 +2,9 @@
 //
 // Split from incoming.ts so the upsert loop stays under the file budget:
 // quote resolution, sender label + entity offsets, sticker fallback header,
-// album buffering vs immediate send, then the classification prompt.
+// album buffering vs immediate send. Classification buttons live on the
+// profile card (see profile.ts), not here.
 import { bufferAlbumItem, flushPendingAlbums } from './album-flush.ts'
-import { maybePromptClassification } from './prompt.ts'
 import { type TgEntity, waMarkdownToTgEntities } from '../format.ts'
 import { resolveQuoteTarget } from './quote.ts'
 import { isAlbumEligible } from './album.ts'
@@ -104,7 +104,4 @@ export async function dispatchPrepared(d: PreparedDispatch): Promise<void> {
 		tgId: replyToTgId,
 		header: stickerFallback ? quoteHeader : null,
 	})
-	// First relay from an undecided chat asks personal-or-business via
-	// buttons (no-op for classified chats and single-group mode).
-	await maybePromptClassification(d.jid, d.chatId, d.topicId, d.displayName)
 }

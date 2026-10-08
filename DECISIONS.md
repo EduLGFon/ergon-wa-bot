@@ -45,3 +45,17 @@ seen state plus the card message id for unpin; pic URLs may carry tokens, so the
 local bridge DB (same trust level as `reply_map` content) and are never logged. Needs the bot to
 have pin rights in the supergroup (same prerequisite as WA pin sync, already warned at boot).
 Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
+
+## D05 - Classification buttons on the profile card, business wipes (2026-10-08)
+
+The standalone new-chat prompt is gone: it had no in-flight lock, so concurrent upserts each posted
+one (two or more prompts per chat, every stale pair answering chat not found because only the latest
+id was stored). The Personal/Business buttons now ride on the pinned profile card itself, which is
+sent exactly once per new topic via the `isNew` flag, so duplicates are structurally impossible.
+Taps resolve through `mappings` matching `prompt_msg_id` or `profile_msg_id` (legacy prompts keep
+working until used). Tapping Personal in the home group just strips the keyboard; tapping Business
+wipes the old topic (best-effort deletes of known messages, capped at 50, then `deleteForumTopic`,
+no pointer and no confirm per owner direction), opens a fresh business topic with a buttonless
+profile card plus a summary line. Personal moves are unchanged (replay plus pointer). Cleanup
+deletes use a new droppable `cleanup` queue label so a wipe never stalls relay. Verified:
+`deno task verify` chain only (no live WA/TG smoke in this environment).

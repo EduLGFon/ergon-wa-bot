@@ -1,9 +1,9 @@
 // Bucket classification from Telegram - buttons + commands.
 //
-// The new-chat prompt carries Personal/Business buttons resolving the chat
-// through the stored prompt message ID; /personal and /business stay as the
+// The profile card carries Personal/Business buttons resolving the chat
+// through the stored card message ID; /personal and /business stay as the
 // fallback. Moves run detached (a replay outlasts the callback window), so
-// the tap is acknowledged first and the prompt edited on finish.
+// the tap is acknowledged first and the buttons are stripped on finish.
 import { bucketOfChat, chatOfBucket, type GroupIds } from '../wa-to-tg/routing.ts'
 import { relayCtx } from '../wa-to-tg/state.ts'
 import { moveTopic } from '../wa-to-tg/move.ts'
@@ -28,14 +28,16 @@ export function registerBucketHandlers(tg: Bot, db: BridgeDB, groups: GroupIds):
 					.catch(() => null)
 				return
 			}
-			const promptId = (ctx.callbackQuery?.message as { message_id?: number } | undefined)
+			const buttonId = (ctx.callbackQuery?.message as { message_id?: number } | undefined)
 				?.message_id
-			if (!promptId) {
+			if (!buttonId) {
 				await ctx.answerCallbackQuery({ text: 'Use /personal or /business in the topic.' })
 					.catch(() => null)
 				return
 			}
-			const mapping = db.getByPrompt(chatId, promptId)
+			// Matches the profile card id (or a legacy standalone prompt),
+			// so only the live button pair resolves.
+			const mapping = db.getByButtonMsg(chatId, buttonId)
 			if (!mapping) {
 				const text = 'Chat not found - use /personal or /business.'
 				await ctx.answerCallbackQuery({ text }).catch(() => null)
@@ -51,7 +53,7 @@ export function registerBucketHandlers(tg: Bot, db: BridgeDB, groups: GroupIds):
 				return
 			}
 			await ctx.answerCallbackQuery({ text: `Moving to ${LABEL[bucket]}…` }).catch(() => null)
-			void classifyChat(db, mapping.whatsapp_jid, bucket, chatId, promptId).catch((e) =>
+			void classifyChat(db, mapping.whatsapp_jid, bucket, chatId, buttonId).catch((e) =>
 				console.error('[BRIDGE] bucket classification failed:', e)
 			)
 		} catch (e) {
@@ -108,12 +110,12 @@ function classifyChat(
 	jid: string,
 	bucket: Bucket,
 	chatId: string,
-	promptId: number | null,
+	buttonId: number | null,
 ): Promise<void> {
 	const prev = pendingClassifications.get(jid)
 	const task = (async () => {
 		if (prev) await prev.catch(() => null)
-		await runClassify(db, jid, bucket, chatId, promptId)
+		await runClassify(db, jid, bucket, chatId, buttonId)
 	})()
 	pendingClassifications.set(jid, task)
 	task.finally(() => {
@@ -122,16 +124,19 @@ function classifyChat(
 	return task
 }
 
-// Shared classify path: move, then retire the prompt (buttons) in the old
-// topic. Failures land on the prompt when there is one, else as a reply.
-// Bot comes from the shared relay context (same instance moveTopic sends
-// through) so the two can never diverge.
+// Shared classify path: move, then strip the buttons off the card. The
+// button message can be a photo (profile card), so text is never edited -
+// keyboards strip cleanly off any message kind. Business moves delete the
+// old topic outright, so there is nothing left to strip there. Failures
+// land as a fresh line, never a throw. Bot comes from the shared relay
+// context (same instance moveTopic sends through) so the two can never
+// diverge.
 async function runClassify(
 	db: BridgeDB,
 	jid: string,
 	bucket: Bucket,
 	chatId: string,
-	promptId: number | null,
+	buttonId: number | null,
 ): Promise<void> {
 	const { tg } = relayCtx
 	if (!tg) return
@@ -139,31 +144,26 @@ async function runClassify(
 		const result = await moveTopic(jid, bucket)
 		if (!result) throw new Error('move returned no result')
 		if (!result.moved) {
-			if (promptId) {
-				const line = `Already in ${LABEL[bucket]}.`
-				await tg!.api.editMessageText(chatId, promptId, line).catch(() => null)
-			}
+			await stripButtons(chatId, buttonId)
 			return
 		}
-		const done = bucket === 'business'
-			? `✅ Business - fresh topic opened.`
-			: `✅ Personal - replayed ${result.copied} message${result.copied === 1 ? '' : 's'}` +
-				(result.skipped > 0 ? ` (${result.skipped} skipped)` : '') + '.'
-		if (promptId) {
-			await tg!.api.editMessageText(chatId, promptId, done).catch(() => null)
-		}
+		if (bucket === 'personal') await stripButtons(chatId, buttonId)
 	} catch (e) {
 		console.error('[BRIDGE] classify chat failed:', e)
-		const line = `⚠️ Move to ${LABEL[bucket]} failed - try /${bucket} again.`
-		if (promptId) {
-			await tg!.api.editMessageText(chatId, promptId, line).catch(() => null)
-		} else {
-			const mapping = db.getByJidOrAlias(jid)
-			if (mapping) {
-				await tg!.api.sendMessage(chatId, line, {
-					message_thread_id: mapping.telegram_topic_id,
-				}).catch(() => null)
-			}
+		const line = `Move to ${LABEL[bucket]} failed - try /${bucket} again.`
+		const mapping = db.getByJidOrAlias(jid)
+		if (mapping) {
+			await tg!.api.sendMessage(mapping.telegram_chat_id, line, {
+				message_thread_id: mapping.telegram_topic_id,
+			}).catch(() => null)
 		}
 	}
+}
+
+// Remove the inline keyboard from the button message. Works on photo and
+// text messages alike; missing or already-moved messages fail silently.
+async function stripButtons(chatId: string, buttonId: number | null): Promise<void> {
+	const { tg } = relayCtx
+	if (!tg || !buttonId) return
+	await tg!.api.editMessageReplyMarkup(chatId, buttonId, undefined).catch(() => null)
 }

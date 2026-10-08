@@ -5,8 +5,9 @@
 Two Telegram supergroups (forum topics enabled) - personal and business, served by one bot - mirror
 WhatsApp chats, so you can read and reply to WhatsApp from Telegram. Each WhatsApp chat (1:1 or
 group) maps to one forum topic in its bucket's group. New chats land in personal as undecided until
-you tap **👤 Personal** / **💼 Business** on the prompt (or run `/personal` / `/business` in the
-topic); business moves start clean, personal moves replay up to 100 recent messages.
+you tap **Personal** / **Business** on the pinned profile card (or run `/personal` / `/business` in
+the topic); business moves wipe the old topic and start clean, personal moves replay up to 100
+recent messages.
 
 ## Architecture (single process)
 
@@ -68,12 +69,12 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
 - `/start` - bridge status
 - `/id` - show this supergroup's chat ID
 - `/topics` - list active JID → topic mappings (with bucket)
-- `/personal` / `/business` - move this topic to the other group (same as the prompt buttons)
+- `/personal` / `/business` - move this topic to the other group (same as the profile-card buttons)
 - `/archive` / `/close` - stop mirroring a topic (mapping kept)
 - `/reopen` - resume mirroring an archived topic
 - `/mute` / `/unmute` - freeze/resume relay in both directions for this topic (mapping kept)
 - `/new <phone> [name]` - verify a number on WhatsApp and bridge it into a fresh topic (inherits the
-  group you run it in, no prompt)
+  group you run it in; classified at once, so no buttons are attached)
 
 ## Known Limitations
 
@@ -105,9 +106,10 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   entity) instead of plain `↩️` text; mapped originals still use native replies. Quotes of pre-move
   messages left behind in the other group also degrade to the header (a numeric ID from another
   group would misattach).
-- Topic moves (`/personal` / `/business` / prompt buttons) serialize per chat - a double-tap never
-  opens two topics. Moving to business starts a fresh topic (history stays readable in the old,
-  closed topic); moving to personal replays up to 100 recent messages with reply threading.
+- Topic moves (`/personal` / `/business` / profile-card buttons) serialize per chat - a double-tap
+  never opens two topics. Moving to business wipes the old topic (messages deleted, topic deleted)
+  and starts a fresh one with a new profile card; moving to personal replays up to 100 recent
+  messages with reply threading.
 - Albums: rapid WA photo/video bursts from one sender cross as a single Telegram media group (1.5s
   batching window, so single photos arrive ~1.5s later; extra captions follow as text); TG albums
   (`media_group_id`) forward in order over a 1.2s window (Baileys has no album-send, so WA receives

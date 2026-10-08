@@ -2,16 +2,23 @@
 //
 // Telegram has no move-topic API, so a move always means: open a fresh
 // topic in the target group, optionally replay recent history, repoint the
-// mapping, then close the old topic with a pointer. Business moves start clean (no replay); personal moves replay up to
+// mapping, then deal with the old topic. Business moves wipe the old topic
+// (messages deleted, topic deleted, no pointer); personal moves replay up to
 // PERSONAL_REPLAY_CAP newest mapped messages, oldest-first, re-threading
 // replies whose target was also copied. Uncopied rows keep their old
 // group, so edits/deletes of pre-move messages still land correctly.
 import { chatOfBucket } from './routing.ts'
 import { createForumTopic, sanitizeTopicName } from './chat.ts'
+import { syncProfileCard } from './profile.ts'
 import { relayCtx, tgCall } from './state.ts'
 import type { Bucket } from '../db.ts'
 
 export const PERSONAL_REPLAY_CAP = 100
+
+// Cap for the per-message deletes of a business wipe: deleteForumTopic
+// removes everything remaining anyway, so these only matter when the topic
+// delete itself fails. Droppable queue label, best effort throughout.
+const WIPE_DELETE_CAP = 50
 
 // Dedup concurrent moves for the same JID: a second classification-button
 // tap or /personal command while the first move is replaying would open a
@@ -80,9 +87,23 @@ async function moveTopicUnsafe(
 	db.getOrCreate(jid, toTopic, mapping.display_name, mapping.chat_type, toChat)
 	db.setBucket(jid, bucket)
 	db.setPromptMsgId(jid, null)
-	await retireOldTopic(fromChat, mapping.telegram_topic_id, mapping.display_name, bucket)
+	if (bucket === 'business') {
+		// Fresh start in the new topic: profile card first (no buttons, the
+		// chat is decided now), then the summary. Card failures never block
+		// the wipe below.
+		await syncProfileCard({
+			jid,
+			displayName: mapping.display_name,
+			chatType: mapping.chat_type,
+			isGroup: jid.endsWith('@g.us'),
+			topicId: toTopic,
+			chatId: toChat,
+		}, { force: true }).catch((e) =>
+			console.error('[BRIDGE] business move profile card failed:', e)
+		)
+	}
 	const summary = bucket === 'business'
-		? `📦 Moved to Business - fresh topic (history stays in Personal)`
+		? `📦 Moved to Business - old topic wiped.`
 		: `📦 Moved to Personal - replayed ${copied} recent message${copied === 1 ? '' : 's'}` +
 			(skipped > 0 ? ` (${skipped} skipped)` : '')
 	await tgCall(
@@ -90,6 +111,14 @@ async function moveTopicUnsafe(
 		'notice',
 		toChat,
 	).catch(() => null)
+	if (bucket === 'business') {
+		await wipeOldTopic(fromChat, mapping.telegram_topic_id, jid, [
+			mapping.profile_msg_id,
+			mapping.prompt_msg_id,
+		])
+	} else {
+		await retireOldTopic(fromChat, mapping.telegram_topic_id, mapping.display_name, bucket)
+	}
 	return { moved: true, chatId: toChat, topicId: toTopic, copied, skipped }
 }
 
@@ -144,6 +173,42 @@ async function replayHistory(
 		}
 	}
 	return { copied, skipped }
+}
+
+// Business wipe: delete the old topic's known messages (capped), then the
+// topic itself, which removes everything remaining. No pointer, no confirm.
+// Everything is best effort and droppable - a wipe must never stall relay.
+async function wipeOldTopic(
+	fromChat: string,
+	fromTopic: number,
+	jid: string,
+	knownIds: (number | null | undefined)[],
+): Promise<void> {
+	const { db, tg } = relayCtx
+	if (!tg) return
+	try {
+		const ids = new Set<number>()
+		for (const id of knownIds) {
+			if (typeof id === 'number') ids.add(id)
+		}
+		for (const row of db?.recentReplyMaps(jid, WIPE_DELETE_CAP) ?? []) {
+			if (row.tg_msg_id) ids.add(row.tg_msg_id)
+		}
+		for (const id of ids) {
+			await tgCall(
+				() => tg!.api.deleteMessage(fromChat, id).catch(() => false),
+				'cleanup',
+				fromChat,
+			).catch(() => null)
+		}
+	} catch (e) {
+		console.error('[BRIDGE] topic wipe deletes failed:', e)
+	}
+	await tgCall(
+		() => tg!.api.deleteForumTopic(fromChat, fromTopic).catch(() => false),
+		'cleanup',
+		fromChat,
+	).catch(() => null)
 }
 
 // Leave a pointer in the old topic, then close and rename it so the move
