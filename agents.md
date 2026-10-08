@@ -40,8 +40,8 @@ Reconciling `plan.md`, `docs/ARCHITECTURE.md`, and this file:
   three as one contract.
 - Ambiguity handling: `plan.md` lists numbered tasks in landing order without an ambiguity rule.
   Combined rule: ask the owner before deciding when the ambiguity affects security, privacy,
-  authentication or authorization, persisted data or schema (`conf/schema.ts`, `plugin/bridge/db.ts` reply
-  map, Postgres auth tables), public contracts (command names, aliases, usage keys, WA-to-TG /
+  authentication or authorization, persisted data or schema (`conf/schema.ts`, `plugin/bridge/db.ts`
+  reply map, Postgres auth tables), public contracts (command names, aliases, usage keys, WA-to-TG /
   TG-to-WA bridge behavior, locale keys), or the landing order in `plan.md`. For everything else,
   choose the simplest option that satisfies every MUST rule, record a short ADR in `DECISIONS.md`,
   and continue.
@@ -57,22 +57,22 @@ root file on demand rather than claiming it already exists.
 
 - Runtime: Deno 2.x only, one process booting from `wa.ts`. Prod runs under PM2
   (`conf/ecosystem.config.cjs`, `deno task start` / `restart` / `stop`); local dev runs
-  `deno task dev` or `deno task start:dev` (both pass `--env=conf/.env`). Pinned versions live in
-  `README.md` and the import maps.
+  `deno task dev` or `deno task start:dev` (both pass `--env=conf/.env`). Version ranges live in the
+  import maps.
 - Language: TypeScript on Deno (bot, bridge, setup, tooling), SQL via drizzle-kit migrations only,
   Python for the single `plugin/removeBg.py` background-removal entry (venv at `conf/gen/python`),
   pt-BR canonical for user-visible strings with `en`, `es`, `fr`, `de` fallbacks in `locale/`,
   English for code, comments, commits, and docs.
-- Framework: WhatsApp via `npm:@whiskeysockets/baileys@7.0.0-rc14` (pinned); Telegram via
-  `npm:grammy@1.46.0/web` (fetch-based adapter, no Node http server); persistence via
-  `drizzle-orm` + `postgres` (postgres-js) + `drizzle-kit`; AI via `npm:@google/genai` (Gemini
-  chat + file upload); media via `sharp`, system `ffmpeg`, `node-webpmux`, Python venv (`rembg`,
-  `onnxruntime`, `yt-dlp`); i18n via `i18next` with a custom Deno file backend; QR render via
-  `jsr:@libs/qrcode`.
-- Package manager: Deno with the import map in `deno.jsonc` (root) and `plugin/bridge/deno.jsonc` (bridge
-  scope, same pins); `deno.lock` plus `plugin/bridge/deno.lock` committed; npm consumed through Deno
-  (`npm:` specifiers), `node_modules/` never hand-edited; `pip` only inside `conf/gen/python`
-  (`deno task setup:py`, `update:py`). Regenerate lockfiles with the package manager, never by hand.
+- Framework: WhatsApp via `npm:@whiskeysockets/baileys` (version range in the import map); Telegram
+  via `npm:grammy/web` (fetch-based adapter, no Node http server); persistence via `drizzle-orm` +
+  `postgres` (postgres-js) + `drizzle-kit`; AI via `npm:@google/genai` (Gemini chat + file upload);
+  media via `sharp`, system `ffmpeg`, `node-webpmux`, Python venv (`rembg`, `onnxruntime`,
+  `yt-dlp`); i18n via `i18next` with a custom Deno file backend; QR render via `jsr:@libs/qrcode`.
+- Package manager: Deno with the import map in `deno.jsonc` (root) and `plugin/bridge/deno.jsonc`
+  (bridge scope, same ranges); `deno.lock` plus `plugin/bridge/deno.lock` committed; npm consumed
+  through Deno (`npm:` specifiers), `node_modules/` never hand-edited; `pip` only inside
+  `conf/gen/python` (`deno task setup:py`, `update:py`). Regenerate lockfiles with the package
+  manager, never by hand.
 - Import convention: path aliases `@class/`, `@cmd/`, `@conf/`, `@event/`, `@plugin/`, `@util/`,
   `@db`, `@wa` from `deno.jsonc`; in every file imports are organized descending by line length
   (longest on top, shortest on bottom of the imports section), keeping logical statement order (do
@@ -94,8 +94,8 @@ root file on demand rather than claiming it already exists.
   description`, e.g.
   `fix(chart): ...`; types `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `perf`, `security`).
   One commit per small logical change; group files only when together they implement a single thing;
-  never bundle unrelated changes. Keep every commit small: prefer a series of
-  small commits over one large commit, and commit each logical change as soon as its checks pass.
+  never bundle unrelated changes. Keep every commit small: prefer a series of small commits over one
+  large commit, and commit each logical change as soon as its checks pass.
 - Documentation sources: `docs/ARCHITECTURE.md` plus the root files `README.md`, `plan.md`,
   `agents.md`, `todo.md`, `conf/.env.example` (and `DECISIONS.md`, `CHANGELOG.md`, `SECURITY.md`
   once created).
@@ -115,10 +115,10 @@ root file on demand rather than claiming it already exists.
 - Preserve existing behavior unless the requested change intentionally modifies it.
 - When requirements are ambiguous, infer from established project conventions when possible, then
   apply the combined ambiguity rule from section 1.
-- Research Baileys and grammy behavior from the code (`event/`, `plugin/bridge/`) and official sources
-  before building on an assumption they cover. Anything marked to be verified against upstream
-  (Baileys message shapes, Bot API limits, store policies) must be checked and the result recorded
-  in `DECISIONS.md`.
+- Research Baileys and grammy behavior from the code (`event/`, `plugin/bridge/`) and official
+  sources before building on an assumption they cover. Anything marked to be verified against
+  upstream (Baileys message shapes, Bot API limits, store policies) must be checked and the result
+  recorded in `DECISIONS.md`.
 - Never claim that work was performed or verified unless it actually was.
 - Report relevant limitations, failed checks, and unresolved issues honestly.
 
@@ -168,12 +168,12 @@ Files and Modules
   the logic reads best in one place.
 - Avoid modules that mix unrelated responsibilities. Avoid overly large files and complex syntax.
 - Order files and folders by logical meaning so the tree reads like the system: group by domain or
-  flow direction (for example `cmd/<category>/`, `event/<category>/`, `plugin/bridge/wa-to-tg/` versus
-  `plugin/bridge/tg-to-wa/`), name each file after the single concept it owns, keep one facade or index at
-  the folder root when a folder needs an entry point, and place a new file next to its siblings in
-  flow order rather than in a catch-all or unrelated folder. When the existing layout violates this
-  (a folder mixing unrelated concerns or a file sitting far from its logical siblings), flag it in
-  `DECISIONS.md` instead of silently extending the mess.
+  flow direction (for example `cmd/<category>/`, `event/<category>/`, `plugin/bridge/wa-to-tg/`
+  versus `plugin/bridge/tg-to-wa/`), name each file after the single concept it owns, keep one
+  facade or index at the folder root when a folder needs an entry point, and place a new file next
+  to its siblings in flow order rather than in a catch-all or unrelated folder. When the existing
+  layout violates this (a folder mixing unrelated concerns or a file sitting far from its logical
+  siblings), flag it in `DECISIONS.md` instead of silently extending the mess.
 
 Comments
 
@@ -252,12 +252,12 @@ Dependencies
   `util/msgAbstractions.ts` (`sendMsg`, `reactToMsg`, `startTyping`); the bridge shares the same WA
   socket (a second socket causes stream-conflict logouts) and attaches after `loadEvents()` and
   reattaches after every reconnect. `class/` holds domain models, `util/` holds shared pure-ish
-  helpers, `plugin/` holds stateful services, `conf/` holds schema plus env plus defaults, `plugin/bridge/`
-  holds facades plus the two direction module dirs.
+  helpers, `plugin/` holds stateful services, `conf/` holds schema plus env plus defaults,
+  `plugin/bridge/` holds facades plus the two direction module dirs.
 - Separate business logic, presentation, transport, persistence, and infrastructure concerns when
   appropriate. Command `run()` holds the business logic; `msgAbstractions` owns transport;
-  `plugin/db.ts`, `plugin/cache.ts`, `plugin/deletedStore.ts`, and `plugin/bridge/db.ts` own persistence;
-  widgets and formatters hold no business logic.
+  `plugin/db.ts`, `plugin/cache.ts`, `plugin/deletedStore.ts`, and `plugin/bridge/db.ts` own
+  persistence; widgets and formatters hold no business logic.
 - Keep shared logic in appropriate shared modules rather than duplicating it (`functions.ts` delays,
   `emojis.ts` maps, `format.ts` converters, `msgTools.ts` parsing).
 - Avoid unnecessary coupling between unrelated layers.
@@ -267,8 +267,8 @@ Dependencies
 - Improve an existing abstraction instead of creating a parallel implementation when practical.
 - Single-owner rules: `util/msgAbstractions.ts` is the only outbound touchpoint;
   `util/msgTools.ts:getCtx` is the only inbound parser; `event/connection/update.ts` owns
-  reconnects; `plugin/cache.ts` owns cache bounds; `plugin/bridge/db.ts` owns pairing plus the reply map
-  plus echo guards.
+  reconnects; `plugin/cache.ts` owns cache bounds; `plugin/bridge/db.ts` owns pairing plus the reply
+  map plus echo guards.
 
 Dynamic Data and Scalability
 
@@ -657,8 +657,9 @@ changes) when the change warrants it.
 - When a breaking change is required, identify affected consumers and update relevant docs and
   diagnostics (`docs/ARCHITECTURE.md`, `plan.md`, `scripts/bridge_*.ts` where applicable).
 - Schema changes go through forward-only drizzle-kit artifacts from `conf/schema.ts`
-  (`deno task db:gen` / `db:push` / `db:pull`) and safe-ADD migrations in `plugin/bridge/db.ts` (with boot
-  purges for mixed rows where documented). Never edit a merged migration after it has landed.
+  (`deno task db:gen` / `db:push` / `db:pull`) and safe-ADD migrations in `plugin/bridge/db.ts`
+  (with boot purges for mixed rows where documented). Never edit a merged migration after it has
+  landed.
 - Make migrations reproducible and version-controlled.
 - Consider existing data, rollback behavior, compatibility, and destructive effects before changing
   persistent data (auth rows keyed on session `'2'`, per-key rows with BufferJSON round-trip,

@@ -21,3 +21,11 @@ docs). `plugin/bridge.ts` stays beside it as the lifecycle facade, so `wa.ts`,
 landed alone; path fixes (scope config, `--find-id` help strings, scripts, setup prompts, docs)
 followed in the next commit. `agents.md` path references were updated in the working tree but left
 uncommitted next to the prior pending hunk for owner review.
+
+## D03 - Unpinned dependency ranges (2026-10-08)
+
+Import maps use caret ranges instead of exact pins (for example `npm:grammy@^1.46.0`), so compatible
+updates flow on fresh installs without a manual bump per release. Ranges still exclude majors (and
+minors on 0.x packages); both `deno.lock` files stay committed and exact, and blanket major upgrades
+remain forbidden without review. Docs and `agents.md` name packages without versions and point at
+the import maps as the range source.
