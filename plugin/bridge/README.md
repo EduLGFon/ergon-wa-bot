@@ -2,7 +2,7 @@
 
 ## Overview
 
-Two Telegram supergroups (forum topics enabled) — personal and business, served by one bot — mirror
+Two Telegram supergroups (forum topics enabled) - personal and business, served by one bot - mirror
 WhatsApp chats, so you can read and reply to WhatsApp from Telegram. Each WhatsApp chat (1:1 or
 group) maps to one forum topic in its bucket's group. New chats land in personal as undecided until
 you tap **👤 Personal** / **💼 Business** on the prompt (or run `/personal` / `/business` in the
@@ -12,7 +12,7 @@ topic); business moves start clean, personal moves replay up to 100 recent messa
 
 The bridge runs **embedded in the WhatsApp bot process** (`wa.ts` calls `startBridge()` via
 `plugin/bridge.ts` after `bot.connect()` + `loadEvents()`). It reuses the already connected Baileys
-socket — there is intentionally **no second WhatsApp connection**, because two sockets sharing one
+socket - there is intentionally **no second WhatsApp connection**, because two sockets sharing one
 auth state kick each other off (stream conflict / repeated logouts). That was the failure of the
 previous standalone approach.
 
@@ -23,14 +23,14 @@ previous standalone approach.
   `bot.sock.sendMessage`. Telegram replies become WhatsApp quoted replies via the `reply_map` table,
   reactions become WA reacts, edits become protocol MESSAGE_EDITs, and `/new <phone> [name]` starts
   a bridged chat from the Telegram side.
-- **Mapping store** (`db.ts`): SQLite at `conf/gen/bridge.db` —
+- **Mapping store** (`db.ts`): SQLite at `conf/gen/bridge.db` -
   `mappings(whatsapp_jid ↔ telegram_topic_id, telegram_chat_id, bucket, …)` + `reply_map` keyed by
   `(tg_chat_id, tg_msg_id)` + `jid_aliases` for LID/PN variants.
 - **Rate limiting** (`rate-limiter.ts`): one FIFO queue per Telegram supergroup (personal and
   business lanes have separate budgets, so a business burst never stalls personal), plus a separate
   light queue for WhatsApp sends. Every `tg.api.*` call is its own queue slot with ~3s spacing; on a
   429 the failing send is retried after the server's `retry_after` and the lane pauses with adaptive
-  spacing — no more 429 cascades or silent drops.
+  spacing - no more 429 cascades or silent drops.
 
 ## Telegram Bot Setup Steps
 
@@ -41,7 +41,7 @@ previous standalone approach.
    ```bash
    deno run -A --env-file=conf/.env plugin/bridge/mod.ts -- --find-id
    ```
-5. Put the values in `conf/.env` (NOT `plugin/bridge/.env` — the bot loads `conf/.env`):
+5. Put the values in `conf/.env` (NOT `plugin/bridge/.env` - the bot loads `conf/.env`):
    ```env
    TELEGRAM_BOT_TOKEN='your-bot-token'
    TELEGRAM_SUPERGROUP_PERSONAL='-1001111111111'
@@ -56,7 +56,7 @@ previous standalone approach.
 
 ## Running
 
-Just run the WhatsApp bot as usual — the bridge starts with it when the env vars above are set, and
+Just run the WhatsApp bot as usual - the bridge starts with it when the env vars above are set, and
 stays silent otherwise:
 
 ```bash
@@ -65,14 +65,14 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
 
 ## Commands (inside either supergroup)
 
-- `/start` — bridge status
-- `/id` — show this supergroup's chat ID
-- `/topics` — list active JID → topic mappings (with bucket)
-- `/personal` / `/business` — move this topic to the other group (same as the prompt buttons)
-- `/archive` / `/close` — stop mirroring a topic (mapping kept)
-- `/reopen` — resume mirroring an archived topic
-- `/mute` / `/unmute` — freeze/resume relay in both directions for this topic (mapping kept)
-- `/new <phone> [name]` — verify a number on WhatsApp and bridge it into a fresh topic (inherits the
+- `/start` - bridge status
+- `/id` - show this supergroup's chat ID
+- `/topics` - list active JID → topic mappings (with bucket)
+- `/personal` / `/business` - move this topic to the other group (same as the prompt buttons)
+- `/archive` / `/close` - stop mirroring a topic (mapping kept)
+- `/reopen` - resume mirroring an archived topic
+- `/mute` / `/unmute` - freeze/resume relay in both directions for this topic (mapping kept)
+- `/new <phone> [name]` - verify a number on WhatsApp and bridge it into a fresh topic (inherits the
   group you run it in, no prompt)
 
 ## Known Limitations
@@ -91,7 +91,7 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   reactions missing on Telegram (😂→🤣, …) are mapped, anything Telegram rejects (REACTION_INVALID)
   falls back to a default ❤️ (with a one-time warn); custom-emoji and paid TG reactions fall back to
   ❤️ on WhatsApp. Two prerequisites, both silent when missing: the bot must be an **administrator**
-  of the supergroup and polling must opt into `message_reaction` (done in `mod.ts` — Telegram
+  of the supergroup and polling must opt into `message_reaction` (done in `mod.ts` - Telegram
   excludes it from defaults). TG-initiated react echoes are deduplicated via a pending mark, so
   genuine reactions from your own phone still relay; WA reaction carriers never surface as `You: ❤️`
   text.
@@ -99,13 +99,13 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   WhatsApp`
   plus the original content hidden behind a spoiler (text in place, media via caption; repeat
   revokes are idempotent). Mirrors without stored content (stickers, specials, old rows) are still
-  deleted instead — needs delete rights in the supergroup; old/gone mirrors just log. TG→WA delete
-  sync is impossible — the Bot API emits no event when a Telegram message is deleted.
+  deleted instead - needs delete rights in the supergroup; old/gone mirrors just log. TG→WA delete
+  sync is impossible - the Bot API emits no event when a Telegram message is deleted.
 - WhatsApp quotes of never-bridged originals render as a real Telegram quote block (blockquote
   entity) instead of plain `↩️` text; mapped originals still use native replies. Quotes of pre-move
   messages left behind in the other group also degrade to the header (a numeric ID from another
   group would misattach).
-- Topic moves (`/personal` / `/business` / prompt buttons) serialize per chat — a double-tap never
+- Topic moves (`/personal` / `/business` / prompt buttons) serialize per chat - a double-tap never
   opens two topics. Moving to business starts a fresh topic (history stays readable in the old,
   closed topic); moving to personal replays up to 100 recent messages with reply threading.
 - Albums: rapid WA photo/video bursts from one sender cross as a single Telegram media group (1.5s
@@ -114,7 +114,7 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   ordered singles).
 - Round video notes stay round both ways (`sendVideoNote` / `ptv`, plain-video fallback); GIFs cross
   as GIFs (`sendAnimation` / `gifPlayback`). Telegram video stickers transcode to animated WebP via
-  ffmpeg (≤500KB, else video fallback); `.tgs` (Lottie) still relays as a document — ffmpeg can't
+  ffmpeg (≤500KB, else video fallback); `.tgs` (Lottie) still relays as a document - ffmpeg can't
   render it.
 - Relay failures post a specific ⚠️ notice to the affected topic: failed downloads name the
   attachment kind and size (documents include the file name), Telegram files over the 20 MB bot

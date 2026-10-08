@@ -18,7 +18,7 @@
 
 - **Function**: `bot.sock.sendMessage(jid, content, opts)` via `sendMsg()` abstraction in
   `util/msgAbstractions.ts`
-- **Media support**: Images, videos, audio, documents, stickers, voice notes — all supported via
+- **Media support**: Images, videos, audio, documents, stickers, voice notes - all supported via
   `downloadMediaMessage` from Baileys
 - **Replies/Quotes**: Supported via `{ quoted: opts?.quoted }` option in `sendMsg`
 
