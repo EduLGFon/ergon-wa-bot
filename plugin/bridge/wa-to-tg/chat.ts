@@ -79,12 +79,11 @@ export async function handleGroupParticipants(upd: {
 			.join(', ')
 		let line: string | null = null
 		switch (upd.action) {
+			// Joins and exits stay silent (owner direction) - topics only
+			// hear about admin changes below.
 			case 'add':
-				line = `👋 ${names} joined the group`
-				break
 			case 'remove':
-				line = `🚪 ${names} left the group`
-				break
+				return
 			case 'promote':
 				line = `⭐ ${names} is now an admin`
 				break

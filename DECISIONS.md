@@ -72,3 +72,9 @@ SQLite is written only on new or changed names. Lookups try the normalized JID p
 counterpart via the Baileys signal store. Output stays plain text (no Telegram entities), so nobody
 gets false-pinged; owner-ping spans are recomputed after replacement. Same contract in `incoming.ts`
 and `edits.ts`. Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
+
+## D07 - Silent group joins/exits (2026-10-08)
+
+Join/exit service lines are dropped in `handleGroupParticipants` per owner direction; only
+promote/demote lines still relay. No toggle: the owner wants them gone everywhere. Verified:
+`deno task verify` chain only (no live WA/TG smoke in this environment).
