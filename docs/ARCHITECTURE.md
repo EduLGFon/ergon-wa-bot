@@ -60,7 +60,7 @@ plugin/                  # services: bot, authState, db, cache, deletedStore,
                          # calendarParser + calendar/, sticker/, removeBg.py,
                          # bridge.ts (bridge plugin facade) + bridge/ (WA<->TG
                          # relay: own deno.jsonc, mod/db/format/rate-limiter
-                         # facades, wa-to-tg/ (35 modules), tg-to-wa/ (9 modules))
+                         # facades, wa-to-tg/ (35 modules), tg-to-wa/ (11 modules))
 util/ (14 files)         # handler, proto, locale, msgTools, msgAbstractions,
                          # geminiApi, functions, emojis, weather, menuParser,
                          # calendarAnalytics, bulletinTitles, dailySummary
@@ -425,10 +425,10 @@ without touching WA.
     `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue (routes by destination chatId via
     `limiterFor` - business supergroup to the business lane, everything else personal) +
     `notifyTopic` (never throws/loops).
-- TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
-  mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering
-  (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback header,
-  `waSend` + `saveReplyMap` (chat + reply target stored); `handler-events.ts`
+- TG->WA (`tg-to-wa.ts` facade + 11 modules): `handlers.ts` guards (either group, no bots, has
+  topic, mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album
+  buffering (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback
+  header, `waSend` + `saveReplyMap` (chat + reply target stored); `handler-events.ts`
   reaction/edit/pin/poll-answer handlers with echo marks (pin resolves `pinned_message` service
   posts back to the WA original, 30-day duration; poll answers rebuild the encrypted vote);
   `buckets.ts` Personal/Business buttons (`callback_query`, chat resolved via stored card ID) plus
@@ -437,7 +437,10 @@ without touching WA.
   native poll creation, contact text fallback); `media.ts` largest-photo pick + `getFile` fetch with
   double size caps; `replies.ts` notices + ffmpeg webm conversion; `album.ts` batching;
   `commands.ts` topic admin (`/start /id /topics /archive /close /reopen /mute /unmute`);
-  `newchat.ts` `/new <phone> [name]` with `onWhatsApp` verification (inherits the group's bucket).
+  `group-menu.ts` `/group` settings menu (one edited message: mute toggle, bucket move, member
+  browser with pages, type-to-search intercept, member card with start-chat); `group-members.ts` WA
+  roster source (60s metadata cache, learned labels, pure filter); `newchat.ts`
+  `/new <phone> [name]` with `onWhatsApp` verification (inherits the group's bucket).
 - Cross-cutting: pairing auto-creates on first WA sight (or `/new`) into the personal group as
   `undecided` until the buttons/commands classify it; renames sync, mute/archive pause both
   directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes no

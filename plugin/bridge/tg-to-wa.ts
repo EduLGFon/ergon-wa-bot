@@ -7,6 +7,7 @@ import { limiterFor } from './wa-to-tg/state.ts'
 import { registerBucketHandlers } from './tg-to-wa/buckets.ts'
 import { registerTgMessageHandler } from './tg-to-wa/handlers.ts'
 import { registerNewCommand } from './tg-to-wa/newchat.ts'
+import { registerGroupMenuHandlers } from './tg-to-wa/group-menu.ts'
 import { registerTgCommands } from './tg-to-wa/commands.ts'
 import type { RateLimiter } from './rate-limiter.ts'
 import { formatBytes } from './format.ts'
@@ -51,6 +52,7 @@ export function registerTgHandlers(
 	)
 	registerTgReactionHandler(tg, db, waSend, groups)
 	registerTgMessageHandler(tg, db, tgLimiter, waSend, groups)
+	registerGroupMenuHandlers(tg, db, groups, tgRoute, inSupergroup)
 	registerTgEditHandler(tg, db, waSend, groups)
 	registerTgPinHandler(tg, db, waSend, groups)
 	registerTgPollAnswerHandler(tg, db, waSend, groups, tgLimiter)

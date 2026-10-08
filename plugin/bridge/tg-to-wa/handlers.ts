@@ -6,6 +6,7 @@ import { buildQuoted, buildWaContent, tgPollOptions } from './content.ts'
 import { selfJid } from '../wa-to-tg/jid.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
 import { bufferTgAlbumItem } from './album.ts'
+import { consumeMemberSearch } from './group-menu.ts'
 import { tgEntitiesToWa } from '../format.ts'
 import { downloadTgMedia } from './media.ts'
 import type { BridgeDB } from '../db.ts'
@@ -61,6 +62,17 @@ export function registerTgMessageHandler(
 			}
 			const rawText = msg.text || msg.caption || ''
 			const text = tgEntitiesToWa(rawText, msg.entities || msg.caption_entities).trim()
+			// Armed member search eats one typed query (deleted after reading)
+			// so a search never leaks into WhatsApp. Commands pass through.
+			if (
+				typeof msg.text === 'string' && msg.text.trim() && !msg.text.trim().startsWith('/')
+			) {
+				try {
+					if (await consumeMemberSearch(tg, db, chatId, topicId, msg)) return
+				} catch (e) {
+					console.error('[BRIDGE] member search consume failed:', e)
+				}
+			}
 			const dl = await downloadTgMedia(tg, msg)
 			const media = dl?.media ?? null
 			const unsupportedLabel = msg.dice

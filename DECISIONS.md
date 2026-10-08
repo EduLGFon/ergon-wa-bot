@@ -79,3 +79,15 @@ Join/exit service lines relay with `disable_notification` per owner direction (v
 never pinging); promote/demote lines still notify normally. First landed as a drop, then corrected:
 silence means no ping, not gone. Verified: `deno task verify` chain only (no live WA/TG smoke in
 this environment).
+
+## D08 - Group settings menu with member browser (2026-10-08)
+
+`/group` in a group topic opens one menu message edited in place (menu, paged member list, search
+results, member card), so 1000+ rosters cost a single message: one WA `groupMetadata` fetch cached
+60s, pages of 8, tiny callback payloads (`gm:<tok>:<op>:<arg>`, JIDs stay server-side in capped
+15min sessions), in-memory search filter. Search arms a 60s intercept: the user's next typed
+non-command message in the topic is consumed and deleted instead of relaying to WhatsApp (needs bot
+delete rights; without them the query stays visible but search still runs). Member card offers
+start-chat mirroring `/new` (verify, topic in the same group, mapping, profile card, duplicate
+guard). Menu also toggles mute and personal/business moves (business wipes per D05). Verified:
+`deno task verify` chain only (no live WA/TG smoke in this environment).

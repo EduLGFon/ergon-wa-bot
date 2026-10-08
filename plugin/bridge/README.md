@@ -75,6 +75,9 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
 - `/mute` / `/unmute` - freeze/resume relay in both directions for this topic (mapping kept)
 - `/new <phone> [name]` - verify a number on WhatsApp and bridge it into a fresh topic (inherits the
   group you run it in; classified at once, so no buttons are attached)
+- `/group` - group settings menu in a group topic: paged member browser, type-to-search (your query
+  is deleted after reading, never reaches WhatsApp), member card with start-chat, plus mute and
+  personal/business toggles. Needs bot delete rights for the query cleanup.
 
 ## Known Limitations
 
