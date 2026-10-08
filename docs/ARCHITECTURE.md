@@ -26,10 +26,11 @@ directory, file, data flow, and convention so you can locate code fast.
 
 ## 2. Tech stack
 
-- Runtime: Deno 2.x only. Package deps via `deno.jsonc` import map.
-- WhatsApp: `npm:@whiskeysockets/baileys@7.0.0-rc14` (pinned).
-- Telegram: `npm:grammy@1.46.0/web` (the `/web` fetch-based adapter, no Node http server; chosen for
-  Deno compatibility).
+- Runtime: Deno 2.x only. Package deps via `deno.jsonc` import map (exact pins live there, not
+  here).
+- WhatsApp: Baileys (`npm:@whiskeysockets/baileys`).
+- Telegram: grammy (`npm:grammy/web` - the `/web` fetch-based adapter, no Node http server; chosen
+  for Deno compatibility).
 - DB: `drizzle-orm` + `postgres` (postgres-js) + `drizzle-kit` migrations.
 - AI: `npm:@google/genai` (Gemini chat + file upload).
 - Media: `sharp` (static stickers), system `ffmpeg` (animated stickers), `node-webpmux` (WebP EXIF),

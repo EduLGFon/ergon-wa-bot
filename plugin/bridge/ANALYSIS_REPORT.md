@@ -2,8 +2,7 @@
 
 ## Library
 
-- **Library**: Baileys (`@whiskeysockets/baileys@7.0.0-rc14`)
-- **Version**: `7.0.0-rc14`
+- **Library**: Baileys (`npm:@whiskeysockets/baileys`, exact pin in `deno.jsonc`)
 - **Runtime**: Deno
 
 ## Incoming Messages
@@ -34,7 +33,7 @@
 
 ## Persistence Layer
 
-- **DB**: Drizzle ORM with PostgreSQL (`drizzle-orm@0.45.2`, `postgres@3.4.9`)
+- **DB**: Drizzle ORM with PostgreSQL (`drizzle-orm` + `postgres`, pins in `deno.jsonc`)
 - **Schema**: Defined in `conf/schema.ts` (tables: `users`, `msgs`, `authCreds`, `authKey`)
 - **File-based fallback**: `useMultiFileAuthState('conf/gen/auth')` when no `DATABASE_URL` is set
 - **Recommendation**: Use SQLite for the bridge's mapping store to keep it independent of the main
