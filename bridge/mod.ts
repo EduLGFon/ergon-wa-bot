@@ -67,19 +67,46 @@ export function reattachBridge(): void {
 	slowFloodCatchUp(activeBridge.tgLimiter, activeBridge.tgBusinessLimiter)
 }
 
+// Stops Telegram polling and closes the pairing DB so process shutdown
+// (SIGINT/SIGTERM via wa.ts onExit) never leaves long-poll or WAL handles
+// behind. Safe to call when the bridge is disabled or already stopped.
+export function stopBridge(): void {
+	if (catchUpRestoreTimer) {
+		clearTimeout(catchUpRestoreTimer)
+		catchUpRestoreTimer = undefined
+	}
+	const b = activeBridge
+	activeBridge = null
+	if (!b) return
+	try {
+		b.tg.stop()
+	} catch (e) {
+		print('BRIDGE', `stop polling failed: ${(e as Error)?.message || e}`, 'yellow')
+	}
+	try {
+		b.db.close()
+	} catch (e) {
+		print('BRIDGE', `close db failed: ${(e as Error)?.message || e}`, 'yellow')
+	}
+}
+
 export function startBridge(): Bot | null {
 	const token = Deno.env.get('TELEGRAM_BOT_TOKEN')
 	const groups = groupIds()
 
 	if (!token || !groups.personal) {
-		console.log(
-			'[BRIDGE] disabled: set TELEGRAM_BOT_TOKEN and TELEGRAM_SUPERGROUP_PERSONAL (or legacy TELEGRAM_SUPERGROUP_ID) to enable',
+		print(
+			'BRIDGE',
+			'disabled: set TELEGRAM_BOT_TOKEN and TELEGRAM_SUPERGROUP_PERSONAL (or legacy TELEGRAM_SUPERGROUP_ID) to enable',
+			'gray',
 		)
 		return null
 	}
 	if (!isDual(groups)) {
-		console.log(
-			'[BRIDGE] single-group mode: set TELEGRAM_SUPERGROUP_BUSINESS to split personal/business.',
+		print(
+			'BRIDGE',
+			'single-group mode: set TELEGRAM_SUPERGROUP_BUSINESS to split personal/business.',
+			'gray',
 		)
 	}
 
@@ -119,7 +146,7 @@ export function startBridge(): Bot | null {
 	// so boot never blocks on it; mentions stay plain text until it lands.
 	void resolveOwnerIdentity(tg, groups.personal)
 
-	tg.catch((e) => console.error('[BRIDGE] Telegram handler error:', e))
+	tg.catch((e) => print('BRIDGE', `Telegram handler error: ${e}`, 'red'))
 	// Fire-and-forget: bot.start() long-polls until stopped; never await it
 	// here or wa.ts would never finish booting.
 	//
@@ -136,12 +163,12 @@ export function startBridge(): Bot | null {
 			'callback_query',
 			'poll_answer',
 		],
-	}).catch((e) => console.error('[BRIDGE] Telegram polling stopped:', e))
+	}).catch((e) => print('BRIDGE', `Telegram polling stopped: ${e}`, 'red'))
 	for (const gid of [...new Set([groups.personal, groups.business])]) {
 		void checkReactionPrereqs(tg, gid)
 	}
 
-	console.log('[BRIDGE] running: WhatsApp <-> Telegram topic mirror active')
+	print('BRIDGE', 'running: WhatsApp <-> Telegram topic mirror active', 'green')
 	return tg
 }
 
@@ -193,16 +220,20 @@ async function checkReactionPrereqs(tg: Bot, supergroupId: string): Promise<void
 			| null
 		if (!member) return
 		if (member.status !== 'administrator' && member.status !== 'creator') {
-			console.warn(
-				`[BRIDGE] Telegram reactions need the bot to be an administrator of the supergroup (currently: ${member.status}). ` +
-					'TG→WA reactions will not arrive until it is promoted.',
+			print(
+				'BRIDGE',
+				`Telegram reactions need the bot to be an administrator of the supergroup (currently: ${member.status}). ` +
+					'TG-to-WA reactions will not arrive until it is promoted.',
+				'yellow',
 			)
 			return
 		}
 		if (member.status === 'administrator' && member.can_pin_messages === false) {
-			console.warn(
-				'[BRIDGE] WA pin sync needs the bot to pin messages in the supergroup (currently disallowed). ' +
+			print(
+				'BRIDGE',
+				'WA pin sync needs the bot to pin messages in the supergroup (currently disallowed). ' +
 					'WA pins will fail until pin rights are granted.',
+				'yellow',
 			)
 		}
 	} catch {
