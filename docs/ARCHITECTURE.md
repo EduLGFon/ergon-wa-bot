@@ -60,7 +60,7 @@ plugin/                  # services: bot, authState, db, cache, deletedStore,
                          # calendarParser + calendar/, sticker/, removeBg.py,
                          # bridge.ts (bridge plugin facade) + bridge/ (WA<->TG
                          # relay: own deno.jsonc, mod/db/format/rate-limiter
-                         # facades, wa-to-tg/ (35 modules), tg-to-wa/ (11 modules))
+                         # facades, wa-to-tg/ (36 modules), tg-to-wa/ (11 modules))
 util/ (14 files)         # handler, proto, locale, msgTools, msgAbstractions,
                          # geminiApi, functions, emojis, weather, menuParser,
                          # calendarAnalytics, bulletinTitles, dailySummary
@@ -375,7 +375,7 @@ without touching WA.
   retries unbounded, droppable (notice/service-line/prompt/edit-topic/new-topic/cleanup) gives up
   after 3 flood retries and sheds immediately when depth over 400. Queue cap 500, parked waiters cap
   1000 with 60s max park, `isQueueDrop` marks intentional sheds.
-- WA->TG (`wa-to-tg.ts` facade + 35 modules): `relay.ts` attaches eight socket listeners (upsert,
+- WA->TG (`wa-to-tg.ts` facade + 36 modules): `relay.ts` attaches eight socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups, contacts); `incoming.ts` is the main
   loop (skip protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via
   `jid.ts`, resolve/create topic in the chat's group, mentions, media download, special-content
