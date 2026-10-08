@@ -89,44 +89,22 @@ export async function runResetStrong() {
 		return
 	}
 	try {
-		console.log('Loading Prisma Client...')
-		// Import generated client
-		const { PrismaClient } = await import('@conf/gen/prisma/client.ts')
-		let prisma: any
-
-		try {
-			const { PrismaPg } = await import('@prisma/adapter-pg')
-			const adapter = new PrismaPg({ connectionString: Deno.env.toObject().DATABASE_URL })
-			prisma = new PrismaClient({ adapter })
-		} catch (_e) {
-			//@ts-ignore Fallback to standard PrismaClient
-			prisma = new PrismaClient()
+		console.log('Connecting to database...')
+		// Lazy imports so plain env configuration never touches the DB driver.
+		const { db } = await import('@db')
+		const schema = await import('@conf/schema.ts')
+		if (!db) {
+			console.error('Error: database client unavailable. Cannot truncate database.')
+			return
 		}
 
-		console.log('Connecting to database...')
-		await prisma.$connect()
-
 		console.log('Truncating key and credential tables...')
-		const keyResult = await prisma.authKey.deleteMany()
-			.catch((e: any) => ({ count: 0, error: e }))
+		const keys = await db.delete(schema.authKey).returning()
+		console.log(`  Deleted ${keys.length} auth keys.`)
 
-		if ('error' in keyResult && keyResult.error) {
-			console.warn(
-				'  Warning: Could not delete authKeys:',
-				keyResult.error.message || keyResult.error,
-			)
-		} else console.log(`  Deleted ${keyResult.count} auth keys.`)
+		const creds = await db.delete(schema.authCreds).returning()
+		console.log(`  Deleted ${creds.length} credentials.`)
 
-		const credsResult = await prisma.authCreds.deleteMany()
-			.catch((e: any) => ({ count: 0, error: e }))
-		if ('error' in credsResult && credsResult.error) {
-			console.warn(
-				'  Warning: Could not delete authCreds:',
-				credsResult.error.message || credsResult.error,
-			)
-		} else console.log(`  Deleted ${credsResult.count} credentials.`)
-
-		await prisma.$disconnect()
 		console.log('Strong Reset completed.')
 	} catch (e: any) {
 		console.error('Failed to execute database truncation:', e.message || e)
