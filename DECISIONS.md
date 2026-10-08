@@ -29,3 +29,19 @@ updates flow on fresh installs without a manual bump per release. Ranges still e
 minors on 0.x packages); both `deno.lock` files stay committed and exact, and blanket major upgrades
 remain forbidden without review. Docs and `agents.md` name packages without versions and point at
 the import maps as the range source.
+
+## D04 - Pinned WA profile card per bridge topic (2026-10-08)
+
+Each new bridge topic opens with a pinned profile card: the WA profile photo (DM avatar or group
+icon via `profilePictureUrl(..., 'image')`) plus the about/status text (DMs via `fetchStatus`,
+groups via `groupMetadata.desc`), sent through the normal flood queue and pinned with
+`pinChatMessage`. Picture changes arrive as `contacts.update` with `imgUrl` changed/removed (Baileys
+emits this for both DMs and groups); the handler re-sends the card, unpins the previous card message
+(kept as history, never deleted) and pins the fresh one. About text has no push event, so it is a
+snapshot at each card send. A hidden photo degrades to a text-only card, never a failure. Only new
+topics get cards plus later change events: pre-existing mappings get no backfill. Storage is three
+safe-ADD `mappings` columns (`profile_pic_url`, `profile_about`, `profile_msg_id`) holding the last
+seen state plus the card message id for unpin; pic URLs may carry tokens, so they live only in the
+local bridge DB (same trust level as `reply_map` content) and are never logged. Needs the bot to
+have pin rights in the supergroup (same prerequisite as WA pin sync, already warned at boot).
+Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).

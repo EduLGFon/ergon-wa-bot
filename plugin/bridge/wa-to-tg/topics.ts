@@ -14,34 +14,39 @@ import { createForumTopic, sanitizeTopicName } from './chat.ts'
 // never clobbers the contact name; `aliases` registers every seen LID/PN
 // variant onto the canonical JID. New chats open in the default (personal)
 // group; the returned chatId is where every follow-up send must go.
+// `isNew` is true only when the topic was created by this call, so the
+// caller can post one-off new-topic extras (profile card) without
+// backfilling pre-existing chats.
 export async function ensureTopicMapping(
 	jid: string,
 	displayName: string,
 	chatType: '1:1' | 'group',
 	isGroup: boolean,
 	opts: { canRename?: boolean; aliases?: string[] } = {},
-): Promise<{ topicId: number; chatId: string } | null> {
+): Promise<{ topicId: number; chatId: string; isNew: boolean } | null> {
 	const pending = inflightTopics.get(jid)
 	if (pending) {
-		const topicId = await pending
+		const { topicId } = await pending
 		const { db, groups } = relayCtx
 		const mapping = db?.getByJidOrAlias(jid)
 		if (!mapping || mapping.muted) return null
 		return {
 			topicId: mapping.telegram_topic_id ?? topicId,
 			chatId: mapping.telegram_chat_id || groups.personal,
+			isNew: false,
 		}
 	}
 	const task = createOrRefreshMapping(jid, displayName, chatType, isGroup, opts)
 	inflightTopics.set(jid, task)
 	try {
-		const topicId = await task
+		const { topicId, isNew } = await task
 		const { db, groups } = relayCtx
 		const mapping = db?.getByJidOrAlias(jid)
 		if (!mapping || mapping.muted) return null
 		return {
 			topicId: mapping.telegram_topic_id ?? topicId,
 			chatId: mapping.telegram_chat_id || groups.personal,
+			isNew,
 		}
 	} finally {
 		if (inflightTopics.get(jid) === task) inflightTopics.delete(jid)
@@ -54,7 +59,7 @@ async function createOrRefreshMapping(
 	chatType: '1:1' | 'group',
 	isGroup: boolean,
 	opts: { canRename?: boolean; aliases?: string[] },
-): Promise<number> {
+): Promise<{ topicId: number; isNew: boolean }> {
 	const { db, tg, groups } = relayCtx
 	if (!db) throw new Error('Bridge DB not initialized')
 	const canRename = opts.canRename ?? true
@@ -89,7 +94,7 @@ async function createOrRefreshMapping(
 			db.setPromptMsgId(jid, known.prompt_msg_id)
 			rememberAliases()
 			db.updateLastActive(jid)
-			return known.telegram_topic_id
+			return { topicId: known.telegram_topic_id, isNew: false }
 		}
 	}
 	let mapping = db.getByJidOrAlias(jid)
@@ -103,13 +108,13 @@ async function createOrRefreshMapping(
 		const freshTopicId = await createForumTopic(displayName, isGroup, home)
 		mapping = db.getOrCreate(jid, freshTopicId, displayName, chatType, home)
 		rememberAliases()
-		return mapping.telegram_topic_id
+		return { topicId: mapping.telegram_topic_id, isNew: true }
 	}
 	rememberAliases()
 	if (mapping.display_name !== displayName) {
 		if (!canRename) {
 			db.updateLastActive(jid)
-			return mapping.telegram_topic_id
+			return { topicId: mapping.telegram_topic_id, isNew: false }
 		}
 		mapping = db.getOrCreate(
 			jid,
@@ -136,5 +141,5 @@ async function createOrRefreshMapping(
 	} else {
 		db.updateLastActive(jid)
 	}
-	return mapping.telegram_topic_id
+	return { topicId: mapping.telegram_topic_id, isNew: false }
 }

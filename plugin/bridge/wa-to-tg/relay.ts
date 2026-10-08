@@ -12,6 +12,7 @@ import { relayCtx, setRelayCtx } from './state.ts'
 import { handleWAMessages } from './incoming.ts'
 import { handleWaDeletes } from './deletes.ts'
 import { handleWaEdits } from './edits.ts'
+import { handleProfilePictureChange } from './profile-events.ts'
 import type { proto, WACallEvent } from 'baileys'
 import type { BridgeDB } from '../db.ts'
 import type { Bot } from 'grammy'
@@ -96,5 +97,18 @@ export function attachWaRelay(
 			console.error('[BRIDGE] WA-TO-TG group update failed:', e)
 		}
 	})
+	// Profile picture changes (DMs and group icons) arrive as contacts.update
+	// with imgUrl changed/removed - re-send the pinned profile card. About
+	// text has no push event, so it refreshes as a snapshot on each card.
+	bot.sock.ev.on(
+		'contacts.update',
+		async (updates: { id?: string; imgUrl?: string | null }[]) => {
+			try {
+				await handleProfilePictureChange(updates)
+			} catch (e) {
+				console.error('[BRIDGE] WA-TO-TG profile event failed:', e)
+			}
+		},
+	)
 	console.log('[BRIDGE] WA-TO-TG relay attached to the shared WhatsApp socket')
 }

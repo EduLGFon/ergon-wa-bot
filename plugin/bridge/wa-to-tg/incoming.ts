@@ -16,6 +16,7 @@ import { handleWaPollResults, handleWaPollVote, msgSecretOf } from './polls.ts'
 import { handleWaSecretEdit } from './secret-edits.ts'
 import { getRichNotice } from './rich.ts'
 import { handleWaPin } from './pins.ts'
+import { syncProfileCard } from './profile.ts'
 import { downloadWaMedia } from './media.ts'
 import { findKey } from '@util/functions.ts'
 import { dispatchPrepared } from './dispatch.ts'
@@ -120,6 +121,23 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// Local number-typed alias: the outer topicId stays nullable for
 			// the catch-block notify, but everything below needs a number.
 			const tid: number = topicId
+			// Fresh topics open with the pinned profile card first (photo
+			// plus about/desc when visible, text fallback otherwise), so the
+			// first message never lands in an anonymous topic. Best effort -
+			// a card failure never blocks the relay below.
+			if (ensured.isNew) {
+				await syncProfileCard({
+					jid,
+					aliases,
+					displayName,
+					chatType,
+					isGroup,
+					topicId: tid,
+					chatId: cid,
+				}, { force: true }).catch((e) =>
+					console.error('[BRIDGE] new-topic profile card failed:', e)
+				)
+			}
 
 			// Owner mentions become real Telegram pings downstream: match
 			// individual mentions against the owner's WA JIDs, @all always

@@ -23,6 +23,12 @@ export interface MappingRow {
 	// Bot prompt message asking personal-or-business (button taps resolve
 	// the chat through this ID - callback payloads are capped at 64 bytes).
 	prompt_msg_id: number | null
+	// Pinned profile card state (see DECISIONS.md#D04): last seen WA pic URL
+	// plus about/desc text plus the Telegram card message id, so picture
+	// changes re-send and re-pin without deleting history.
+	profile_pic_url: string | null
+	profile_about: string | null
+	profile_msg_id: number | null
 }
 
 // Personal/business bucket for dual-supergroup routing.
@@ -86,6 +92,9 @@ function toMapping(row: Record<string, unknown>): MappingRow {
 		telegram_chat_id: typeof row.telegram_chat_id === 'string' ? row.telegram_chat_id : '',
 		bucket: row.bucket === 'personal' || row.bucket === 'business' ? row.bucket : 'undecided',
 		prompt_msg_id: typeof row.prompt_msg_id === 'number' ? row.prompt_msg_id : null,
+		profile_pic_url: typeof row.profile_pic_url === 'string' ? row.profile_pic_url : null,
+		profile_about: typeof row.profile_about === 'string' ? row.profile_about : null,
+		profile_msg_id: typeof row.profile_msg_id === 'number' ? row.profile_msg_id : null,
 	}
 }
 
@@ -169,6 +178,17 @@ export class BridgeDB {
 		}
 		if (!mapCols.some((c) => c.name === 'prompt_msg_id')) {
 			this.db.exec(`ALTER TABLE mappings ADD COLUMN prompt_msg_id INTEGER DEFAULT NULL`)
+		}
+		// Pinned profile card columns (see DECISIONS.md#D04). Same safe-ADD
+		// pattern: existing rows read back as nulls (no card yet, no backfill).
+		if (!mapCols.some((c) => c.name === 'profile_pic_url')) {
+			this.db.exec(`ALTER TABLE mappings ADD COLUMN profile_pic_url TEXT DEFAULT NULL`)
+		}
+		if (!mapCols.some((c) => c.name === 'profile_about')) {
+			this.db.exec(`ALTER TABLE mappings ADD COLUMN profile_about TEXT DEFAULT NULL`)
+		}
+		if (!mapCols.some((c) => c.name === 'profile_msg_id')) {
+			this.db.exec(`ALTER TABLE mappings ADD COLUMN profile_msg_id INTEGER DEFAULT NULL`)
 		}
 		// Topic IDs collide across groups - every TG→WA lookup is (chat, topic).
 		this.db.exec(
@@ -314,6 +334,9 @@ export class BridgeDB {
 			telegram_chat_id: chatId,
 			bucket: 'undecided',
 			prompt_msg_id: null,
+			profile_pic_url: null,
+			profile_about: null,
+			profile_msg_id: null,
 		}
 
 		this.db
@@ -425,6 +448,23 @@ export class BridgeDB {
 			msgId,
 			jid,
 		)
+	}
+
+	// Remember the last pinned profile card for a chat (see DECISIONS.md#D04).
+	// Null picUrl means no visible photo (text-only card); null msgId clears.
+	setProfile(
+		jid: string,
+		picUrl: string | null,
+		about: string | null,
+		msgId: number | null,
+	): void {
+		try {
+			this.db.prepare(
+				'UPDATE mappings SET profile_pic_url = ?, profile_about = ?, profile_msg_id = ? WHERE whatsapp_jid = ?',
+			).run(picUrl, about, msgId, jid)
+		} catch {
+			// Best effort - a lost card only re-sends on the next change.
+		}
 	}
 
 	// Stamp rows that predate per-group identity (mappings + any reply rows

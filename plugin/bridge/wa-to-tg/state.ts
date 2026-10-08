@@ -61,7 +61,7 @@ const MAX_NAME_CACHE = 500
 
 // In-flight topic creations by canonical JID. Concurrent upserts for a new
 // chat must await the first creation instead of opening a second topic.
-export const inflightTopics = new Map<string, Promise<number>>()
+export const inflightTopics = new Map<string, Promise<{ topicId: number; isNew: boolean }>>()
 
 export function cacheGroupName(jid: string, name: string): void {
 	groupNameCache.set(jid, name)

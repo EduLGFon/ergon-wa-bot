@@ -126,6 +126,9 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   `docs/ARCHITECTURE.md` §14), with a live tally message (counts, percentages, voters). Sent TG
   polls can't be re-edited and WA poll payloads are immutable, so close/stop isn't mirrored.
 - Group joins/leaves/admin changes post service lines; renames also rename the topic.
+- New topics open with a pinned profile card (WA photo + about for DMs, icon + description for
+  groups; text-only when the photo is hidden). Photo changes re-send and re-pin the card, keeping
+  the old one as history. Needs pin rights in the supergroup.
 - `General`-topic messages (no `message_thread_id`) are ignored except commands.
 - Captions over 1024 chars arrive as media + follow-up text message.
 - WhatsApp `view-once` media is relayed after unwrapping (privacy note: it becomes a normal Telegram
