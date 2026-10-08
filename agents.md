@@ -40,7 +40,7 @@ Reconciling `plan.md`, `docs/ARCHITECTURE.md`, and this file:
   three as one contract.
 - Ambiguity handling: `plan.md` lists numbered tasks in landing order without an ambiguity rule.
   Combined rule: ask the owner before deciding when the ambiguity affects security, privacy,
-  authentication or authorization, persisted data or schema (`conf/schema.ts`, `bridge/db.ts` reply
+  authentication or authorization, persisted data or schema (`conf/schema.ts`, `plugin/bridge/db.ts` reply
   map, Postgres auth tables), public contracts (command names, aliases, usage keys, WA-to-TG /
   TG-to-WA bridge behavior, locale keys), or the landing order in `plan.md`. For everything else,
   choose the simplest option that satisfies every MUST rule, record a short ADR in `DECISIONS.md`,
@@ -69,8 +69,8 @@ root file on demand rather than claiming it already exists.
   chat + file upload); media via `sharp`, system `ffmpeg`, `node-webpmux`, Python venv (`rembg`,
   `onnxruntime`, `yt-dlp`); i18n via `i18next` with a custom Deno file backend; QR render via
   `jsr:@libs/qrcode`.
-- Package manager: Deno with the import map in `deno.jsonc` (root) and `bridge/deno.jsonc` (bridge
-  scope, same pins); `deno.lock` plus `bridge/deno.lock` committed; npm consumed through Deno
+- Package manager: Deno with the import map in `deno.jsonc` (root) and `plugin/bridge/deno.jsonc` (bridge
+  scope, same pins); `deno.lock` plus `plugin/bridge/deno.lock` committed; npm consumed through Deno
   (`npm:` specifiers), `node_modules/` never hand-edited; `pip` only inside `conf/gen/python`
   (`deno task setup:py`, `update:py`). Regenerate lockfiles with the package manager, never by hand.
 - Import convention: path aliases `@class/`, `@cmd/`, `@conf/`, `@event/`, `@plugin/`, `@util/`,
@@ -94,7 +94,8 @@ root file on demand rather than claiming it already exists.
   description`, e.g.
   `fix(chart): ...`; types `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `perf`, `security`).
   One commit per small logical change; group files only when together they implement a single thing;
-  never bundle unrelated changes.
+  never bundle unrelated changes. Keep every commit small: prefer a series of
+  small commits over one large commit, and commit each logical change as soon as its checks pass.
 - Documentation sources: `docs/ARCHITECTURE.md` plus the root files `README.md`, `plan.md`,
   `agents.md`, `todo.md`, `conf/.env.example` (and `DECISIONS.md`, `CHANGELOG.md`, `SECURITY.md`
   once created).
@@ -114,7 +115,7 @@ root file on demand rather than claiming it already exists.
 - Preserve existing behavior unless the requested change intentionally modifies it.
 - When requirements are ambiguous, infer from established project conventions when possible, then
   apply the combined ambiguity rule from section 1.
-- Research Baileys and grammy behavior from the code (`event/`, `bridge/`) and official sources
+- Research Baileys and grammy behavior from the code (`event/`, `plugin/bridge/`) and official sources
   before building on an assumption they cover. Anything marked to be verified against upstream
   (Baileys message shapes, Bot API limits, store policies) must be checked and the result recorded
   in `DECISIONS.md`.
@@ -161,11 +162,18 @@ Files and Modules
   responsibilities. Follow the loader convention when splitting: one `cmd/<category>/<name>.ts` per
   command (name comes from the filename), one `event/<category>/<file>.ts` per Baileys event
   (`category.file` must equal the event name), one bridge module per concern under
-  `bridge/wa-to-tg/` or `bridge/tg-to-wa/`.
+  `plugin/bridge/wa-to-tg/` or `plugin/bridge/tg-to-wa/`.
 - Do not split cohesive code merely to satisfy a line-count target. Splitting a cohesive module
   across files can hurt readability more than a slightly longer file helps it; keep it whole when
   the logic reads best in one place.
 - Avoid modules that mix unrelated responsibilities. Avoid overly large files and complex syntax.
+- Order files and folders by logical meaning so the tree reads like the system: group by domain or
+  flow direction (for example `cmd/<category>/`, `event/<category>/`, `plugin/bridge/wa-to-tg/` versus
+  `plugin/bridge/tg-to-wa/`), name each file after the single concept it owns, keep one facade or index at
+  the folder root when a folder needs an entry point, and place a new file next to its siblings in
+  flow order rather than in a catch-all or unrelated folder. When the existing layout violates this
+  (a folder mixing unrelated concerns or a file sitting far from its logical siblings), flag it in
+  `DECISIONS.md` instead of silently extending the mess.
 
 Comments
 
@@ -191,8 +199,8 @@ Types and Boundaries
 - Validate external or untrusted data at the system boundary: inbound Baileys payloads are parsed by
   `util/msgTools.ts:getCtx` into a typed `CmdCtx` (chat, author, type filter, prefix parse) and
   anything outside the known `coolTypes` set is dropped; outbound payloads are built only in
-  `util/msgAbstractions.ts` and `bridge/tg-to-wa/content.ts`; bridge bodies pass through
-  `bridge/format.ts` entity converters with size caps before use.
+  `util/msgAbstractions.ts` and `plugin/bridge/tg-to-wa/content.ts`; bridge bodies pass through
+  `plugin/bridge/format.ts` entity converters with size caps before use.
 - Keep internal code operating on validated, well-defined data.
 - Never silently swallow errors.
 - Put units in names (`intervalMs`, `rateLimitMs`, `sizeBytes`, `durationS`).
@@ -244,11 +252,11 @@ Dependencies
   `util/msgAbstractions.ts` (`sendMsg`, `reactToMsg`, `startTyping`); the bridge shares the same WA
   socket (a second socket causes stream-conflict logouts) and attaches after `loadEvents()` and
   reattaches after every reconnect. `class/` holds domain models, `util/` holds shared pure-ish
-  helpers, `plugin/` holds stateful services, `conf/` holds schema plus env plus defaults, `bridge/`
+  helpers, `plugin/` holds stateful services, `conf/` holds schema plus env plus defaults, `plugin/bridge/`
   holds facades plus the two direction module dirs.
 - Separate business logic, presentation, transport, persistence, and infrastructure concerns when
   appropriate. Command `run()` holds the business logic; `msgAbstractions` owns transport;
-  `plugin/db.ts`, `plugin/cache.ts`, `plugin/deletedStore.ts`, and `bridge/db.ts` own persistence;
+  `plugin/db.ts`, `plugin/cache.ts`, `plugin/deletedStore.ts`, and `plugin/bridge/db.ts` own persistence;
   widgets and formatters hold no business logic.
 - Keep shared logic in appropriate shared modules rather than duplicating it (`functions.ts` delays,
   `emojis.ts` maps, `format.ts` converters, `msgTools.ts` parsing).
@@ -259,7 +267,7 @@ Dependencies
 - Improve an existing abstraction instead of creating a parallel implementation when practical.
 - Single-owner rules: `util/msgAbstractions.ts` is the only outbound touchpoint;
   `util/msgTools.ts:getCtx` is the only inbound parser; `event/connection/update.ts` owns
-  reconnects; `plugin/cache.ts` owns cache bounds; `bridge/db.ts` owns pairing plus the reply map
+  reconnects; `plugin/cache.ts` owns cache bounds; `plugin/bridge/db.ts` owns pairing plus the reply map
   plus echo guards.
 
 Dynamic Data and Scalability
@@ -572,9 +580,9 @@ filtering, reply-map scoping, topic guards, rate-limiter shed). Start from `docs
   `locale/pt.json`) rather than generated output.
 - Regenerate generated files using the project's official tooling (`deno task db:gen`,
   `deno task setup:py`, `deno task update:py`, `deno task postinstall`, bridge migrations in
-  `bridge/db.ts`).
+  `plugin/bridge/db.ts`).
 - Do not commit generated files unless project conventions require them. Lockfiles (`deno.lock`,
-  `bridge/deno.lock`) are committed; everything in `.gitignore` stays out.
+  `plugin/bridge/deno.lock`) are committed; everything in `.gitignore` stays out.
 - Keep temporary outputs, debug artifacts, experiments, and scratch files out of the repository
   root.
 - Store agent-created helper scripts in `scripts/` (current: bridge diagnostics plus calendar dump
@@ -649,7 +657,7 @@ changes) when the change warrants it.
 - When a breaking change is required, identify affected consumers and update relevant docs and
   diagnostics (`docs/ARCHITECTURE.md`, `plan.md`, `scripts/bridge_*.ts` where applicable).
 - Schema changes go through forward-only drizzle-kit artifacts from `conf/schema.ts`
-  (`deno task db:gen` / `db:push` / `db:pull`) and safe-ADD migrations in `bridge/db.ts` (with boot
+  (`deno task db:gen` / `db:push` / `db:pull`) and safe-ADD migrations in `plugin/bridge/db.ts` (with boot
   purges for mixed rows where documented). Never edit a merged migration after it has landed.
 - Make migrations reproducible and version-controlled.
 - Consider existing data, rollback behavior, compatibility, and destructive effects before changing
