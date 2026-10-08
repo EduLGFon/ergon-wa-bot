@@ -5,8 +5,8 @@
 // persists in reply_map.wa_poll_tally and renders as a single message
 // replied under the poll, edited on each vote:
 //   📊 3 votes
-//   A — 2 (67%) — You, Alice
-//   B — 1 (33%) — Bob
+//   A - 2 (67%) - You, Alice
+//   B - 1 (33%) - Bob
 // Echoes of our own TG-TO-WA votes pass through unchanged - applying a
 // voter's selection is idempotent, so no echo guard is needed. Deletes the
 // tally when the last voter leaves, and re-posts fresh if the tally message
@@ -67,13 +67,13 @@ export function renderTally(options: string[], t: TallyState): string {
 		.map((opt, index) => {
 			const who = voters.filter((v) => v.opts.includes(opt)).map((v) => v.name).sort()
 			const count = who.length
-			if (count === 0) return { count, index, line: `${opt} — 0 (0%)` }
+			if (count === 0) return { count, index, line: `${opt} - 0 (0%)` }
 			const pct = Math.round((count * 100) / total)
 			const shown = who.slice(0, MAX_NAMES_PER_LINE).join(', ')
 			const more = who.length > MAX_NAMES_PER_LINE
 				? ` +${who.length - MAX_NAMES_PER_LINE} more`
 				: ''
-			return { count, index, line: `${opt} — ${count} (${pct}%) — ${shown}${more}` }
+			return { count, index, line: `${opt} - ${count} (${pct}%) - ${shown}${more}` }
 		})
 		.sort((a, b) => b.count - a.count || a.index - b.index)
 	return `📊 ${total} vote${total === 1 ? '' : 's'}\n${rows.map((r) => r.line).join('\n')}`
