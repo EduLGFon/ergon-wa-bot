@@ -452,7 +452,8 @@ tables), plus a manual `.env` parser.
 
 - Imports in every file sorted descending by line length (longest first), keeping logical statement
   order (do not break code to satisfy order).
-- No file over 150 lines - split into small modules or folders.
+- File size is a soft guideline, not a hard budget: about 150 lines per file, review for splitting
+  near 300. Functions stay around 40 lines or less.
 - Every file starts with a `//` header comment (what + why); functions and non-obvious code get
   comments.
 - Clean Code, SOLID, KISS, YAGNI, DRY; small pure single-responsibility functions, composition over
