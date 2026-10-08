@@ -26,11 +26,11 @@ previous standalone approach.
 - **Mapping store** (`db.ts`): SQLite at `conf/gen/bridge.db` —
   `mappings(whatsapp_jid ↔ telegram_topic_id, telegram_chat_id, bucket, …)` + `reply_map` keyed by
   `(tg_chat_id, tg_msg_id)` + `jid_aliases` for LID/PN variants.
-- **Rate limiting** (`rate-limiter.ts`): one global FIFO queue for **Telegram** API calls (shared
-  across both groups, so stricter than either group's budget), plus a separate light queue for
-  WhatsApp sends. Every `tg.api.*` call is its own queue slot with ~3s spacing; on a 429 the failing
-  send is retried after the server's `retry_after` and the whole queue pauses — no more 429 cascades
-  or silent drops.
+- **Rate limiting** (`rate-limiter.ts`): one FIFO queue per Telegram supergroup (personal and
+  business lanes have separate budgets, so a business burst never stalls personal), plus a separate
+  light queue for WhatsApp sends. Every `tg.api.*` call is its own queue slot with ~3s spacing; on a
+  429 the failing send is retried after the server's `retry_after` and the lane pauses with adaptive
+  spacing — no more 429 cascades or silent drops.
 
 ## Telegram Bot Setup Steps
 
@@ -123,8 +123,8 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
 - Polls cross natively both ways with live vote sync: WA creation mirrors as a non-anonymous TG poll
   (every payload version, option images unwrapped to text), TG-created polls become native WA polls,
   and votes on either side decrypt/encrypt into the other via the `reply_map` poll metadata (see
-  `plan.md` §6), with a live tally message (counts, percentages, voters). Sent TG polls can't be
-  re-edited and WA poll payloads are immutable, so close/stop isn't mirrored.
+  `docs/ARCHITECTURE.md` §14), with a live tally message (counts, percentages, voters). Sent TG
+  polls can't be re-edited and WA poll payloads are immutable, so close/stop isn't mirrored.
 - Group joins/leaves/admin changes post service lines; renames also rename the topic.
 - `General`-topic messages (no `message_thread_id`) are ignored except commands.
 - Captions over 1024 chars arrive as media + follow-up text message.
