@@ -754,5 +754,5 @@ changes) when the change warrants it.
 - Run long commands (full `verify`, venue scrapes, media soaks, bulk bridge diagnostics) in the
   background and keep doing other useful work; never poll for completion.
 - Batch independent reads and independent tool calls in one block.
-- Do not re-run checks that already passed for the current tree. Re-verify only what the latest
-  change could affect, and say what was skipped and why.
+- After every change run the full verify chain with no file arguments (`deno task verify`, covering
+  `check` plus `lint` plus `fmt --check`). Do not limit verification to modified files.
