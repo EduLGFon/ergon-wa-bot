@@ -75,6 +75,7 @@ and `edits.ts`. Verified: `deno task verify` chain only (no live WA/TG smoke in 
 
 ## D07 - Silent group joins/exits (2026-10-08)
 
-Join/exit service lines are dropped in `handleGroupParticipants` per owner direction; only
-promote/demote lines still relay. No toggle: the owner wants them gone everywhere. Verified:
-`deno task verify` chain only (no live WA/TG smoke in this environment).
+Join/exit service lines relay with `disable_notification` per owner direction (visible in the topic,
+never pinging); promote/demote lines still notify normally. First landed as a drop, then corrected:
+silence means no ping, not gone. Verified: `deno task verify` chain only (no live WA/TG smoke in
+this environment).

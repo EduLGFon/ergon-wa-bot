@@ -128,8 +128,8 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   and votes on either side decrypt/encrypt into the other via the `reply_map` poll metadata (see
   `docs/ARCHITECTURE.md` §14), with a live tally message (counts, percentages, voters). Sent TG
   polls can't be re-edited and WA poll payloads are immutable, so close/stop isn't mirrored.
-- Group joins and exits stay silent; admin changes (promote/demote) post service lines. Renames also
-  rename the topic.
+- Group joins and exits relay silent (no notification ping); admin changes (promote/demote) post
+  normal service lines. Renames also rename the topic.
 - New topics open with a pinned profile card (WA photo + about for DMs, icon + description for
   groups; text-only when the photo is hidden). Photo changes re-send and re-pin the card, keeping
   the old one as history. Needs pin rights in the supergroup.

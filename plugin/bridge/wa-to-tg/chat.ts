@@ -78,12 +78,18 @@ export async function handleGroupParticipants(upd: {
 			.map((p) => phoneOf(typeof p === 'string' ? p : p?.id) || 'someone')
 			.join(', ')
 		let line: string | null = null
+		// Joins and exits arrive silent (no notification ping); admin
+		// changes below still notify normally.
+		let silent = false
 		switch (upd.action) {
-			// Joins and exits stay silent (owner direction) - topics only
-			// hear about admin changes below.
 			case 'add':
+				line = `👋 ${names} joined the group`
+				silent = true
+				break
 			case 'remove':
-				return
+				line = `🚪 ${names} left the group`
+				silent = true
+				break
 			case 'promote':
 				line = `⭐ ${names} is now an admin`
 				break
@@ -98,6 +104,7 @@ export async function handleGroupParticipants(upd: {
 			() =>
 				tg!.api.sendMessage(home, line!, {
 					message_thread_id: mapping.telegram_topic_id,
+					...(silent ? { disable_notification: true } : {}),
 				}),
 			'service-line',
 			home,
