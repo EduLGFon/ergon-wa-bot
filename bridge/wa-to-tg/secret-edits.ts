@@ -114,14 +114,18 @@ export async function handleWaSecretEdit(m: proto.IWebMessageInfo): Promise<void
 		// Reply under the mirror when it crossed, so the edit has context.
 		const say = (line: string): Promise<unknown> =>
 			entry
-				? tgCall(() =>
-					tg!.api.sendMessage(chatId, line, {
-						message_thread_id: topicId,
-						reply_parameters: {
-							message_id: entry.tg_msg_id,
-							allow_sending_without_reply: true,
-						},
-					}), 'notice')
+				? tgCall(
+					() =>
+						tg!.api.sendMessage(chatId, line, {
+							message_thread_id: topicId,
+							reply_parameters: {
+								message_id: entry.tg_msg_id,
+								allow_sending_without_reply: true,
+							},
+						}),
+					'notice',
+					chatId,
+				)
 				: notifyTopic(chatId, topicId, line)
 		// Event edits and future envelope types have no Telegram shape -
 		// name them calmly instead of the generic unsupported line.

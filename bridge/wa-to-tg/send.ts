@@ -199,11 +199,15 @@ async function sendToTopicInner(
 	// quote-styled message so the context still lands in the topic.
 	if (media.kind === 'sticker' && quote.header && !quote.tgId) {
 		const header: string = quote.header
-		await tgCall(() =>
-			api.sendMessage(chatId, header, {
-				message_thread_id: topicId,
-				entities: [{ type: 'blockquote', offset: 0, length: header.length }],
-			}), 'message')
+		await tgCall(
+			() =>
+				api.sendMessage(chatId, header, {
+					message_thread_id: topicId,
+					entities: [{ type: 'blockquote', offset: 0, length: header.length }],
+				}),
+			'message',
+			chatId,
+		)
 	}
 
 	const caption = body.length > 1024 ? undefined : (body || undefined)
@@ -220,19 +224,24 @@ async function sendToTopicInner(
 			sentNote = await tgCall(
 				() => api.sendVideoNote(chatId, file, { ...thread, ...reply }),
 				'video-note',
+				chatId,
 			)
 		} catch (e) {
 			// A flood-exhausted send must propagate, not fall back - the
 			// fallback would just 429 again. Only non-429 failures (e.g.
 			// non-round-compatible file) degrade to a plain video.
 			if (getRetryAfterSeconds(e) !== null) throw e
-			sentNote = await tgCall(() =>
-				api.sendVideo(chatId, file, {
-					...thread,
-					caption,
-					...captionEntities,
-					...reply,
-				}), 'video')
+			sentNote = await tgCall(
+				() =>
+					api.sendVideo(chatId, file, {
+						...thread,
+						caption,
+						...captionEntities,
+						...reply,
+					}),
+				'video',
+				chatId,
+			)
 		}
 		save(sentNote.message_id, 'media')
 		if (body) {

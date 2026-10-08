@@ -105,11 +105,20 @@ function logHealth(): void {
 		try {
 			// Dynamic import would be async; read via relayCtx when present.
 			// Avoid a hard bridge dependency so health works with bridge off.
+			// Both lanes report so a business backlog never hides behind
+			// a quiet personal queue.
 			const { relayCtx } = requireRelayCtx()
 			const st = relayCtx?.limiter?.stats?.()
+			const shared = relayCtx?.businessLimiter === relayCtx?.limiter ||
+				!relayCtx?.businessLimiter
+			const bst = shared ? null : relayCtx?.businessLimiter?.stats?.()
 			if (st) {
 				queue =
-					`q=${st.depth}+${st.parked} drop=${st.dropped} flood=${st.floodRetries} sp=${st.spacing}`
+					`qP=${st.depth}+${st.parked} drop=${st.dropped} flood=${st.floodRetries} sp=${st.spacing}`
+				if (bst) {
+					queue +=
+						` qB=${bst.depth}+${bst.parked} drop=${bst.dropped} flood=${bst.floodRetries} sp=${bst.spacing}`
+				}
 			}
 		} catch {
 			// bridge off - keep q=?

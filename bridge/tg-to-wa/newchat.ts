@@ -61,6 +61,7 @@ export function registerNewCommand(
 			const topic = await tgCall(
 				() => tg.api.createForumTopic(chatId, name),
 				'new-topic',
+				chatId,
 			)
 			db.getOrCreate(jid, topic.message_thread_id, name, '1:1', chatId)
 			const bucket = bucketOfChat(chatId, groups)

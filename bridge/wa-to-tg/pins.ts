@@ -61,9 +61,14 @@ export async function handleWaPin(m: proto.IWebMessageInfo): Promise<void> {
 							disable_notification: true,
 						}),
 					'pin',
+					chatId,
 				)
 			} else {
-				await tgCall(() => tg!.api.unpinChatMessage(chatId, target.tg_msg_id), 'unpin')
+				await tgCall(
+					() => tg!.api.unpinChatMessage(chatId, target.tg_msg_id),
+					'unpin',
+					chatId,
+				)
 			}
 		} catch (e) {
 			console.error('[BRIDGE] failed to pin one TG mirror:', e)

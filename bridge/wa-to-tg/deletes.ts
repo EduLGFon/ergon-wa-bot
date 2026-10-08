@@ -82,19 +82,27 @@ export async function spoilerTgMirror(target: ReplyMapRow, chatId: string): Prom
 			if (kind === 'media') {
 				const caption = (SPOILER_MARKER + orig).slice(0, 1024)
 				const cEnts = kept.filter((e) => e.offset + e.length <= caption.length)
-				await tgCall(() =>
-					tg!.api.editMessageCaption(chatId, target.tg_msg_id, {
-						caption,
-						caption_entities: cEnts.length > 0 ? cEnts : undefined,
-					}), 'edit-caption')
+				await tgCall(
+					() =>
+						tg!.api.editMessageCaption(chatId, target.tg_msg_id, {
+							caption,
+							caption_entities: cEnts.length > 0 ? cEnts : undefined,
+						}),
+					'edit-caption',
+					chatId,
+				)
 			} else {
-				await tgCall(() =>
-					tg!.api.editMessageText(
-						chatId,
-						target.tg_msg_id,
-						SPOILER_MARKER + orig,
-						rich,
-					), 'edit-text')
+				await tgCall(
+					() =>
+						tg!.api.editMessageText(
+							chatId,
+							target.tg_msg_id,
+							SPOILER_MARKER + orig,
+							rich,
+						),
+					'edit-text',
+					chatId,
+				)
 			}
 			return true
 		} catch {
@@ -128,7 +136,7 @@ export async function deleteTgMirror(
 	const chatId = chatForReply(target, mapping, groups)
 	if (await spoilerTgMirror(target, chatId)) return
 	try {
-		await tgCall(() => tg!.api.deleteMessage(chatId, target.tg_msg_id), 'delete')
+		await tgCall(() => tg!.api.deleteMessage(chatId, target.tg_msg_id), 'delete', chatId)
 		db!.deleteReplyMapAt(chatId, target.tg_msg_id)
 	} catch (e) {
 		logDeleteFailure(target.tg_msg_id, e)

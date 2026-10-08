@@ -129,7 +129,9 @@ only if `GROUPS1` is set.
 - `conf/.env` (see `conf/.env.example`): `TZ`, `DEVS` (owner LIDs, `|` split), `GROUPS1`/`GROUPS2`
   (announcement targets), optional `DATABASE_URL`, `GEMINI`, `TELEGRAM_BOT_TOKEN`,
   `TELEGRAM_SUPERGROUP_PERSONAL`/`_BUSINESS` (legacy `TELEGRAM_SUPERGROUP_ID` fallback),
-  `RATE_LIMIT_MS`. Loaded via `--env=conf/.env`; `setup/reset.ts:loadEnv()` reparses it manually.
+  `RATE_LIMIT_MS` (legacy base spacing), `TELEGRAM_RATE_LIMIT_MS_PERSONAL`/`_BUSINESS` (per-lane
+  spacing, business falls back to personal - raise it to shed business load). `WA_BROWSER` (Baileys
+  browser tuple A/B). Loaded via `--env=conf/.env`; `setup/reset.ts:loadEnv()` reparses it manually.
 - `conf/defaults.json`: non-secret defaults - `lang: pt`, `prefix: .`, campus lat/long,
   `ai.gemini_chain` + `ai.gemini_pro`, cache caps
   (`users 200, groups 200, dmMsgs 60, groupMsgs 200`), and the `runner` table for `runCode` (yt-dlp
@@ -352,12 +354,13 @@ and `connection/update.ts` calls `reattachBridge()` after every reconnect. Missi
 bridge (`null`) without stopping WA. `-- --find-id` CLI prints supergroup ids via `getUpdates`
 without touching WA.
 
-- `mod.ts`: builds `BridgeDB`, TG (3000ms) and WA (500ms) `RateLimiter`s, grammy `Bot`, registers
+- `mod.ts`: builds `BridgeDB`, personal + business TG `RateLimiter`s (separate per-supergroup
+  queues, shared instance in single-group mode), WA (500ms) `RateLimiter`, grammy `Bot`, registers
   both directions, `tg.start` long-poll with
   `allowed_updates: message, edited_message, message_reaction, callback_query, poll_answer`.
-  `activeBridge` holds live refs for reattach. Boot warns when the bot lacks admin (reactions) or
-  pin rights (pin sync), and resolves the owner TG identity (`TELEGRAM_OWNER_ID` else the personal
-  supergroup creator) for @all/@mention pings.
+  `activeBridge` holds live refs for reattach (catch-up pacing covers both lanes). Boot warns when
+  the bot lacks admin (reactions) or pin rights (pin sync), and resolves the owner TG identity
+  (`TELEGRAM_OWNER_ID` else the personal supergroup creator) for @all/@mention pings.
 - `db.ts`: SQLite WAL at `conf/gen/bridge.db`. `mappings` (WA JID <-> TG topic, chat type,
   archived/muted flags, last-active) and `reply_map` (TG msg <-> WA key + kind + text/entity
   snapshot + poll crypto columns + live poll vote roster + per-message secret for encrypted edits,
@@ -368,11 +371,12 @@ without touching WA.
 - `format.ts`: pure converters - TG entities (UTF-16 offsets) to WA inline markers (`*bold*`,
   `_italic_`, `~strike~`, `` `code` ``, triple-backtick pre, links, `> quote`) and back (pre -> bold
   -> italic -> strike -> code passes).
-- `rate-limiter.ts`: one global FIFO queue per limiter; every `tg.api.*` call takes a slot; 429s
-  retry with adaptive spacing (widens on flood, eases back after 50 clean sends, max 120s wait).
-  Payload (message/media/voice) retries unbounded, droppable (notice/service-line/prompt/topic)
-  gives up after 3 flood retries and sheds immediately when depth over 400. Queue cap 500, parked
-  waiters cap 1000 with 60s max park, `isQueueDrop` marks intentional sheds.
+- `rate-limiter.ts`: one FIFO queue per limiter (one limiter per Telegram supergroup, so each group
+  spends its own flood budget); every `tg.api.*` call takes a slot; 429s retry with adaptive spacing
+  (widens on flood, eases back after 50 clean sends, max 120s wait). Payload (message/media/voice)
+  retries unbounded, droppable (notice/service-line/prompt/topic) gives up after 3 flood retries and
+  sheds immediately when depth over 400. Queue cap 500, parked waiters cap 1000 with 60s max park,
+  `isQueueDrop` marks intentional sheds.
 - WA->TG (`wa-to-tg.ts` facade + 33 modules): `relay.ts` attaches seven socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups); `incoming.ts` is the main loop (skip
   protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via `jid.ts`,
@@ -414,7 +418,8 @@ without touching WA.
   unwrapped via `pollNodeOf`); `unsupported.ts`/`unsupported-preview.ts` friendly
   `type
   (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
-  `tgCall` queue + `notifyTopic` (never throws/loops).
+  `tgCall` queue (routes by destination chatId via `limiterFor` - business supergroup to the
+  business lane, everything else personal) + `notifyTopic` (never throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 9 modules): `handlers.ts` guards (either group, no bots, has topic,
   mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album buffering
   (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback header,

@@ -103,13 +103,17 @@ export async function sendSpecial(
 	const thread = { message_thread_id: topicId } as const
 	switch (special.kind) {
 		case 'location': {
-			const sent = await tgCall(() =>
-				api.sendLocation(
-					chatId,
-					special.latitude,
-					special.longitude,
-					{ ...thread, ...reply },
-				), 'location')
+			const sent = await tgCall(
+				() =>
+					api.sendLocation(
+						chatId,
+						special.latitude,
+						special.longitude,
+						{ ...thread, ...reply },
+					),
+				'location',
+				chatId,
+			)
 			return { msgId: sent.message_id, pollId: null }
 		}
 		case 'contact': {
@@ -120,6 +124,7 @@ export async function sendSpecial(
 						...reply,
 					}),
 				'contact',
+				chatId,
 			)
 			return { msgId: sent.message_id, pollId: null }
 		}
@@ -132,17 +137,21 @@ export async function sendSpecial(
 			// Telegram needs 2-10 options; shorter lists were already
 			// degraded to text by the caller, so this is just a guard.
 			if (options.length < 2) return null
-			const sent = await tgCall(() =>
-				api.sendPoll(
-					chatId,
-					question,
-					options.map((text) => ({ text })),
-					{
-						...thread,
-						is_anonymous: false,
-						...reply,
-					},
-				), 'poll')
+			const sent = await tgCall(
+				() =>
+					api.sendPoll(
+						chatId,
+						question,
+						options.map((text) => ({ text })),
+						{
+							...thread,
+							is_anonymous: false,
+							...reply,
+						},
+					),
+				'poll',
+				chatId,
+			)
 			return { msgId: sent.message_id, pollId: sent.poll?.id ?? null }
 		}
 	}

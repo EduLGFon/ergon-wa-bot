@@ -178,11 +178,16 @@ async function handleOneCall(ev: WACallEvent): Promise<void> {
 			const sent = await tgCall(
 				() => tg!.api.sendMessage(state.chatId, line, { message_thread_id: state.topicId }),
 				'call',
+				state.chatId,
 			)
 			state.tgMsgId = sent.message_id
 		} else {
 			const msgId: number = state.tgMsgId
-			await tgCall(() => tg!.api.editMessageText(state.chatId, msgId, line), 'call-edit')
+			await tgCall(
+				() => tg!.api.editMessageText(state.chatId, msgId, line),
+				'call-edit',
+				state.chatId,
+			)
 		}
 	} catch (e) {
 		console.error('[BRIDGE] failed to post one WA call notice:', e)

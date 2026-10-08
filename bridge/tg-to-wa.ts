@@ -3,6 +3,7 @@
 import { registerTgEditHandler, registerTgReactionHandler } from './tg-to-wa/handler-events.ts'
 import { registerTgPinHandler, registerTgPollAnswerHandler } from './tg-to-wa/handler-events.ts'
 import { bucketOfChat, type GroupIds, groupIds } from './wa-to-tg/routing.ts'
+import { limiterFor } from './wa-to-tg/state.ts'
 import { registerBucketHandlers } from './tg-to-wa/buckets.ts'
 import { registerTgMessageHandler } from './tg-to-wa/handlers.ts'
 import { registerNewCommand } from './tg-to-wa/newchat.ts'
@@ -29,6 +30,13 @@ export function registerTgHandlers(
 	const inSupergroup = (ctx: { chat?: { id?: string | number } }): boolean =>
 		bucketOfChat(ctx.chat?.id ?? '', groups) !== null
 	const waSend = <T>(fn: () => Promise<T>): Promise<T> => waLimiter.enqueue(fn, 'wa-send')
+	// TG-side notices route by destination group so business warnings never
+	// consume personal budget. Falls back to the personal limiter before boot.
+	const tgRoute = <T>(
+		fn: () => Promise<T>,
+		label = 'send',
+		chatId?: string | number,
+	): Promise<T> => (limiterFor(chatId) ?? tgLimiter).enqueue(fn, label)
 	registerTgCommands(
 		tg,
 		db,
@@ -37,7 +45,7 @@ export function registerTgHandlers(
 	registerNewCommand(
 		tg,
 		db,
-		(fn, label) => tgLimiter.enqueue(fn, label),
+		tgRoute,
 		inSupergroup,
 		groups,
 	)

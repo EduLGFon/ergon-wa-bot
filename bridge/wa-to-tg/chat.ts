@@ -59,7 +59,7 @@ export async function createForumTopic(
 	const name = sanitizeTopicName(displayName) || 'Unknown'
 	// Topic creation is a Bot API call like any other - it goes through the
 	// limiter so a burst of new chats can't flood the supergroup budget.
-	const topic = await tgCall(() => tg!.api.createForumTopic(chatId, name), 'new-topic')
+	const topic = await tgCall(() => tg!.api.createForumTopic(chatId, name), 'new-topic', chatId)
 	return topic.message_thread_id
 }
 
@@ -94,15 +94,20 @@ export async function handleGroupParticipants(upd: {
 			default:
 				return
 		}
-		await tgCall(() =>
-			tg!.api.sendMessage(chatForMapping(mapping, groups), line!, {
-				message_thread_id: mapping.telegram_topic_id,
-			}), 'service-line').catch((e) => {
-				// Load-shed during deep backlogs - membership lines are droppable.
-				if (!isQueueDrop(e)) {
-					console.error('[BRIDGE] failed to relay group participants:', e)
-				}
-			})
+		const home = chatForMapping(mapping, groups)
+		await tgCall(
+			() =>
+				tg!.api.sendMessage(home, line!, {
+					message_thread_id: mapping.telegram_topic_id,
+				}),
+			'service-line',
+			home,
+		).catch((e) => {
+			// Load-shed during deep backlogs - membership lines are droppable.
+			if (!isQueueDrop(e)) {
+				console.error('[BRIDGE] failed to relay group participants:', e)
+			}
+		})
 	} catch (e) {
 		if (!isQueueDrop(e)) console.error('[BRIDGE] failed to relay group participants:', e)
 	}
@@ -128,16 +133,18 @@ export async function handleGroupUpdates(
 				mapping.chat_type,
 				mapping.telegram_chat_id,
 			)
+			const home = chatForMapping(mapping, groups)
 			await tgCall(
 				() =>
 					tg!.api.editForumTopic(
-						chatForMapping(mapping, groups),
+						home,
 						mapping.telegram_topic_id,
 						{
 							name: sanitizeTopicName(u.subject!) || mapping.display_name,
 						},
 					).catch(() => false),
 				'edit-topic',
+				home,
 			)
 		} catch (e) {
 			console.error('[BRIDGE] failed to relay group update:', e)

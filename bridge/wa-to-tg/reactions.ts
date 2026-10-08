@@ -124,6 +124,7 @@ export async function applyTgReaction(
 		await tgCall(
 			() => tg!.api.setMessageReaction(chatId, tgMsgId, payload as any),
 			'reaction',
+			chatId,
 		)
 	} catch (e) {
 		// REACTION_INVALID = the emoji isn't usable here (not a
@@ -147,6 +148,7 @@ export async function applyTgReaction(
 							{ type: 'emoji', emoji: DEFAULT_TG_REACTION },
 						] as any),
 					'reaction',
+					chatId,
 				)
 			} catch {
 				// Default also rejected (reactions fully disabled?) - give up quietly.

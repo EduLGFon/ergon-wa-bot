@@ -88,6 +88,7 @@ async function moveTopicUnsafe(
 	await tgCall(
 		() => tg!.api.sendMessage(toChat, summary, { message_thread_id: toTopic }),
 		'notice',
+		toChat,
 	).catch(() => null)
 	return { moved: true, chatId: toChat, topicId: toTopic, copied, skipped }
 }
@@ -129,6 +130,7 @@ async function replayHistory(
 							: {}),
 					}),
 				'move-copy',
+				toChat,
 			) as { message_id: number }
 			if (!sent?.message_id) {
 				skipped++
@@ -161,13 +163,15 @@ async function retireOldTopic(
 				message_thread_id: fromTopic,
 			}),
 		'notice',
+		fromChat,
 	).catch(() => null)
-	await tgCall(() => tg!.api.closeForumTopic(fromChat, fromTopic), 'close-topic').catch(() =>
-		null
+	await tgCall(() => tg!.api.closeForumTopic(fromChat, fromTopic), 'close-topic', fromChat).catch(
+		() => null,
 	)
 	const name = sanitizeTopicName(`moved ${displayName}`)
 	await tgCall(
 		() => tg!.api.editForumTopic(fromChat, fromTopic, { name }).catch(() => false),
 		'edit-topic',
+		fromChat,
 	).catch(() => null)
 }

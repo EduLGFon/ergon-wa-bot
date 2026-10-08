@@ -111,12 +111,17 @@ export async function handleWaEdits(
 					await tgCall(
 						() => tg!.api.editMessageText(chatId, target.tg_msg_id, editBody, rich),
 						'edit-text',
+						chatId,
 					)
 				} else {
-					await tgCall(() =>
-						tg!.api.editMessageCaption(chatId, target.tg_msg_id, {
-							caption: editAlt,
-						}), 'edit-caption')
+					await tgCall(
+						() =>
+							tg!.api.editMessageCaption(chatId, target.tg_msg_id, {
+								caption: editAlt,
+							}),
+						'edit-caption',
+						chatId,
+					)
 				}
 			} catch (first) {
 				// Legacy 'unknown' rows: the mirror type is a guess, so a
@@ -129,6 +134,7 @@ export async function handleWaEdits(
 									caption: editAlt,
 								}),
 							'edit-caption',
+							chatId,
 						)
 					} catch (second) {
 						logEditFailure(target.tg_msg_id, second, String(describeErr(first)))
@@ -145,6 +151,7 @@ export async function handleWaEdits(
 							message_thread_id: mapping.telegram_topic_id,
 						}),
 					'message',
+					chatId,
 				).catch(() => null)
 			}
 		} catch (e) {

@@ -22,8 +22,13 @@ export { findSupergroupId }
 // Starts the Telegram side and hooks the WA→TG relay onto the shared socket.
 // Returns null (instead of throwing) when not configured, so the WhatsApp
 // bot always boots even if the bridge env is missing.
-let activeBridge: { tg: Bot; db: BridgeDB; tgLimiter: RateLimiter; waLimiter: RateLimiter } | null =
-	null
+let activeBridge: {
+	tg: Bot
+	db: BridgeDB
+	tgLimiter: RateLimiter
+	tgBusinessLimiter: RateLimiter
+	waLimiter: RateLimiter
+} | null = null
 
 // Catch-up pacing: right after a reconnect the WhatsApp backlog relays at once and Telegram
 // answers 429 to everything. For the first CATCH_UP_WINDOW_MS after a reattach we widen the
@@ -34,24 +39,32 @@ let activeBridge: { tg: Bot; db: BridgeDB; tgLimiter: RateLimiter; waLimiter: Ra
 const CATCH_UP_SPACING_MS = 4_000
 const CATCH_UP_WINDOW_MS = 30_000
 let tgBaseSpacing = 3_000
+let tgBusinessSpacing = 3_000
 let catchUpRestoreTimer: ReturnType<typeof setTimeout> | undefined
 
-function slowFloodCatchUp(tgLimiter: RateLimiter): void {
+function slowFloodCatchUp(personal: RateLimiter, business: RateLimiter): void {
 	if (catchUpRestoreTimer) {
 		clearTimeout(catchUpRestoreTimer)
 		catchUpRestoreTimer = undefined
 	}
-	tgLimiter.setSpacing(CATCH_UP_SPACING_MS)
+	personal.setSpacing(CATCH_UP_SPACING_MS)
+	if (business !== personal) business.setSpacing(CATCH_UP_SPACING_MS)
 	catchUpRestoreTimer = setTimeout(() => {
-		tgLimiter.setSpacing(tgBaseSpacing)
+		personal.setSpacing(tgBaseSpacing)
+		if (business !== personal) business.setSpacing(tgBusinessSpacing)
 		catchUpRestoreTimer = undefined
 	}, CATCH_UP_WINDOW_MS)
 }
 
 export function reattachBridge(): void {
 	if (!activeBridge) return
-	attachWaRelay(activeBridge.tg, activeBridge.db, activeBridge.tgLimiter)
-	slowFloodCatchUp(activeBridge.tgLimiter)
+	attachWaRelay(
+		activeBridge.tg,
+		activeBridge.db,
+		activeBridge.tgLimiter,
+		activeBridge.tgBusinessLimiter,
+	)
+	slowFloodCatchUp(activeBridge.tgLimiter, activeBridge.tgBusinessLimiter)
 }
 
 export function startBridge(): Bot | null {
@@ -72,16 +85,27 @@ export function startBridge(): Bot | null {
 
 	const db = new BridgeDB('conf/gen/bridge.db')
 	db.init(groups.legacy || groups.personal)
-	// Telegram and WhatsApp have independent budgets, so they get independent
-	// queues. All forum topics share ONE supergroup, whose flood control is
-	// stricter than 1 msg/s (~20/min per group + burst penalties with
-	// retry_after up to tens of seconds), hence the conservative 3s default.
+	// Telegram throttles per supergroup, so personal and business get
+	// SEPARATE queues: a business burst (or a business 429 block) never
+	// stalls personal relay. Single-group setups share one instance, so
+	// routing is a no-op there. Raise the business spacing (e.g. 8000) to
+	// shed business load harder while personal stays real-time.
 	// TELEGRAM_RATE_LIMIT_MS overrides the legacy RATE_LIMIT_MS name.
-	tgBaseSpacing = envNum('TELEGRAM_RATE_LIMIT_MS', envNum('RATE_LIMIT_MS', 3000))
+	tgBaseSpacing = envNum(
+		'TELEGRAM_RATE_LIMIT_MS_PERSONAL',
+		envNum('TELEGRAM_RATE_LIMIT_MS', envNum('RATE_LIMIT_MS', 3000)),
+	)
+	tgBusinessSpacing = envNum('TELEGRAM_RATE_LIMIT_MS_BUSINESS', tgBaseSpacing)
 	const tgLimiter = new RateLimiter(tgBaseSpacing, {
 		maxRetries: envNum('RATE_LIMIT_MAX_RETRIES', 5),
 		maxWaitMs: envNum('RATE_LIMIT_MAX_WAIT_MS', 120_000),
 	})
+	const tgBusinessLimiter = isDual(groups)
+		? new RateLimiter(tgBusinessSpacing, {
+			maxRetries: envNum('RATE_LIMIT_MAX_RETRIES', 5),
+			maxWaitMs: envNum('RATE_LIMIT_MAX_WAIT_MS', 120_000),
+		})
+		: tgLimiter
 	// WhatsApp sends don't consume Telegram budget - light spacing only, so a
 	// Telegram flood never stalls the TG→WA direction (and vice versa).
 	const waLimiter = new RateLimiter(envNum('WHATSAPP_RATE_LIMIT_MS', 500))
@@ -89,8 +113,8 @@ export function startBridge(): Bot | null {
 	const tg = new Bot(token)
 	registerTgHandlers(tg, db, tgLimiter, waLimiter)
 	// The WA socket is already connected by wa.ts at this point.
-	attachWaRelay(tg, db, tgLimiter)
-	activeBridge = { tg, db, tgLimiter, waLimiter }
+	attachWaRelay(tg, db, tgLimiter, tgBusinessLimiter)
+	activeBridge = { tg, db, tgLimiter, tgBusinessLimiter, waLimiter }
 	// Owner identity for @all/@mention pings - resolves in the background
 	// so boot never blocks on it; mentions stay plain text until it lands.
 	void resolveOwnerIdentity(tg, groups.personal)

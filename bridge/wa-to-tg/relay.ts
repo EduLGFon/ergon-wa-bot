@@ -17,8 +17,13 @@ import type { BridgeDB } from '../db.ts'
 import type { Bot } from 'grammy'
 import bot from '@plugin/bot.ts'
 
-export function attachWaRelay(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateLimiter): void {
-	setRelayCtx(tgBot, bridgeDb, rateLimiter)
+export function attachWaRelay(
+	tgBot: Bot,
+	bridgeDb: BridgeDB,
+	personalLimiter: RateLimiter,
+	businessLimiter?: RateLimiter,
+): void {
+	setRelayCtx(tgBot, bridgeDb, personalLimiter, businessLimiter)
 	if (relayCtx.attachedSock === bot.sock) return
 	relayCtx.attachedSock = bot.sock
 

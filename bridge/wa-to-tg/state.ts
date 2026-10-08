@@ -1,7 +1,13 @@
-// Relay shared state - Telegram handles and flood queue in one place.
+// Relay shared state - Telegram handles and flood queues in one place.
 //
 // Every WA-TO-TG send funnels through tgCall so flood control stays central -
 // submodules import this context instead of holding their own copies.
+//
+// Personal priority: Telegram throttles per supergroup, and dual setups have
+// two independent budgets. Personal and business traffic get SEPARATE
+// RateLimiter queues so a business burst (or a business 429 block) never
+// stalls personal relay. tgCall routes by destination chatId - pass it at
+// every send site that knows it, or the personal lane is used.
 import type { RateLimiter } from '../rate-limiter.ts'
 import { type GroupIds, groupIds } from './routing.ts'
 import type { BridgeDB } from '../db.ts'
@@ -11,6 +17,7 @@ export const relayCtx: {
 	tg: Bot | null
 	db: BridgeDB | null
 	limiter: RateLimiter | null
+	businessLimiter: RateLimiter | null
 	groups: GroupIds
 	attachedSock: unknown
 	// The owner's Telegram identity for @all/@mention pings - resolved once
@@ -21,15 +28,22 @@ export const relayCtx: {
 	tg: null,
 	db: null,
 	limiter: null,
+	businessLimiter: null,
 	groups: { personal: '', business: '', legacy: '' },
 	attachedSock: null,
 	ownerTg: null,
 }
 
-export function setRelayCtx(tgBot: Bot, bridgeDb: BridgeDB, rateLimiter: RateLimiter): void {
+export function setRelayCtx(
+	tgBot: Bot,
+	bridgeDb: BridgeDB,
+	personalLimiter: RateLimiter,
+	businessLimiter?: RateLimiter,
+): void {
 	relayCtx.tg = tgBot
 	relayCtx.db = bridgeDb
-	relayCtx.limiter = rateLimiter
+	relayCtx.limiter = personalLimiter
+	relayCtx.businessLimiter = businessLimiter ?? personalLimiter
 	relayCtx.groups = groupIds()
 	// Expose for the HEALTH periodic line without an import cycle.
 	try {
@@ -57,13 +71,31 @@ export function cacheGroupName(jid: string, name: string): void {
 	}
 }
 
+// Queue for a destination supergroup: business chat goes to the business
+// lane, everything else (personal, unknown, single-group mode) to personal.
+// Single-group setups share one instance, so routing is a no-op there.
+export function limiterFor(chatId?: string | number): RateLimiter | null {
+	const { limiter, businessLimiter, groups } = relayCtx
+	if (chatId != null && chatId !== '' && String(chatId) === groups.business) {
+		return businessLimiter ?? limiter
+	}
+	return limiter
+}
+
 // Single Telegram API call through the flood-aware queue. EVERY api.*
 // call in this module must go through here, so each API call - not each
 // logical message - gets its own spacing slot, and 429s pause + retry the
-// queue instead of cascading into drops.
-export function tgCall<T>(fn: () => Promise<T>, label = 'send'): Promise<T> {
-	if (!relayCtx.limiter) return fn()
-	return relayCtx.limiter.enqueue(fn, label)
+// queue instead of cascading into drops. Pass chatId whenever the call
+// site knows the destination supergroup so business traffic stays in its
+// own lane; without it the personal lane is used.
+export function tgCall<T>(
+	fn: () => Promise<T>,
+	label = 'send',
+	chatId?: string | number,
+): Promise<T> {
+	const limiter = limiterFor(chatId) ?? relayCtx.limiter
+	if (!limiter) return fn()
+	return limiter.enqueue(fn, label)
 }
 
 // Best-effort ⚠️ notice to the affected topic so a relay failure is visible
@@ -85,6 +117,7 @@ export async function notifyTopic(
 		await tgCall(
 			() => tg!.api.sendMessage(chatId, line, { message_thread_id: topicId }),
 			'notice',
+			chatId,
 		)
 	} catch {
 		// The notice itself failed - the server log already has the details.

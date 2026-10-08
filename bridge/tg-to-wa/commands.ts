@@ -3,7 +3,11 @@
 import type { BridgeDB } from '../db.ts'
 import { Bot } from 'grammy'
 
-export type TgCall = <T>(fn: () => Promise<T>, label?: string) => Promise<T>
+export type TgCall = <T>(
+	fn: () => Promise<T>,
+	label?: string,
+	chatId?: string | number,
+) => Promise<T>
 export type InSupergroup = (ctx: { chat?: { id?: string | number } }) => boolean
 
 export function registerTgCommands(

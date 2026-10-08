@@ -119,16 +119,18 @@ async function createOrRefreshMapping(
 			mapping.telegram_chat_id,
 		)
 		if (tg) {
+			const home = chatForMapping(mapping, groups)
 			await tgCall(
 				() =>
 					tg!.api.editForumTopic(
-						chatForMapping(mapping!, groups),
+						home,
 						mapping!.telegram_topic_id,
 						{
 							name: sanitizeTopicName(displayName) || mapping!.display_name,
 						},
 					).catch(() => false),
 				'edit-topic',
+				home,
 			)
 		}
 	} else {

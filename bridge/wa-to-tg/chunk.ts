@@ -68,6 +68,7 @@ export async function sendTgText(
 					...reply,
 				}),
 			'message',
+			chatId,
 		) as { message_id: number }
 		onSent(sent.message_id)
 	}

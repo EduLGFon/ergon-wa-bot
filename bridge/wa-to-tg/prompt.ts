@@ -41,6 +41,7 @@ export async function maybePromptClassification(
 					reply_markup: classificationKeyboard(),
 				}),
 			'prompt',
+			chatId,
 		)
 		if (sent?.message_id) db.setPromptMsgId(jid, sent.message_id)
 	} catch (e) {

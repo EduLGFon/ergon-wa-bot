@@ -1,5 +1,6 @@
 // Relay notices and shared helpers - topic warnings and transcoding.
 // Hyphen-only header - plain ASCII dashes for all punctuation.
+import { limiterFor } from '../wa-to-tg/state.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
 import { formatBytes } from '../format.ts'
 import { Bot } from 'grammy'
@@ -36,7 +37,9 @@ export async function notifyTopic(
 	line: string,
 ): Promise<void> {
 	try {
-		await tgLimiter.enqueue(
+		// Route by destination group so business warnings never consume
+		// personal budget. The passed limiter is the pre-boot fallback.
+		await (limiterFor(chatId) ?? tgLimiter).enqueue(
 			() =>
 				tg.api.sendMessage(chatId, line, {
 					message_thread_id: topicId,

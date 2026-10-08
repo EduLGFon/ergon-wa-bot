@@ -30,10 +30,23 @@ export default class extends Cmd {
 		const mem = Deno.memoryUsage()
 		let queue = 'bridge off'
 		try {
-			const st = relayCtx?.limiter?.stats?.()
-			if (st) {
-				queue =
-					`depth=${st.depth} parked=${st.parked} dropped=${st.dropped} flood=${st.floodRetries} spacing=${st.spacing}ms`
+			// Personal and business lanes have independent budgets - show
+			// both so a business backlog is never mistaken for relay lag.
+			const fmtLane = (st: {
+				depth: number
+				parked: number
+				dropped: number
+				floodRetries: number
+				spacing: number
+			}): string =>
+				`depth=${st.depth} parked=${st.parked} dropped=${st.dropped} flood=${st.floodRetries} spacing=${st.spacing}ms`
+			const personal = relayCtx?.limiter?.stats?.()
+			const shared = relayCtx?.businessLimiter === relayCtx?.limiter ||
+				!relayCtx?.businessLimiter
+			const business = shared ? null : relayCtx?.businessLimiter?.stats?.()
+			if (personal) {
+				queue = `personal(${fmtLane(personal)})`
+				if (business) queue += ` business(${fmtLane(business)})`
 			}
 		} catch {
 			// ignore

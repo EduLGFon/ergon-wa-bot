@@ -118,7 +118,7 @@ export async function applyPollTally(
 		db.savePollTally(entry.tg_chat_id, entry.tg_msg_id, null)
 		if (gone != null) {
 			try {
-				await tgCall(() => tg!.api.deleteMessage(chatId, gone), 'delete')
+				await tgCall(() => tg!.api.deleteMessage(chatId, gone), 'delete', chatId)
 			} catch {
 				// Tally already gone - nothing to clean.
 			}
@@ -130,6 +130,7 @@ export async function applyPollTally(
 			await tgCall(
 				() => tg!.api.editMessageText(chatId, t.summaryMsgId!, body),
 				'edit-text',
+				chatId,
 			)
 			db.savePollTally(entry.tg_chat_id, entry.tg_msg_id, JSON.stringify(t))
 			return
@@ -148,6 +149,7 @@ export async function applyPollTally(
 					},
 				}),
 			'message',
+			chatId,
 		)
 		t.summaryMsgId = sent.message_id
 		db.savePollTally(entry.tg_chat_id, entry.tg_msg_id, JSON.stringify(t))
@@ -167,6 +169,7 @@ export async function applyPollTally(
 							},
 						}),
 					'poll-vote',
+					chatId,
 				)
 				return
 			} catch (e2) {

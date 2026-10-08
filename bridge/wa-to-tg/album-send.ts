@@ -50,6 +50,7 @@ export async function sendAlbumChunk(
 				...reply,
 			}),
 		'media-group',
+		chatId,
 	) as { message_id: number }[]
 	sentArr.forEach((s, i) => {
 		const it = chunk[i]

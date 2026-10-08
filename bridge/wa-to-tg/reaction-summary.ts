@@ -130,7 +130,7 @@ export async function handleWaReactionCarrier(
 			sets.delete(key)
 			if (sumChat && sumId != null) {
 				try {
-					await tgCall(() => tg!.api.deleteMessage(sumChat, sumId), 'delete')
+					await tgCall(() => tg!.api.deleteMessage(sumChat, sumId), 'delete', sumChat)
 				} catch {
 					// Summary already gone - nothing to clean.
 				}
@@ -142,7 +142,11 @@ export async function handleWaReactionCarrier(
 		if (sumChat && sumId != null) {
 			try {
 				// No thread param - the message already lives in its topic.
-				await tgCall(() => tg!.api.editMessageText(sumChat, sumId, text), 'edit-text')
+				await tgCall(
+					() => tg!.api.editMessageText(sumChat, sumId, text),
+					'edit-text',
+					sumChat,
+				)
 				return
 			} catch {
 				// Summary lost (restart, manual delete) - fall through and
@@ -150,14 +154,18 @@ export async function handleWaReactionCarrier(
 			}
 		}
 		try {
-			const sent = await tgCall(() =>
-				tg!.api.sendMessage(chatId, text, {
-					message_thread_id: mapping.telegram_topic_id,
-					reply_parameters: {
-						message_id: target.tg_msg_id,
-						allow_sending_without_reply: true,
-					},
-				}), 'message')
+			const sent = await tgCall(
+				() =>
+					tg!.api.sendMessage(chatId, text, {
+						message_thread_id: mapping.telegram_topic_id,
+						reply_parameters: {
+							message_id: target.tg_msg_id,
+							allow_sending_without_reply: true,
+						},
+					}),
+				'message',
+				chatId,
+			)
 			set.summaryChatId = chatId
 			set.summaryTgId = sent.message_id
 		} catch (e) {

@@ -39,11 +39,13 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 		captionEntities,
 		save,
 	} = d
+	// Route every send through this chat's lane (personal vs business).
+	const call = <T>(fn: () => Promise<T>, label: string): Promise<T> => tgCall(fn, label, chatId)
 	let sent: { message_id: number }
 
 	switch (media.kind) {
 		case 'image':
-			sent = await tgCall(() =>
+			sent = await call(() =>
 				api.sendPhoto(chatId, file, {
 					...thread,
 					caption,
@@ -56,14 +58,14 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 			// WA GIFs are mp4 videos with gifPlayback - Telegram renders them
 			// as GIFs (looping, muted) via sendAnimation instead of sendVideo.
 			sent = media.kind === 'gif'
-				? await tgCall(() =>
+				? await call(() =>
 					api.sendAnimation(chatId, file, {
 						...thread,
 						caption,
 						...captionEntities,
 						...reply,
 					}), 'animation')
-				: await tgCall(() =>
+				: await call(() =>
 					api.sendVideo(chatId, file, {
 						...thread,
 						caption,
@@ -72,7 +74,7 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 					}), 'video')
 			break
 		case 'voice':
-			sent = await tgCall(() =>
+			sent = await call(() =>
 				api.sendVoice(chatId, file, {
 					...thread,
 					caption,
@@ -81,7 +83,7 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 				}), 'voice')
 			break
 		case 'audio':
-			sent = await tgCall(() =>
+			sent = await call(() =>
 				api.sendAudio(chatId, file, {
 					...thread,
 					caption,
@@ -91,7 +93,7 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 			break
 		case 'sticker':
 			try {
-				sent = await tgCall(() =>
+				sent = await call(() =>
 					api.sendSticker(chatId, file, {
 						message_thread_id: thread.message_thread_id,
 						...reply,
@@ -100,7 +102,7 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 				// A flood-exhausted send must propagate, not fall back - the
 				// fallback would just 429 again.
 				if (getRetryAfterSeconds(e) !== null) throw e
-				sent = await tgCall(() =>
+				sent = await call(() =>
 					api.sendDocument(chatId, file, {
 						...thread,
 						caption,
@@ -110,7 +112,7 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 			}
 			break
 		default:
-			sent = await tgCall(() =>
+			sent = await call(() =>
 				api.sendDocument(chatId, file, {
 					...thread,
 					caption,
