@@ -19,7 +19,7 @@
 		"usage": "[Name eines Befehls]",
 		"desc": "Siehe Informationen zu einem Befehl",
 		"examples": ["Zwillinge", "Aufkleber"],
-		"title": "*[📖] - Hilfemenü**",
+		"title": "*[📖] - Hilfemenü*",
 		"prefix": "[⚙️] Präfix ändern: *{{prefix}} *",
 		"lang": "[🌎] Sprache ändern: *{{lang}} *"
 	},
@@ -33,7 +33,9 @@
 			"{es}: Spanisch",
 			"{de}: Deutsch"
 		],
-		"changed": "[🌎] - Sprache geändert in *{{lng}} *"
+		"changed": "[🌎] - Sprache geändert in *{{lng}} *",
+		"ask": "[🌎] - Welche Sprache bevorzugst du? Aktuell: *{{current}}*\n{{list}}\nAntworte mit *{{prefix}}lang <Nummer oder Code>*",
+		"invalid": "[❗] - \"{{input}}\" ist keine gültige Sprache. Aktuell: *{{current}}*\n{{list}}\nAntworte mit *{{prefix}}lang <Nummer oder Code>*"
 	},
 	"prefix": {
 		"usage": "<Präfix mit bis zu 3 Ziffern>",

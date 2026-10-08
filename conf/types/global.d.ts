@@ -1,7 +1,12 @@
+// Global str, num, print, and buffer aliases.
+// Provides shorthand types and proto helpers used across the codebase.
+// Removes repetitive imports for common utilities.
+// Buf is Uint8Array internally; wrap with Buffer.from only at the
+// Baileys send/getStream boundary which requires Node Buffer.
 type str = string
 type num = number
 type bool = boolean
-type Buf = Buffer
+type Buf = Uint8Array
 type Func = (...args: any[]) => any
 
 // you can find these (print, str, num) functions on `util/proto.ts`
@@ -34,16 +39,6 @@ type UserDB = {
 	cmds: num | null
 	memories: str | null
 }
-
-// type Alarm = {
-// 	// alarm db schema
-// 	id: num
-// 	author: num
-// 	chat: str
-// 	msg: str
-// 	time: str
-// 	status: int
-// }
 
 interface Media {
 	buffer: Buf

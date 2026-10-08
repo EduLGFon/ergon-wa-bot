@@ -1,3 +1,5 @@
+// Rank command - builds group activity ranking from counted msgs
+// Needed to show most active members and boost chat
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import User from '@class/user.ts'
 import Cmd from '@class/cmd.ts'

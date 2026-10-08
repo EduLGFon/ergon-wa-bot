@@ -1,3 +1,5 @@
+// geminiApi - Gemini API wrapper with file upload and chat memory
+// - sends prompt, handles response, saves memory and replies
 import {
 	createPartFromUri,
 	FileState,
@@ -8,7 +10,6 @@ import {
 } from '@google/genai'
 import type { GoogleFile, Gparams } from '@conf/types/types.d.ts'
 import { createMemories } from '@plugin/memories.ts'
-// import { createAlarms } from '@plugin/alarms.ts'
 import { sendMsg } from '@util/msgAbstractions.ts'
 import { delay } from '@util/functions.ts'
 import User from '@class/user.ts'
@@ -76,7 +77,7 @@ function getModelConfig(user: User) {
 		systemInstruction: [
 			'> Você deve seguir as configurações padrão se o usuário ou uma memória não especificá-las',
 			'- Use o máximo de raciocínio para transcrições',
-			'- Responda de forma clara e concisa por padrão. Para perguntas simples ou factuais, utilize no máximo 1–2 frases. Quando a pergunta envolver explicação, raciocínio, contexto técnico ou múltiplos passos, forneça primeiro um breve resumo e depois uma explicação mais detalhada. Evite prolixidade desnecessária, mas não sacrifique clareza ou precisão.',
+			'- Responda de forma clara e concisa por padrão. Para perguntas simples ou factuais, utilize no máximo 1-2 frases. Quando a pergunta envolver explicação, raciocínio, contexto técnico ou múltiplos passos, forneça primeiro um breve resumo e depois uma explicação mais detalhada. Evite prolixidade desnecessária, mas não sacrifique clareza ou precisão.',
 			'- Use formatação do WhatsApp',
 			'- Destaque informações importantes do texto com *, _ ou `',
 			'# Escreva uma memória quando o usuário pedir que você lembre de algo ou quando te der uma informação importante',
@@ -100,7 +101,7 @@ async function uploadFile(file: GoogleFile) {
 	 * Media cannot be downloaded from the API, only uploaded.
 	 */
 	let upload = await GoogleAI.files.upload({
-		file: new Blob([file.buffer as ArrayBuffer]),
+		file: new Blob([file.buffer as BlobPart]),
 		config: { mimeType: file.mime },
 	})
 

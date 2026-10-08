@@ -1,3 +1,6 @@
+// User model with prefs, memories, and DB persist.
+// Caches per-user settings and chat history for commands and AI.
+// Keeps DB reads lazy so hot paths stay in memory.
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { type Msg } from '@conf/types/types.d.ts'
 import Collection from '@class/collection.ts'

@@ -1,3 +1,6 @@
+// Baileys message-type maps and guards.
+// Normalizes raw Baileys keys into simple text, media, and countable types.
+// Lets group counting and parsing ignore protocol noise.
 import type { MsgTypes } from '@conf/types/types.d.ts'
 
 const textTypes = {
@@ -48,7 +51,11 @@ const allMsgTypes = {
 
 	// Polls
 	pollCreationMessage: 'poll',
+	pollCreationMessageV2: 'poll',
 	pollCreationMessageV3: 'poll',
+	pollCreationMessageV4: 'poll',
+	pollCreationMessageV5: 'poll',
+	pollCreationOptionImageMessage: 'poll',
 	pollUpdateMessage: 'pollUpdate',
 }
 
@@ -59,4 +66,4 @@ const mediaValues = Object.values(mediaTypes)
 const isMedia = (type: MsgTypes) => mediaValues.includes(type)
 const isVisual = (type: MsgTypes) => visualValues.includes(type)
 
-export { allMsgTypes, coolTypes, coolValues, isMedia, isVisual, mediaTypes, textTypes, visualTypes }
+export { allMsgTypes, coolValues, isMedia, isVisual }

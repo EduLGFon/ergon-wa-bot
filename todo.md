@@ -1,4 +1,1 @@
-- Add IDs to any Gemini Memory
 - Store group keys before sending msgs
-- Ask the user for their language when user text .lang
-- Add a gotcha cmd

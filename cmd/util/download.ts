@@ -1,9 +1,10 @@
+// Download command - fetches media via yt-dlp using Deno.Command
+// Needed to share links as playable media with doc fallback
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { type CmdCtx } from '@conf/types/types.d.ts'
-import type { AnyMessageContent } from 'baileys'
 import { randomDelay } from '@util/functions.ts'
+import type { AnyMessageContent } from 'baileys'
 import emojis from '@util/emojis.ts'
-import { Buffer } from 'node:buffer'
 import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
@@ -106,12 +107,13 @@ export default class extends Cmd {
 			}
 
 			await send(mediaMessage)
-			await Deno.remove(path) // cleanup temp file
 		} catch (_e: any) {
 			const err = _e?.message === 'NOT_FOUND'
 				? ''
 				: `\n\n*_Erro interno:_* ${_e?.stack || _e?.message || _e}`
 			send(`[${emojis['alert']}] Não foi possível baixar o arquivo:\n${output.trim()}${err}`)
+		} finally {
+			await Deno.remove(path).catch(() => {}) // cleanup temp file on success and failure
 		}
 	}
 }

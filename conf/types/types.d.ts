@@ -1,9 +1,12 @@
-import type Cmd from '@class/cmd.ts'
+// Shared CmdCtx, Msg, and Media types.
+// Gives commands and utils a common shape for handler args.
+// Avoids circular imports between class and util modules.
+import type { AnyMessageContent, proto } from 'baileys'
+import type { TFunction } from 'i18next'
 import type Group from '@class/group.ts'
 import type User from '@class/user.ts'
 import emojis from '@util/emojis.ts'
-import type { AnyMessageContent, proto } from 'baileys'
-import type { TFunction } from 'i18next'
+import type Cmd from '@class/cmd.ts'
 
 type MsgTypes =
 	| 'text'
@@ -53,14 +56,8 @@ interface CmdCtx {
 	t: TFunction<'translation', undefined>
 }
 
-interface GroupMsg {
-	author: num
-	group: str
-	count: num
-}
-
 type GoogleFile = {
-	buffer: Buffer<ArrayBufferLike> | ArrayBuffer
+	buffer: Uint8Array | ArrayBuffer
 	mime: str
 }
 type Gparams = {
@@ -71,4 +68,4 @@ type Gparams = {
 	file?: GoogleFile
 }
 
-export type { CmdCtx, GoogleFile, Gparams, GroupMsg, Msg, MsgTypes }
+export type { CmdCtx, GoogleFile, Gparams, Msg, MsgTypes }

@@ -1,3 +1,5 @@
+// Sticker maker - builds stickers via sticker engine plus rmbg fallback
+// Needed for fast media fun without manual editing
 import { createStickers, type StickerFormat } from '@plugin/sticker/index.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { type CmdCtx } from '@conf/types/types.d.ts'
@@ -14,7 +16,7 @@ export default class extends Cmd {
 		super({
 			alias: ['s', 'sexo'],
 			cooldown: 5_000,
-			subCmds: ['rmbg', 'rounded', 'circle', 'default'],
+			subCmds: ['rmbg', 'rounded', 'circle'],
 		})
 	}
 
@@ -62,7 +64,8 @@ export default class extends Cmd {
 
 		// ── Sticker received → reveal as plain image ────────────────────
 		if (media.target.type === 'sticker') {
-			return send({ image: media.buffer })
+			// Baileys send requires Node Buffer - narrow here.
+			return send({ image: Buffer.from(media.buffer) })
 		}
 
 		// ── Optional: remove background before creating sticker ─────────
@@ -93,15 +96,16 @@ export default class extends Cmd {
 
 	/** Create stickers from a buffer and send them one by one. */
 	private async processAndSend(
-		buffer: Buffer,
+		buffer: Uint8Array,
 		isVideo: boolean,
 		formats: StickerFormat[],
 		metadata: { pack: string; author: string },
 		quality: number | undefined,
 		send: CmdCtx['send'],
 	): Promise<void> {
+		// Sticker engine (sharp/webpmux) requires Node Buffer - narrow here.
 		const stickers = await createStickers({
-			buffer,
+			buffer: Buffer.from(buffer),
 			isVideo,
 			formats,
 			metadata,
@@ -115,7 +119,7 @@ export default class extends Cmd {
 	}
 
 	/** Remove image background using the Python rembg plugin. */
-	private async removeBg(buffer: Buffer): Promise<Buffer> {
+	private async removeBg(buffer: Uint8Array): Promise<Uint8Array> {
 		const path = `${defaults.runner.tempFolder}/rmsticker_${Date.now()}.webp`
 		await Deno.writeFile(path, buffer)
 		await runCode('py', `${path} ${path}.png`, 'plugin/removeBg.py')
@@ -123,6 +127,6 @@ export default class extends Cmd {
 		const result = await Deno.readFile(`${path}.png`).catch(() => buffer)
 		await Deno.remove(path).catch(() => {})
 		await Deno.remove(`${path}.png`).catch(() => {})
-		return Buffer.from(result)
+		return result
 	}
 }

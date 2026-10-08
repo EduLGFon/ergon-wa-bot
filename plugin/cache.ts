@@ -1,16 +1,12 @@
+// Cache manager:
+// It controls, limit and save user/group cache
+// Cache saved on conf/gen/cache/*.json
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import Collection from '@class/collection.ts'
-import { existsSync } from 'jsr:@std/fs'
 import Group from '@class/group.ts'
 import User from '@class/user.ts'
 import Cmd from '@class/cmd.ts'
 
-/** Cache manager:
- * It controls, limit and save
- * user/group cache.
- *
- * Cache saved on conf/gen/cache/*.json
- */
 const cachedData: ('metrics')[] = ['metrics']
 
 class CacheManager {
@@ -22,7 +18,7 @@ class CacheManager {
 	media: Collection<str, Media>
 	groups: Collection<str, Group>
 	metrics: { msg: any; cmd: any }
-	timeouts: Map<str, NodeJS.Timeout>
+	timeouts: Map<str, ReturnType<typeof setTimeout>>
 
 	constructor() {
 		// wait: arbitrary functions that can be called on events
@@ -46,7 +42,7 @@ class CacheManager {
 	}
 
 	async save() {
-		if (!existsSync('conf/gen/cache')) await Deno.mkdir('conf/gen/cache')
+		await Deno.mkdir('conf/gen/cache', { recursive: true })
 
 		for (const cat of cachedData) {
 			const collection = this[cat] as any

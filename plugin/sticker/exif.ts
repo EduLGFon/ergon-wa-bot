@@ -5,21 +5,22 @@
  * embedded inside the WebP file. This module builds the raw TIFF/EXIF blob
  * and injects it via node-webpmux (works for both static and animated WebP).
  */
-import webpmux from 'node-webpmux'
-const { Image } = webpmux
 import type { StickerMetadata } from '@plugin/sticker/types.ts'
+import webpmux from 'node-webpmux'
+
+const { Image } = webpmux
 
 /**
  * Build the binary EXIF blob that WhatsApp reads for sticker metadata.
  *
  * TIFF layout (little-endian):
- *   [0..1]   "II"          — byte order mark
- *   [2..3]   0x002A        — TIFF magic number
- *   [4..7]   0x00000008    — offset to IFD0 (from byte 0)
- *   [8..9]   0x0001        — IFD0 entry count
- *   [10..21] IFD entry     — tag 0x0041, type UNDEFINED, → JSON
- *   [22..25] 0x00000000    — next IFD offset (none)
- *   [26..]   JSON payload  — sticker metadata
+ *   [0..1]   "II"          - byte order mark
+ *   [2..3]   0x002A        - TIFF magic number
+ *   [4..7]   0x00000008    - offset to IFD0 (from byte 0)
+ *   [8..9]   0x0001        - IFD0 entry count
+ *   [10..21] IFD entry     - tag 0x0041, type UNDEFINED, -> JSON
+ *   [22..25] 0x00000000    - next IFD offset (none)
+ *   [26..]   JSON payload  - sticker metadata
  */
 function buildExifBlob(metadata: StickerMetadata): Buffer {
 	const json = Buffer.from(

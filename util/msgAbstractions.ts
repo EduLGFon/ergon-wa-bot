@@ -1,15 +1,17 @@
+// msgAbstractions - Baileys send, react and typing touchpoint
+// - wraps sendMsg with media cache lookup and locale templates
 import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
-import type { AnyMessageContent } from 'baileys'
 import { downloadMedia } from '@util/msgTools.ts'
-import { getCtx } from '@util/msgTools.ts'
+import type { AnyMessageContent } from 'baileys'
 import { randomEmoji } from '@util/emojis.ts'
-import emojis from '@util/emojis.ts'
+import { getCtx } from '@util/msgTools.ts'
 import cache from '@plugin/cache.ts'
+import emojis from '@util/emojis.ts'
 import { getFixedT } from 'i18next'
 import User from '@class/user.ts'
 import bot from '@plugin/bot.ts'
 
-export { editMsg, getMedia, reactToMsg, sendMsg, startTyping }
+export { getMedia, reactToMsg, sendMsg, startTyping }
 
 async function getMedia(msg: Msg, startTyping?: Func) {
 	const target = msg.media ? msg : msg.quoted
@@ -90,10 +92,4 @@ async function reactToMsg(this: Msg, emoji: str) {
 	const text = emoji === 'random' ? randomEmoji() : (emojis as any)[emoji] || emoji
 
 	await sendMsg.bind(this.chat)({ react: { text, key: this.key } })
-}
-
-// simple abstraction to edit a msg
-async function editMsg(this: Msg, text: str) {
-	const { chat, key } = this
-	return await sendMsg.bind(chat)({ edit: key, text })
 }

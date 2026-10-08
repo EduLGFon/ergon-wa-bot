@@ -1,3 +1,6 @@
+// Groups update - refresh group cache on subject change
+// Deletes cached group and refetches fresh metadata
+// Partial event args are skipped in favor of full fetch
 import { randomDelay } from '@util/functions.ts'
 import { type GroupMetadata } from 'baileys'
 import cache from '@plugin/cache.ts'

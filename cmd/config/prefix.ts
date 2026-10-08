@@ -1,5 +1,7 @@
-import Cmd from '@class/cmd.ts'
+// Prefix setter - updates user prefix via User model setter with DB sync
+// Needed to let users customize cmd trigger per chat
 import { type CmdCtx } from '@conf/types/types.d.ts'
+import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
 	constructor() {

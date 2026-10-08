@@ -1,3 +1,5 @@
+// Ping command - measures WA latency and DB latency
+// Needed to check bot health and connection status
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import { users } from '@conf/schema.ts'
 import { eq } from 'drizzle-orm'

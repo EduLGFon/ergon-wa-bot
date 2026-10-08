@@ -1,9 +1,13 @@
+// Group announcer - tag-triggered announcement queue
+// Forwards tagged msgs to linked groups in order
+// Simple queue avoids double sends while busy
 import { getMedia, reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
-import { randomDelay } from '@util/functions.ts'
-import Group from '@class/group.ts'
 import { type Msg } from '@conf/types/types.d.ts'
-import User from '@class/user.ts'
+import { randomDelay } from '@util/functions.ts'
 import type { AnyMessageContent } from 'baileys'
+import Group from '@class/group.ts'
+import User from '@class/user.ts'
+
 type Announcement = { text?: str; caption?: str; groups?: str[]; tag?: str; msg?: Msg }
 // Announcement = simple text msg or media msg (replace text by caption)
 
@@ -90,7 +94,6 @@ async function checkGroupAnnouncer(msg: Msg, user: User, group?: Group) {
 
 async function sendAnnouncements() {
 	if (!msgQueue[0]) return // there's no more msgs to send
-	// if (isSending === true) return // containment measure to stop the hell
 	isSending = true // now, sendAnnouncements() won't be called again
 	// until the queue is empty
 

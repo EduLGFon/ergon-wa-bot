@@ -1,6 +1,8 @@
+// Everyone command - tags all group members with anti-ban delay
+// Needed to notify whole group without triggering bans
+import { type CmdCtx } from '@conf/types/types.d.ts'
 import { randomDelay } from '@util/functions.ts'
 import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
 
 export default class extends Cmd {
 	constructor() {

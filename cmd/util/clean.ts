@@ -1,6 +1,8 @@
-import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
+// Clean command - bulk deletes recent group msgs for admins only
+// Needed to moderate spam and keep groups tidy
 import { delay, isValidPositiveIntenger } from '@util/functions.ts'
+import { type CmdCtx } from '@conf/types/types.d.ts'
+import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
 	constructor() {

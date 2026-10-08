@@ -1,5 +1,13 @@
+// Postgres client - drizzle with postgres-js driver
+// Provides getUser, getGroup and createUser helpers
+// Runs without DB when DATABASE_URL is missing
 import { drizzle } from 'drizzle-orm/postgres-js'
 import * as schema from '@conf/schema.ts'
+import cache from '@plugin/cache.ts'
+import Group from '@class/group.ts'
+import User from '@class/user.ts'
+import { eq } from 'drizzle-orm'
+import bot from '@plugin/bot.ts'
 import postgres from 'postgres'
 
 const connectionString = Deno.env.get('DATABASE_URL')
@@ -17,13 +25,7 @@ if (connectionString) {
 
 export const db = dbClient
 
-import Group from '@class/group.ts'
-import User from '@class/user.ts'
-import cache from '@plugin/cache.ts'
-import bot from '@plugin/bot.ts'
-import { eq } from 'drizzle-orm'
-
-export async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
+async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User> {
 	let id = Number(lid.parsePhone()) || Date.now()
 	if (Deno.env.get('DATABASE_URL')) {
 		const data = await db?.insert(schema.users)
@@ -71,11 +73,35 @@ export async function getUser(
 	return
 }
 
-export async function getGroup(id: str): Promise<Group> {
+export async function getGroup(id: str): Promise<Group | null> {
 	let group = cache.groups.get(id)
 	if (group) return group
-	const data = await bot.sock.groupMetadata(id)
+	let data
+	try {
+		data = await bot.sock.groupMetadata(id)
+	} catch (e) {
+		// 403 forbidden = bot was removed or is no longer a member; there is
+		// no metadata to fetch. Return null so callers skip instead of
+		// crashing the event handler with a noisy stack dump.
+		if (isForbiddenGroupError(e)) return null
+		throw e
+	}
 	group = new Group(data)
 	cache.groups.add(group.id, group)
 	return group
+}
+
+// True when Baileys failed groupMetadata because the bot may not query the
+// group (removed, never a member). Boom shape seen in prod: data 403 with
+// an "Error: forbidden" message.
+function isForbiddenGroupError(e: unknown): boolean {
+	try {
+		const anyErr = e as { data?: unknown; message?: unknown; description?: unknown }
+		if (anyErr?.data === 403) return true
+		const msg = typeof anyErr?.message === 'string' ? anyErr.message : ''
+		const desc = typeof anyErr?.description === 'string' ? anyErr.description : ''
+		return msg.includes('forbidden') || desc.includes('forbidden')
+	} catch {
+		return false
+	}
 }

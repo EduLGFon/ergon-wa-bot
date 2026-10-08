@@ -1,3 +1,6 @@
+// Capped Map with primary-key helper.
+// Backs the user, group, and msg caches with size limits and upserts.
+// Prevents unbounded memory growth during long bot sessions.
 export default class Collection<K, V> extends Map<K, V> {
 	primaryKey: str
 	limit: num
@@ -6,10 +9,6 @@ export default class Collection<K, V> extends Map<K, V> {
 		super()
 		this.primaryKey = PK
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
-	}
-
-	override get(key: K): V | undefined {
-		return super.get(key)
 	}
 
 	// Add: adds a value to the collection
@@ -69,19 +68,6 @@ export default class Collection<K, V> extends Map<K, V> {
 		for (const item of this.values()) arr.push(func(item))
 
 		return arr
-	}
-
-	// Reduce: same as Array#reduce
-	reduce(func: (preValue: V, nextValue: V) => V, initialValue: any = 0): any {
-		const items = this.values()
-		let previous = initialValue !== 0 ? initialValue : (items.next().value as V)
-		let nextResult: IteratorResult<V>
-
-		while (!(nextResult = items.next()).done) {
-			previous = func(previous, nextResult.value)
-		}
-
-		return previous
 	}
 
 	// Reverse: reverse items on a array

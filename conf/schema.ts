@@ -1,3 +1,6 @@
+// Drizzle postgres schema.
+// Defines users, msgs, and auth tables used across the bot.
+// Single source of truth for migrations and typed queries.
 import {
 	index,
 	integer,
@@ -32,11 +35,6 @@ export const msgs = pgTable(
 		}
 	},
 )
-
-export const authStorage = pgTable('authStorage', {
-	key: varchar('key').primaryKey(),
-	data: json('data').notNull(),
-})
 
 export const authCreds = pgTable('authCreds', {
 	session: varchar('session').primaryKey(),

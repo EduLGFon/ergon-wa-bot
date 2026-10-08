@@ -1,3 +1,6 @@
+// Memories - MEMORY placeholder extract and persist for Gemini
+// Parses AI output tags into user memories
+// Stores them in DB when available
 import { users } from '@conf/schema.ts'
 import User from '@class/user.ts'
 import { eq } from 'drizzle-orm'

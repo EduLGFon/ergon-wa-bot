@@ -1,3 +1,5 @@
+// Dev-only JS eval - runs code via runCode plugin with timing and RAM report
+// Needed for quick debugging and runtime inspection
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import runCode from '@plugin/runCode.ts'

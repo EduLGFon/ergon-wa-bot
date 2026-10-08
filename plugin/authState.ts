@@ -1,3 +1,6 @@
+// PostgreSQL auth strategy
+// it is used if you setted 'DATABASE_URL' env var
+// if you don't have a DB, file system auth storing will be used instead
 import {
 	type AuthenticationState,
 	BufferJSON,
@@ -8,12 +11,6 @@ import {
 import { authCreds, authKey } from '@conf/schema.ts'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '@db'
-
-/** PostgreSQL auth strategy
- * it is used if you setted 'DATABASE_URL' env var
- * if you don't have a DB, file system auth storing
- * will be used instead
- */
 
 const toStorableJson = (value: unknown) => JSON.parse(JSON.stringify(value, BufferJSON.replacer))
 

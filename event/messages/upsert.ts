@@ -1,10 +1,14 @@
+// Messages upsert - main inbound pipeline
+// Handles revoke backup, ctx parse, perms and cooldown
+// Then dispatches to the matched command
+import { findCachedOriginal, promotePendingDelete, saveDeleted } from '@plugin/deletedStore.ts'
 import { reactToMsg, sendMsg, startTyping } from '@util/msgAbstractions.ts'
 import checkGroupAnnouncer from '@plugin/groupAnnouncer.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
-import { delay } from '@util/functions.ts'
+import { delay, findKey } from '@util/functions.ts'
 import { getCtx } from '@util/msgTools.ts'
-import cache from '@plugin/cache.ts'
 import { type proto } from 'baileys'
+import cache from '@plugin/cache.ts'
 import { getFixedT } from 'i18next'
 import { getUser } from '@db'
 
@@ -14,8 +18,42 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 	for (const m of raw.messages) {
 		if (!m?.message) continue
 
-		// get abstract msg obj
-		const { msg, args, cmd, group, user } = await getCtx(m)
+		if (Deno.env.get('SHOW_IDS')) {
+			print(
+				'UPSERT/shape',
+				`${m.key?.id} keys=${Object.keys(m.message || {}).join(',')}`,
+				'blue',
+			)
+		}
+
+		// Backup revoke path: some deletes arrive as upsert with a
+		// protocolMessage (type REVOKE = 0) instead of messages.update.
+		const protoMsg = findKey(m.message, 'protocolMessage')
+		if (protoMsg?.type === 0 && protoMsg?.key?.id) {
+			try {
+				const chatId = protoMsg.key.remoteJid || m.key?.remoteJid!
+				const orig = findCachedOriginal(chatId, protoMsg.key.id)
+				if (!orig) {
+					// Original never cached: a stashed quote copy may exist - promote it.
+					await promotePendingDelete(chatId, protoMsg.key.id).catch(() => null)
+				} else if (!orig.isBot) {
+					await saveDeleted(orig)
+				}
+			} catch {
+				// best-effort archiving - never break the upsert loop
+			}
+			continue
+		}
+
+		// get abstract msg obj (per-message guard: one bad msg must not drop the batch)
+		let parsed
+		try {
+			parsed = await getCtx(m)
+		} catch (e) {
+			print('CTX/failed', `${m.key?.id} ${(e as Error)?.message || e}`, 'red')
+			continue
+		}
+		const { msg, args, cmd, group, user } = parsed
 		if (!user || !msg) continue
 		if (Deno.env.get('SHOW_IDS')) console.log(user.name, msg.text, group?.id || msg.chat, msg)
 		// this is for dev purpouses like getting a group ID
@@ -31,9 +69,14 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 			if (group) {
 				group.countMsg(msg).catch((e: Error) => print('UPSERT/countMsg', e.message, 'red'))
 			} else {
-				const chat = await getUser({ lid: msg.chat })
-				// store msgs for searching images on sticker cmd
-				chat!.msgs.add(msg.key.id!, msg)
+				try {
+					const chat = await getUser({ lid: msg.chat })
+					// getUser with lid always creates, but guard anyway: a
+					// null chat must not throw and drop the batch.
+					if (chat && msg.key.id) await chat.msgs.add(msg.key.id, msg)
+				} catch (e) {
+					print('UPSERT/dmCache', (e as Error)?.message || e, 'red')
+				}
 			}
 		}
 

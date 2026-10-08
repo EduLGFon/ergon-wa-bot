@@ -1,6 +1,8 @@
 /**
  * Shared type definitions for the sticker engine.
  * Used by both the main thread and worker threads.
+ * Buffers stay as Node Buffer here because sharp and node-webpmux
+ * require it; generic media elsewhere uses Uint8Array (see Buf).
  */
 
 /** Supported sticker crop/resize formats */
@@ -28,7 +30,7 @@ export interface StickerOptions {
 	formats: StickerFormat[]
 	/** Sticker pack metadata for EXIF injection */
 	metadata: StickerMetadata
-	/** Image quality override (1–100). Only affects images. */
+	/** Image quality override (1-100). Only affects images. */
 	quality?: number
 	/** Maximum sticker file size in bytes (default: 1 MB) */
 	maxSize?: number

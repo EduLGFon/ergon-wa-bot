@@ -4,12 +4,11 @@
  *
  * Receives media buffers from the main thread, writes them to a temp file,
  * runs ffmpeg with adaptive quality, and posts result buffers back.
- * All I/O is intentionally synchronous — this thread exists precisely
+ * All I/O is intentionally synchronous - this thread exists precisely
  * to keep blocking work off the main event loop.
  */
-import { join } from 'jsr:@std/path'
-import { cleanup, encodeVideo } from '@plugin/sticker/ffmpeg.ts'
 import type { WorkerRequest, WorkerResponse } from '@plugin/sticker/types.ts'
+import { cleanup, encodeVideo } from '@plugin/sticker/ffmpeg.ts'
 
 const TEMP_DIR = 'conf/gen/temp'
 
@@ -18,15 +17,15 @@ try {
 	Deno.mkdirSync(TEMP_DIR, { recursive: true })
 } catch { /* exists */ }
 
-self.onmessage = (e: MessageEvent<WorkerRequest>) => {
+self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
 	const req = e.data
 	const prefix = `stk_${req.id}_${Date.now()}`
-	const inputPath = join(TEMP_DIR, `${prefix}_in`)
+	const inputPath = `${TEMP_DIR}/${prefix}_in`
 
 	try {
 		Deno.writeFileSync(inputPath, req.buffer)
 
-		const results = encodeVideo(
+		const results = await encodeVideo(
 			inputPath,
 			TEMP_DIR,
 			prefix,

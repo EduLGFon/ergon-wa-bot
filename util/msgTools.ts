@@ -1,13 +1,15 @@
-import { type AnyMessageContent, downloadMediaMessage, type proto } from 'baileys'
+// msgTools - message helpers for ctx, media and quotes
+// - provides getCtx, downloadMedia and orphan quote rescue
+import { findCachedOriginal, savePendingQuote } from '@plugin/deletedStore.ts'
 import { type CmdCtx, type Msg, type MsgTypes } from '@conf/types/types.d.ts'
 import { allMsgTypes, coolValues, isMedia } from '@conf/types/msgs.ts'
+import { downloadMediaMessage, type proto } from 'baileys'
 import { msgs, users } from '@conf/schema.ts'
 import { findKey } from '@util/functions.ts'
 import { db, getGroup, getUser } from '@db'
 import { logger } from '@util/proto.ts'
 import { eq, sql } from 'drizzle-orm'
 import cache from '@plugin/cache.ts'
-import Group from '@class/group.ts'
 import User from '@class/user.ts'
 import bot from '@plugin/bot.ts'
 import Cmd from '@class/cmd.ts'
@@ -26,7 +28,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	if (!coolValues.includes(types[0])) return fakeCtx
 
 	let group = undefined
-	if (key.remoteJid?.includes('@g.us')) group = await getGroup(key.remoteJid)
+	if (key.remoteJid?.includes('@g.us')) group = await getGroup(key.remoteJid) ?? undefined
 
 	let lid = key?.participant
 	if (!lid) lid = key.fromMe ? bot.lid : key.remoteJid!
@@ -43,7 +45,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		type: types[0],
 		text: getMsgText(message!),
 		media: await downloadMedia(raw, types),
-		quoted: await getQuoted(raw, group! || user), // quoted msg
+		quoted: await getQuoted(raw), // quoted msg
 		isBot,
 		mime,
 		isEdited: !!findKey(message, 'editedMessage'),
@@ -106,10 +108,60 @@ async function checkMatch(key: proto.IMessageKey) {
 	}
 }
 
+// Future-proof wrappers (ephemeral, view-once, etc.) nesting the real content.
+// Mirrors the unwrap list of Baileys normalizeMessageContent, which
+// downloadMediaMessage already applies internally - but we need the inner
+// media node ourselves for cache metadata (url, mimetype, ...).
+const wrapperKeys = [
+	'ephemeralMessage',
+	'viewOnceMessage',
+	'viewOnceMessageV2',
+	'viewOnceMessageV2Extension',
+	'documentWithCaptionMessage',
+	'editedMessage',
+	'associatedChildMessage',
+	'groupStatusMessage',
+	'groupStatusMessageV2',
+]
+
+// unwrapContent: strip wrapper layers to reach the real message content.
+function unwrapContent(content: any): any {
+	for (let i = 0; i < 5; i++) {
+		const inner = wrapperKeys.map((k) => content?.[k]).find(Boolean)?.message
+		if (!inner) break
+		content = inner
+	}
+	return content
+}
+
+// findMediaNode: locate the inner node holding url/mediaKey, skipping
+// quotedMessage like findKey does to avoid grabbing quoted media.
+function findMediaNode(content: any): any {
+	if (!content || typeof content !== 'object') return undefined
+	if (content.url || content.mediaKey) return content
+
+	for (const key of Object.getOwnPropertyNames(content)) {
+		if (key === 'quotedMessage') continue
+		const hit = findMediaNode(content[key])
+		if (hit) return hit
+	}
+	return undefined
+}
+
 // download msg media
+// Memory note: buffers stay in cache.media (100 slots). Videos/documents
+// are never cached in RAM - only their keys are returned - because a few
+// 20MB videos exhaust the heap. Images/stickers/audio cap at 8MB cached.
+const MEDIA_CACHE_MAX_BYTES = 20 * 1024 * 1024
+const MEDIA_CACHE_IMAGE_MAX_BYTES = 8 * 1024 * 1024
 async function downloadMedia(raw: any, types: [MsgTypes, str]) {
-	const msg = (raw?.message || raw)[types[1]] || raw
-	if (!isMedia(types[0]) || (!msg.media && !msg.url)) return
+	if (!isMedia(types[0])) return
+	const inner = unwrapContent(raw?.message || raw)
+	const direct = (inner as any)?.[types[1]]
+	const msg = direct && typeof direct === 'object' && (direct.url || direct.mediaKey)
+		? direct
+		: findMediaNode(inner)
+	if (!msg?.url) return
 
 	const keyObj: MediaMsg = {
 		url: msg.url,
@@ -119,6 +171,13 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	}
 
 	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
+	// Large video/document: return keys only, never buffer into RAM here.
+	// The bridge path (plugin/bridge/wa-to-tg/media.ts) owns capped downloads with
+	// concurrency limits; command paths re-download on demand.
+	const isHeavy = types[0] === 'video' || types[0] === 'document'
+	const declaredSize = Number(msg.fileLength?.low ?? msg.fileLength ?? 0)
+	if (isHeavy && declaredSize > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
+	const skipCache = declaredSize > MEDIA_CACHE_MAX_BYTES
 	const buffer = await downloadMediaMessage(
 		raw.message ? raw : { message: raw },
 		'buffer',
@@ -130,6 +189,9 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	).catch((_e) => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
 
 	if (!buffer) return
+	if (skipCache || (buffer as Buffer).length > MEDIA_CACHE_MAX_BYTES) return keyObj
+	// Heavy types stay out of RAM cache past 8MB even when declared small.
+	if (isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
 
 	// media cache
 	cache.media.add(msg.url, {
@@ -176,12 +238,17 @@ function getInput(msg: Msg, prefix: str) {
 }
 
 // getQuoted: get the quoted msg of a raw msg
-async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
+async function getQuoted(raw: proto.IWebMessageInfo) {
 	const m = raw.message!
 
-	let quotedRaw: any = findKey(m, 'quotedMessage')
+	const quotedOrig: any = findKey(m, 'quotedMessage')
 
-	if (!quotedRaw) return
+	if (!quotedOrig) return
+	if (Deno.env.get('SHOW_IDS')) {
+		const stanza = findKey(m, 'contextInfo')?.stanzaId || 'no-stanza'
+		print('QUOTED/shape', `${stanza} keys=${Object.keys(quotedOrig).join(',')}`, 'blue')
+	}
+	let quotedRaw: any = quotedOrig
 	const types = getMsgType(quotedRaw) // quoted message type
 	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
@@ -192,16 +259,64 @@ async function getQuoted(raw: proto.IWebMessageInfo, chat: User | Group) {
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg
 
-	const cachedMsg = chat.msgs.find(
-		(m) =>
-			// compare quoted msg with cached msgs
-			quoted?.type === m.type &&
-			quoted?.media === m.media &&
-			quoted?.text === m.text &&
-			quoted?.mime === m.mime,
-	)
+	if (isMedia(types[0]) || quoted.text) {
+		// The quote may reference an original the bot never cached (sent
+		// before bot start, evicted). Stash a speculative copy keyed by the
+		// stanzaId; it stays hidden until a revoke for it arrives. Real
+		// view-once quotes arrive normalized (plain imageMessage), so no
+		// wrapper sniffing here - the stanzaId correlation is what matters.
+		await rescueOrphanQuote(raw, quotedOrig, quoted, types).catch(() => {})
+	}
 
-	return quoted || cachedMsg
+	return quoted
+}
+
+// rescueOrphanQuote: stash a speculative disk copy of a quoted message when
+// its original is not cached. The quote's stanzaId is the original id, so a
+// later revoke either finds the live original (this stash is skipped) or
+// promotes this copy (rescue). The original sender comes from participant.
+async function rescueOrphanQuote(
+	raw: proto.IWebMessageInfo,
+	quotedOrig: any,
+	quoted: Msg,
+	types: [MsgTypes, str],
+) {
+	const ctxInfo = findKey(raw.message, 'contextInfo')
+	const stanzaId = ctxInfo?.stanzaId as str | undefined
+	const participant = ctxInfo?.participant as str | undefined
+	if (!stanzaId) return
+
+	const chat = ctxInfo?.remoteJid || raw.key?.remoteJid!
+	if (findCachedOriginal(chat, stanzaId)) return // revoke path owns it
+
+	// Media keys: prefer the downloaded result, else rebuild from the inner
+	// node (the download may have failed, but keys persist for a later retry).
+	let media = quoted.media
+	if (!media?.url) {
+		const node = findMediaNode(unwrapContent(quotedOrig))
+		if (node?.url) {
+			media = {
+				url: node.url,
+				directPath: node.directPath,
+				mediaKey: node.mediaKey,
+				thumbnailDirectPath: node.thumbnailDirectPath,
+			}
+		}
+	}
+	if (!quoted.text && !media?.url) return // nothing worth stashing
+
+	const authorUser = participant ? await getUser({ lid: participant }).catch(() => null) : null
+
+	await savePendingQuote({
+		chat,
+		id: stanzaId,
+		author: authorUser?.id ?? 0,
+		authorName: authorUser?.name || authorUser?.phone || 'user',
+		type: types[0],
+		text: quoted.text || '',
+		mime: quoted.mime || '',
+		media,
+	})
 }
 
 // getMsgText: "get msg text"
@@ -224,26 +339,4 @@ function getMsgType(m: proto.IMessage): [MsgTypes, str] {
 	return ['event', Object.keys(m!)[0]] // return raw type
 }
 
-// msgMeta: get some meta data from a msg
-function msgMeta(
-	msg: str | Msg | proto.IMessageKey,
-	body: str | AnyMessageContent,
-	reply?: proto.IWebMessageInfo,
-) {
-	let chat = typeof msg === 'string'
-		? msg
-		: (msg as Msg).chat || (msg as proto.IMessageKey).remoteJid
-	const text = typeof body === 'string' ? { text: body } : body
-	const quote = reply
-		? { quoted: reply }
-		: typeof msg === 'string'
-		? {}
-		: { quoted: (msg as Msg).message }
-	const key = (msg as Msg).key ? (msg as Msg).key : msg as proto.IMessageKey
-
-	if (chat && !chat.includes('@')) chat += '@s.whatsapp.net'
-
-	return { key, text, chat, quote }
-}
-
-export { checkMatch, downloadMedia, getCtx, msgMeta }
+export { checkMatch, downloadMedia, getCtx }

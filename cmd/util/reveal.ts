@@ -1,8 +1,10 @@
+// Reveal command - reveals view-once media via getMedia
+// Needed to let users reopen expiring photos and voice
+import { type CmdCtx } from '@conf/types/types.d.ts'
 import { getMedia } from '@util/msgAbstractions.ts'
 import { randomDelay } from '@util/functions.ts'
 import { type AnyMessageContent } from 'baileys'
 import Cmd from '@class/cmd.ts'
-import { type CmdCtx } from '@conf/types/types.d.ts'
 
 export default class extends Cmd {
 	constructor() {

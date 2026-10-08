@@ -1,5 +1,7 @@
-import Cmd from '@class/cmd.ts'
+// Choose command - picks randomly from comma-separated options
+// Needed for fun decisions and group polls
 import { type CmdCtx } from '@conf/types/types.d.ts'
+import Cmd from '@class/cmd.ts'
 
 export default class extends Cmd {
 	constructor() {

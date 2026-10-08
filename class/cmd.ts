@@ -1,5 +1,8 @@
-import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
+// Abstract Cmd base class.
+// Defines perms, cooldown, and run flow that all commands extend.
+// Keeps permission checks in one place so commands stay small.
 import { reactToMsg, sendMsg } from '@util/msgAbstractions.ts'
+import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
 import { type default as User } from '@class/user.ts'
 import Group from '@class/group.ts'
 import bot from '@plugin/bot.ts'
@@ -40,8 +43,6 @@ export default abstract class Cmd {
 	}
 
 	abstract run(ctx: CmdCtx): Promise<any> // run function
-
-	async checkData() {}
 
 	checkPerms(msg: Msg, user: User, group?: Group) {
 		const send = sendMsg.bind(msg.chat)

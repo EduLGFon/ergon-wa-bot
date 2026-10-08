@@ -1,14 +1,14 @@
+// group-participants.update:
+// This event will update members cache when a group member
+// is promoted or demoted on a group.
 import { type GroupParticipant, type ParticipantAction } from 'baileys'
 import { getGroup } from '@db'
 
-/** group-participants.update:
- * This event will update members cache when a group member
- * is promoted or demoted on a group.
- */
 export default async function (groupEvent: Event) {
 	const group = await getGroup(groupEvent.id)
 	if (!group) return
-	const participant = groupEvent.participants[0]
+	const participant = groupEvent.participants?.[0]
+	if (!participant) return
 
 	switch (groupEvent.action) {
 		case 'promote': {

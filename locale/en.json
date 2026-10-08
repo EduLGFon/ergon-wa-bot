@@ -33,7 +33,9 @@
 			"{es}: Spanish",
 			"{de}: German"
 		],
-		"changed": "[🌎] - Language changed to *{{lng}} *"
+		"changed": "[🌎] - Language changed to *{{lng}} *",
+		"ask": "[🌎] - Which language do you prefer? Current: *{{current}}*\n{{list}}\nReply with *{{prefix}}lang <number or code>*",
+		"invalid": "[❗] - \"{{input}}\" is not a valid language. Current: *{{current}}*\n{{list}}\nReply with *{{prefix}}lang <number or code>*"
 	},
 	"prefix": {
 		"usage": "<Prefix with up to 3 digits>",
