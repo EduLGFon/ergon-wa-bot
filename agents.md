@@ -78,7 +78,7 @@ root file on demand rather than claiming it already exists.
   (longest on top, shortest on bottom of the imports section), keeping logical statement order (do
   not break code to satisfy order).
 - Formatter: `deno fmt` (tabs, single quotes, no semicolons, width 100, excludes `conf/gen/python`,
-  `conf/gen/auth`, `conf/gen/temp`, `conf/gen/prisma`).
+  `conf/gen/auth`, `conf/gen/temp`).
 - Linter: `deno lint` (excludes `no-explicit-any`, `no-import-prefix`, `no-unversioned-import`).
 - Type checker: `deno check` (compiler `strict: true`, `skipLibCheck: false`, types
   `conf/types/global.d.ts`). Same verify chain as the linter.

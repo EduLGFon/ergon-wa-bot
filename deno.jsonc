@@ -8,8 +8,7 @@
 		"exclude": [
 			"conf/gen/python",
 			"conf/gen/auth",
-			"conf/gen/temp",
-			"conf/gen/prisma"
+			"conf/gen/temp"
 		]
 	},
 	"lint": {
