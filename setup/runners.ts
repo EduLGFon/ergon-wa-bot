@@ -108,7 +108,7 @@ export async function runStrongSetup() {
 	return true
 }
 
-// 3 - Update bot
+// 2 - Update bot
 export function runUpdate() {
 	console.log('\n--- Running Update ---')
 	console.log('Pulling latest code changes...')

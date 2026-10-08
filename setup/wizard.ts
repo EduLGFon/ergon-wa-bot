@@ -6,7 +6,7 @@ import { runResetLight, runResetStrong } from './reset.ts'
 import { configureEnv, existsSync } from './env.ts'
 import { loadEnv } from './reset.ts'
 
-// 4 - Start-Restart bot
+// 3 - Start/Restart bot
 export function runStartForeground() {
 	console.log('\n=========================================')
 	console.log('     Starting Bot in Foreground          ')
@@ -51,7 +51,7 @@ export function runStartBackground() {
 	console.log('Background process launched. Run PM2 stop to terminate.')
 }
 
-// 5 - Stop bot
+// 4 - Stop bot
 export function runStop() {
 	console.log('\n--- Stopping PM2 Process ---')
 	runCmd('pm2', ['delete', 'wa'])
@@ -86,7 +86,9 @@ export async function main() {
 		switch ((choice || '').trim()) {
 			case '1': {
 				console.log('\nSetup Options:')
-				console.log('  1. Light: Minimum packages to run (npm install only)')
+				console.log(
+					'  1. Light: Minimum to run (global tools, Deno install, schema generate)',
+				)
 				console.log(
 					'  2. Medium: Light setup + Python dependencies (Background removal and Video download)',
 				)

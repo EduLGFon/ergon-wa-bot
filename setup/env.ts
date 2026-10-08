@@ -11,7 +11,7 @@ export function existsSync(path: string): boolean {
 		return false
 	}
 }
-// 2 - Configure Environment
+// Setup submenu - Configure Environment
 export function configureEnv(_rl: any) {
 	console.log('\n=========================================')
 	console.log('       Configuration Wizard              ')

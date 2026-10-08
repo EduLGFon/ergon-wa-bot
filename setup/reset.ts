@@ -51,7 +51,7 @@ export function loadEnv() {
 	}
 }
 
-// 6 - Reset folders and database
+// 5 - Reset folders and database
 export function cleanFolderContents(dirPath: string) {
 	if (existsSync(dirPath)) {
 		try {
