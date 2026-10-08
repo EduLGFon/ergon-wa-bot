@@ -85,8 +85,8 @@ Using the wizard, you can also manage the bot lifecycle:
 - **Configure**: Set up environment variables, timezone, language, prefix, database URL, Gemini API
   keys, and the optional Telegram bridge.
 - **Install/Setup**: Choose Light, Medium, or Strong setup levels.
-- **Update**: Run a full update that pulls latest repository commits, updates npm/pip packages, and
-  re-generates schemas.
+- **Update**: Run a full update that pulls latest repository commits, updates Deno/pip packages, and
+  re-generates the Drizzle schema.
 - **Start/Restart**: Run the bot in the **Foreground** (interactive console) or **Background** (via
   PM2).
 - **Stop**: Stop and clean up running background PM2 processes.
@@ -119,7 +119,8 @@ If you prefer running a single command, choose one of these modes based on your 
 
 - Just scan the QR Code that will appear on terminal and then it's ready!
 
-> ⚠️ » All logs and QR codes will appear on `conf/log.txt`.
+> ⚠️ » The QR code prints in the terminal. Bot logs go to `conf/gen/out.log` and `conf/gen/err.log`
+> (PM2) or the console when running in dev.
 
 # 🎨 New Custom Sticker Engine
 
@@ -166,7 +167,7 @@ deno task stop
 deno task update
 # It will: pull commits from repository,
 # update Deno packages, update Python dependencies,
-# generate Drizzle schema, and rebuild source.
+# and generate Drizzle schema.
 
 # 'update' won't start services.
 
