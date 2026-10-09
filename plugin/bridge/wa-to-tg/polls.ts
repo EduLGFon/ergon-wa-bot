@@ -82,11 +82,14 @@ export async function handleWaPollVote(m: proto.IWebMessageInfo): Promise<void> 
 		const entry = db.getByWaMsgIdAny(creationId, [mapping.whatsapp_jid, ...cands])
 		const senderName = voteSenderName(m)
 		if (!entry || !entry.wa_poll_secret || !entry.wa_poll_options) {
-			await notifyTopic(
-				chatForMapping(mapping, groups),
-				mapping.telegram_topic_id,
-				waUnsupportedLine(m, senderName),
-			)
+			const line = waUnsupportedLine(m, senderName)
+			if (line) {
+				await notifyTopic(
+					chatForMapping(mapping, groups),
+					mapping.telegram_topic_id,
+					line,
+				)
+			}
 			return
 		}
 		if (!node.vote?.encPayload || !node.vote?.encIv) return

@@ -10,6 +10,7 @@ import { resolveChatName } from './chat.ts'
 import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
+import { isPureEnvelope } from './unsupported.ts'
 import { handleWaReactionCarrier } from './reaction-summary.ts'
 import { getSpecialContent } from './special.ts'
 import { handleWaPollResults, handleWaPollVote, msgSecretOf } from './polls.ts'
@@ -72,6 +73,15 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			if (findKey(m.message, 'secretEncryptedMessage')) {
 				await handleWaSecretEdit(m)
 				continue
+			}
+			// Pure E2EE setup (senderKeyDistributionMessage only, which Baileys
+			// already consumed for group decryption) carries no user content.
+			// Drop before mapping so replay storms never create topics or spam
+			// Telegram with unsupported notices.
+			try {
+				if (isPureEnvelope(m)) continue
+			} catch {
+				// fall through to normal relay on helper failure
 			}
 
 			const rawJid = m.key.remoteJid

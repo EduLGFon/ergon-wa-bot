@@ -45,8 +45,33 @@ export const WA_UNSUPPORTED_FRIENDLY: Record<string, string> = {
 
 // Envelope/metadata keys that are never the "real" content type. Baileys
 // messages almost always carry messageContextInfo alongside the payload, so
-// the descriptor must skip it instead of reporting it.
+// the descriptor must skip it instead of reporting it. senderKeyDistributionMessage
+// is Signal SenderKey setup Baileys already consumed - bundled copies ride
+// alongside real content, pure copies carry nothing to relay.
 export const WA_ENVELOPE_KEYS = new Set(['messageContextInfo', 'senderKeyDistributionMessage'])
+
+// True when the unwrapped message carries only envelope/metadata keys (e.g.
+// a pure senderKeyDistributionMessage + messageContextInfo). These are group
+// E2EE setup Baileys already consumed - no user content, nothing to relay,
+// so callers must drop them silently instead of posting an unsupported notice.
+export function isPureEnvelope(m: proto.IWebMessageInfo): boolean {
+	try {
+		let raw: any = null
+		try {
+			raw = unwrap(m?.message)
+		} catch {
+			return false
+		}
+		if (raw?.deviceSentMessage?.message && typeof raw.deviceSentMessage.message === 'object') {
+			raw = raw.deviceSentMessage.message
+		}
+		if (!raw || typeof raw !== 'object') return false
+		const keys = Object.keys(raw)
+		return keys.length > 0 && keys.every((k) => WA_ENVELOPE_KEYS.has(k))
+	} catch {
+		return false
+	}
+}
 
 // A media node whose download failed would otherwise vanish silently -
 // tell the topic what exactly didn't cross, with its kind and size when the
@@ -63,7 +88,10 @@ export async function notifyEmptyRelay(
 	if (dl) {
 		await notifyTopic(chatId, topicId, waDownloadFailureLine(dl.label, dl.bytes))
 	} else {
+		// Pure E2EE setup carries no user content - drop silently, no log spam.
+		if (isPureEnvelope(m)) return
 		const line = waUnsupportedLine(m, senderName)
+		if (!line) return
 		console.warn(`[BRIDGE] unsupported WA message: ${line}`)
 		await notifyTopic(chatId, topicId, line)
 	}
@@ -76,7 +104,13 @@ export async function notifyEmptyRelay(
 //   ⚠️ A WhatsApp poll vote (pollUpdateMessage) from Alice has no Telegram
 //   equivalent - it didn't cross. (#3A1F...)
 //   > voted: Option B
-export function waUnsupportedLine(m: proto.IWebMessageInfo, senderName?: string | null): string {
+//
+// Returns null for pure envelope/setup messages (senderKeyDistributionMessage
+// only) - those carry no user content and must be dropped silently.
+export function waUnsupportedLine(
+	m: proto.IWebMessageInfo,
+	senderName?: string | null,
+): string | null {
 	try {
 		let raw: any = null
 		try {
@@ -91,7 +125,13 @@ export function waUnsupportedLine(m: proto.IWebMessageInfo, senderName?: string 
 		}
 		const keys: string[] = raw && typeof raw === 'object' ? Object.keys(raw) : []
 		const contentKeys = keys.filter((k) => !WA_ENVELOPE_KEYS.has(k))
-		const primary = contentKeys[0] ?? keys[0] ?? 'unknownMessage'
+		// Pure E2EE setup (only envelope keys, at least one) carries no user
+		// content - not an unsupported user message, drop silently. Empty
+		// payloads (no keys at all) still fall through to unknownMessage.
+		if (contentKeys.length === 0) {
+			if (keys.length > 0) return null
+		}
+		const primary = contentKeys[0] ?? 'unknownMessage'
 		const node = raw?.[primary]
 		const friendly = WA_UNSUPPORTED_FRIENDLY[primary] ??
 			(primary.endsWith('Message')

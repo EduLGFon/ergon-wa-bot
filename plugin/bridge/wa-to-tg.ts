@@ -20,7 +20,7 @@ export { annotateMentions, getMentionedJids, jidPhone } from './wa-to-tg/text.ts
 export { waBytes, waDownloadFailureLine } from './wa-to-tg/media-utils.ts'
 export { classifyEditError, routeEdit } from './wa-to-tg/errors.ts'
 export { waReactionToTgEmoji } from './wa-to-tg/reactions.ts'
-export { waUnsupportedLine } from './wa-to-tg/unsupported.ts'
+export { isPureEnvelope, WA_ENVELOPE_KEYS, waUnsupportedLine } from './wa-to-tg/unsupported.ts'
 export { getSpecialContent } from './wa-to-tg/special.ts'
 export { isAlbumEligible } from './wa-to-tg/album.ts'
 export type { WaDownload } from './wa-to-tg/media.ts'
