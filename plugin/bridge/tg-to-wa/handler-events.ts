@@ -1,6 +1,7 @@
 // Telegram reaction and edit handlers - lightweight event paths.
 // Split from handlers.ts so each file stays under the size budget.
 import { bucketOfChat, type GroupIds } from '../wa-to-tg/routing.ts'
+import { parsePollOptions } from '../wa-to-tg/poll-tally.ts'
 import { restoreWaKey, tgReactionToWaEmoji } from './content.ts'
 import { sendWaPollVote } from '../wa-to-tg/polls.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
@@ -102,13 +103,7 @@ export function registerTgPollAnswerHandler(
 			if (!mapping || mapping.archived || mapping.muted) return
 			const chatId = mapping.telegram_chat_id || groups.personal
 			const topicId = mapping.telegram_topic_id
-			let options: string[] = []
-			try {
-				const parsed: unknown = JSON.parse(entry.wa_poll_options || '[]')
-				if (Array.isArray(parsed)) options = parsed.filter((o) => typeof o === 'string')
-			} catch {
-				options = []
-			}
+			const { options } = parsePollOptions(entry.wa_poll_options)
 			const names = (Array.isArray(ans.option_ids) ? ans.option_ids : [])
 				.map((i: number) => options[i])
 				.filter((n: unknown): n is string => typeof n === 'string' && n.length > 0)

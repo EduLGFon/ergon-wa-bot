@@ -1,20 +1,22 @@
 // WhatsApp poll live tally - one edited message per poll instead of a reply
-// per vote.
+// per vote, now with tap-to-vote plus a voter viewer (see D10).
 //
 // Every WA poll vote decrypts into (voter, selected options); the roster
-// persists in reply_map.wa_poll_tally and renders as a single message
-// replied under the poll, edited on each vote:
+// persists in reply_map.wa_poll_tally and renders as a single compact
+// message replied under the poll, edited on each vote:
 //   📊 3 votes
-//   A - 2 (67%) - You, Alice
-//   B - 1 (33%) - Bob
-// Echoes of our own TG-TO-WA votes pass through unchanged - applying a
-// voter's selection is idempotent, so no echo guard is needed. Deletes the
-// tally when the last voter leaves, and re-posts fresh if the tally message
-// was lost (restart, manual delete). When no tally message can be created
-// the vote still lands as a one-off `🗳️ X voted:` reply line (the old
-// per-vote behavior).
+//   A - 2 (67%)
+//   B - 1 (33%)
+// Per-option buttons vote directly (tap toggles on multi polls, replaces on
+// single ones) and a viewer button reveals who voted what - voter names live
+// behind that button instead of inline. Echoes of our own TG-TO-WA votes pass
+// through unchanged - applying a voter's selection is idempotent, so no echo
+// guard is needed. Deletes the tally when the last voter leaves, and re-posts
+// fresh if the tally message was lost (restart, manual delete). When no tally
+// message can be created the vote still lands as a one-off reply line.
 import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
 import { chatForReply } from './routing.ts'
+import { selfJid } from './jid.ts'
 import type { GroupIds } from './routing.ts'
 import type { ReplyMapRow } from '../db.ts'
 
@@ -23,7 +25,7 @@ interface VoterRec {
 	opts: string[]
 }
 
-interface TallyState {
+export interface TallyState {
 	summaryMsgId: number | null
 	voters: Record<string, VoterRec>
 }
@@ -31,7 +33,7 @@ interface TallyState {
 const MAX_NAMES_PER_LINE = 8
 
 // Roster from row JSON - malformed rows start fresh, the tally just re-posts.
-function parseTally(raw: string | null | undefined): TallyState {
+export function parseTally(raw: string | null | undefined): TallyState {
 	const t: TallyState = { summaryMsgId: null, voters: {} }
 	if (!raw) return t
 	try {
@@ -56,32 +58,126 @@ function parseTally(raw: string | null | undefined): TallyState {
 	return t
 }
 
-// Tally body - one line per option, busiest first. The denominator is the
-// number of voters, so multi-choice votes can exceed 100% summed (matching
-// WhatsApp). Empty when nobody voted.
+// Stored poll options with the multi flag - new rows store an object,
+// rows mirrored before D10 a bare array. Both read the same way.
+export function parsePollOptions(
+	raw: string | null | undefined,
+): { options: string[]; multi: boolean } {
+	if (!raw) return { options: [], multi: false }
+	try {
+		const parsed: unknown = JSON.parse(raw)
+		if (Array.isArray(parsed)) {
+			return {
+				options: parsed.filter((o): o is string => typeof o === 'string'),
+				multi: false,
+			}
+		}
+		if (parsed && typeof parsed === 'object') {
+			const o = parsed as { options?: unknown; multi?: unknown }
+			const options = Array.isArray(o.options)
+				? o.options.filter((x): x is string => typeof x === 'string')
+				: []
+			return { options, multi: o.multi === true }
+		}
+	} catch {
+		// Fall through to empty.
+	}
+	return { options: [], multi: false }
+}
+
+// Tally body - counts only, busiest first. Voter names live behind the
+// viewer button (see renderVoterDetail). The denominator is the number of
+// voters, so multi-choice votes can exceed 100% summed (matching WhatsApp).
+// Empty when nobody voted.
 export function renderTally(options: string[], t: TallyState): string {
 	const voters = Object.values(t.voters).filter((v) => v.opts.length > 0)
 	if (voters.length === 0) return ''
 	const total = voters.length
 	const rows: Array<{ count: number; index: number; line: string }> = options
 		.map((opt, index) => {
-			const who = voters.filter((v) => v.opts.includes(opt)).map((v) => v.name).sort()
-			const count = who.length
+			const count = voters.filter((v) => v.opts.includes(opt)).length
 			if (count === 0) return { count, index, line: `${opt} - 0 (0%)` }
 			const pct = Math.round((count * 100) / total)
-			const shown = who.slice(0, MAX_NAMES_PER_LINE).join(', ')
-			const more = who.length > MAX_NAMES_PER_LINE
-				? ` +${who.length - MAX_NAMES_PER_LINE} more`
-				: ''
-			return { count, index, line: `${opt} - ${count} (${pct}%) - ${shown}${more}` }
+			return { count, index, line: `${opt} - ${count} (${pct}%)` }
 		})
 		.sort((a, b) => b.count - a.count || a.index - b.index)
 	return `📊 ${total} vote${total === 1 ? '' : 's'}\n${rows.map((r) => r.line).join('\n')}`
 }
 
+// Voter detail for the viewer button - one line per voted option with its
+// voters. Short rosters answer as an alert, long ones as a topic reply.
+export function renderVoterDetail(options: string[], t: TallyState): string {
+	const voters = Object.values(t.voters).filter((v) => v.opts.length > 0)
+	const total = voters.length
+	const lines = options.map((opt) => {
+		const who = voters.filter((v) => v.opts.includes(opt)).map((v) => v.name).sort()
+		if (who.length === 0) return `${opt} - 0`
+		const shown = who.slice(0, MAX_NAMES_PER_LINE).join(', ')
+		const more = who.length > MAX_NAMES_PER_LINE
+			? ` +${who.length - MAX_NAMES_PER_LINE} more`
+			: ''
+		return `${opt} - ${who.length} - ${shown}${more}`
+	})
+	return `Voters (${total})\n${lines.join('\n')}`
+}
+
+// Inline keyboard for the tally: one vote button per option (mirroring the
+// TG 10-option cap) with a tick on the owner's picks, plus a voter viewer.
+// Stateless callbacks - restarts never break them.
+export function buildVoteKeyboard(
+	mirrorId: number,
+	options: string[],
+	ownerOpts: string[],
+	total: number,
+): object {
+	const rows = options.slice(0, 10).map((opt, i) => [{
+		text: `${ownerOpts.includes(opt) ? '✓ ' : ''}${opt.slice(0, 28)}`,
+		callback_data: `pv:${mirrorId}:${i}`,
+	}])
+	rows.push([{ text: `👀 Voters (${total})`, callback_data: `pl:${mirrorId}` }])
+	return { reply_markup: { inline_keyboard: rows } }
+}
+
+// Voters with a live selection - the denominator behind every count.
+export function totalOf(t: TallyState): number {
+	return Object.values(t.voters).filter((v) => v.opts.length > 0).length
+}
+
+// The owner's current picks for tick marks - matched by bare account JID
+// (own votes always echo with fromMe, so the key is stable).
+export function ownerVoterOpts(t: TallyState): string[] {
+	const me = selfJid()
+	if (!me) return []
+	return t.voters[me]?.opts ?? []
+}
+
+// One update per poll at a time - rapid votes serialize instead of racing
+// the roster read-modify-write.
+const tallyChains = new Map<string, Promise<void>>()
+
 // Apply one decrypted vote to the roster and update the tally message in
 // place. names is the voter's new selection - empty removes the voter.
-export async function applyPollTally(
+export function applyPollTally(
+	entry: ReplyMapRow,
+	mapping: { telegram_chat_id: string; telegram_topic_id: number },
+	groups: GroupIds,
+	voterJid: string,
+	voterName: string,
+	names: string[],
+): Promise<void> {
+	const key = `${entry.tg_chat_id}:${entry.tg_msg_id}`
+	const prev = tallyChains.get(key) || Promise.resolve()
+	const next = prev.then(() =>
+		applyPollTallyInner(entry, mapping, groups, voterJid, voterName, names)
+	).catch((e) => console.error('[BRIDGE] poll tally update failed:', shortErr(e)))
+	tallyChains.set(key, next)
+	next.finally(() => {
+		if (tallyChains.get(key) === next) tallyChains.delete(key)
+	}).catch(() => null)
+	return next
+}
+
+async function applyPollTallyInner(
 	entry: ReplyMapRow,
 	mapping: { telegram_chat_id: string; telegram_topic_id: number },
 	groups: GroupIds,
@@ -91,15 +187,10 @@ export async function applyPollTally(
 ): Promise<void> {
 	const { db, tg } = relayCtx
 	if (!db || !tg) return
-	let options: string[] = []
-	try {
-		const parsed: unknown = JSON.parse(entry.wa_poll_options || '[]')
-		if (Array.isArray(parsed)) options = parsed.filter((o) => typeof o === 'string')
-	} catch {
-		options = []
-	}
+	const fresh = db.getReplyMapAt(entry.tg_chat_id, entry.tg_msg_id) ?? entry
+	const { options } = parsePollOptions(fresh.wa_poll_options)
 	if (options.length === 0) return
-	const t = parseTally(entry.wa_poll_tally)
+	const t = parseTally(fresh.wa_poll_tally)
 	if (names.length === 0) {
 		delete t.voters[voterJid]
 	} else {
@@ -126,9 +217,10 @@ export async function applyPollTally(
 		return
 	}
 	if (t.summaryMsgId != null) {
+		const keyboard = buildVoteKeyboard(entry.tg_msg_id, options, ownerVoterOpts(t), totalOf(t))
 		try {
 			await tgCall(
-				() => tg!.api.editMessageText(chatId, t.summaryMsgId!, body),
+				() => tg!.api.editMessageText(chatId, t.summaryMsgId!, body, keyboard as object),
 				'edit-text',
 				chatId,
 			)
@@ -139,6 +231,7 @@ export async function applyPollTally(
 		}
 	}
 	try {
+		const keyboard = buildVoteKeyboard(entry.tg_msg_id, options, ownerVoterOpts(t), totalOf(t))
 		const sent = await tgCall(
 			() =>
 				tg!.api.sendMessage(chatId, body, {
@@ -147,6 +240,7 @@ export async function applyPollTally(
 						message_id: entry.tg_msg_id,
 						allow_sending_without_reply: true,
 					},
+					...(keyboard as object),
 				}),
 			'message',
 			chatId,

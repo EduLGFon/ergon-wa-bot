@@ -109,3 +109,19 @@ footer in place; stickers, polls and long texts keep a compact reply line instea
 refresh the stored base and re-apply the footer; deletes clear the roster, line and button with the
 mirror. `BRIDGE_REACTION_SUMMARY` is retired (always-on behavior, env key kept as a no-op for
 compat). Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
+
+## D10 - Tap-to-vote poll buttons with voter viewer (2026-10-09)
+
+Same UX as the D09 reaction footer, adapted to polls (TG polls cannot be edited, so the tally reply
+is the vote content). The tally is now counts-only with one tap-to-vote button per option (ticked on
+the owner's picks) plus a viewer button showing who voted what (alert when short, topic reply when
+long). A tap rebuilds the encrypted selection and sends it like a native TG poll answer; the tally
+refreshes when the WA echo lands (idempotent, no echo guard needed). Taps toggle on multi polls and
+replace on single ones; clearing a whole vote or re-tapping a single pick only toasts, because the
+vote builder requires a non-empty selection. The owner matches by bare account JID, stable since own
+votes always echo with fromMe. Multi is captured at mirror time (`selectableCount > 1`), stored in
+the poll meta (old bare-array rows still read), and the TG mirror is now multi-answer when WA is. No
+new retention: the roster already lived on the reply_map row and the same voter names moved from
+inline to behind the button. Verified: `deno task verify` chain plus a targeted poll-logic smoke
+(option parsing both shapes, toggle/replace selection math, tally and viewer rendering); no live
+WA/TG smoke in this environment.

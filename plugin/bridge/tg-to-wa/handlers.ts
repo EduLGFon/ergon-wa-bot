@@ -162,6 +162,7 @@ export function registerTgMessageHandler(
 						db.savePollMeta(chatId, msg.message_id, {
 							secret: null,
 							options: pollOpts,
+							multi: msg.poll?.allows_multiple_answers === true,
 							creator: selfJid(),
 							pollId,
 						})

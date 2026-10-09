@@ -416,16 +416,17 @@ without touching WA.
     `contacts.update` picture changes, text fallback when hidden, Personal/Business buttons on the
     card while undecided, see D04 and D05); `calls.ts` (one editable notice per call id across
     offer/ringing/ accept/reject/timeout/terminate, missed vs ended lines); `polls.ts` (poll crypto
-    metadata, vote decrypt, result lines, vote encrypt + relay); `poll-tally.ts` (live per-poll
-    tally - one edited message showing per-option counts, percentages and voters, folding to a
-    one-off per-vote reply line when no tally message can be posted); `rich.ts` (contacts, invites,
-    events, scheduled calls, sticker packs and offline call logs as text notices); `special.ts`
-    (location/contact/poll mapping - every poll-creation version, V4 and the option-image variant
-    unwrapped via `pollNodeOf`); `unsupported.ts`/`unsupported-preview.ts` friendly
-    `type
-  (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
-    `tgCall` queue (routes by destination chatId via `limiterFor` - business supergroup to the
-    business lane, everything else personal) + `notifyTopic` (never throws/loops).
+    metadata, vote decrypt, result lines, vote encrypt + relay, tap-to-vote and voter-viewer
+    buttons); `poll-tally.ts` (live per-poll tally - one edited counts-only message with vote
+    buttons plus a voter viewer, folding to a one-off per-vote reply line when no tally message can
+    be posted); `rich.ts` (contacts, invites, events, scheduled calls, sticker packs and offline
+    call logs as text notices); `special.ts` (location/contact/poll mapping - every poll-creation
+    version, V4 and the option-image variant unwrapped via `pollNodeOf`);
+    `unsupported.ts`/`unsupported-preview.ts` friendly `type
+  (rawKey) + preview + sender` notices;
+    `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue (routes by destination chatId via
+    `limiterFor` - business supergroup to the business lane, everything else personal) +
+    `notifyTopic` (never throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 11 modules): `handlers.ts` guards (either group, no bots, has
   topic, mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album
   buffering (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback

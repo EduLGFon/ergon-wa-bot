@@ -131,10 +131,13 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   download limit are skipped up front with a notice naming the cap, and album failures say which
   item (`item 3 of 5`) or how many photos stalled. The notice itself never throws or loops.
 - Polls cross natively both ways with live vote sync: WA creation mirrors as a non-anonymous TG poll
-  (every payload version, option images unwrapped to text), TG-created polls become native WA polls,
-  and votes on either side decrypt/encrypt into the other via the `reply_map` poll metadata (see
-  `docs/ARCHITECTURE.md` §14), with a live tally message (counts, percentages, voters). Sent TG
-  polls can't be re-edited and WA poll payloads are immutable, so close/stop isn't mirrored.
+  (every payload version, option images unwrapped to text, multi-answer honored), TG-created polls
+  become native WA polls, and votes on either side decrypt/encrypt into the other via the
+  `reply_map` poll metadata (see `docs/ARCHITECTURE.md` §14), with one live tally reply per poll
+  (counts plus percentages, edited per vote). Each option rides a tap-to-vote button on the tally
+  (tick marks your picks; tap toggles on multi polls, replaces on single ones) plus a viewer button
+  showing who voted what. Sent TG polls can't be re-edited and WA poll payloads are immutable, so
+  close/stop isn't mirrored.
 - Group joins and exits relay silent (no notification ping); admin changes (promote/demote) post
   normal service lines. Renames also rename the topic.
 - New topics open with a pinned profile card (WA photo + about for DMs, icon + description for

@@ -164,6 +164,7 @@ async function sendToTopicInner(
 				db.savePollMeta(chatId, sent.msgId, {
 					secret: msgSecret,
 					options: special.options,
+					multi: special.multi,
 					creator: pollCreatorOf(waMsg),
 					pollId: sent.pollId,
 				})

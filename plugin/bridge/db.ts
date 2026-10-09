@@ -626,15 +626,18 @@ export class BridgeDB {
 	}
 
 	// Poll metadata for a mirrored WA poll - messageSecret (vote crypto),
-	// ordered option names (TG answers carry indexes), creator JID (vote
-	// signature) and the Telegram poll id. Runs right after the native
-	// sendPoll mirror so votes in either direction resolve.
+	// ordered option names (TG answers carry indexes), multi flag (tap
+	// buttons toggle on multi polls, replace on single - see D10), creator
+	// JID (vote signature) and the Telegram poll id. Runs right after the
+	// native sendPoll mirror so votes in either direction resolve. Old rows
+	// store a bare options array - parsePollOptions reads both shapes.
 	savePollMeta(
 		tgChatId: string,
 		tgMsgId: number,
 		meta: {
 			secret: Uint8Array | null
 			options: string[]
+			multi: boolean
 			creator: string
 			pollId: string | null
 		},
@@ -643,7 +646,7 @@ export class BridgeDB {
 			'UPDATE reply_map SET wa_poll_secret = ?, wa_poll_options = ?, wa_poll_creator = ?, tg_poll_id = ? WHERE tg_chat_id = ? AND tg_msg_id = ?',
 		).run(
 			meta.secret ? Buffer.from(meta.secret) : null,
-			JSON.stringify(meta.options),
+			JSON.stringify({ options: meta.options, multi: meta.multi }),
 			meta.creator || null,
 			meta.pollId,
 			tgChatId,

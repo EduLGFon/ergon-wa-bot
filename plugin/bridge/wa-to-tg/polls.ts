@@ -9,6 +9,7 @@
 // votes). The vote is always cast by the owner's account - exact for this
 // single-user bridge.
 import { applyPollTally } from './poll-tally.ts'
+import { parsePollOptions, parseTally, renderVoterDetail, totalOf } from './poll-tally.ts'
 import {
 	aesEncryptGCM,
 	decryptPollVote,
@@ -17,13 +18,14 @@ import {
 	proto,
 	sha256,
 } from 'baileys'
+import { bucketOfChat, chatForMapping, type GroupIds } from './routing.ts'
 import { candidatesOf, normalizeJid, selfJid } from './jid.ts'
-import { notifyTopic, relayCtx, shortErr } from './state.ts'
+import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
 import { waUnsupportedLine } from './unsupported.ts'
-import { chatForMapping } from './routing.ts'
 import { findKey } from '@util/functions.ts'
+import type { BridgeDB, ReplyMapRow } from '../db.ts'
 import { phoneOf } from './text.ts'
-import type { ReplyMapRow } from '../db.ts'
+import type { Bot } from 'grammy'
 import bot from '@plugin/bot.ts'
 
 // Original messageSecret captured at mirror time - seals poll votes and,
@@ -208,5 +210,146 @@ export async function sendWaPollVote(entry: ReplyMapRow, names: string[]): Promi
 	const full = buildPollUpdate(key, entry.wa_msg_id, creator, voter, secret, names)
 	await (bot.sock as any).relayMessage(entry.wa_jid, full.message, {
 		messageId: full.key.id || undefined,
+	})
+}
+
+type WaSend = <T>(fn: () => Promise<T>) => Promise<T>
+
+// Tap-to-vote plus voter viewer for mirrored WA polls (see D10). A tap
+// rebuilds the encrypted selection and sends it exactly like a native TG
+// poll answer; the tally (with fresh ticks) refreshes when the WA echo
+// lands. Stateless callbacks - restarts never break them.
+export function registerPollButtonHandlers(
+	tg: Bot,
+	db: BridgeDB,
+	groups: GroupIds,
+	waSend: WaSend,
+): void {
+	tg.callbackQuery(/^pv:(\d+):(\d+)$/, async (ctx) => {
+		try {
+			if (ctx.from?.is_bot) return
+			const chatId = String(ctx.chat?.id ?? '')
+			if (!chatId || bucketOfChat(chatId, groups) === null) {
+				await ctx.answerCallbackQuery({ text: 'Unknown group.' }).catch(() => null)
+				return
+			}
+			const mirrorId = Number(ctx.match?.[1])
+			const idx = Number(ctx.match?.[2])
+			const entry = db.getReplyMapAt(chatId, mirrorId)
+			const mapping = entry && db.getByJidOrAlias(entry.wa_jid)
+			if (!entry || !mapping || mapping.archived || mapping.muted) {
+				await ctx.answerCallbackQuery({ text: 'This poll is gone.' }).catch(() => null)
+				return
+			}
+			if (!entry.wa_poll_secret || !entry.wa_poll_creator) {
+				await ctx.answerCallbackQuery({
+					text: 'Voting from here is unavailable for this poll.',
+				}).catch(() => null)
+				return
+			}
+			const { options, multi } = parsePollOptions(entry.wa_poll_options)
+			const opt = options[idx]
+			if (!opt || idx < 0 || idx >= 10) {
+				await ctx.answerCallbackQuery({ text: 'That option is gone.' }).catch(() => null)
+				return
+			}
+			const me = selfJid()
+			if (!me) {
+				await ctx.answerCallbackQuery({ text: 'Bridge offline - try again in a bit.' })
+					.catch(() => null)
+				return
+			}
+			const cur = parseTally(entry.wa_poll_tally).voters[me]?.opts ?? []
+			let names: string[]
+			if (multi) {
+				names = cur.includes(opt)
+					? cur.filter((o) => o !== opt)
+					: [...cur.filter((o) => options.includes(o)), opt]
+				if (names.length === 0) {
+					await ctx.answerCallbackQuery({
+						text: 'Clearing your whole vote needs WhatsApp.',
+					})
+						.catch(() => null)
+					return
+				}
+			} else {
+				if (cur.length === 1 && cur[0] === opt) {
+					await ctx.answerCallbackQuery({
+						text: `Already voted for ${opt.slice(0, 80)}.`,
+					})
+						.catch(() => null)
+					return
+				}
+				names = [opt]
+			}
+			const toast = multi
+				? `Vote: ${names.join(', ').slice(0, 120)}`
+				: `Voted: ${opt.slice(0, 120)}`
+			await ctx.answerCallbackQuery({ text: toast }).catch(() => null)
+			try {
+				await waSend(() => sendWaPollVote(entry, names))
+				db.updateLastActive(entry.wa_jid)
+			} catch (e) {
+				console.error('[BRIDGE] button vote failed:', shortErr(e))
+				await tgCall(
+					() =>
+						tg.api.sendMessage(chatId, `⚠️ Couldn't vote for ${opt.slice(0, 80)}.`, {
+							message_thread_id: mapping.telegram_topic_id,
+							reply_parameters: {
+								message_id: mirrorId,
+								allow_sending_without_reply: true,
+							},
+						}),
+					'notice',
+					chatId,
+				).catch(() => null)
+			}
+		} catch (e) {
+			console.error('[BRIDGE] poll vote button failed:', e)
+		}
+	})
+
+	tg.callbackQuery(/^pl:(\d+)$/, async (ctx) => {
+		try {
+			if (ctx.from?.is_bot) return
+			const chatId = String(ctx.chat?.id ?? '')
+			if (!chatId || bucketOfChat(chatId, groups) === null) {
+				await ctx.answerCallbackQuery({ text: 'Unknown group.' }).catch(() => null)
+				return
+			}
+			const mirrorId = Number(ctx.match?.[1])
+			if (!Number.isFinite(mirrorId) || mirrorId <= 0) {
+				await ctx.answerCallbackQuery({ text: 'Voters expired.' }).catch(() => null)
+				return
+			}
+			const row = db.getReplyMapAt(chatId, mirrorId)
+			const { options } = parsePollOptions(row?.wa_poll_options)
+			const t = parseTally(row?.wa_poll_tally)
+			if (!row || options.length === 0 || totalOf(t) === 0) {
+				await ctx.answerCallbackQuery({ text: 'No votes yet.' }).catch(() => null)
+				return
+			}
+			const text = renderVoterDetail(options, t)
+			if (text.length <= 180) {
+				await ctx.answerCallbackQuery({ text, show_alert: true }).catch(() => null)
+				return
+			}
+			await ctx.answerCallbackQuery().catch(() => null)
+			const mapping = db.getByJidOrAlias(row.wa_jid)
+			await tgCall(
+				() =>
+					tg.api.sendMessage(chatId, text.slice(0, 1000), {
+						message_thread_id: mapping?.telegram_topic_id,
+						reply_parameters: {
+							message_id: mirrorId,
+							allow_sending_without_reply: true,
+						},
+					}),
+				'message',
+				chatId,
+			).catch(() => null)
+		} catch (e) {
+			console.error('[BRIDGE] poll viewer button failed:', e)
+		}
 	})
 }

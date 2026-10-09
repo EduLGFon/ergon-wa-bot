@@ -22,6 +22,9 @@ export interface WaSpecialPoll {
 	kind: 'poll'
 	question: string
 	options: string[]
+	// True when WA allows picking several options (selectableCount > 1) -
+	// the TG mirror and the vote buttons honor it (see D10).
+	multi: boolean
 }
 export type WaSpecial = WaSpecialLocation | WaSpecialContact | WaSpecialPoll
 
@@ -72,6 +75,7 @@ export function getSpecialContent(message: proto.IMessage | undefined | null): W
 				kind: 'poll',
 				question: String(pollNode.name || 'Poll'),
 				options,
+				multi: Number(pollNode.selectableCount || 0) > 1,
 			}
 		}
 		return null
@@ -149,6 +153,7 @@ export async function sendSpecial(
 						{
 							...thread,
 							is_anonymous: false,
+							allows_multiple_answers: special.multi,
 							...reply,
 						},
 					),
