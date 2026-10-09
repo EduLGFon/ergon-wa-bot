@@ -4,15 +4,13 @@
 // would fight the main bot for the session, so all handlers piggyback on the
 // running singleton and must attach AFTER loadEvents clears listeners.
 import { handleGroupParticipants, handleGroupUpdates } from './chat.ts'
+import { handleProfilePictureChange } from './profile-events.ts'
 import type { RateLimiter } from '../rate-limiter.ts'
-import { reactionSummaryMode } from './reaction-summary.ts'
-import { handleWaReactions } from './reactions.ts'
-import { handleWaCalls } from './calls.ts'
 import { relayCtx, setRelayCtx } from './state.ts'
 import { handleWAMessages } from './incoming.ts'
 import { handleWaDeletes } from './deletes.ts'
 import { handleWaEdits } from './edits.ts'
-import { handleProfilePictureChange } from './profile-events.ts'
+import { handleWaCalls } from './calls.ts'
 import type { proto, WACallEvent } from 'baileys'
 import type { BridgeDB } from '../db.ts'
 import type { Bot } from 'grammy'
@@ -36,20 +34,10 @@ export function attachWaRelay(
 			console.error('[BRIDGE] WA-TO-TG handler failed:', e)
 		}
 	})
-	// Reactions ride a separate event on the same shared socket. Attached
-	// here (after loadEvents) for the same removeAllListeners reason.
-	// Skipped in summary mode - the upsert carriers own reactions there
-	// (they carry the author, this event does not).
-	bot.sock.ev.on(
-		'messages.reaction',
-		async (reactions: { key: proto.IMessageKey; reaction: proto.IReaction }[]) => {
-			try {
-				if (!reactionSummaryMode) await handleWaReactions(reactions)
-			} catch (e) {
-				console.error('[BRIDGE] WA-TO-TG reaction handler failed:', e)
-			}
-		},
-	)
+	// Reactions arrive as upsert carriers (reactionMessage content) - the
+	// tracker attributes authors from the carrier itself (see D09), so no
+	// separate messages.reaction listener is needed (that event carries no
+	// author at all).
 	// Edits arrive as `messages.update` (protocol MESSAGE_EDIT), not upsert -
 	// the bridge previously ignored them, so WA edits never reached Telegram.
 	bot.sock.ev.on(

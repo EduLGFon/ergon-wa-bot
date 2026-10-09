@@ -1,13 +1,11 @@
 // WhatsApp reaction relay - emoji normalization and Telegram mapping.
 //
-// Each side mirrors through a single bot identity so concurrent reactors are
-// last-writer-wins by design - this normalizes WA emojis for Telegram, skips
-// TG-initiated echoes and retries REACTION_INVALID with the default heart.
+// Telegram bots get one native reaction per message, so the merged footer
+// in reaction-summary.ts is the primary display - this normalizes WA emojis
+// for the best-effort popular-emoji mirror and retries REACTION_INVALID
+// with the default heart.
 import { isTargetGone, reactionErrorDescription } from './errors.ts'
-import { chatForReply } from './routing.ts'
-import { candidatesOf } from './jid.ts'
 import { relayCtx, tgCall } from './state.ts'
-import type { proto } from 'baileys'
 
 // Emojis already warned about (REACTION_INVALID) so repeats stay silent.
 const warnedReactions = new Set<string>()
@@ -110,8 +108,8 @@ const WA_TO_TG_REACTION_FALLBACK: Record<string, string> = {
 }
 
 // Set (or clear, with null) the bot reaction on a Telegram mirror, retrying
-// REACTION_INVALID once with the default heart. Shared by the
-// last-writer-wins path below and the reaction-summary popular emoji.
+// REACTION_INVALID once with the default heart. Used for the best-effort
+// popular-emoji mirror beside the merged footer (see reaction-summary.ts).
 export async function applyTgReaction(
 	chatId: string,
 	tgMsgId: number,
@@ -163,49 +161,5 @@ export async function applyTgReaction(
 			return
 		}
 		throw e
-	}
-}
-
-// WhatsApp reaction -> Telegram reaction. Each side mirrors through a single
-// bot identity (bots get one reaction per message on Telegram, one react per
-// key on WhatsApp), so concurrent reactors are last-writer-wins by design.
-export async function handleWaReactions(
-	reactions: { key: proto.IMessageKey; reaction: proto.IReaction }[],
-): Promise<void> {
-	const { db, limiter, tg, groups } = relayCtx
-	if (!db || !limiter || !tg) return
-
-	for (const { key, reaction } of reactions) {
-		try {
-			const targetId = key?.id
-			if (!targetId || !key?.remoteJid || key.remoteJid === 'status@broadcast') continue
-			const cands = candidatesOf(key)
-			const mapping = cands.map((c) => db.getByJidOrAlias(c)).find((m) =>
-				m && !m.archived && !m.muted
-			)
-			if (!mapping) continue
-			// Unmapped targets (pre-bridge history, pruned) can't be quoted
-			// by Telegram - nothing to attach the reaction to.
-			const target = db.getByWaMsgIdAny(targetId, [mapping.whatsapp_jid, ...cands])
-			if (!target) {
-				continue
-			}
-
-			const emoji = waReactionToTgEmoji(reaction?.text)
-			// Echo of our own TG-TO-WA react (marked before the WA send) - the
-			// TG message already shows this reaction; re-setting would loop.
-			// NOTE: no blanket fromMe skip here. The bridge socket is the
-			// owner's account, so genuine reactions made on the owner's phone
-			// arrive with fromMe=true too - skipping those would drop every
-			// own-phone reaction silently (only the marked echo is skipped).
-			// The mark uses the reply_map row JID, so consume it the same way.
-			if (db.takeTgReact(target.wa_jid, targetId, emoji || '')) {
-				continue
-			}
-			const chatId = chatForReply(target, mapping, groups)
-			await applyTgReaction(chatId, target.tg_msg_id, emoji)
-		} catch (e) {
-			console.error('[BRIDGE] failed to relay one WA reaction:', e)
-		}
 	}
 }

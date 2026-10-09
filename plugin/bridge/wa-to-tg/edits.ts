@@ -4,9 +4,10 @@
 // arrive on the same event with null message - this routes each mirror to the
 // right Telegram endpoint and skips TG-initiated echoes to avoid 400 loops.
 import { annotateMentions, getMsgText, hasMentionAll, mentionedJidsOf, phoneOf } from './text.ts'
+import { reapplyReactions, storeMirrorBase } from './reaction-summary.ts'
 import { resolveContactName } from './contact-names.ts'
-import { TG_TEXT_LIMIT } from './chunk.ts'
 import { describeErr, logEditFailure, routeEdit } from './errors.ts'
+import { TG_TEXT_LIMIT } from './chunk.ts'
 import { chatForReply } from './routing.ts'
 import { type proto, WAMessageStubType } from 'baileys'
 import { waMarkdownToTgEntities } from '../format.ts'
@@ -144,6 +145,15 @@ export async function handleWaEdits(
 				} else {
 					logEditFailure(target.tg_msg_id, first)
 				}
+			}
+			// The stored base stays footer-free so later reaction renders and
+			// tombstones reuse the exact new text, then any existing footer
+			// is re-applied on top (no-op when nobody reacted).
+			try {
+				storeMirrorBase(target, body, kept)
+				await reapplyReactions(chatId, target.tg_msg_id)
+			} catch {
+				// Reaction re-apply is best effort - the edit above landed.
 			}
 			// Tail of an over-limit text edit lands as a follow-up message.
 			if ((route === 'text' || route === 'both') && body.length > TG_TEXT_LIMIT) {

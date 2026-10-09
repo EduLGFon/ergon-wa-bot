@@ -5,6 +5,7 @@
 // spoiler tombstone so context survives, deleting only when no content was
 // stored.
 import { STORED_TEXT_MAX } from './media-utils.ts'
+import { clearReactions } from './reaction-summary.ts'
 import { chatForReply } from './routing.ts'
 import { logDeleteFailure } from './errors.ts'
 import { candidatesOf } from './jid.ts'
@@ -134,6 +135,9 @@ export async function deleteTgMirror(
 		return
 	}
 	const chatId = chatForReply(target, mapping, groups)
+	// Reaction state lives on the same row - drop its reply line and button
+	// first so neither outlives the mirror (see D09).
+	await clearReactions(chatId, target.tg_msg_id).catch(() => null)
 	if (await spoilerTgMirror(target, chatId)) return
 	try {
 		await tgCall(() => tg!.api.deleteMessage(chatId, target.tg_msg_id), 'delete', chatId)

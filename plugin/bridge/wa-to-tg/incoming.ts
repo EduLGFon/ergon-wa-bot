@@ -10,7 +10,7 @@ import { resolveChatName } from './chat.ts'
 import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
-import { handleWaReactionCarrier, reactionSummaryMode } from './reaction-summary.ts'
+import { handleWaReactionCarrier } from './reaction-summary.ts'
 import { getSpecialContent } from './special.ts'
 import { handleWaPollResults, handleWaPollVote, msgSecretOf } from './polls.ts'
 import { handleWaSecretEdit } from './secret-edits.ts'
@@ -36,15 +36,13 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			// carriers: Baileys delivers every reaction BOTH as messages.upsert
 			// with reactionMessage content AND as messages.reaction. The
 			// carrier's reactionMessage.text is the emoji itself, which
-			// getMsgText would otherwise relay as a bogus "You: ❤️" message -
-			// reactions travel via handleWaReactions only.
+			// getMsgText would otherwise relay as a bogus "You: heart" message -
+			// carriers own reactions (they carry the author, the event does
+			// not - see D09).
 			if (findKey(m.message, 'protocolMessage')) continue
 			const reactionNode = findKey(m.message, 'reactionMessage')
 			if (reactionNode) {
-				// Summary mode attributes authors from the carrier itself (the
-				// messages.reaction event carries no author); otherwise
-				// reactions travel via handleWaReactions only (see relay.ts).
-				if (reactionSummaryMode) await handleWaReactionCarrier(m, reactionNode)
+				await handleWaReactionCarrier(m, reactionNode)
 				continue
 			}
 			// Pin carriers (pinInChatMessage) ride the same upsert event - they

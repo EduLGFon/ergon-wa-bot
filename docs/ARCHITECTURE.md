@@ -359,13 +359,14 @@ without touching WA.
   (`TELEGRAM_OWNER_ID` else the personal supergroup creator) for @all/@mention pings.
 - `db.ts`: SQLite WAL at `conf/gen/bridge.db`. `mappings` (WA JID <-> TG topic, chat type,
   archived/muted flags, last-active) and `reply_map` (TG msg <-> WA key + kind + text/entity
-  snapshot + poll crypto columns + live poll vote roster + per-message secret for encrypted edits,
-  pruned past 7d, weekly VACUUM). `jid_aliases` maps user LID<->PN only (group JIDs refused, boot
-  purges mixed rows). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`,
-  `pendingFollowUps`, 1000-cap) suppress relaying our own TG edits/reactions/
-  pins/caption-follow-ups back. `mappings` also keeps the pinned profile card state
-  (`profile_pic_url`, `profile_about`, `profile_msg_id`, see D04). `contact_names` maps speaker JIDs
-  to learned display names for @Name mention rendering (see D06).
+  snapshot + poll crypto columns + live poll vote roster + merged reaction roster
+  - per-message secret for encrypted edits, pruned past 7d, weekly VACUUM). `jid_aliases` maps user
+    LID<->PN only (group JIDs refused, boot purges mixed rows). In-memory echo sets
+    (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`, `pendingFollowUps`, 1000-cap) suppress
+    relaying our own TG edits/reactions/ pins/caption-follow-ups back. `mappings` also keeps the
+    pinned profile card state (`profile_pic_url`, `profile_about`, `profile_msg_id`, see D04).
+    `contact_names` maps speaker JIDs to learned display names for @Name mention rendering (see
+    D06).
 - `format.ts`: pure converters - TG entities (UTF-16 offsets) to WA inline markers (`*bold*`,
   `_italic_`, `~strike~`, `` `code` ``, triple-backtick pre, links, `> quote`) and back (pre -> bold
   -> italic -> strike -> code passes).
@@ -406,25 +407,25 @@ without touching WA.
     (singletons arrive ~1.5s late by design, chunk send + caption follow-up in `album-send.ts`);
     `edits.ts` (text in place, caption fallback, sticker/special skip); `deletes.ts` (spoiler
     tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard delete + drop mapping);
-    `reactions.ts` (emoji normalize, last-writer-wins, `REACTION_INVALID` -> heart retry, shared
-    `applyTgReaction`); `reaction-summary.ts` (opt-in author-attributed summary beside the
-    popular-emoji mirror); `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin
-    natively with a service line, TG echoes consumed via the `pendingTgPins` guard); `profile.ts` +
-    `profile-events.ts` (pinned WA profile card per topic: photo plus about/desc on new topics,
-    re-sent and re-pinned on `contacts.update` picture changes, text fallback when hidden,
-    Personal/Business buttons on the card while undecided, see D04 and D05); `calls.ts` (one
-    editable notice per call id across offer/ringing/ accept/reject/timeout/terminate, missed vs
-    ended lines); `polls.ts` (poll crypto metadata, vote decrypt, result lines, vote encrypt +
-    relay); `poll-tally.ts` (live per-poll tally - one edited message showing per-option counts,
-    percentages and voters, folding to a one-off per-vote reply line when no tally message can be
-    posted); `rich.ts` (contacts, invites, events, scheduled calls, sticker packs and offline call
-    logs as text notices); `special.ts` (location/contact/poll mapping - every poll-creation
-    version, V4 and the option-image variant unwrapped via `pollNodeOf`);
-    `unsupported.ts`/`unsupported-preview.ts` friendly `type
-  (rawKey) + preview + sender` notices;
-    `errors.ts` log triage; `state.ts` shared ctx + `tgCall` queue (routes by destination chatId via
-    `limiterFor` - business supergroup to the business lane, everything else personal) +
-    `notifyTopic` (never throws/loops).
+    `reactions.ts` (WA emoji normalize for the popular-emoji mirror, `REACTION_INVALID` -> heart
+    retry, shared `applyTgReaction`); `reaction-summary.ts` (merged reaction footer with counts
+    inside the mirror plus a viewer button, roster persisted on the reply_map row - see D09);
+    `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
+    line, TG echoes consumed via the `pendingTgPins` guard); `profile.ts` + `profile-events.ts`
+    (pinned WA profile card per topic: photo plus about/desc on new topics, re-sent and re-pinned on
+    `contacts.update` picture changes, text fallback when hidden, Personal/Business buttons on the
+    card while undecided, see D04 and D05); `calls.ts` (one editable notice per call id across
+    offer/ringing/ accept/reject/timeout/terminate, missed vs ended lines); `polls.ts` (poll crypto
+    metadata, vote decrypt, result lines, vote encrypt + relay); `poll-tally.ts` (live per-poll
+    tally - one edited message showing per-option counts, percentages and voters, folding to a
+    one-off per-vote reply line when no tally message can be posted); `rich.ts` (contacts, invites,
+    events, scheduled calls, sticker packs and offline call logs as text notices); `special.ts`
+    (location/contact/poll mapping - every poll-creation version, V4 and the option-image variant
+    unwrapped via `pollNodeOf`); `unsupported.ts`/`unsupported-preview.ts` friendly
+    `type
+  (rawKey) + preview + sender` notices; `errors.ts` log triage; `state.ts` shared ctx +
+    `tgCall` queue (routes by destination chatId via `limiterFor` - business supergroup to the
+    business lane, everything else personal) + `notifyTopic` (never throws/loops).
 - TG->WA (`tg-to-wa.ts` facade + 11 modules): `handlers.ts` guards (either group, no bots, has
   topic, mapping active/unmuted), entity conversion, 20MB-capped download, `media_group_id` album
   buffering (1.2s window, ordered singles - Baileys has no album API), quote stub or fallback
@@ -444,9 +445,10 @@ without touching WA.
 - Cross-cutting: pairing auto-creates on first WA sight (or `/new`) into the personal group as
   `undecided` until the buttons/commands classify it; renames sync, mute/archive pause both
   directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes no
-  delete event); pins sync both ways except TG->WA unpin (no Bot API update on unpin); reactions
-  need bot admin + opt-in `allowed_updates` (now including `callback_query`); every failure becomes
-  a topic `warning` notice + log, never a throw or loop. `scripts/bridge_buckets.ts` bulk-classifies
+  delete event); pins sync both ways except TG->WA unpin (no Bot API update on unpin); WA reactions
+  merge into the mirror with counts plus a viewer button (see D09) while TG->WA reactions need bot
+  admin + opt-in `allowed_updates` (now including `callback_query`); every failure becomes a topic
+  `warning` notice + log, never a throw or loop. `scripts/bridge_buckets.ts` bulk-classifies
   existing chats (dry-run default, `--yes` applies).
 
 ## 15. Setup wizard (`setup.ts` + `setup/`)

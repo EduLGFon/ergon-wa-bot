@@ -91,3 +91,21 @@ delete rights; without them the query stays visible but search still runs). Memb
 start-chat mirroring `/new` (verify, topic in the same group, mapping, profile card, duplicate
 guard). Menu also toggles mute and personal/business moves (business wipes per D05). Verified:
 `deno task verify` chain only (no live WA/TG smoke in this environment).
+
+## D09 - Merged WA reaction footer with viewer button (2026-10-09)
+
+Telegram bots get one native reaction per message and reject many WhatsApp emojis, so the old
+last-writer-wins mirror showed a single mapped emoji and dropped the rest. Every WA reaction now
+tracks by author from the upsert carriers (the `messages.reaction` event carries no author, so its
+listener is gone) and renders a compact footer inside the mirror itself (`heart 2  thumbsup 1`,
+original WA emojis verbatim, nothing mapped away) with a stateless `rx:<mirrorId>` button that
+reveals who reacted on each emoji (short rosters as an alert, long ones as a topic reply). The
+popular emoji is still set natively best-effort via the existing `REACTION_INVALID` heart fallback.
+Roster persists as JSON on the `reply_map` row (`wa_reactions`: per-author name plus emoji plus
+timestamp, capped at 100 voters and 20 emojis, plus the fallback line id), so it survives restarts
+and prunes with the row after 7 days - no retention widening; reactor names are the same display
+names already relayed in message labels. Editable mirrors (text, short media captions) carry the
+footer in place; stickers, polls and long texts keep a compact reply line instead. WA text edits
+refresh the stored base and re-apply the footer; deletes clear the roster, line and button with the
+mirror. `BRIDGE_REACTION_SUMMARY` is retired (always-on behavior, env key kept as a no-op for
+compat). Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).

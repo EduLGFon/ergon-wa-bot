@@ -69,6 +69,10 @@ export interface ReplyMapRow {
 	// { name, opts }, plus the tally message id). Edited per vote instead
 	// of a reply per voter - null on polls with no tally yet.
 	wa_poll_tally: string | null
+	// Merged WA reaction roster (JSON: { v: authorKey -> { n, e, t }, s })
+	// plus the fallback reply-line id for non-editable mirrors. Null when
+	// nobody reacted - pruned with the row after 7 days (see D09).
+	wa_reactions: string | null
 	// Original messageSecret for encrypted-edit decryption. Newer WhatsApp
 	// clients seal every edit in a secretEncryptedMessage envelope keyed by
 	// this secret - null on rows mirrored before it was captured.
@@ -255,6 +259,12 @@ export class BridgeDB {
 		}
 		if (!pollCols.some((c) => c.name === 'wa_poll_tally')) {
 			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_poll_tally TEXT DEFAULT NULL`)
+		}
+		// Merged WA reaction roster (see DECISIONS.md#D09): per-voter emoji
+		// plus the fallback reply-line id for non-editable mirrors. Lives on
+		// the same 7-day reply_map row, so no retention widening.
+		if (!pollCols.some((c) => c.name === 'wa_reactions')) {
+			this.db.exec(`ALTER TABLE reply_map ADD COLUMN wa_reactions TEXT DEFAULT NULL`)
 		}
 		this.db.exec(
 			'CREATE INDEX IF NOT EXISTS idx_reply_poll ON reply_map(tg_poll_id)',
@@ -664,6 +674,47 @@ export class BridgeDB {
 			).run(Buffer.from(secret), tgChatId, tgMsgId)
 		} catch {
 			// Best effort - a missing secret only loses encrypted edits.
+		}
+	}
+
+	// All mirror rows for one WA message (chunked long texts save one row
+	// per chunk under the same wa_msg_id). Newest TG id last.
+	getByWaMsgIdAll(waMsgId: string, waJid: string): ReplyMapRow[] {
+		try {
+			return this.db.prepare(
+				'SELECT * FROM reply_map WHERE wa_msg_id = ? AND wa_jid = ? ORDER BY tg_msg_id ASC',
+			).all(waMsgId, waJid) as unknown as ReplyMapRow[]
+		} catch {
+			return []
+		}
+	}
+
+	// Merged reaction roster for a mirror row (see DECISIONS.md#D09).
+	// Malformed rows start empty - the next reaction rebuilds.
+	saveReactions(tgChatId: string, tgMsgId: number, state: string | null): void {
+		try {
+			this.db.prepare(
+				'UPDATE reply_map SET wa_reactions = ? WHERE tg_chat_id = ? AND tg_msg_id = ?',
+			).run(state, tgChatId, tgMsgId)
+		} catch {
+			// Best effort - a lost roster only misses one footer update.
+		}
+	}
+
+	// Refresh the stored mirror base after a WA text edit (without any
+	// reaction footer). Keeps later footer renders and tombstones exact.
+	updateMirrorBase(
+		tgChatId: string,
+		tgMsgId: number,
+		text: string | null,
+		entitiesJson: string | null,
+	): void {
+		try {
+			this.db.prepare(
+				'UPDATE reply_map SET tg_text = ?, tg_entities = ? WHERE tg_chat_id = ? AND tg_msg_id = ?',
+			).run(text, entitiesJson, tgChatId, tgMsgId)
+		} catch {
+			// Best effort - a stale base only affects one footer render.
 		}
 	}
 
