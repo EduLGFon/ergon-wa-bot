@@ -23,6 +23,7 @@ export interface MediaDispatch {
 	caption: string | undefined
 	captionEntities: { caption_entities: any[] } | undefined
 	save: (tgId: number, kind: any) => void
+	priority?: boolean
 }
 
 export async function dispatchKind(d: MediaDispatch): Promise<void> {
@@ -40,7 +41,8 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 		save,
 	} = d
 	// Route every send through this chat's lane (personal vs business).
-	const call = <T>(fn: () => Promise<T>, label: string): Promise<T> => tgCall(fn, label, chatId)
+	const call = <T>(fn: () => Promise<T>, label: string): Promise<T> =>
+		tgCall(fn, label, chatId, d.priority ?? false)
 	let sent: { message_id: number }
 
 	switch (media.kind) {
@@ -134,6 +136,7 @@ export async function dispatchKind(d: MediaDispatch): Promise<void> {
 			entities,
 			reply,
 			(msgId) => save(msgId, 'text'),
+			d.priority ?? false,
 		)
 	}
 }

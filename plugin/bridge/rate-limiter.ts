@@ -6,6 +6,10 @@
 // between individual API calls (not per logical message - one logical send
 // can be 2-3 API calls: header + sticker, content + follow-up, …).
 //
+// DM priority: WA 1:1 messages enqueue with `priority=true` and jump ahead
+// of queued group traffic (FIFO among themselves), so a DM burst never
+// waits behind a group backlog.
+//
 // Flood handling: when Telegram answers 429, the failing item is retried
 // (unbounded) after the server's `retry_after`, and the whole queue pauses
 // for that duration. Delivery slows down instead of dropping info - a 429
@@ -77,6 +81,7 @@ interface QueueItem {
 	reject: (e: unknown) => void
 	attempts: number
 	label: string
+	priority: boolean
 }
 
 // Backpressure cap: enqueue waits for space instead of rejecting, so info
@@ -130,7 +135,7 @@ export class RateLimiter {
 		this.retryBufferMs = opts.retryBufferMs ?? 500
 	}
 
-	enqueue<T>(fn: () => Promise<T>, label = 'send'): Promise<T> {
+	enqueue<T>(fn: () => Promise<T>, label = 'send', priority = false): Promise<T> {
 		// Deep backlog: shed low-value load immediately so user messages
 		// keep flowing. 500 x 3s is already ~25min of delay.
 		if (this.queue.length >= DROP_WHEN_DEEP && DROPPABLE_LABELS.has(label)) {
@@ -152,6 +157,16 @@ export class RateLimiter {
 				reject,
 				attempts: 0,
 				label,
+				priority,
+			}
+			if (priority) {
+				// DM fast lane: jump ahead of queued group traffic (FIFO
+				// among priority items) so 1:1 messages always go first.
+				let idx = this.queue.findIndex((q) => !q.priority)
+				if (idx === -1) idx = this.queue.length
+				this.queue.splice(idx, 0, item)
+				void this.drain()
+				return
 			}
 			if (this.queue.length >= MAX_QUEUE) {
 				// Full: slow the producer instead of dropping. Poll for space;
@@ -173,7 +188,13 @@ export class RateLimiter {
 				const waitForSpace = (): void => {
 					if (this.queue.length < MAX_QUEUE) {
 						this.waiters = Math.max(0, this.waiters - 1)
-						this.queue.push(item)
+						if (item.priority) {
+							let idx = this.queue.findIndex((q) => !q.priority)
+							if (idx === -1) idx = this.queue.length
+							this.queue.splice(idx, 0, item)
+						} else {
+							this.queue.push(item)
+						}
 						void this.drain()
 					} else if (Date.now() - parkedAt > MAX_PARK_MS) {
 						this.waiters = Math.max(0, this.waiters - 1)

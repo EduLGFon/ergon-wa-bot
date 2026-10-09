@@ -58,6 +58,7 @@ export async function sendTgText(
 	entities: TgEntity[],
 	reply: Record<string, unknown> | undefined,
 	onSent: (msgId: number) => void,
+	priority = false,
 ): Promise<void> {
 	for (const chunk of chunkTgBody(body, entities)) {
 		const sent = await tgCall(
@@ -69,6 +70,7 @@ export async function sendTgText(
 				}),
 			'message',
 			chatId,
+			priority,
 		) as { message_id: number }
 		onSent(sent.message_id)
 	}

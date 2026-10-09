@@ -96,6 +96,7 @@ export async function sendSpecial(
 	reply:
 		| { reply_parameters: { message_id: number; allow_sending_without_reply: boolean } }
 		| undefined,
+	priority = false,
 ): Promise<SentSpecial | null> {
 	const { tg } = relayCtx
 	if (!tg) return null
@@ -113,6 +114,7 @@ export async function sendSpecial(
 					),
 				'location',
 				chatId,
+				priority,
 			)
 			return { msgId: sent.message_id, pollId: null }
 		}
@@ -125,6 +127,7 @@ export async function sendSpecial(
 					}),
 				'contact',
 				chatId,
+				priority,
 			)
 			return { msgId: sent.message_id, pollId: null }
 		}
@@ -151,6 +154,7 @@ export async function sendSpecial(
 					),
 				'poll',
 				chatId,
+				priority,
 			)
 			return { msgId: sent.message_id, pollId: sent.poll?.id ?? null }
 		}

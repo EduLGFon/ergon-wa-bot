@@ -43,6 +43,7 @@ export async function sendAlbumChunk(
 			},
 		}
 		: undefined
+	const priority = !jid.endsWith('@g.us')
 	const sentArr = await tgCall(
 		() =>
 			tg!.api.sendMediaGroup(chatId, inputMedia as any, {
@@ -51,6 +52,7 @@ export async function sendAlbumChunk(
 			}),
 		'media-group',
 		chatId,
+		priority,
 	) as { message_id: number }[]
 	sentArr.forEach((s, i) => {
 		const it = chunk[i]
@@ -87,5 +89,5 @@ export async function sendAlbumChunk(
 			{ chatId },
 		)
 		db!.saveMsgSecret(chatId, msgId, msgSecretOf(last.m))
-	})
+	}, priority)
 }

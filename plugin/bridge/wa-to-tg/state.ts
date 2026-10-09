@@ -92,10 +92,11 @@ export function tgCall<T>(
 	fn: () => Promise<T>,
 	label = 'send',
 	chatId?: string | number,
+	priority = false,
 ): Promise<T> {
 	const limiter = limiterFor(chatId) ?? relayCtx.limiter
 	if (!limiter) return fn()
-	return limiter.enqueue(fn, label)
+	return limiter.enqueue(fn, label, priority)
 }
 
 // Best-effort ⚠️ notice to the affected topic so a relay failure is visible

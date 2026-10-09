@@ -135,6 +135,7 @@ async function sendToTopicInner(
 	// Every mirror keeps its messageSecret so later secretEncryptedMessage
 	// (MESSAGE_EDIT) envelopes sealed against it can decrypt.
 	const msgSecret = msgSecretOf(waMsg)
+	const priority = !waJid.endsWith('@g.us')
 	const save = (tgId: number, kind: MirrorKind): void => {
 		;(db as BridgeDB).saveReplyMap(
 			tgId,
@@ -153,7 +154,7 @@ async function sendToTopicInner(
 	// first (carrying the native reply), then any text as a follow-up.
 	// Each API call is its own limiter slot.
 	if (special) {
-		const sent = await sendSpecial(topicId, chatId, special, reply)
+		const sent = await sendSpecial(topicId, chatId, special, reply, priority)
 		if (sent) {
 			save(sent.msgId, 'special')
 			// Poll mirrors keep their crypto metadata so votes relay both
@@ -177,6 +178,7 @@ async function sendToTopicInner(
 				entities,
 				reply,
 				(msgId) => save(msgId, 'text'),
+				priority,
 			)
 		}
 		return
@@ -191,6 +193,7 @@ async function sendToTopicInner(
 			entities,
 			reply,
 			(msgId) => save(msgId, 'text'),
+			priority,
 		)
 		return
 	}
@@ -207,6 +210,7 @@ async function sendToTopicInner(
 				}),
 			'message',
 			chatId,
+			priority,
 		)
 	}
 
@@ -225,6 +229,7 @@ async function sendToTopicInner(
 				() => api.sendVideoNote(chatId, file, { ...thread, ...reply }),
 				'video-note',
 				chatId,
+				priority,
 			)
 		} catch (e) {
 			// A flood-exhausted send must propagate, not fall back - the
@@ -241,6 +246,7 @@ async function sendToTopicInner(
 					}),
 				'video',
 				chatId,
+				priority,
 			)
 		}
 		save(sentNote.message_id, 'media')
@@ -253,6 +259,7 @@ async function sendToTopicInner(
 				entities,
 				reply,
 				(msgId) => save(msgId, 'text'),
+				priority,
 			)
 		}
 		return
@@ -270,5 +277,6 @@ async function sendToTopicInner(
 		caption,
 		captionEntities,
 		save,
+		priority,
 	})
 }
