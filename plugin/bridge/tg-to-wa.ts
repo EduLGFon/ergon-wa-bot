@@ -44,6 +44,7 @@ export function registerTgHandlers(
 		tg,
 		db,
 		inSupergroup,
+		tgRoute,
 	)
 	registerNewCommand(
 		tg,
@@ -52,13 +53,20 @@ export function registerTgHandlers(
 		inSupergroup,
 		groups,
 	)
-	registerTgReactionHandler(tg, db, waSend, groups)
-	registerReactionViewHandler(tg, groups)
-	registerTgMessageHandler(tg, db, tgLimiter, waSend, groups)
+	// Command registrations must all come before the terminal message relay
+	// below: grammy runs middleware in registration order and the relay never
+	// calls next(), so any tg.command registered after it is silently
+	// swallowed (the command text relays to WhatsApp instead of answering).
+	// This previously broke /new, /personal, /business and /group while the
+	// commands in commands.ts kept working. Non-command middlewares only run
+	// on their own update types, so their relative order does not matter.
+	registerBucketHandlers(tg, db, groups)
 	registerGroupMenuHandlers(tg, db, groups, tgRoute, inSupergroup)
+	registerReactionViewHandler(tg, groups)
+	registerTgReactionHandler(tg, db, waSend, groups)
+	registerTgMessageHandler(tg, db, tgLimiter, waSend, groups)
 	registerTgEditHandler(tg, db, waSend, groups)
 	registerTgPinHandler(tg, db, waSend, groups)
 	registerTgPollAnswerHandler(tg, db, waSend, groups, tgLimiter)
 	registerPollButtonHandlers(tg, db, groups, waSend)
-	registerBucketHandlers(tg, db, groups)
 }

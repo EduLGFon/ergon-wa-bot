@@ -1,5 +1,6 @@
 // Telegram message handler - main TG->WA relay path.
 // Reaction and edit handlers live in handler-events.ts.
+import { bufferTgText, canCoalesceTg, flushTgAuthor } from './coalesce.ts'
 import { bucketOfChat, type GroupIds } from '../wa-to-tg/routing.ts'
 import { notifyTopic, shortErr, tgDownloadFailureLine } from './replies.ts'
 import { buildQuoted, buildWaContent, tgPollOptions } from './content.ts'
@@ -110,6 +111,17 @@ export function registerTgMessageHandler(
 				if (!text) return
 			}
 			const groupId = msg.media_group_id as string | undefined
+			const fromId = String(msg.from?.id ?? '')
+			const textDeps = { db, tg, tgLimiter, waSend }
+			// Burst path: plain texts from the same author wait out a short
+			// window and cross joined, so rapid bursts cost one WA send.
+			if (fromId && canCoalesceTg(msg, text, media)) {
+				bufferTgText(chatId, topicId, fromId, msg.message_id, text, textDeps)
+				return
+			}
+			// Anything else flushes the author's pending burst first so chat
+			// order is preserved, then sends alone as before.
+			if (fromId) await flushTgAuthor(chatId, topicId, fromId, textDeps)
 			if (groupId && media && (media.kind === 'image' || media.kind === 'video')) {
 				bufferTgAlbumItem(groupId, { msg, topicId, chatId, text, media }, {
 					db,

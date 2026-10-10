@@ -1,5 +1,6 @@
 // Telegram command handlers - topic admin commands.
 // All tg.command registrations - message handlers stay in facade.
+import { chunkTgBody } from '../wa-to-tg/chunk.ts'
 import type { BridgeDB } from '../db.ts'
 import { Bot } from 'grammy'
 
@@ -14,6 +15,7 @@ export function registerTgCommands(
 	tg: Bot,
 	db: BridgeDB,
 	inSupergroup: InSupergroup,
+	tgCall: TgCall,
 ): void {
 	tg.command('start', async (ctx) => {
 		if (!inSupergroup(ctx)) return
@@ -29,11 +31,28 @@ export function registerTgCommands(
 
 	tg.command('topics', async (ctx) => {
 		if (!inSupergroup(ctx)) return
+		const chatId = String(ctx.chat.id)
+		const topicId = (ctx.msg as any)?.message_thread_id as number | undefined
 		const topics = db.getAllActive()
-		const msg = topics.map((t) =>
+		const lines = topics.map((t) =>
 			`${t.display_name} (${t.whatsapp_jid}) -> topic #${t.telegram_topic_id} [${t.bucket}]`
-		).join('\n')
-		await ctx.reply(msg || 'No active topics yet.')
+		)
+		const body = lines.join('\n') || 'No active topics yet.'
+		// 500+ mappings exceed Telegram's 4096-char sendMessage cap, which
+		// used to fail the whole reply with 400: text is too long. Chunk
+		// through the flood queue so the list always lands.
+		for (const chunk of chunkTgBody(body, [])) {
+			await tgCall(
+				() =>
+					ctx.api.sendMessage(
+						chatId,
+						chunk.body,
+						topicId ? { message_thread_id: topicId } : {},
+					),
+				'topics',
+				chatId,
+			)
+		}
 	})
 
 	tg.command('archive', async (ctx) => {

@@ -13,6 +13,10 @@ export interface MemberItem {
 	label: string
 	phone: string
 	admin: boolean
+	// Verified phone-number JID from groupMetadata (present when the roster
+	// id is an @lid). Lets Start-chat reach LID members whose PN was never
+	// learned into the local LID mapping store.
+	pn: string
 }
 
 // Bare roster cache: one metadata fetch serves every page turn and search
@@ -21,13 +25,13 @@ const META_TTL_MS = 60_000
 const metaCache = new Map<string, {
 	at: number
 	subject: string
-	parts: { jid: string; admin: boolean }[]
+	parts: { jid: string; admin: boolean; pn: string }[]
 }>()
 
 async function rosterOf(groupJid: string): Promise<
 	{
 		subject: string
-		parts: { jid: string; admin: boolean }[]
+		parts: { jid: string; admin: boolean; pn: string }[]
 	} | null
 > {
 	const now = Date.now()
@@ -39,6 +43,7 @@ async function rosterOf(groupJid: string): Promise<
 		const parts = (meta.participants || []).map((p: any) => ({
 			jid: String(typeof p === 'string' ? p : p?.id || ''),
 			admin: !!(typeof p !== 'string' && (p?.admin === 'admin' || p?.admin === 'superadmin')),
+			pn: String(typeof p === 'string' ? '' : p?.phoneNumber || ''),
 		})).filter((p) => !!p.jid)
 		const entry = { at: now, subject: String(meta.subject || 'Group'), parts }
 		metaCache.set(groupJid, entry)
@@ -60,7 +65,9 @@ export async function loadGroupMembers(
 	const roster = await rosterOf(groupJid)
 	if (!roster) return null
 	const items = await Promise.all(roster.parts.map(async (p) => {
-		const phone = phoneOf(p.jid)
+		// LID ids are not dialable - show and match the verified PN the
+		// server sent alongside the roster entry when it has one.
+		const phone = p.jid.endsWith('@lid') && p.pn ? phoneOf(p.pn) : phoneOf(p.jid)
 		let label: string | null = null
 		try {
 			label = await resolveContactName(p.jid)
@@ -72,6 +79,7 @@ export async function loadGroupMembers(
 			label: label || phone || p.jid.split('@')[0],
 			phone,
 			admin: p.admin,
+			pn: p.pn,
 		}
 	}))
 	items.sort((a, b) => Number(b.admin) - Number(a.admin) || a.label.localeCompare(b.label))

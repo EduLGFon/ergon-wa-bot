@@ -204,36 +204,63 @@ async function startMemberChat(
 	answer: (text: string) => Promise<unknown>,
 ): Promise<void> {
 	const m = s.items[s.sel]
+	// The tap was already acked with 'Opening chat' before this runs, and a
+	// Telegram callback query can only be answered once - a second answer
+	// toast is silently dropped. So outcomes go to the topic as a durable
+	// message (plus a best-effort toast), never toast-only.
+	const fail = async (text: string): Promise<void> => {
+		console.log(`[BRIDGE] member chat not opened for ${m?.label || '?'}: ${text}`)
+		try {
+			await tgCall(
+				() =>
+					tg.api.sendMessage(s.chatId, `\u26a0\uFE0F ${text}`, {
+						message_thread_id: s.topicId,
+					}),
+				'menu-note',
+				s.chatId,
+			)
+		} catch {
+			// The notice itself never throws or loops.
+		}
+		await answer(text).catch(() => null)
+	}
 	if (!m) {
-		await answer('Member not found.')
+		await fail('Member not found.')
 		return
 	}
 	let digits = ''
 	if (m.jid.endsWith('@s.whatsapp.net') || m.jid.endsWith('@c.us')) {
 		digits = m.jid.split('@')[0].split(':')[0].replace(/\D/g, '')
 	} else if (m.jid.endsWith('@lid')) {
-		try {
-			const pn = await (bot.sock as any)?.signalRepository?.lidMapping?.getPNForLID?.(m.jid)
-			if (typeof pn === 'string') {
-				digits = pn.split('@')[0].split(':')[0].replace(/\D/g, '')
+		// Prefer the verified PN the server sent with the roster entry -
+		// the local LID mapping store below only knows contacts seen before.
+		if (m.pn) digits = m.pn.split('@')[0].split(':')[0].replace(/\D/g, '')
+		if (!digits) {
+			try {
+				const pn = await (bot.sock as any)?.signalRepository?.lidMapping?.getPNForLID?.(
+					m.jid,
+				)
+				if (typeof pn === 'string') {
+					digits = pn.split('@')[0].split(':')[0].replace(/\D/g, '')
+				}
+			} catch {
+				digits = ''
 			}
-		} catch {
-			digits = ''
 		}
 	}
 	if (!digits || digits.length < 7) {
-		await answer('No phone for this member - cannot open a chat.')
+		await fail('No phone for this member - cannot open a chat.')
 		return
 	}
 	const jid = `${digits}@s.whatsapp.net`
 	const existing = db.getByJidOrAlias(jid)
 	if (existing && !existing.archived) {
-		await answer(`Already bridged in topic #${existing.telegram_topic_id}.`)
+		await fail(`Already bridged in topic #${existing.telegram_topic_id}.`)
 		return
 	}
 	const lookup = await bot.sock.onWhatsApp(jid).catch(() => [])
 	if (!lookup?.[0]?.exists) {
-		await answer('Not on WhatsApp.')
+		await fail('Not on WhatsApp.')
 		return
 	}
 	const topic = await tgCall(
@@ -262,7 +289,6 @@ async function startMemberChat(
 	} catch {
 		// Menu already gone - the new topic is the confirmation.
 	}
-	await answer('Chat opened.')
 }
 
 export function registerGroupMenuHandlers(

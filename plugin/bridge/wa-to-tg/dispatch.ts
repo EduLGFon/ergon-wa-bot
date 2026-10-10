@@ -4,6 +4,7 @@
 // quote resolution, sender label + entity offsets, sticker fallback header,
 // album buffering vs immediate send. Classification buttons live on the
 // profile card (see profile.ts), not here.
+import { bufferCoalesced, canCoalesceText, flushCoalesced } from './coalesce.ts'
 import { bufferAlbumItem, flushPendingAlbums } from './album-flush.ts'
 import { type TgEntity, waMarkdownToTgEntities } from '../format.ts'
 import { resolveQuoteTarget } from './quote.ts'
@@ -71,6 +72,30 @@ export async function dispatchPrepared(d: PreparedDispatch): Promise<void> {
 	// separately via `quote.header` (sent as its own message).
 	const stickerFallback = d.media?.kind === 'sticker' && !!quoteHeader && !replyToTgId
 	const parsed = waMarkdownToTgEntities(d.text)
+	// Burst path: plain texts from the same sender wait out the coalesce
+	// window and cross joined, so rapid bursts cost one send instead of N.
+	// Anything quoted, replied or otherwise special keeps its own send.
+	const joinable = !stickerFallback && !replyToTgId && !quoteHeader &&
+		canCoalesceText(d.media, d.special, parsed.text)
+	if (joinable) {
+		await flushPendingAlbums(d.jid)
+		bufferCoalesced(d.jid, d.m, {
+			topicId: d.topicId,
+			chatId: d.chatId,
+			label,
+			text: parsed.text,
+			entities: [
+				...parsed.entities.map((e) => ({ ...e })),
+				...ownerMentionEntities(d.ownerSpans, 0),
+			],
+		})
+		return
+	}
+	// Anything else flushes a pending burst first so chat order is
+	// preserved, then sends immediately. sendToTopic enqueues each Telegram
+	// API call on the limiter itself, so this awaits delivery (with flood
+	// retries).
+	await flushCoalesced(d.jid)
 	const prefix = `${!stickerFallback && quoteHeader ? quoteHeader + '\n' : ''}${label}`
 	const body = `${prefix}${parsed.text}`
 	const entities = [

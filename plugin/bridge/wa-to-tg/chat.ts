@@ -3,8 +3,8 @@
 // Each WhatsApp chat mirrors to its own forum topic - this resolves display
 // names (with caching), creates topics through the flood queue and relays
 // membership and subject changes as service lines.
-import { isQueueDrop } from '../rate-limiter.ts'
 import { cacheGroupName, groupNameCache, relayCtx, tgCall } from './state.ts'
+import { bufferServiceEvent } from './service-batch.ts'
 import { chatForMapping } from './routing.ts'
 import { phoneOf } from './text.ts'
 import bot from '@plugin/bot.ts'
@@ -63,59 +63,21 @@ export async function createForumTopic(
 	return topic.message_thread_id
 }
 
-// Group membership changes -> service lines in the topic.
-export async function handleGroupParticipants(upd: {
+// Group membership changes -> one joined service line per burst (see
+// service-batch.ts). Batches with only joins and exits stay silent;
+// batches with an admin change notify normally.
+export function handleGroupParticipants(upd: {
 	id: string
 	participants: (string | { id?: string })[]
 	action: string
-}): Promise<void> {
-	const { db, limiter, tg, groups } = relayCtx
-	if (!db || !limiter || !tg) return
+}): void {
 	try {
-		const mapping = db?.getByJidOrAlias(upd.id)
-		if (!mapping || mapping.archived || mapping.muted) return
 		const names = (upd.participants || [])
 			.map((p) => phoneOf(typeof p === 'string' ? p : p?.id) || 'someone')
-			.join(', ')
-		let line: string | null = null
-		// Joins and exits arrive silent (no notification ping); admin
-		// changes below still notify normally.
-		let silent = false
-		switch (upd.action) {
-			case 'add':
-				line = `👋 ${names} joined the group`
-				silent = true
-				break
-			case 'remove':
-				line = `🚪 ${names} left the group`
-				silent = true
-				break
-			case 'promote':
-				line = `⭐ ${names} is now an admin`
-				break
-			case 'demote':
-				line = `◽ ${names} is no longer an admin`
-				break
-			default:
-				return
-		}
-		const home = chatForMapping(mapping, groups)
-		await tgCall(
-			() =>
-				tg!.api.sendMessage(home, line!, {
-					message_thread_id: mapping.telegram_topic_id,
-					...(silent ? { disable_notification: true } : {}),
-				}),
-			'service-line',
-			home,
-		).catch((e) => {
-			// Load-shed during deep backlogs - membership lines are droppable.
-			if (!isQueueDrop(e)) {
-				console.error('[BRIDGE] failed to relay group participants:', e)
-			}
-		})
+		if (!upd?.id || names.length === 0) return
+		bufferServiceEvent(upd.id, upd.action, names)
 	} catch (e) {
-		if (!isQueueDrop(e)) console.error('[BRIDGE] failed to relay group participants:', e)
+		console.error('[BRIDGE] failed to relay group participants:', e)
 	}
 }
 

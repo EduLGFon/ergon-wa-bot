@@ -11,7 +11,7 @@ import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { canonicalChatJid, ownerWaJids } from './jid.ts'
 import { notifyEmptyRelay } from './unsupported.ts'
 import { isPureEnvelope } from './unsupported.ts'
-import { handleWaReactionCarrier } from './reaction-summary.ts'
+import { handleWaEncReaction, handleWaReactionCarrier } from './reaction-summary.ts'
 import { getSpecialContent } from './special.ts'
 import { handleWaPollResults, handleWaPollVote, msgSecretOf } from './polls.ts'
 import { handleWaSecretEdit } from './secret-edits.ts'
@@ -44,6 +44,16 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 			const reactionNode = findKey(m.message, 'reactionMessage')
 			if (reactionNode) {
 				await handleWaReactionCarrier(m, reactionNode)
+				continue
+			}
+			// Encrypted reactions (newer clients seal them with the target's
+			// messageSecret) decrypt against the stored secret and replay
+			// through the same pipeline; undecryptable ones drop silently.
+			// Must sit before the generic relay - otherwise each one posts
+			// an "enc reaction didn't cross" warning.
+			const encReactionNode = findKey(m.message, 'encReactionMessage')
+			if (encReactionNode) {
+				await handleWaEncReaction(m, encReactionNode)
 				continue
 			}
 			// Pin carriers (pinInChatMessage) ride the same upsert event - they

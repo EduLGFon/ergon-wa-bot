@@ -405,11 +405,13 @@ without touching WA.
     reply-target gated on the destination group (stranded pre-move rows degrade to the header) or
     `author: preview` header; `album.ts`/`album-flush.ts` 1.5s window -> `sendMediaGroup`
     (singletons arrive ~1.5s late by design, chunk send + caption follow-up in `album-send.ts`);
-    `edits.ts` (text in place, caption fallback, sticker/special skip); `deletes.ts` (spoiler
-    tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard delete + drop mapping);
-    `reactions.ts` (WA emoji normalize for the popular-emoji mirror, `REACTION_INVALID` -> heart
-    retry, shared `applyTgReaction`); `reaction-summary.ts` (merged reaction footer with counts
-    inside the mirror plus a viewer button, roster persisted on the reply_map row - see D09);
+    `coalesce.ts` (same-sender text bursts join into one send over a sliding window that stretches
+    under queue pressure, see D11); `service-batch.ts` (membership events batch into one service
+    line, see D11); `edits.ts` (text in place, caption fallback, sticker/special skip); `deletes.ts`
+    (spoiler tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard delete + drop
+    mapping); `reactions.ts` (WA emoji normalize for the popular-emoji mirror, `REACTION_INVALID` ->
+    heart retry, shared `applyTgReaction`); `reaction-summary.ts` (merged reaction footer with
+    counts inside the mirror plus a viewer button, roster persisted on the reply_map row - see D09);
     `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
     line, TG echoes consumed via the `pendingTgPins` guard); `profile.ts` + `profile-events.ts`
     (pinned WA profile card per topic: photo plus about/desc on new topics, re-sent and re-pinned on
@@ -438,11 +440,12 @@ without touching WA.
   `content.ts` WA payload builders (`Buffer.from` at boundary, webm->webp transcode, tgs->document,
   native poll creation, contact text fallback); `media.ts` largest-photo pick + `getFile` fetch with
   double size caps; `replies.ts` notices + ffmpeg webm conversion; `album.ts` batching;
-  `commands.ts` topic admin (`/start /id /topics /archive /close /reopen /mute /unmute`);
-  `group-menu.ts` `/group` settings menu (one edited message: mute toggle, bucket move, member
-  browser with pages, type-to-search intercept, member card with start-chat); `group-members.ts` WA
-  roster source (60s metadata cache, learned labels, pure filter); `newchat.ts`
-  `/new <phone> [name]` with `onWhatsApp` verification (inherits the group's bucket).
+  `coalesce.ts` (same-author plain texts join into one WA send, see D11); `commands.ts` topic admin
+  (`/start /id /topics /archive /close /reopen /mute /unmute`); `group-menu.ts` `/group` settings
+  menu (one edited message: mute toggle, bucket move, member browser with pages, type-to-search
+  intercept, member card with start-chat); `group-members.ts` WA roster source (60s metadata cache,
+  learned labels, pure filter); `newchat.ts` `/new <phone> [name]` with `onWhatsApp` verification
+  (inherits the group's bucket).
 - Cross-cutting: pairing auto-creates on first WA sight (or `/new`) into the personal group as
   `undecided` until the buttons/commands classify it; renames sync, mute/archive pause both
   directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes no

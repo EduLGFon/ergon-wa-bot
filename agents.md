@@ -167,13 +167,21 @@ Files and Modules
   across files can hurt readability more than a slightly longer file helps it; keep it whole when
   the logic reads best in one place.
 - Avoid modules that mix unrelated responsibilities. Avoid overly large files and complex syntax.
-- Order files and folders by logical meaning so the tree reads like the system: group by domain or
-  flow direction (for example `cmd/<category>/`, `event/<category>/`, `plugin/bridge/wa-to-tg/`
-  versus `plugin/bridge/tg-to-wa/`), name each file after the single concept it owns, keep one
-  facade or index at the folder root when a folder needs an entry point, and place a new file next
-  to its siblings in flow order rather than in a catch-all or unrelated folder. When the existing
-  layout violates this (a folder mixing unrelated concerns or a file sitting far from its logical
-  siblings), flag it in `DECISIONS.md` instead of silently extending the mess.
+- Order files, file names, and folders by logical meaning so the tree reads like the system: group
+  by domain or flow direction (for example `cmd/<category>/`, `event/<category>/`,
+  `plugin/bridge/wa-to-tg/` versus `plugin/bridge/tg-to-wa/`), name each file after the single
+  concept it owns, keep one facade or index at the folder root when a folder needs an entry point,
+  and place a new file next to its siblings in flow order rather than in a catch-all or unrelated
+  folder. Within a folder, keep files sorted by name so the listing reads in flow or alphabetic
+  order, and give every file a simple, direct, easy to understand name: short kebab-case nouns or
+  verb phrases that say what the file owns (`group-menu.ts`, `rate-limiter.ts`), no abbreviations or
+  jargon a newcomer would not guess, no redundant context the folder already provides, no filler
+  words (`util`, `helper`, `misc`, `common`). Names must stay stable once merged (other files import
+  them, loaders may derive behavior from them, history refers to them), so never rename casually and
+  never mass-rename for style; legacy camelCase names in `util/` stay as they are. When the existing
+  layout violates this (a folder mixing unrelated concerns, a file sitting far from its logical
+  siblings, or a vague or misleading name), flag it in `DECISIONS.md` instead of silently extending
+  the mess.
 
 Comments
 
@@ -269,6 +277,25 @@ Dependencies
   `util/msgTools.ts:getCtx` is the only inbound parser; `event/connection/update.ts` owns
   reconnects; `plugin/cache.ts` owns cache bounds; `plugin/bridge/db.ts` owns pairing plus the reply
   map plus echo guards.
+
+Telegram bridge handler rules (grammy)
+
+- grammy runs middleware in registration order and a terminal handler that never calls `next()` ends
+  the chain. The TG-to-WA `tg.on('message')` relay is terminal, so every `tg.command` registration
+  (`registerTgCommands`, `registerNewCommand`, `registerBucketHandlers`,
+  `registerGroupMenuHandlers`) must come before it in `registerTgHandlers`; a command registered
+  after it is silently swallowed and its text relays to WhatsApp instead of answering. Keep the
+  order comment in `plugin/bridge/tg-to-wa.ts` accurate when adding handlers.
+- Telegram rejects `sendMessage` bodies over 4096 chars with `400: text is too long`. Never reply
+  with an unbounded list (`/topics` broke this way near 500 mappings); chunk through
+  `plugin/bridge/wa-to-tg/chunk.ts` (`chunkTgBody`) and send via the per-lane flood queue with an
+  explicit `message_thread_id`.
+- A Telegram callback query can only be answered once: ack the tap immediately, then report the
+  outcome as a durable topic message (plus a server-side log line), never as a second answer toast
+  (it is silently dropped).
+- Roster JIDs are usually `@lid` and Baileys `getPNForLID` only covers previously seen contacts.
+  Prefer the verified `phoneNumber` that `groupMetadata` sends alongside each participant (kept as
+  `MemberItem.pn`) before falling back to the local LID mapping store.
 
 Dynamic Data and Scalability
 
@@ -597,6 +624,10 @@ filtering, reply-map scoping, topic guards, rate-limiter shed). Start from `docs
   `scripts/` repro plus a manual smoke note rather than claiming coverage).
 - Prefer testing behavior and public interfaces over implementation details.
 - Add regression tests for fixed bugs when practical.
+- When diagnosing behavior that only reproduces live (bridge relay, Telegram commands), prefer
+  narrow discriminating probes before changing code: one owner action in chat, then a server-side
+  check (logs, `getWebhookInfo.pending_update_count`, Bot API membership or admin state). Remove
+  temporary diagnostic middleware in the same change once it has served.
 - Keep tests deterministic and independent. Inject clocks and randomness.
 - Never weaken or remove tests merely to make them pass.
 - Do not change production behavior solely to accommodate poorly designed tests.

@@ -139,7 +139,10 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   showing who voted what. Sent TG polls can't be re-edited and WA poll payloads are immutable, so
   close/stop isn't mirrored.
 - Group joins and exits relay silent (no notification ping); admin changes (promote/demote) post
-  normal service lines. Renames also rename the topic.
+  normal service lines. Bursts of membership events batch into one service line. Renames also rename
+  the topic.
+- Rapid same-author texts join into one message in both directions (plain texts only; media, polls,
+  replies and commands always send alone).
 - New topics open with a pinned profile card (WA photo + about for DMs, icon + description for
   groups; text-only when the photo is hidden). Photo changes re-send and re-pin the card, keeping
   the old one as history. Needs pin rights in the supergroup.

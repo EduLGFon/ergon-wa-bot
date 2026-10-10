@@ -125,3 +125,30 @@ new retention: the roster already lived on the reply_map row and the same voter 
 inline to behind the button. Verified: `deno task verify` chain plus a targeted poll-logic smoke
 (option parsing both shapes, toggle/replace selection math, tally and viewer rendering); no live
 WA/TG smoke in this environment.
+
+## D11 - Burst joining for relay texts and service events (2026-10-09)
+
+Rapid bursts used to cost one Telegram/WhatsApp send per message: a fast typist, a reconnect
+backlog, or a mass invite sprayed N sends (N slots, N notifications) through the paced flood queues.
+Three small buffers now join them, all in-memory only (same trust level as the existing album
+buffers, no schema or retention change):
+
+- WA-to-TG `wa-to-tg/coalesce.ts`: text-only messages from the same sender in the same chat wait out
+  a short sliding window (base 1800ms, `BRIDGE_COALESCE_MS`) and cross as one body (one sender
+  label, parts joined by newline, entities and owner-mention spans rebased). The window stretches to
+  4s/6s while the lane pressure (queued plus parked) passes 20/100, so a burst that would arrive
+  late anyway arrives joined instead. Caps at 5 parts (`BRIDGE_COALESCE_MAX`) and 3500 chars.
+- WA-to-TG `wa-to-tg/service-batch.ts`: `group-participants.update` events batch per chat over 3s
+  (`BRIDGE_SERVICE_BATCH_MS`, same pressure stretch) into one service line (`joined` / `left` /
+  `promote` / `demote` lines joined by newline), silent unless the batch holds an admin change. Same
+  `service-line` shed label, so deep backlogs still drop these first.
+- TG-to-WA `tg-to-wa/coalesce.ts`: plain texts from the same author in the same topic join over 1.5s
+  (`BRIDGE_TG_COALESCE_MS`) into one WA send. Every TG id keeps its own reply_map row (same WA id),
+  so TG-side edits and replies of any part still resolve. Media, polls, contacts, locations,
+  replies, quoted messages and commands flush any pending burst first and always send alone, so chat
+  order is preserved in both directions. Trade-off (WA-to-TG only): one Telegram message keeps one
+  reply_map row, so only the first WA id of a joined batch resolves for later WA quotes, edits and
+  deletes; follow-ups degrade to the existing unmapped fallbacks (header instead of native reply, no
+  tombstone). Chosen over per-part rows because the reply_map primary key is one row per Telegram
+  message. Verified: `deno task
+verify` chain only (no live WA/TG smoke in this environment).

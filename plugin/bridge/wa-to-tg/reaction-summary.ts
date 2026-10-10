@@ -13,13 +13,14 @@
 // See DECISIONS.md#D09.
 import { applyTgReaction, waReactionToTgEmoji } from './reactions.ts'
 import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
-import { candidatesOf, normalizeJid, stripDevice } from './jid.ts'
+import { candidatesOf, normalizeJid, selfJid, stripDevice } from './jid.ts'
+import { aesDecryptGCM, hmacSign, proto } from 'baileys'
+import bot from '@plugin/bot.ts'
 import { storedText } from './media-utils.ts'
 import { bucketOfChat, chatForReply, type GroupIds } from './routing.ts'
 import { phoneOf } from './text.ts'
 import { routeEdit } from './errors.ts'
 import type { ReplyMapRow } from '../db.ts'
-import type { proto } from 'baileys'
 import type { Bot } from 'grammy'
 
 interface ReactionVoter {
@@ -147,6 +148,131 @@ function authorOf(m: proto.IWebMessageInfo): { key: string; name: string } {
 	if (m.key?.fromMe) return { key: 'me', name: 'You' }
 	const chat = stripDevice(normalizeJid(m.key?.remoteJid))
 	return { key: chat || 'unknown', name: m.pushName || phoneOf(m.key?.remoteJid) || 'unknown' }
+}
+
+// LID/PN identity twins for sealed-envelope auth - mirrors secret-edits.ts:
+// WA may seal with either identity, GCM cleanly rejects the wrong one.
+async function encReactionSenders(raw: string): Promise<string[]> {
+	const out = new Set<string>()
+	const base = stripDevice(raw)
+	if (base) out.add(base)
+	try {
+		const map = (bot.sock as any)?.signalRepository?.lidMapping
+		const pn = await map?.getPNForLID?.(base)
+		const lid = await map?.getLIDForPN?.(base)
+		for (const j of [pn, lid]) {
+			const n = normalizeJid(typeof j === 'string' ? j : '')
+			if (n) out.add(stripDevice(n))
+		}
+	} catch {
+		// Twins unknown - the bare identity still usually verifies.
+	}
+	return [...out]
+}
+
+export interface EncReactionContext {
+	targetMsgId: string
+	targetSenders: string[]
+	reactors: string[]
+	secret: Uint8Array
+}
+
+// Candidate HKDF labels for the reaction seal - WhatsApp documents none of
+// these; 'Poll Vote' / 'Event Response' / 'Message Edit' are the known
+// siblings, so 'Reaction' goes first with close variants as fallback. GCM
+// auth rejects wrong labels, so trying several is safe.
+const ENC_REACTION_LABELS = ['Reaction', 'Reaction Message', 'Message Reaction', 'React']
+
+// Decrypt an encReactionMessage envelope against the target message's
+// messageSecret. Returns the emoji text ('' = removal) on success, null when
+// nothing verifies (unknown label, missing secret, corrupt payload).
+export function decryptEncReaction(
+	encPayload: Uint8Array,
+	encIv: Uint8Array,
+	ctx: EncReactionContext,
+): string | null {
+	try {
+		if (!encPayload?.length || encIv?.length !== 12) return null
+		if (!ctx.targetMsgId || !ctx.secret?.length) return null
+		const senders = [...new Set(ctx.targetSenders.filter(Boolean))]
+		const reactors = [...new Set(ctx.reactors.filter(Boolean))]
+		if (senders.length === 0 || reactors.length === 0) return null
+		for (const label of ENC_REACTION_LABELS) {
+			for (const orig of senders) {
+				for (const reactor of reactors) {
+					const aads: Uint8Array[] = [
+						Buffer.from(`${ctx.targetMsgId}\0${reactor}`),
+						new Uint8Array(0),
+					]
+					for (const aad of aads) {
+						try {
+							const sign = Buffer.concat([
+								Buffer.from(ctx.targetMsgId),
+								Buffer.from(orig),
+								Buffer.from(reactor),
+								Buffer.from(label),
+								new Uint8Array([1]),
+							])
+							const key0 = hmacSign(ctx.secret, new Uint8Array(32), 'sha256')
+							const decKey = hmacSign(sign, key0, 'sha256')
+							const plain = aesDecryptGCM(encPayload, decKey, encIv, aad)
+							const dec = proto.Message.ReactionMessage.decode(plain)
+							if (typeof dec?.text === 'string') return dec.text
+						} catch {
+							// Wrong label/identity/AAD mix - try the next one.
+						}
+					}
+				}
+			}
+		}
+		return null
+	} catch {
+		return null
+	}
+}
+
+// Encrypted reaction carrier -> decrypt against the stored target secret,
+// then replay through the normal reaction path. Anything undecryptable
+// (unknown seal label, secret never stored) drops silently - a lost emoji is
+// not worth a Telegram warning. Resolves its own mirror, no topic is created.
+export async function handleWaEncReaction(m: proto.IWebMessageInfo, node: any): Promise<void> {
+	const { db } = relayCtx
+	if (!db) return
+	try {
+		const targetKey = node?.targetMessageKey
+		const targetId = targetKey?.id
+		if (!targetId || !m.key) return
+		if (!m.key.remoteJid || m.key.remoteJid === 'status@broadcast') return
+		const cands = candidatesOf(m.key)
+		const mapping = cands.map((c) => db.getByJidOrAlias(c)).find((x) =>
+			x && !x.archived && !x.muted
+		)
+		if (!mapping) return
+		const entry = db.getByWaMsgIdAny(targetId, [mapping.whatsapp_jid, ...cands])
+		const secret = entry?.wa_msg_secret ? Buffer.from(entry.wa_msg_secret) : null
+		if (!entry || !secret?.length) {
+			console.debug(
+				`[BRIDGE] encReaction without stored secret, target ${targetId} - dropped`,
+			)
+			return
+		}
+		const me = selfJid()
+		const reactorBase = m.key.fromMe ? me : stripDevice(m.key.participant || m.key.remoteJid)
+		const targetBase = stripDevice(targetKey.participant || targetKey.remoteJid || '')
+		const text = decryptEncReaction(node.encPayload, node.encIv, {
+			targetMsgId: targetId,
+			targetSenders: await encReactionSenders(targetBase),
+			reactors: await encReactionSenders(reactorBase || me),
+			secret,
+		})
+		if (text === null) {
+			console.debug(`[BRIDGE] encReaction undecryptable, target ${targetId} - dropped`)
+			return
+		}
+		await handleWaReactionCarrier(m, { text, key: targetKey })
+	} catch (e) {
+		console.error('[BRIDGE] failed to relay one WA encrypted reaction:', e)
+	}
 }
 
 // Chunked long texts save one row per chunk under the same WA id - the
