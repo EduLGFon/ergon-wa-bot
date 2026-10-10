@@ -21,4 +21,5 @@ test
 
 # Modules
 rollback
-node_modules
+node_modules/
+conf/gen/err.log
