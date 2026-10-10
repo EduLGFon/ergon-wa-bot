@@ -243,7 +243,9 @@ Loader sets `cmd.name` from filename; category dir is informational.
   resolves target by mention/JID/phone-digits/name substring/current chat; trailing number = limit;
   re-sends texts grouped by author plus media attachments.
 - `util/clean.ts` (`clean`, groups only, admin + botAdmin, cooldown 10s, subCmd `reverse`): bulk
-  delete of last N cached messages with pacing (500ms each, 1s per 10) plus disclaimer cleanup.
+  delete of last N cached messages with pacing (~2s each, 5s per 10), per-delete 429 backoff (30s
+  x3, then graceful stop with resume hint) plus disclaimer cleanup. Group metadata queries are
+  collapsed by the `groupMeta.ts` TTL cache so bulk sends don't 429.
 - `util/translate.ts` (`translate`, alias `t`, cooldown 5s): keyless Google translate via
   `translate.googleapis.com`, 10s timeout.
 - `util/remove.ts` (`remove`, alias `rm`, cooldown 5s): background removal to PNG via
@@ -396,7 +398,7 @@ without touching WA.
     `(tg_chat_id, tg_msg_id)` reply key; `contact-names.ts` learned speaker directory (bare-number
     tokens render as @Name); `text.ts` unwrap + `@Name (+phone)` annotation + owner `text_mention`
     spans (`@all` via `nonJidMentions`, direct via owner-JID match, merged into entities by
-    `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download with 45MB cap, fileLength
+    `dispatch.ts`/`edits.ts`); `media.ts`/`media-utils.ts` download with 50MB cap, fileLength
     pre-check and max 3 concurrent buffers (large videos fail fast with a notice instead of spiking
     RSS); `send.ts`/`send-media.ts` route by kind
     (photo/video/animation/voice/audio/sticker/document, 1024-char caption overflow follow-ups,
@@ -515,8 +517,8 @@ tables), plus a manual `.env` parser.
   via LID where possible.
 - `rank` and `needsDb` commands silently degrade without `DATABASE_URL`.
 - `cache.media` 20MB cap (8MB for cached video/document, heavy types return keys only) and bridge
-  20MB TG cap plus 45MB WA cap with concurrency limit: large media produce failure lines, not
-  crashes.
+  20MB TG cap plus 50MB WA cap with concurrency limit: over-cap media produce actionable oversize
+  lines, other failures produce generic download lines, not crashes.
 - Random delays are intentional anti-ban pacing; do not remove.
 - `sticker`/`Buffer`: `Buf` is `Uint8Array` everywhere except the sharp/webpmux/Baileys boundary,
   which needs real `Buffer`.

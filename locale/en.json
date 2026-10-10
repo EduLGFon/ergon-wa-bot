@@ -76,7 +76,8 @@
 		"desc": "Hide your crimes erasing the latest group messages (requires administrator permission)",
 		"examples": ["10", "200"],
 		"noAmount": "\"Clean 0\"? Do you think here is your room that you do not clean anything?",
-		"deleted": "I will erase the last {{msgsSize}} messages and then I will go back to sleep right here on my network"
+		"deleted": "I will erase the last {{msgsSize}} messages and then I will go back to sleep right here on my network",
+		"slowed": "WhatsApp asked me to slow down, so I stopped after erasing {{deleted}} of {{total}} messages. Wait a few minutes and run .clean again for the rest."
 	},
 	"download": {
 		"usage": "[A: Audio] <URL>",

@@ -76,7 +76,8 @@
 		"desc": "Cachez vos crimes effaçant les derniers messages de groupe (nécessite l'autorisation de l'administrateur)",
 		"examples": ["10", "200"],
 		"noAmount": "\"Clean 0\"? Pensez-vous que voici votre chambre que vous ne nettoyez rien?",
-		"deleted": "J'effacerai les derniers messages {{msgsSize}} et je vais ensuite me rendormir ici sur mon réseau"
+		"deleted": "J'effacerai les derniers messages {{msgsSize}} et je vais ensuite me rendormir ici sur mon réseau",
+		"slowed": "WhatsApp m'a demandé de ralentir, donc je me suis arrêté après avoir effacé {{deleted}} messages sur {{total}}. Attends quelques minutes et relance .clean pour le reste."
 	},
 	"download": {
 		"usage": "[A: Audio] <URL>",

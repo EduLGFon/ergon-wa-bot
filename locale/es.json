@@ -76,7 +76,8 @@
 		"desc": "Ocultar sus delitos borrando los últimos mensajes grupales (requiere permiso del administrador)",
 		"examples": ["10", "200"],
 		"noAmount": "\"Clean 0\"? ¿Crees que aquí está tu habitación que no limpias nada?",
-		"deleted": "Borraré los últimos mensajes {{msgsSize}} y luego volveré a dormir aquí en mi red"
+		"deleted": "Borraré los últimos mensajes {{msgsSize}} y luego volveré a dormir aquí en mi red",
+		"slowed": "WhatsApp me pidió ir más despacio, así que paré después de borrar {{deleted}} de {{total}} mensajes. Espera unos minutos y ejecuta .clean de nuevo para el resto."
 	},
 	"download": {
 		"usage": "[A: audio] <Url>",

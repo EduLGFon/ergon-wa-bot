@@ -21,6 +21,7 @@ import {
 	type WASocket,
 } from 'baileys'
 import postgresAuthState from '@plugin/authState.ts'
+import { getCachedGroupMeta, setCachedGroupMeta } from '@class/groupMeta.ts'
 import { logger } from '@util/proto.ts'
 
 // Last-resort pin: only used when BOTH live version fetchers fail. Keep it reasonably
@@ -115,6 +116,23 @@ export default class Baileys {
 			keepAliveIntervalMs: 30_000,
 			maxMsgRetryCount: 5,
 			msgRetryCounterCache,
+			// Collapse per-send groupMetadata IQ queries into a TTL cache.
+			// Without this every group sendMessage costs a live query and
+			// bulk ops (e.g. .clean) trip WhatsApp's 429 rate-overlimit.
+			// On miss/expiry we fetch once, cache it and hand it over;
+			// a fetch failure returns undefined so Baileys falls back to
+			// its live query path instead of breaking the send.
+			cachedGroupMetadata: async (jid: string) => {
+				const hit = getCachedGroupMeta(jid)
+				if (hit) return hit
+				try {
+					const meta = await this.sock.groupMetadata(jid)
+					setCachedGroupMeta(jid, meta)
+					return meta
+				} catch {
+					return undefined
+				}
+			},
 			// ignore useless msgs
 			shouldIgnoreJid: (jid: str) =>
 				isJidBot(jid) ||

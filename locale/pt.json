@@ -99,7 +99,8 @@
 			"50 reverse"
 		],
 		"noAmount": "[❗] - Digite uma quantidade maior que 0. Ex: clean 10",
-		"deleted": "Apagando as últimas {{msgsSize}} mensagens..."
+		"deleted": "Apagando as últimas {{msgsSize}} mensagens...",
+		"slowed": "O WhatsApp me pediu para ir mais devagar, então parei depois de apagar {{deleted}} de {{total}} mensagens. Espere alguns minutos e rode o .clean de novo para o resto."
 	},
 	"download": {
 		"usage": "[a] <link> - ou responda mensagem com link",

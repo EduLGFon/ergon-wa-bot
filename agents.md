@@ -420,7 +420,8 @@ Authentication
   `loggedOut` exit, `reset` wiping auth plus cache plus temp, Strong reset truncating auth tables).
   Passwords do not exist in this project; do not introduce them.
 - Protect invocation against abuse. Cooldowns stack per user (capped at now plus 10x, paced before
-  `run`), bulk paths pace at 500ms each with 1s per 10, bridge lanes pace per supergroup with 429
+  `run`), bulk paths pace at ~2s each with 5s per 10 (500ms pacing trips WhatsApp 429
+  `rate-overlimit` - see `class/groupMeta.ts`), bridge lanes pace per supergroup with 429
   retry and shed past depth 400. Never ban by identifier permanently; prefer pacing and caps.
 
 Authorization and Access Control

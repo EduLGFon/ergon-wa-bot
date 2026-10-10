@@ -9,6 +9,7 @@ import User from '@class/user.ts'
 import { eq } from 'drizzle-orm'
 import bot from '@plugin/bot.ts'
 import postgres from 'postgres'
+import { getCachedGroupMeta, setCachedGroupMeta } from '@class/groupMeta.ts'
 
 const connectionString = Deno.env.get('DATABASE_URL')
 let dbClient: ReturnType<typeof drizzle<typeof schema>> | undefined = undefined
@@ -76,6 +77,14 @@ export async function getUser(
 export async function getGroup(id: str): Promise<Group | null> {
 	let group = cache.groups.get(id)
 	if (group) return group
+	// Reuse the shared metadata cache so a cold group cache does not cost
+	// a live IQ query per caller (same 429 rate-overlimit risk as .clean).
+	const cached = getCachedGroupMeta(id)
+	if (cached) {
+		group = new Group(cached)
+		cache.groups.add(group.id, group)
+		return group
+	}
 	let data
 	try {
 		data = await bot.sock.groupMetadata(id)
@@ -86,6 +95,7 @@ export async function getGroup(id: str): Promise<Group | null> {
 		if (isForbiddenGroupError(e)) return null
 		throw e
 	}
+	setCachedGroupMeta(id, data)
 	group = new Group(data)
 	cache.groups.add(group.id, group)
 	return group

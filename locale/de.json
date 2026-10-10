@@ -78,7 +78,8 @@
 		"desc": "Verstecken Sie Ihre Verbrechen, in denen die neuesten Gruppennachrichten ausgelöscht werden (erfordert die Erlaubnis der Administrator).",
 		"examples": ["10", "200"],
 		"noAmount": "\"Clean 0\"? Glaubst du, hier ist dein Zimmer, in dem du nichts reinigt?",
-		"deleted": "Ich werde die letzten {{msgsSize}} -Botschaften löschen und dann hier in meinem Netzwerk wieder einschlafen"
+		"deleted": "Ich werde die letzten {{msgsSize}} -Botschaften löschen und dann hier in meinem Netzwerk wieder einschlafen",
+		"slowed": "WhatsApp hat mich gebeten, langsamer zu machen, also habe ich nach {{deleted}} von {{total}} Nachrichten gestoppt. Warte ein paar Minuten und führe .clean erneut für den Rest aus."
 	},
 	"download": {
 		"usage": "[A: Audio] <URL>",
