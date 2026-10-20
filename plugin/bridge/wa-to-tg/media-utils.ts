@@ -76,8 +76,17 @@ export function waBytes(v: unknown): number | null {
 
 // Topic notice for a failed WhatsApp download: names the attachment kind
 // (documents include the file name) and size when known. Article keys off
-// "WhatsApp" (consonant), not the label.
-export function waDownloadFailureLine(label: string, bytes: number | null): string {
+// "WhatsApp" (consonant), not the label. Oversize files get an actionable
+// line naming the 50 MB cloud Bot API limit and the workaround (link/split),
+// so a 69 MB APK is not confused with an expired sticker URL.
+export function waDownloadFailureLine(
+	label: string,
+	bytes: number | null,
+	tooLarge = false,
+): string {
 	const size = bytes != null ? ` (${formatBytes(bytes)})` : ''
+	if (tooLarge) {
+		return `⚠️ A WhatsApp ${label}${size} exceeds the 50 MB Telegram bot limit - it didn't cross. Send it as a link or split it.`
+	}
 	return `⚠️ Couldn't download a WhatsApp ${label}${size} - it didn't cross.`
 }

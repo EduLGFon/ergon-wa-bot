@@ -6,16 +6,59 @@
 // this router stays small.
 import { sendTgText } from './chunk.ts'
 import { createForumTopic } from './chat.ts'
-import { extOf, storedEntities, storedText } from './media-utils.ts'
+import { extOf, storedEntities, storedText, waDownloadFailureLine } from './media-utils.ts'
 import { msgSecretOf, pollCreatorOf } from './polls.ts'
 import { sendSpecial, type WaSpecial } from './special.ts'
 import { getRetryAfterSeconds, isQueueDrop } from '../rate-limiter.ts'
 import type { BridgeDB, MirrorKind } from '../db.ts'
-import { relayCtx, tgCall } from './state.ts'
+import { notifyTopic, relayCtx, tgCall } from './state.ts'
 import { dispatchKind } from './send-media.ts'
 import type { TgEntity } from '../format.ts'
 import type { proto } from 'baileys'
 import { InputFile } from 'grammy'
+
+// True when Telegram rejected the upload because the file exceeds the bot
+// upload limit, not because the topic or payload was bad. Those get the
+// actionable oversize notice instead of a generic relay-failure line.
+function isTgUploadTooLarge(e: unknown): boolean {
+	try {
+		const anyErr = e as { description?: unknown; message?: unknown }
+		const desc = typeof anyErr?.description === 'string'
+			? anyErr.description
+			: typeof anyErr?.message === 'string'
+			? anyErr.message
+			: String(e)
+		const low = desc.toLowerCase()
+		return low.includes('file is too big') || low.includes('file_too_big') ||
+			low.includes('request entity too large') || low.includes('request_entity_too_large') ||
+			(low.includes('too large') && low.includes('file'))
+	} catch {
+		return false
+	}
+}
+
+// Human label for an upload that Telegram refused at send time. Mirrors the
+// downloadWaMedia labels so the oversize notice reads the same either way.
+function uploadLabel(media: { kind: string; fileName?: string }): string {
+	switch (media.kind) {
+		case 'image':
+			return 'image'
+		case 'video':
+			return 'video'
+		case 'round':
+			return 'video note'
+		case 'gif':
+			return 'GIF'
+		case 'voice':
+			return 'voice message'
+		case 'audio':
+			return 'audio'
+		case 'sticker':
+			return 'sticker'
+		default:
+			return media.fileName ? `document "${media.fileName}"` : 'document'
+	}
+}
 
 // True when Telegram rejected the send because the forum topic itself is
 // gone (closed/deleted), not because the message was bad. Those mappings
@@ -57,6 +100,18 @@ export async function sendToTopic(
 	} catch (e) {
 		// Load-shed drops are intentional - the caller logs at most once.
 		if (isQueueDrop(e)) throw e
+		// Boundary case: the buffer passed the 50MB pre-check (declared size
+		// lied, or API overhead pushed it over) but Telegram refused the
+		// upload. Post the actionable oversize notice instead of the generic
+		// relay-failure line from the caller.
+		if (media && isTgUploadTooLarge(e)) {
+			await notifyTopic(
+				chatId,
+				topicId,
+				waDownloadFailureLine(uploadLabel(media), media.buffer.length, true),
+			).catch(() => {})
+			return
+		}
 		// Stale topic mapping (96x "thread not found" in 24d of logs): heal
 		// to a fresh topic once and retry, so one deleted topic does not
 		// fail every later message to that chat.
