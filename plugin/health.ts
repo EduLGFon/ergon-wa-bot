@@ -119,6 +119,8 @@ function logHealth(): void {
 					queue +=
 						` qB=${bst.depth}+${bst.parked} drop=${bst.dropped} flood=${bst.floodRetries} sp=${bst.spacing}`
 				}
+				const outbox = Number(relayCtx?.db?.outboxCount?.() ?? 0)
+				if (outbox > 0) queue += ` outbox=${outbox}`
 			}
 		} catch {
 			// bridge off - keep q=?

@@ -99,7 +99,7 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   connected it probes `sock.onWhatsApp(ownNumber)` on a randomized 60-120s schedule; a failed probe
   calls `sock.end()`, funnelling into the guarded reconnect above. Re-binds after every reconnect
   (listeners die with the old socket). Same loop emits a periodic HEALTH line (RSS + heap + loop lag
-  - queue depth/parked/dropped + disconnect counters + signal error counts).
+  - queue depth/parked/dropped/outbox + disconnect counters + signal error counts).
 - Disconnect stats (`event/connection/update.ts`): per-code counters (428 vs 503) exposed for
   HEALTH.
 - PM2 (`conf/ecosystem.config.cjs`): app `wa`, `interpreter: deno`,
