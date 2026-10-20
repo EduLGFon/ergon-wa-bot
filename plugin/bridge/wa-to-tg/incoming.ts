@@ -22,9 +22,13 @@ import { syncProfileCard } from './profile.ts'
 import { downloadWaMedia } from './media.ts'
 import { findKey } from '@util/functions.ts'
 import { dispatchPrepared } from './dispatch.ts'
-import type { proto } from 'baileys'
+import { isQueueDrop } from '../rate-limiter.ts'
+import { proto } from 'baileys'
 
-export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
+export async function handleWAMessages(
+	messages: proto.IWebMessageInfo[],
+	opts: { fromOutbox?: boolean } = {},
+) {
 	const { db, limiter, tg } = relayCtx
 	if (!db || !limiter || !tg) return
 
@@ -219,6 +223,23 @@ export async function handleWAMessages(messages: proto.IWebMessageInfo[]) {
 				special,
 			})
 		} catch (e) {
+			if (isQueueDrop(e)) {
+				// The Telegram side is deliberately shedding load. Park the
+				// original WA message as a protobuf BLOB so it survives a
+				// restart and can be replayed once the queue drains, instead
+				// of losing the payload (or posting a notice that would also
+				// be dropped).
+				if (opts.fromOutbox) throw e
+				try {
+					db.enqueueOutbox(proto.WebMessageInfo.encode(m).finish())
+					console.warn(
+						`[BRIDGE] queue full - parked WA message ${m.key?.id || '?'} in outbox`,
+					)
+				} catch (persistErr) {
+					console.error('[BRIDGE] failed to park dropped WA message:', persistErr)
+				}
+				continue
+			}
 			console.error('[BRIDGE] failed to relay one WA message:', e)
 			if (topicId !== null && chatId) {
 				await notifyTopic(

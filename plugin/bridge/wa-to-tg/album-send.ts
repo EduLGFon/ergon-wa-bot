@@ -99,17 +99,33 @@ export async function sendAlbumChunk(
 	if (extras.length === 0) return
 	const followBody = extras.join('\n')
 	const last = chunk[chunk.length - 1]
-	await sendTgText(tg.api, targetChatId, first.topicId, followBody, [], undefined, (msgId) => {
-		db!.saveReplyMap(
-			msgId,
-			jid,
-			last.m.key?.id || '',
-			JSON.stringify(last.m.key || {}),
-			'text',
-			storedText(followBody),
-			null,
-			{ chatId: targetChatId },
+	try {
+		await sendTgText(
+			tg.api,
+			targetChatId,
+			first.topicId,
+			followBody,
+			[],
+			undefined,
+			(msgId) => {
+				db.saveReplyMap(
+					msgId,
+					jid,
+					last.m.key?.id || '',
+					JSON.stringify(last.m.key || {}),
+					'text',
+					storedText(followBody),
+					null,
+					{ chatId: targetChatId },
+				)
+				db.saveMsgSecret(targetChatId, msgId, msgSecretOf(last.m))
+			},
+			priority,
 		)
-		db!.saveMsgSecret(chatId, msgId, msgSecretOf(last.m))
-	}, priority)
+	} catch (e) {
+		// The media group already landed. A failed caption follow-up must
+		// not make the caller park and replay the whole album (duplicating
+		// every photo); log it and keep the mirrors intact.
+		console.error('[BRIDGE] album caption follow-up failed:', e)
+	}
 }

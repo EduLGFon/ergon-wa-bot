@@ -17,7 +17,7 @@ import { isQueueDrop } from '../rate-limiter.ts'
 import type { TgEntity } from '../format.ts'
 import { sendToTopic } from './send.ts'
 import { albumKey } from './album.ts'
-import type { proto } from 'baileys'
+import { proto } from 'baileys'
 
 // Base join window, stretched while the TG queue is deep (see windowFor).
 // Override with BRIDGE_COALESCE_MS. Album bursts use their own window.
@@ -63,6 +63,8 @@ export function canCoalesceText(
 interface CoalescedPart {
 	text: string
 	entities: TgEntity[]
+	/** Original WA message, kept so a load-shed can park it in the outbox. */
+	m?: proto.IWebMessageInfo
 }
 
 interface CoalescedEntry {
@@ -126,14 +128,14 @@ export function bufferCoalesced(
 		// spraying one message per window.
 		clearTimeout(entry.timer)
 		entry.timer = timer
-		entry.parts.push({ text: part.text, entities: part.entities })
+		entry.parts.push({ text: part.text, entities: part.entities, m })
 		entry.chars += part.text.length
 		return
 	}
 	pendingCoalesced.set(key, {
 		m,
 		label: part.label,
-		parts: [{ text: part.text, entities: part.entities }],
+		parts: [{ text: part.text, entities: part.entities, m }],
 		chars: part.text.length,
 		timer,
 	})
@@ -172,7 +174,18 @@ async function flushCoalescedKey(key: string): Promise<void> {
 		// Anything else becomes a topic notice: without it a joined burst
 		// would vanish silently (dispatch already returned by flush time).
 		if (isQueueDrop(e)) {
-			console.error('[BRIDGE] coalesced batch shed under pressure:', e)
+			// The batch was never sent. Park each original message instead
+			// of losing the whole burst; the outbox replays them in order.
+			try {
+				for (const part of entry.parts) {
+					if (part.m) db.enqueueOutbox(proto.WebMessageInfo.encode(part.m).finish())
+				}
+				console.warn(
+					`[BRIDGE] coalesced batch shed - parked ${entry.parts.length} WA message(s) in outbox`,
+				)
+			} catch (persistErr) {
+				console.error('[BRIDGE] failed to park coalesced batch:', persistErr)
+			}
 			return
 		}
 		console.error('[BRIDGE] failed to relay coalesced batch:', e)

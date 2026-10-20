@@ -9,7 +9,8 @@ import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { sendAlbumChunk } from './album-send.ts'
 import type { AlbumItem } from './album.ts'
 import { sendToTopic } from './send.ts'
-import type { proto } from 'baileys'
+import { isQueueDrop } from '../rate-limiter.ts'
+import { proto } from 'baileys'
 
 export function bufferAlbumItem(jid: string, m: proto.IWebMessageInfo, item: AlbumItem): void {
 	const key = albumKey(jid, m)
@@ -50,20 +51,28 @@ export async function flushAlbum(key: string): Promise<void> {
 
 	if (items.length === 1) {
 		const it = items[0]
-		await sendToTopic(
-			it.topicId,
-			it.chatId || chatId,
-			it.body,
-			it.entities,
-			it.media,
-			null,
-			jid,
-			it.m,
-			{
-				tgId: it.replyToTgId,
-				header: null,
-			},
-		).catch((e) => console.error('[BRIDGE] failed to relay album singleton:', e))
+		try {
+			await sendToTopic(
+				it.topicId,
+				it.chatId || chatId,
+				it.body,
+				it.entities,
+				it.media,
+				null,
+				jid,
+				it.m,
+				{
+					tgId: it.replyToTgId,
+					header: null,
+				},
+			)
+		} catch (e) {
+			if (isQueueDrop(e)) {
+				parkAlbumItems(db, items)
+				return
+			}
+			console.error('[BRIDGE] failed to relay album singleton:', e)
+		}
 		return
 	}
 
@@ -74,6 +83,10 @@ export async function flushAlbum(key: string): Promise<void> {
 		try {
 			await sendAlbumChunk(jid, chatId, chunk)
 		} catch (e) {
+			if (isQueueDrop(e)) {
+				parkAlbumItems(db, chunk)
+				continue
+			}
 			console.error('[BRIDGE] failed to relay album group:', e)
 			await notifyTopic(
 				chatId,
@@ -81,5 +94,16 @@ export async function flushAlbum(key: string): Promise<void> {
 				`⚠️ Couldn't relay a photo group (${chunk.length} photos): ${shortErr(e)}`,
 			)
 		}
+	}
+}
+
+function parkAlbumItems(db: NonNullable<typeof relayCtx.db>, items: AlbumItem[]): void {
+	try {
+		for (const it of items) {
+			db.enqueueOutbox(proto.WebMessageInfo.encode(it.m).finish())
+		}
+		console.warn(`[BRIDGE] album shed - parked ${items.length} WA message(s) in outbox`)
+	} catch (e) {
+		console.error('[BRIDGE] failed to park album batch:', e)
 	}
 }
