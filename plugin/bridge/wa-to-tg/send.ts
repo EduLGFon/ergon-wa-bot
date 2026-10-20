@@ -63,7 +63,7 @@ function uploadLabel(media: { kind: string; fileName?: string }): string {
 // True when Telegram rejected the send because the forum topic itself is
 // gone (closed/deleted), not because the message was bad. Those mappings
 // must heal to a fresh topic instead of failing every later message.
-function isThreadGone(e: unknown): boolean {
+export function isThreadGone(e: unknown): boolean {
 	try {
 		const anyErr = e as { description?: unknown; message?: unknown }
 		const desc = typeof anyErr?.description === 'string'
@@ -138,7 +138,7 @@ export async function sendToTopic(
 
 // Recreate the forum topic for a chat whose Telegram topic was deleted.
 // Returns the fresh ids, or null when healing is impossible.
-async function healThreadMapping(
+export async function healThreadMapping(
 	waJid: string,
 	chatId: string,
 	staleTopicId: number,

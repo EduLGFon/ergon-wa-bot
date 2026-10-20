@@ -6,6 +6,7 @@
 import { sendTgText } from './chunk.ts'
 import { extOf, storedEntities, storedText } from './media-utils.ts'
 import { relayCtx, tgCall } from './state.ts'
+import { healThreadMapping, isThreadGone } from './send.ts'
 import { msgSecretOf } from './polls.ts'
 import type { AlbumItem } from './album.ts'
 import { InputFile } from 'grammy'
@@ -18,26 +19,27 @@ export async function sendAlbumChunk(
 	const { db, tg } = relayCtx
 	if (!db || !tg || chunk.length === 0) return
 	const first = chunk[0]
-	const inputMedia = chunk.map((it, i) => {
-		const file = new InputFile(
-			it.media.buffer,
-			it.media.fileName || `file.${extOf(it.media)}`,
-		)
-		// A captionless album item still carries a sender-labelled body
-		// ("Alice: "); using that as a caption or follow-up is what produced
-		// the repeated "user:\nuser:" digest after albums.
-		const captioned: Record<string, unknown> = i === 0 && first.text.trim() && first.body
-			? { caption: first.body.slice(0, 1024) }
-			: {}
-		if (i === 0 && first.text.trim() && first.body && first.entities.length > 0) {
-			captioned.caption_entities = first.entities
-		}
-		// GIFs ride as plain videos inside media groups (the Bot API has
-		// no animation group item).
-		return it.media.kind === 'image'
-			? { type: 'photo', media: file, ...captioned }
-			: { type: 'video', media: file, ...captioned }
-	})
+	const buildInputMedia = () =>
+		chunk.map((it, i) => {
+			const file = new InputFile(
+				it.media.buffer,
+				it.media.fileName || `file.${extOf(it.media)}`,
+			)
+			// A captionless album item still carries a sender-labelled body
+			// ("Alice: "); using that as a caption or follow-up is what produced
+			// the repeated "user:\nuser:" digest after albums.
+			const captioned: Record<string, unknown> = i === 0 && first.text.trim() && first.body
+				? { caption: first.body.slice(0, 1024) }
+				: {}
+			if (i === 0 && first.text.trim() && first.body && first.entities.length > 0) {
+				captioned.caption_entities = first.entities
+			}
+			// GIFs ride as plain videos inside media groups (the Bot API has
+			// no animation group item).
+			return it.media.kind === 'image'
+				? { type: 'photo', media: file, ...captioned }
+				: { type: 'video', media: file, ...captioned }
+		})
 	const reply = first.replyToTgId
 		? {
 			reply_parameters: {
@@ -47,16 +49,31 @@ export async function sendAlbumChunk(
 		}
 		: undefined
 	const priority = !jid.endsWith('@g.us')
-	const sentArr = await tgCall(
-		() =>
-			tg!.api.sendMediaGroup(chatId, inputMedia as any, {
-				message_thread_id: first.topicId,
-				...reply,
-			}),
-		'media-group',
-		chatId,
-		priority,
-	) as { message_id: number }[]
+	let targetChatId = chatId
+	const sendGroup = () =>
+		tgCall(
+			() =>
+				tg!.api.sendMediaGroup(targetChatId, buildInputMedia() as any, {
+					message_thread_id: first.topicId,
+					...reply,
+				}),
+			'media-group',
+			targetChatId,
+			priority,
+		) as Promise<{ message_id: number }[]>
+	let sentArr: { message_id: number }[]
+	try {
+		sentArr = await sendGroup()
+	} catch (e) {
+		// The topic may have been deleted while the album was buffering.
+		// Heal once and resend the group into the fresh topic.
+		if (!isThreadGone(e)) throw e
+		const healed = await healThreadMapping(jid, targetChatId, first.topicId).catch(() => null)
+		if (!healed) throw e
+		first.topicId = healed.topicId
+		targetChatId = healed.chatId
+		sentArr = await sendGroup()
+	}
 	sentArr.forEach((s, i) => {
 		const it = chunk[i]
 		if (s && it) {
@@ -68,9 +85,9 @@ export async function sendAlbumChunk(
 				'media',
 				storedText(it.body),
 				storedEntities(it.entities),
-				{ chatId, replyTo: first.replyToTgId },
+				{ chatId: targetChatId, replyTo: first.replyToTgId },
 			)
-			db!.saveMsgSecret(chatId, s.message_id, msgSecretOf(it.m))
+			db!.saveMsgSecret(targetChatId, s.message_id, msgSecretOf(it.m))
 		}
 	})
 	// Captions beyond the first don't fit in a media group - deliver them
@@ -82,7 +99,7 @@ export async function sendAlbumChunk(
 	if (extras.length === 0) return
 	const followBody = extras.join('\n')
 	const last = chunk[chunk.length - 1]
-	await sendTgText(tg.api, chatId, first.topicId, followBody, [], undefined, (msgId) => {
+	await sendTgText(tg.api, targetChatId, first.topicId, followBody, [], undefined, (msgId) => {
 		db!.saveReplyMap(
 			msgId,
 			jid,
@@ -91,7 +108,7 @@ export async function sendAlbumChunk(
 			'text',
 			storedText(followBody),
 			null,
-			{ chatId },
+			{ chatId: targetChatId },
 		)
 		db!.saveMsgSecret(chatId, msgId, msgSecretOf(last.m))
 	}, priority)
