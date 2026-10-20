@@ -14,6 +14,7 @@ import { findSupergroupId } from './find-id.ts'
 import { RateLimiter } from './rate-limiter.ts'
 import { relayCtx } from './wa-to-tg/state.ts'
 import { attachWaRelay } from './wa-to-tg.ts'
+import { startOutboxWorker, stopOutboxWorker } from './wa-to-tg/outbox.ts'
 import { BridgeDB } from './db.ts'
 import { Bot } from 'grammy'
 
@@ -71,6 +72,7 @@ export function reattachBridge(): void {
 // (SIGINT/SIGTERM via wa.ts onExit) never leaves long-poll or WAL handles
 // behind. Safe to call when the bridge is disabled or already stopped.
 export function stopBridge(): void {
+	stopOutboxWorker()
 	if (catchUpRestoreTimer) {
 		clearTimeout(catchUpRestoreTimer)
 		catchUpRestoreTimer = undefined
@@ -142,6 +144,7 @@ export function startBridge(): Bot | null {
 	// The WA socket is already connected by wa.ts at this point.
 	attachWaRelay(tg, db, tgLimiter, tgBusinessLimiter)
 	activeBridge = { tg, db, tgLimiter, tgBusinessLimiter, waLimiter }
+	startOutboxWorker()
 	// Owner identity for @all/@mention pings - resolves in the background
 	// so boot never blocks on it; mentions stay plain text until it lands.
 	void resolveOwnerIdentity(tg, groups.personal)
