@@ -26,12 +26,15 @@ previous standalone approach.
   a bridged chat from the Telegram side.
 - **Mapping store** (`db.ts`): SQLite at `conf/gen/bridge.db` -
   `mappings(whatsapp_jid ↔ telegram_topic_id, telegram_chat_id, bucket, …)` + `reply_map` keyed by
-  `(tg_chat_id, tg_msg_id)` + `jid_aliases` for LID/PN variants.
+  `(tg_chat_id, tg_msg_id)` + `jid_aliases` for LID/PN variants + `wa_outbox` for queue-shed
+  messages awaiting replay.
 - **Rate limiting** (`rate-limiter.ts`): one FIFO queue per Telegram supergroup (personal and
   business lanes have separate budgets, so a business burst never stalls personal), plus a separate
   light queue for WhatsApp sends. Every `tg.api.*` call is its own queue slot with ~3s spacing; on a
   429 the failing send is retried after the server's `retry_after` and the lane pauses with adaptive
-  spacing - no more 429 cascades or silent drops.
+  spacing, and transient 5xx/network failures get a short backoff. If the queue still sheds a
+  payload message, the original WA message is encoded into `wa_outbox` and replayed once both lanes
+  drain instead of being lost.
 
 ## Telegram Bot Setup Steps
 
@@ -94,9 +97,10 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   LID/PN aware); unknown members keep the old rendering. Applies to new messages and WA-side edits.
 - Reactions merge into the mirror itself: every WA emoji stays verbatim (no Telegram mapping loss)
   with its count in a footer (`heart 2  thumbsup 1`), plus a **View reactions (N)** button showing
-  who reacted on each emoji (alert for short rosters, topic reply for long ones). The most popular
-  emoji is also set as the native Telegram reaction best-effort (REACTION_INVALID falls back to a
-  default ❤️ with a one-time warn); custom-emoji and paid TG reactions fall back to ❤️ on WhatsApp.
+  who reacted on each emoji (alert for short rosters, topic reply for long ones). The footer is the
+  sole display - the bridge deliberately does not set native Telegram reactions, since Telegram
+  rejects many WA emojis and each attempt only burns an API slot; custom-emoji and paid TG reactions
+  still fall back to ❤️ on WhatsApp.
   Rosters persist on the `reply_map` row (pruned after 7 days with it), survive restarts, and
   re-apply after WA text edits; deletes clear them with the mirror. Text and media captions carry
   the footer in place (short messages); stickers, polls and long texts keep a compact reply line
@@ -119,9 +123,9 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   and starts a fresh one with a new profile card; moving to personal replays up to 100 recent
   messages with reply threading.
 - Albums: rapid WA photo/video bursts from one sender cross as a single Telegram media group (1.5s
-  batching window, so single photos arrive ~1.5s later; extra captions follow as text); TG albums
-  (`media_group_id`) forward in order over a 1.2s window (Baileys has no album-send, so WA receives
-  ordered singles).
+  batching window, so single photos arrive ~1.5s later; only authored extra captions follow as text,
+  never sender-label-only lines); TG albums (`media_group_id`) forward in order over a 1.2s window
+  (Baileys has no album-send, so WA receives ordered singles).
 - Round video notes stay round both ways (`sendVideoNote` / `ptv`, plain-video fallback); GIFs cross
   as GIFs (`sendAnimation` / `gifPlayback`). Telegram video stickers transcode to animated WebP via
   ffmpeg (≤500KB, else video fallback); `.tgs` (Lottie) still relays as a document - ffmpeg can't
