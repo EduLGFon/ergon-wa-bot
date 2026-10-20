@@ -53,6 +53,31 @@ export function pollCreatorOf(waMsg: proto.IWebMessageInfo): string {
 	}
 }
 
+// Normalized JID plus its LID/PN twin when the signal store knows it. Poll
+// votes are signed over the exact JID form the voter used, which may be the
+// LID even when the message key exposes the PN (or the reverse).
+async function jidVariants(jids: Array<string | undefined | null>): Promise<string[]> {
+	const out = new Set<string>()
+	const map = (bot.sock as any)?.signalRepository?.lidMapping
+	for (const raw of jids) {
+		const n = normalizeJid(raw)
+		if (!n || n.endsWith('@g.us') || n === 'status@broadcast') continue
+		out.add(n)
+		try {
+			const twin = n.endsWith('@lid')
+				? await map?.getPNForLID?.(n)
+				: n.endsWith('@s.whatsapp.net')
+				? await map?.getLIDForPN?.(n)
+				: ''
+			const norm = normalizeJid(typeof twin === 'string' ? twin : '')
+			if (norm) out.add(norm)
+		} catch {
+			// Mapping unknown yet - the primary form is still tried.
+		}
+	}
+	return [...out]
+}
+
 // Sender label for vote lines - same shape as the main upsert loop.
 function voteSenderName(m: proto.IWebMessageInfo): string {
 	const isGroup = (m.key?.remoteJid || '').endsWith('@g.us')
@@ -104,27 +129,56 @@ export async function handleWaPollVote(m: proto.IWebMessageInfo): Promise<void> 
 			options.map((n) => [sha256(Buffer.from(n)).toString('hex'), n]),
 		)
 		const me = selfJid()
-		const voterJid = m.key.fromMe ? me : normalizeJid(m.key.participant || m.key.remoteJid)
-		let vote: any
-		try {
-			vote = decryptPollVote(
-				{ encPayload: node.vote.encPayload, encIv: node.vote.encIv },
-				{
-					pollCreatorJid: entry.wa_poll_creator || '',
-					pollMsgId: creationId,
-					pollEncKey: Buffer.from(entry.wa_poll_secret),
-					voterJid,
-				},
+		const tallyVoter = m.key.fromMe ? me : normalizeJid(m.key.participant || m.key.remoteJid)
+		const voterJids = await jidVariants(
+			m.key.fromMe ? [me, m.key.participant, m.key.remoteJid] : [
+				m.key.participant,
+				(m.key as any).participantAlt,
+				m.key.remoteJid,
+				(m.key as any).remoteJidAlt,
+			],
+		)
+		if (voterJids.length === 0) return
+		const creatorJids = await jidVariants([entry.wa_poll_creator])
+		let vote: any = null
+		let lastErr: unknown = null
+		// WhatsApp signs the vote over the creator and voter JID forms it
+		// chose; the message key may expose only the twin. Try the small
+		// matrix (usually 1-2 x 1-2) before giving up.
+		for (const creatorJid of creatorJids) {
+			for (const voterJid of voterJids) {
+				try {
+					vote = decryptPollVote(
+						{ encPayload: node.vote.encPayload, encIv: node.vote.encIv },
+						{
+							pollCreatorJid: creatorJid,
+							pollMsgId: creationId,
+							pollEncKey: Buffer.from(entry.wa_poll_secret),
+							voterJid,
+						},
+					)
+					break
+				} catch (e) {
+					lastErr = e
+				}
+			}
+			if (vote) break
+		}
+		if (!vote) {
+			console.error(
+				'[BRIDGE] failed to decrypt one WA poll vote:',
+				shortErr(lastErr),
+				`creation=${
+					creationId.slice(-8)
+				} voters=${voterJids.length} creators=${creatorJids.length}`,
 			)
-		} catch (e) {
-			console.error('[BRIDGE] failed to decrypt one WA poll vote:', shortErr(e))
 			return
 		}
 		const names = (vote?.selectedOptions || [])
 			.map((o: unknown) => nameByHash.get(Buffer.from(o as Uint8Array).toString('hex')))
 			.filter((n: unknown): n is string => typeof n === 'string')
 		if (names.length === 0 && !entry.wa_poll_tally) return
-		await applyPollTally(entry, mapping, groups, voterJid, senderName, names)
+		await applyPollTally(entry, mapping, groups, tallyVoter || voterJids[0], senderName, names)
 	} catch (e) {
 		console.error('[BRIDGE] failed to relay one WA poll vote:', e)
 	}
