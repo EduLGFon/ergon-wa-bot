@@ -118,7 +118,7 @@ export async function sendURMenu(
 
 	const groups = Deno.env.get('DEV')
 		? [Deno.env.get('GROUPS0')!]
-		: getAllowedTagsList().concat('5527997014112-1491836324@g.us')
+		: getAllowedTagsList().concat('5527997014112-1491836324@g.us', '120363431477311658@g.us')
 
 	for (const g of groups) {
 		if (!g) continue
