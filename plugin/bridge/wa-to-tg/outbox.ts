@@ -20,6 +20,7 @@ const ERROR_RETRY_MS = 5 * 60 * 1000
 const MAX_ERROR_ATTEMPTS = 3
 
 let timer: ReturnType<typeof setInterval> | null = null
+let startTimer: ReturnType<typeof setTimeout> | null = null
 let draining = false
 let active = false
 
@@ -28,13 +29,15 @@ export function startOutboxWorker(): void {
 	active = true
 	timer = setInterval(() => void drainOutbox(), TICK_MS)
 	// First attempt is deferred so boot catch-up owns the queue first.
-	setTimeout(() => void drainOutbox(), 5_000)
+	startTimer = setTimeout(() => void drainOutbox(), 5_000)
 }
 
 export function stopOutboxWorker(): void {
 	active = false
 	if (timer) clearInterval(timer)
+	if (startTimer) clearTimeout(startTimer)
 	timer = null
+	startTimer = null
 }
 
 export async function drainOutbox(): Promise<void> {
