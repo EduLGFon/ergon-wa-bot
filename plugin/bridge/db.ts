@@ -106,6 +106,16 @@ function toMapping(row: Record<string, unknown>): MappingRow {
 	}
 }
 
+// Serialized WA messages parked after a queue drop. The worker replays them
+// in id order when the Telegram queue has drained; the payload is a protobuf
+// BLOB so media keys/context survive JSON round-trips.
+export interface OutboxRow {
+	id: number
+	wa_msg: Uint8Array
+	attempts: number
+	created_at: number
+}
+
 export class BridgeDB {
 	private db: DatabaseSync
 
@@ -288,6 +298,18 @@ export class BridgeDB {
 				updated_at INTEGER NOT NULL
 			)
 		`)
+		// Durable overflow: WA messages dropped by the Telegram queue are
+		// stored as encoded WebMessageInfo BLOBs and replayed in order.
+		this.db.exec(`
+			CREATE TABLE IF NOT EXISTS wa_outbox (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				wa_msg BLOB NOT NULL,
+				attempts INTEGER NOT NULL DEFAULT 0,
+				created_at INTEGER NOT NULL,
+				next_at INTEGER NOT NULL
+			)
+		`)
+		this.db.exec('CREATE INDEX IF NOT EXISTS idx_outbox_next ON wa_outbox(next_at, id)')
 		this.purgePoisonedAliases()
 	}
 
@@ -317,6 +339,54 @@ export class BridgeDB {
 
 	close(): void {
 		this.db.close()
+	}
+
+	// Durable overflow for queue-shed payloads. Rows are replayed oldest
+	// first after the Telegram queue drains; stale rows expire after a day.
+	private lastOutboxPrune = 0
+
+	enqueueOutbox(waMsg: Uint8Array): void {
+		const now = Date.now()
+		this.db
+			.prepare('INSERT INTO wa_outbox (wa_msg, created_at, next_at) VALUES (?, ?, ?)')
+			.run(waMsg, now, now)
+		if (now - this.lastOutboxPrune > 60 * 60 * 1000) {
+			this.lastOutboxPrune = now
+			this.db
+				.prepare('DELETE FROM wa_outbox WHERE created_at < ?')
+				.run(now - 24 * 60 * 60 * 1000)
+		}
+	}
+
+	listOutbox(limit = 20): OutboxRow[] {
+		const rows = this.db
+			.prepare(
+				'SELECT id, wa_msg, attempts, created_at FROM wa_outbox WHERE next_at <= ? ORDER BY id LIMIT ?',
+			)
+			.all(Date.now(), limit) as Array<Record<string, unknown>>
+		return rows.map((row) => ({
+			id: Number(row.id),
+			wa_msg: row.wa_msg as Uint8Array,
+			attempts: Number(row.attempts ?? 0),
+			created_at: Number(row.created_at ?? 0),
+		}))
+	}
+
+	deferOutbox(id: number, nextAt: number): void {
+		this.db
+			.prepare('UPDATE wa_outbox SET attempts = attempts + 1, next_at = ? WHERE id = ?')
+			.run(nextAt, id)
+	}
+
+	deleteOutbox(id: number): void {
+		this.db.prepare('DELETE FROM wa_outbox WHERE id = ?').run(id)
+	}
+
+	outboxCount(): number {
+		const row = this.db.prepare('SELECT COUNT(*) AS n FROM wa_outbox').get() as
+			| { n?: number }
+			| undefined
+		return Number(row?.n ?? 0)
 	}
 
 	getOrCreate(
