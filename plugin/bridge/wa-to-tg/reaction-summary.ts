@@ -127,7 +127,7 @@ function viewButton(targetTgId: number, total: number): object | undefined {
 // instead of racing the Telegram edits.
 const chains = new Map<string, Promise<void>>()
 
-function chained(key: string, fn: () => Promise<void>): Promise<void> {
+function chained(key: string, fn: () => Promise<void> | void): Promise<void> {
 	const prev = chains.get(key) || Promise.resolve()
 	const next = prev.then(fn).catch((e) => console.error('[BRIDGE] reaction update failed:', e))
 	chains.set(key, next)
@@ -366,7 +366,7 @@ export async function handleWaReactionCarrier(m: proto.IWebMessageInfo, node: an
 		const chatId = chatForReply(target, mapping, groups)
 		const mirrorId = target.tg_msg_id
 		const author = authorOf(m)
-		await chained(`${chatId}:${mirrorId}`, async () => {
+		await chained(`${chatId}:${mirrorId}`, () => {
 			const fresh = db.getReplyMapAt(chatId, mirrorId)
 			if (!fresh) return
 			const state = parseState((fresh as ReplyMapRow).wa_reactions)
