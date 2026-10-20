@@ -23,10 +23,13 @@ export async function sendAlbumChunk(
 			it.media.buffer,
 			it.media.fileName || `file.${extOf(it.media)}`,
 		)
-		const captioned: Record<string, unknown> = i === 0 && first.body
+		// A captionless album item still carries a sender-labelled body
+		// ("Alice: "); using that as a caption or follow-up is what produced
+		// the repeated "user:\nuser:" digest after albums.
+		const captioned: Record<string, unknown> = i === 0 && first.text.trim() && first.body
 			? { caption: first.body.slice(0, 1024) }
 			: {}
-		if (i === 0 && first.body && first.entities.length > 0) {
+		if (i === 0 && first.text.trim() && first.body && first.entities.length > 0) {
 			captioned.caption_entities = first.entities
 		}
 		// GIFs ride as plain videos inside media groups (the Bot API has
@@ -73,7 +76,9 @@ export async function sendAlbumChunk(
 	// Captions beyond the first don't fit in a media group - deliver them
 	// as one follow-up instead of dropping them, chunked so a very long
 	// combined caption can't be rejected whole.
-	const extras = chunk.slice(1).map((it) => it.body).filter((b) => b)
+	// Only authored captions become follow-ups; label-only bodies are not
+	// content and must never be joined into a digest.
+	const extras = chunk.slice(1).filter((it) => it.text.trim()).map((it) => it.body)
 	if (extras.length === 0) return
 	const followBody = extras.join('\n')
 	const last = chunk[chunk.length - 1]

@@ -14,6 +14,8 @@ export interface AlbumItem {
 	m: proto.IWebMessageInfo
 	topicId: number
 	chatId: string
+	/** Caption text as authored, without the sender label. */
+	text: string
 	body: string
 	entities: TgEntity[]
 	media: { kind: string; buffer: Uint8Array; mime?: string; fileName?: string; ptt?: boolean }

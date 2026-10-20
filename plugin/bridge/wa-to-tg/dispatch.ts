@@ -114,6 +114,7 @@ export async function dispatchPrepared(d: PreparedDispatch): Promise<void> {
 			m: d.m,
 			topicId: d.topicId,
 			chatId: d.chatId,
+			text: parsed.text,
 			body,
 			entities,
 			media: d.media,

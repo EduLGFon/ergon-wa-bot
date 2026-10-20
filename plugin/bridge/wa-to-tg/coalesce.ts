@@ -98,6 +98,9 @@ export function bufferCoalesced(
 	m: proto.IWebMessageInfo,
 	part: { topicId: number; chatId: string; label: string; text: string; entities: TgEntity[] },
 ): void {
+	// Label-only parts have no content; joining them would produce a digest
+	// of repeated "user:" lines after media/album bursts.
+	if (!part.text.trim()) return
 	const key = albumKey(jid, m)
 	let entry = pendingCoalesced.get(key)
 	if (
