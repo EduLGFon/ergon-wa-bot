@@ -136,6 +136,27 @@ function chained(key: string, fn: () => Promise<void>): Promise<void> {
 	return next
 }
 
+// Reaction storms can edit the same mirror dozens of times per second, and
+// every edit costs a Telegram API slot. Coalesce them: the roster is saved
+// immediately, but only the latest state is rendered after a short quiet
+// window. The footer is the primary display (no native mirror), so a 1.2s
+// delay is invisible next to the flood queue's own pacing.
+const REACTION_RENDER_DEBOUNCE_MS = 1_200
+const renderTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+function scheduleReactionRender(chatId: string, mirrorId: number): void {
+	const key = `${chatId}:${mirrorId}`
+	const prev = renderTimers.get(key)
+	if (prev) clearTimeout(prev)
+	renderTimers.set(
+		key,
+		setTimeout(() => {
+			renderTimers.delete(key)
+			void chained(key, () => renderReactions(chatId, mirrorId))
+		}, REACTION_RENDER_DEBOUNCE_MS),
+	)
+}
+
 function authorOf(m: proto.IWebMessageInfo): { key: string; name: string } {
 	const participantRaw = m.key?.participant
 	const participant = participantRaw ? stripDevice(normalizeJid(participantRaw)) : ''
@@ -339,7 +360,7 @@ export async function handleWaReactionCarrier(m: proto.IWebMessageInfo, node: an
 				delete state.v[author.key]
 			}
 			db.saveReactions(chatId, mirrorId, JSON.stringify(state))
-			await renderReactions(chatId, mirrorId)
+			scheduleReactionRender(chatId, mirrorId)
 		})
 	} catch (e) {
 		console.error('[BRIDGE] failed to relay one WA reaction carrier:', e)
