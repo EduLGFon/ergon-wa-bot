@@ -123,6 +123,7 @@ export class RateLimiter {
 	private dropped = 0
 	private floodRetries = 0
 	private successStreak = 0
+	private lastFullLog = 0
 
 	constructor(limitMs: number = 3000, opts: RateLimiterOptions = {}) {
 		this.baseLimitMs = limitMs
@@ -162,11 +163,15 @@ export class RateLimiter {
 			if (priority) {
 				// DM fast lane: jump ahead of queued group traffic (FIFO
 				// among priority items) so 1:1 messages always go first.
-				let idx = this.queue.findIndex((q) => !q.priority)
-				if (idx === -1) idx = this.queue.length
-				this.queue.splice(idx, 0, item)
-				void this.drain()
-				return
+				// Still respect the cap - otherwise a DM burst could grow
+				// the queue without bound while group traffic parks.
+				if (this.queue.length < MAX_QUEUE) {
+					let idx = this.queue.findIndex((q) => !q.priority)
+					if (idx === -1) idx = this.queue.length
+					this.queue.splice(idx, 0, item)
+					void this.drain()
+					return
+				}
 			}
 			if (this.queue.length >= MAX_QUEUE) {
 				// Full: slow the producer instead of dropping. Poll for space;
@@ -174,7 +179,7 @@ export class RateLimiter {
 				// so a stuck flood cannot accumulate unbounded waiters.
 				if (this.waiters >= MAX_WAITERS) {
 					this.dropped++
-					console.warn(
+					this.warnFull(
 						`[BRIDGE] queue full (${this.queue.length}) waiters=${this.waiters}, dropping op=${label}`,
 					)
 					reject(new Error(`[BRIDGE] queue full, dropping op=${label}`))
@@ -182,7 +187,7 @@ export class RateLimiter {
 				}
 				this.waiters++
 				const parkedAt = Date.now()
-				console.warn(
+				this.warnFull(
 					`[BRIDGE] queue full (${this.queue.length}), slowing op=${label} instead of dropping`,
 				)
 				const waitForSpace = (): void => {
@@ -258,9 +263,18 @@ export class RateLimiter {
 		this.baseLimitMs = ms
 	}
 
+	// Full-queue logs can fire hundreds of times during a burst; keep one
+	// per second so stderr does not become its own bottleneck.
+	private warnFull(msg: string): void {
+		const now = Date.now()
+		if (now - this.lastFullLog < 1_000) return
+		this.lastFullLog = now
+		console.warn(msg)
+	}
+
+	// Adaptive pacing: after a clean streak, ease back toward base so a
+	// past flood does not keep the relay slow forever.
 	private noteSuccess(): void {
-		// Adaptive pacing: after a clean streak, ease back toward base so a
-		// past flood does not keep the relay slow forever.
 		this.successStreak++
 		if (this.successStreak >= 50 && this.limitMs > this.baseLimitMs) {
 			this.successStreak = 0
