@@ -13,6 +13,7 @@
 // set: Telegram rejects many WA emojis and the footer already preserves the
 // original, so every native attempt is a wasted API slot. See DECISIONS.md#D09.
 import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
+import { isQueueDrop } from '../rate-limiter.ts'
 import { candidatesOf, normalizeJid, selfJid, stripDevice } from './jid.ts'
 import { aesDecryptGCM, hmacSign, proto } from 'baileys'
 import bot from '@plugin/bot.ts'
@@ -142,9 +143,14 @@ function chained(key: string, fn: () => Promise<void>): Promise<void> {
 // window. The footer is the primary display (no native mirror), so a 1.2s
 // delay is invisible next to the flood queue's own pacing.
 const REACTION_RENDER_DEBOUNCE_MS = 1_200
+const REACTION_RENDER_RETRY_MS = 30_000
 const renderTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-function scheduleReactionRender(chatId: string, mirrorId: number): void {
+function scheduleReactionRender(
+	chatId: string,
+	mirrorId: number,
+	delayMs = REACTION_RENDER_DEBOUNCE_MS,
+): void {
 	const key = `${chatId}:${mirrorId}`
 	const prev = renderTimers.get(key)
 	if (prev) clearTimeout(prev)
@@ -152,8 +158,21 @@ function scheduleReactionRender(chatId: string, mirrorId: number): void {
 		key,
 		setTimeout(() => {
 			renderTimers.delete(key)
-			void chained(key, () => renderReactions(chatId, mirrorId))
-		}, REACTION_RENDER_DEBOUNCE_MS),
+			void chained(key, async () => {
+				try {
+					await renderReactions(chatId, mirrorId)
+				} catch (e) {
+					if (isQueueDrop(e)) {
+						// The footer state is already in DB; retry once the
+						// lane drains instead of leaving it stale (or falling
+						// back to a duplicate reply line).
+						scheduleReactionRender(chatId, mirrorId, REACTION_RENDER_RETRY_MS)
+						return
+					}
+					throw e
+				}
+			})
+		}, delayMs),
 	)
 }
 
@@ -464,7 +483,10 @@ async function editMirrorInline(
 			chatId,
 		)
 		return true
-	} catch {
+	} catch (e) {
+		// A queue drop is not an uneditable mirror - retry later instead of
+		// spawning a duplicate reply line.
+		if (isQueueDrop(e)) throw e
 		// Too old, not editable, or markup rejected - the caller falls back
 		// to the reply line so nothing is lost.
 		return false
@@ -505,7 +527,8 @@ async function ensureReplyLine(
 				chatId,
 			)
 		}
-	} catch {
+	} catch (e) {
+		if (isQueueDrop(e)) throw e
 		// Polls and old messages reject markup - the reply line below
 		// still carries the button.
 	}
@@ -523,7 +546,8 @@ async function ensureReplyLine(
 				chatId,
 			)
 			return
-		} catch {
+		} catch (e) {
+			if (isQueueDrop(e)) throw e
 			// Summary lost - fall through and post fresh.
 		}
 	}
@@ -544,6 +568,7 @@ async function ensureReplyLine(
 		state.s = (sent as { message_id: number }).message_id
 		db.saveReactions(chatId, row.tg_msg_id, JSON.stringify(state))
 	} catch (e) {
+		if (isQueueDrop(e)) throw e
 		console.error('[BRIDGE] failed to post reaction line:', shortErr(e))
 		await notifyTopic(chatId, topicId, `Reactions: ${footer.trim()}`)
 	}
@@ -576,7 +601,8 @@ async function restoreMirror(row: ReplyMapRow, state: ReactionState): Promise<vo
 				chatId,
 			)
 		}
-	} catch {
+	} catch (e) {
+		if (isQueueDrop(e)) throw e
 		// Mirror too old to restore - the footer stays as history.
 	}
 	try {
@@ -585,7 +611,8 @@ async function restoreMirror(row: ReplyMapRow, state: ReactionState): Promise<vo
 			'keyboard',
 			chatId,
 		)
-	} catch {
+	} catch (e) {
+		if (isQueueDrop(e)) throw e
 		// Markup already gone or unsupported - nothing to strip.
 	}
 }
