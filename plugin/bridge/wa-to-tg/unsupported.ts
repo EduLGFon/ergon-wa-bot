@@ -50,6 +50,19 @@ export const WA_UNSUPPORTED_FRIENDLY: Record<string, string> = {
 // alongside real content, pure copies carry nothing to relay.
 export const WA_ENVELOPE_KEYS = new Set(['messageContextInfo', 'senderKeyDistributionMessage'])
 
+// Container/metadata types that never carry user content of their own.
+// Album children arrive separately (associatedChildMessage), history sync and
+// live-call signaling are not chat messages, and encrypted comments are not
+// mirrored. Reporting these as "unsupported" only spams the topic.
+const WA_SILENT_KEYS = new Set([
+	'albumMessage',
+	'associatedChildMessage',
+	'messageHistoryNotice',
+	'messageHistoryBundle',
+	'encCommentMessage',
+	'call',
+])
+
 // True when the unwrapped message carries only envelope/metadata keys (e.g.
 // a pure senderKeyDistributionMessage + messageContextInfo). These are group
 // E2EE setup Baileys already consumed - no user content, nothing to relay,
@@ -81,12 +94,12 @@ export function isPureEnvelope(m: proto.IWebMessageInfo): boolean {
 export async function notifyEmptyRelay(
 	chatId: string,
 	topicId: number,
-	dl: { label: string; bytes: number | null } | null | undefined,
+	dl: { label: string; bytes: number | null; tooLarge?: boolean } | null | undefined,
 	m: proto.IWebMessageInfo,
 	senderName: string,
 ): Promise<void> {
 	if (dl) {
-		await notifyTopic(chatId, topicId, waDownloadFailureLine(dl.label, dl.bytes))
+		await notifyTopic(chatId, topicId, waDownloadFailureLine(dl.label, dl.bytes, !!dl.tooLarge))
 	} else {
 		// Pure E2EE setup carries no user content - drop silently, no log spam.
 		if (isPureEnvelope(m)) return
@@ -132,6 +145,7 @@ export function waUnsupportedLine(
 			if (keys.length > 0) return null
 		}
 		const primary = contentKeys[0] ?? 'unknownMessage'
+		if (WA_SILENT_KEYS.has(primary)) return null
 		const node = raw?.[primary]
 		const friendly = WA_UNSUPPORTED_FRIENDLY[primary] ??
 			(primary.endsWith('Message')

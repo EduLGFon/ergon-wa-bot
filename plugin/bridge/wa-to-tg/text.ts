@@ -8,10 +8,27 @@ import { findKey } from '@util/functions.ts'
 import type { proto } from 'baileys'
 
 // Peel view-once / ephemeral wrappers so media underneath is reachable.
+// deviceSentMessage wraps phone-sent messages from a linked device - the
+// outer key is just an envelope around the real content.
 export function unwrap(message: proto.IMessage | undefined | null): any {
 	let node: any = message
-	for (let i = 0; i < 4 && node; i++) {
-		if (node.viewOnceMessageV2) node = node.viewOnceMessageV2.message
+	for (let i = 0; i < 6 && node; i++) {
+		if (node.deviceSentMessage?.message && typeof node.deviceSentMessage.message === 'object') {
+			node = node.deviceSentMessage.message
+		} else if (
+			node.associatedChildMessage?.message &&
+			typeof node.associatedChildMessage.message === 'object'
+		) {
+			// Album children arrive wrapped in a FutureProofMessage. Without
+			// peeling it the image/video is reported as unsupported.
+			node = node.associatedChildMessage.message
+		} else if (
+			node.lottieStickerMessage?.message &&
+			typeof node.lottieStickerMessage.message === 'object'
+		) {
+			// Lottie stickers are animated stickerMessages in a wrapper.
+			node = node.lottieStickerMessage.message
+		} else if (node.viewOnceMessageV2) node = node.viewOnceMessageV2.message
 		else if (node.viewOnceMessage) node = node.viewOnceMessage.message
 		else if (node.ephemeralMessage) node = node.ephemeralMessage.message
 		else if (node.documentWithCaptionMessage) node = node.documentWithCaptionMessage.message

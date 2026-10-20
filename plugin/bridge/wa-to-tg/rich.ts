@@ -81,6 +81,25 @@ export function getRichNotice(
 				if (!name && !resp) return null
 				return `📅 ${name || 'Event'}: ${resp || 'responded'}`
 			}
+			case 'templateMessage': {
+				// Business templates carry their rendered text on the hydrated
+				// variant; fall back to the raw HSM strings when it is absent.
+				const t = node.hydratedTemplate || node.hydratedFourRowTemplate
+				const title = str(t, ['hydratedTitleText'])
+				const body = str(t, ['hydratedContentText'])
+				const footer = str(t, ['hydratedFooterText'])
+				const fallback = node.fourRowTemplate?.content
+				const text = [title, body, footer].filter(Boolean).join('\n') ||
+					str(fallback, ['fallbackLg', 'fallbackLc'])
+				return text ? `📋 ${text}` : null
+			}
+			case 'liveLocationMessage': {
+				const caption = truncateOneLine(
+					typeof node.caption === 'string' ? node.caption : null,
+					120,
+				)
+				return `📍 Live location${caption ? `: ${caption}` : ''}`
+			}
 			case 'scheduledCallCreationMessage':
 			case 'scheduledCallEditMessage': {
 				const name = str(node, ['scheduledCallName', 'title'])
