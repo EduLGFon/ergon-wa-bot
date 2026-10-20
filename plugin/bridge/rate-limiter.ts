@@ -46,20 +46,58 @@ export function getRetryAfterSeconds(e: unknown): number | null {
 			error_code?: unknown
 			parameters?: { retry_after?: unknown }
 			description?: unknown
+			message?: unknown
 		}
+		const desc = typeof anyErr?.description === 'string'
+			? anyErr.description
+			: typeof anyErr?.message === 'string'
+			? anyErr.message
+			: ''
+		// Telegram occasionally returns the flood wait as a 400 instead of a
+		// 429 ("too Many Requests: retry after 8"). Treat the description as
+		// authoritative either way.
+		const fromDesc = /retry after (\d+)/i.exec(desc)
 		if (anyErr && anyErr.error_code === 429) {
 			const ra = anyErr.parameters?.retry_after
 			if (typeof ra === 'number' && Number.isFinite(ra) && ra >= 0) return ra
-			// Fallback: parse "retry after N" out of the description.
-			const desc = typeof anyErr.description === 'string' ? anyErr.description : ''
-			const m = /retry after (\d+)/i.exec(desc)
-			if (m) return Number(m[1])
+			if (fromDesc) return Number(fromDesc[1])
 			return 0 // 429 without a usable value - caller applies default wait.
 		}
+		if (fromDesc) return Number(fromDesc[1])
 	} catch {
 		// fall through to null
 	}
 	return null
+}
+
+const TRANSIENT_CODES = new Set([
+	'ECONNRESET',
+	'ETIMEDOUT',
+	'ECONNREFUSED',
+	'EPIPE',
+	'ENOTFOUND',
+	'EAI_AGAIN',
+	'UND_ERR_CONNECT_TIMEOUT',
+	'UND_ERR_SOCKET',
+])
+
+// Retry transient Telegram/network failures a few times. A 5xx is usually a
+// gateway hiccup, not a rejected message; payload ops get the full budget,
+// low-value ops one extra attempt.
+function isTransientTgError(e: unknown): boolean {
+	try {
+		const err = e as {
+			error_code?: unknown
+			code?: unknown
+			cause?: { code?: unknown }
+		}
+		const status = Number(err?.error_code)
+		if (Number.isFinite(status) && status >= 500 && status <= 599) return true
+		const code = String(err?.code ?? err?.cause?.code ?? '')
+		return TRANSIENT_CODES.has(code)
+	} catch {
+		return false
+	}
 }
 
 // True when an enqueue rejection is an intentional load-shed (deep queue,
@@ -105,6 +143,9 @@ const DROPPABLE_LABELS = new Set([
 ])
 // Low-value ops give up after N flood retries; payload ops retry unbounded.
 const FLOOD_MAX_RETRIES_LOW = 3
+// Transient 5xx/network failures are different from flood waits: retry a
+// couple of times with backoff, then let the caller triage.
+const TRANSIENT_MAX_RETRIES = 3
 // A parked producer waits at most this long for space before it drops
 // (low-value) or rejects (payload) instead of waiting forever.
 const MAX_PARK_MS = 60_000
@@ -333,6 +374,22 @@ export class RateLimiter {
 							}s ` +
 								`(attempt ${item.attempts}, op=${item.label}, ` +
 								`queue=${this.queue.length})`,
+						)
+					} else if (isTransientTgError(e)) {
+						const max = DROPPABLE_LABELS.has(item.label) ? 1 : TRANSIENT_MAX_RETRIES
+						if (item.attempts >= max) {
+							this.lastRun = Date.now()
+							item.reject(e)
+							continue
+						}
+						item.attempts += 1
+						const waitMs = Math.min(1_000 * 2 ** (item.attempts - 1), 15_000)
+						this.blockedUntil = Date.now() + waitMs
+						this.queue.unshift(item)
+						console.warn(
+							`[BRIDGE] Telegram transient failure: retry in ${
+								(waitMs / 1000).toFixed(1)
+							}s (attempt ${item.attempts}, op=${item.label})`,
 						)
 					} else {
 						// Callers keep their own triage (edits, deletes and
