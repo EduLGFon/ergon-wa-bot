@@ -9,9 +9,9 @@
 // nothing mapped away) with a stateless `rx:<id>` button that reveals who
 // reacted on each emoji. Editable mirrors (text, media captions) are edited
 // in place; stickers, polls and other non-editable mirrors keep a compact
-// reply line instead. The popular emoji is still set natively best-effort.
-// See DECISIONS.md#D09.
-import { applyTgReaction, waReactionToTgEmoji } from './reactions.ts'
+// reply line instead. The native popular-emoji mirror is intentionally not
+// set: Telegram rejects many WA emojis and the footer already preserves the
+// original, so every native attempt is a wasted API slot. See DECISIONS.md#D09.
 import { notifyTopic, relayCtx, shortErr, tgCall } from './state.ts'
 import { candidatesOf, normalizeJid, selfJid, stripDevice } from './jid.ts'
 import { aesDecryptGCM, hmacSign, proto } from 'baileys'
@@ -284,24 +284,6 @@ function pickTarget(rows: ReplyMapRow[]): ReplyMapRow | undefined {
 	return pool.reduce((a, b) => (b.tg_msg_id > a.tg_msg_id ? b : a))
 }
 
-function popularEmoji(state: ReactionState): string | null {
-	const groups = grouped(state)
-	return groups.length > 0 ? groups[0].emoji : null
-}
-
-async function setNativeReaction(
-	chatId: string,
-	tgMsgId: number,
-	state: ReactionState,
-): Promise<void> {
-	const popular = popularEmoji(state)
-	try {
-		await applyTgReaction(chatId, tgMsgId, popular ? waReactionToTgEmoji(popular) : null)
-	} catch (e) {
-		console.error('[BRIDGE] failed to set popular reaction:', e)
-	}
-}
-
 async function deleteSummary(chatId: string, summaryId: number | null): Promise<void> {
 	if (!summaryId) return
 	const { tg } = relayCtx
@@ -376,7 +358,6 @@ export async function renderReactions(chatId: string, mirrorId: number): Promise
 	const state = parseState((row as ReplyMapRow).wa_reactions)
 	const total = Object.keys(state.v).length
 	const topicId = mapping.telegram_topic_id
-	await setNativeReaction(chatId, mirrorId, state)
 	if (total === 0) {
 		await restoreMirror(row, state)
 		return
@@ -552,7 +533,6 @@ async function restoreMirror(row: ReplyMapRow, state: ReactionState): Promise<vo
 	const { db, tg } = relayCtx
 	if (!db || !tg) return
 	const chatId = row.tg_chat_id
-	await setNativeReaction(chatId, row.tg_msg_id, state)
 	if (state.s) await deleteSummary(chatId, state.s)
 	state.s = null
 	db.saveReactions(chatId, row.tg_msg_id, JSON.stringify(state))
