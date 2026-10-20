@@ -374,10 +374,13 @@ without touching WA.
   -> italic -> strike -> code passes).
 - `rate-limiter.ts`: one FIFO queue per limiter (one limiter per Telegram supergroup, so each group
   spends its own flood budget); every `tg.api.*` call takes a slot; 429s retry with adaptive spacing
-  (widens on flood, eases back after 50 clean sends, max 120s wait). Payload (message/media/voice)
-  retries unbounded, droppable (notice/service-line/prompt/edit-topic/new-topic/cleanup) gives up
-  after 3 flood retries and sheds immediately when depth over 400. Queue cap 500, parked waiters cap
-  1000 with 60s max park, `isQueueDrop` marks intentional sheds.
+  (widens on flood, eases back after 50 clean sends, max 120s wait), and transient 5xx/network
+  failures retry with exponential backoff (3 attempts for payload, 1 for droppable). Personal DMs
+  insert ahead of group traffic (FIFO among priority items) but still respect the cap. Droppable
+  (notice/service-line/prompt/edit-topic/new-topic/cleanup) gives up after 3 flood retries and sheds
+  immediately when depth over 400. Queue cap 500, parked waiters cap 1000 with 60s max park;
+  `isQueueDrop` marks intentional sheds. WA payload messages caught by such a shed are parked in
+  `wa_outbox` and replayed by `wa-to-tg/outbox.ts` once both lanes are quiet (see D12).
 - WA->TG (`wa-to-tg.ts` facade + 36 modules): `relay.ts` attaches eight socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups, contacts); `incoming.ts` is the main
   loop (skip protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via
