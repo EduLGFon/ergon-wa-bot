@@ -2,7 +2,7 @@
 // Executes temp files with per-lang instructions
 // Supports trigger templates from defaults
 import defaults from '@conf/defaults.json' with { type: 'json' }
-import { db as prisma, getGroup, getUser } from '@db'
+import { db, getGroup, getUser } from '@db'
 import { sendURMenu } from '@plugin/menuScraping.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import { randomDelay } from '@util/functions.ts'
@@ -40,7 +40,7 @@ export default async function runCode(lang: Lang, code = '', file = '', ctx?: Cm
 				getGroup
 				checkMatch
 				getUser
-				prisma
+				db
 				delay
 				cache
 				sendURMenu

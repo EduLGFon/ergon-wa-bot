@@ -102,12 +102,12 @@ original WA emojis verbatim, nothing mapped away) with a stateless `rx:<mirrorId
 reveals who reacted on each emoji (short rosters as an alert, long ones as a topic reply). Native
 Telegram reactions are intentionally no longer set: Telegram rejects many WA emojis, the footer
 already preserves every original, and each native attempt cost an API slot. (2026-10-20 update:
-removed the best-effort call and its `REACTION_INVALID` heart retry; the footer is the sole display.)
-Roster persists as JSON on the `reply_map` row (`wa_reactions`: per-author name plus emoji plus
-timestamp, capped at 100 voters and 20 emojis, plus the fallback line id), so it survives restarts
-and prunes with the row after 7 days - no retention widening; reactor names are the same display
-names already relayed in message labels. Editable mirrors (text, short media captions) carry the
-footer in place; stickers, polls and long texts keep a compact reply line instead. WA text edits
+removed the best-effort call and its `REACTION_INVALID` heart retry; the footer is the sole
+display.) Roster persists as JSON on the `reply_map` row (`wa_reactions`: per-author name plus emoji
+plus timestamp, capped at 100 voters and 20 emojis, plus the fallback line id), so it survives
+restarts and prunes with the row after 7 days - no retention widening; reactor names are the same
+display names already relayed in message labels. Editable mirrors (text, short media captions) carry
+the footer in place; stickers, polls and long texts keep a compact reply line instead. WA text edits
 refresh the stored base and re-apply the footer; deletes clear the roster, line and button with the
 mirror. `BRIDGE_REACTION_SUMMARY` is retired (always-on behavior, env key kept as a no-op for
 compat). Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
@@ -157,11 +157,11 @@ verify` chain only (no live WA/TG smoke in this environment).
 
 ## D12 - Durable outbox for queue-shed payloads (2026-10-20)
 
-The Telegram queue is deliberately bounded (500 slots at ~3s spacing, parked producers wait 60s),
-so a sustained WA burst used to lose payload messages after the wait expired - 222+ operations in
-the October logs, including text, photos, documents and voice notes. Sends that reject with a queue
-drop now park the original WA message in `wa_outbox` as a protobuf-encoded `WebMessageInfo` BLOB,
-then return without a topic notice (which would also be dropped). A worker replays rows oldest-first
+The Telegram queue is deliberately bounded (500 slots at ~3s spacing, parked producers wait 60s), so
+a sustained WA burst used to lose payload messages after the wait expired - 222+ operations in the
+October logs, including text, photos, documents and voice notes. Sends that reject with a queue drop
+now park the original WA message in `wa_outbox` as a protobuf-encoded `WebMessageInfo` BLOB, then
+return without a topic notice (which would also be dropped). A worker replays rows oldest-first
 every 15s once both Telegram lanes are below 100 queued calls, routing them through the normal
 incoming pipeline so mapping, dedupe, media re-download and edit/quote fallbacks behave like fresh
 traffic. Rows expire after 24h; queue pressure defers instead of counting as a failure, while
@@ -171,5 +171,5 @@ that occurs after a multi-call message's first API call can replay the already-s
 shutdown between send and row deletion can duplicate one message; both are preferable to silent
 loss. Coalesced text batches and album items are parked per original WA message before their
 in-memory timer fires, so they re-enter the normal batching path on replay. Verified:
-`scripts/outbox_smoke.ts` (real DB + worker + fake Telegram API) plus the full
-`coalesce_smoke.ts`; no live WA/TG smoke.
+`scripts/outbox_smoke.ts` (real DB + worker + fake Telegram API) plus the full `coalesce_smoke.ts`;
+no live WA/TG smoke.

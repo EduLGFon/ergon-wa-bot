@@ -100,14 +100,14 @@ deno task start:dev   # or: pm2 start conf/ecosystem.config.cjs --attach
   who reacted on each emoji (alert for short rosters, topic reply for long ones). The footer is the
   sole display - the bridge deliberately does not set native Telegram reactions, since Telegram
   rejects many WA emojis and each attempt only burns an API slot; custom-emoji and paid TG reactions
-  still fall back to ❤️ on WhatsApp.
-  Rosters persist on the `reply_map` row (pruned after 7 days with it), survive restarts, and
-  re-apply after WA text edits; deletes clear them with the mirror. Text and media captions carry
-  the footer in place (short messages); stickers, polls and long texts keep a compact reply line
-  instead. Two prerequisites, both silent when missing: the bot must be an **administrator** of the
-  supergroup and polling must opt into `message_reaction` (done in `mod.ts` - Telegram excludes it
-  from defaults). TG-initiated react echoes are deduplicated via a pending mark, so genuine
-  reactions from your own phone still relay; WA reaction carriers never surface as `You: ❤️` text.
+  still fall back to ❤️ on WhatsApp. Rosters persist on the `reply_map` row (pruned after 7 days
+  with it), survive restarts, and re-apply after WA text edits; deletes clear them with the mirror.
+  Text and media captions carry the footer in place (short messages); stickers, polls and long texts
+  keep a compact reply line instead. Two prerequisites, both silent when missing: the bot must be an
+  **administrator** of the supergroup and polling must opt into `message_reaction` (done in
+  `mod.ts` - Telegram excludes it from defaults). TG-initiated react echoes are deduplicated via a
+  pending mark, so genuine reactions from your own phone still relay; WA reaction carriers never
+  surface as `You: ❤️` text.
 - Deletes sync WA→TG as a spoiler tombstone: the mirror is re-edited to `🗑️ Deleted on
   WhatsApp`
   plus the original content hidden behind a spoiler (text in place, media via caption; repeat
