@@ -1,14 +1,9 @@
 // WhatsApp reaction relay - emoji normalization and Telegram mapping.
 //
-// Telegram bots get one native reaction per message, so the merged footer
-// in reaction-summary.ts is the primary display - this normalizes WA emojis
-// for the best-effort popular-emoji mirror and retries REACTION_INVALID
-// with the default heart.
-import { isTargetGone, reactionErrorDescription } from './errors.ts'
-import { relayCtx, tgCall } from './state.ts'
-
-// Emojis already warned about (REACTION_INVALID) so repeats stay silent.
-const warnedReactions = new Set<string>()
+// The merged footer in reaction-summary.ts is the display; native Telegram
+// reactions are intentionally not set (Telegram rejects many WA emojis and
+// each attempt burns an API slot). This module only normalizes emojis for
+// callers that need Telegram's reaction vocabulary.
 
 // Default Telegram reaction set when an incoming WhatsApp reaction emoji is
 // rejected (REACTION_INVALID - unknown to Telegram or disabled in the
@@ -105,61 +100,4 @@ const WA_TO_TG_REACTION_FALLBACK: Record<string, string> = {
 	// Heart-on-fire loses VS16 in normalization, so map the stripped form
 	// back to the full sequence Telegram accepts.
 	'❤‍🔥': '❤️‍🔥',
-}
-
-// Set (or clear, with null) the bot reaction on a Telegram mirror, retrying
-// REACTION_INVALID once with the default heart. Used for the best-effort
-// popular-emoji mirror beside the merged footer (see reaction-summary.ts).
-export async function applyTgReaction(
-	chatId: string,
-	tgMsgId: number,
-	emoji: string | null,
-): Promise<void> {
-	const { tg } = relayCtx
-	if (!tg) return
-	const payload = emoji ? [{ type: 'emoji' as const, emoji }] : []
-	try {
-		await tgCall(
-			() => tg!.api.setMessageReaction(chatId, tgMsgId, payload as any),
-			'reaction',
-			chatId,
-		)
-	} catch (e) {
-		// REACTION_INVALID = the emoji isn't usable here (not a
-		// Telegram reaction at all, or disabled in this chat's
-		// Settings -> Reactions). Retry once with the default
-		// reaction so the sentiment still lands in the topic
-		// instead of being silently dropped. A failing default
-		// (reactions fully disabled?) gives up quietly - no
-		// recursion. Never rethrows - reactions must not spam
-		// the limiter log.
-		// The mirror may also be gone by now (revoked on the WA
-		// side or deleted in TG after the row was written) -
-		// "message to react not found" is expected, not a fault.
-		if (isTargetGone(e)) return
-		const desc = reactionErrorDescription(e)
-		if (desc.includes('REACTION_INVALID') && emoji) {
-			try {
-				await tgCall(
-					() =>
-						tg!.api.setMessageReaction(chatId, tgMsgId, [
-							{ type: 'emoji', emoji: DEFAULT_TG_REACTION },
-						] as any),
-					'reaction',
-					chatId,
-				)
-			} catch {
-				// Default also rejected (reactions fully disabled?) - give up quietly.
-			}
-			if (!warnedReactions.has(emoji)) {
-				warnedReactions.add(emoji)
-				console.warn(
-					`[BRIDGE] reaction ${emoji} rejected by Telegram (REACTION_INVALID): ` +
-						`not a Telegram reaction emoji or disabled in this supergroup's Settings -> Reactions. Used default ${DEFAULT_TG_REACTION} instead.`,
-				)
-			}
-			return
-		}
-		throw e
-	}
 }

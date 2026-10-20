@@ -411,8 +411,8 @@ without touching WA.
     under queue pressure, see D11); `service-batch.ts` (membership events batch into one service
     line, see D11); `edits.ts` (text in place, caption fallback, sticker/special skip); `deletes.ts`
     (spoiler tombstone `... Deleted on WhatsApp` reusing stored snapshot, else hard delete + drop
-    mapping); `reactions.ts` (WA emoji normalize for the popular-emoji mirror, `REACTION_INVALID` ->
-    heart retry, shared `applyTgReaction`); `reaction-summary.ts` (merged reaction footer with
+    mapping); `reactions.ts` (WA emoji normalization for callers - native Telegram reactions are
+    intentionally not set, see D09); `reaction-summary.ts` (merged reaction footer with
     counts inside the mirror plus a viewer button, roster persisted on the reply_map row - see D09);
     `pins.ts` (pin/unpin carriers resolve the mirror via `reply_map`, pin natively with a service
     line, TG echoes consumed via the `pendingTgPins` guard); `profile.ts` + `profile-events.ts`
