@@ -4,7 +4,13 @@
 // Telegram media group instead of N singles - any other message flushes the
 // pending group first so chat order is preserved, singletons fall back to
 // the normal send path.
-import { ALBUM_WINDOW_MS, albumKey, MAX_ALBUM_ITEMS, pendingAlbums } from './album.ts'
+import {
+	ALBUM_WINDOW_MS,
+	albumKey,
+	MAX_ALBUM_BYTES,
+	MAX_ALBUM_ITEMS,
+	pendingAlbums,
+} from './album.ts'
 import { notifyTopic, relayCtx, shortErr } from './state.ts'
 import { sendAlbumChunk } from './album-send.ts'
 import type { AlbumItem } from './album.ts'
@@ -16,7 +22,11 @@ export function bufferAlbumItem(jid: string, m: proto.IWebMessageInfo, item: Alb
 	const key = albumKey(jid, m)
 	const existing = pendingAlbums.get(key)
 	if (existing) {
-		if (existing.items.length >= MAX_ALBUM_ITEMS) {
+		const queuedBytes = existing.items.reduce((n, it) => n + it.media.buffer.length, 0)
+		if (
+			existing.items.length >= MAX_ALBUM_ITEMS ||
+			queuedBytes + item.media.buffer.length > MAX_ALBUM_BYTES
+		) {
 			void flushAlbum(key).catch((e) => console.error('[BRIDGE] album flush failed:', e))
 		} else {
 			existing.items.push(item)

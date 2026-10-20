@@ -9,6 +9,10 @@ import type { proto } from 'baileys'
 
 export const ALBUM_WINDOW_MS = 1500
 export const MAX_ALBUM_ITEMS = 10
+// Bound the pending media held while the album window waits. Telegram caps
+// a group at 10 items, but 10 x 50 MB is still far more than the process
+// should pin at once; flush early instead.
+export const MAX_ALBUM_BYTES = 100 * 1024 * 1024
 
 export interface AlbumItem {
 	m: proto.IWebMessageInfo
