@@ -18,7 +18,10 @@
 	"help": {
 		"usage": "[Nombre de un comando]",
 		"desc": "Ver información sobre un comando",
-		"examples": ["Géminis", "etiqueta engomada"],
+		"examples": [
+			"Géminis",
+			"etiqueta engomada"
+		],
 		"title": "*[📖] - Menú de ayuda*",
 		"prefix": "[⚙️] Cambiar prefijo: *{{prefix}} *",
 		"lang": "[🌎] Cambiar lenguaje: *{{lang}} *"
@@ -40,10 +43,15 @@
 	"prefix": {
 		"usage": "<Prefijo con hasta 3 dígitos>",
 		"desc": "Cambiar el prefijo de comandos",
-		"examples": [".", "!"],
+		"examples": [
+			".",
+			"!"
+		],
 		"changed": "[✔️] - Tu nuevo prefijo es: *{{prefix}} *"
 	},
-	"ping": { "desc": "Ver tiempo de respuesta de bot" },
+	"ping": {
+		"desc": "Ver tiempo de respuesta de bot"
+	},
 	"choose": {
 		"usage": "<Opción 1>, <Opción 2>, [Opción 3], [...]",
 		"desc": "En duda sobre qué hacer? Elige esto o aquello",
@@ -64,17 +72,27 @@
 			"Limpio, ¿recuerdas lo que te pregunté ayer?"
 		]
 	},
-	"rank": { "desc": "Ver el rango de miembros que más hablaban en el grupo" },
+	"rank": {
+		"desc": "Ver el rango de miembros que más hablaban en el grupo"
+	},
 	"sticker": {
 		"usage": "<(Imagen/video)> [Número: calidad de imagen de 1 a 100 (estándar: 1)] [RMBG: eliminar el fondo de una imagen]",
 		"desc": "¡Crea pegatinas sin fondo!",
-		"examples": ["(Imagen) rmbg", "(Imagen) 50", "(video)", "(etiqueta engomada)"],
+		"examples": [
+			"(Imagen) rmbg",
+			"(Imagen) 50",
+			"(video)",
+			"(etiqueta engomada)"
+		],
 		"nobuffer": "[⚠️] - Medios incompatibles o no encontrados"
 	},
 	"clean": {
 		"usage": "<Número de mensajes (Max 200)>",
 		"desc": "Ocultar sus delitos borrando los últimos mensajes grupales (requiere permiso del administrador)",
-		"examples": ["10", "200"],
+		"examples": [
+			"10",
+			"200"
+		],
 		"noAmount": "\"Clean 0\"? ¿Crees que aquí está tu habitación que no limpias nada?",
 		"deleted": "Borraré los últimos mensajes {{msgsSize}} y luego volveré a dormir aquí en mi red",
 		"slowed": "WhatsApp me pidió ir más despacio, así que paré después de borrar {{deleted}} de {{total}} mensajes. Espera unos minutos y ejecuta .clean de nuevo para el resto."
@@ -82,17 +100,28 @@
 	"download": {
 		"usage": "[A: audio] <Url>",
 		"desc": "Descargar videos o audios",
-		"examples": ["(mensaje con enlace)", "{link}", "A {link}"]
+		"examples": [
+			"(mensaje con enlace)",
+			"{link}",
+			"A {link}"
+		]
 	},
 	"everyone": {
 		"usage": "[mensaje]",
 		"desc": "Mencionar a todos los usuarios de un grupo en un solo mensaje",
-		"examples": ["", "El juego", "¡Noticias urgentes!"]
+		"examples": [
+			"",
+			"El juego",
+			"¡Noticias urgentes!"
+		]
 	},
 	"remove": {
 		"usage": "<Imagen>",
 		"desc": "Eliminar el fondo de una imagen",
-		"examples": ["<Imagen>", "(imagen)"]
+		"examples": [
+			"<Imagen>",
+			"(imagen)"
+		]
 	},
 	"reveal": {
 		"usage": "(Medios de visualización únicos)",
@@ -107,6 +136,26 @@
 	"translate": {
 		"usage": "<Código de idioma: EN/PT/FR ...> <Ext>",
 		"desc": "Traductor de Google",
-		"examples": ["En botas gato", "Pt el gato en el sombrero", "Es je suis un chat"]
+		"examples": [
+			"En botas gato",
+			"Pt el gato en el sombrero",
+			"Es je suis un chat"
+		]
+	},
+	"transcrypt": {
+		"usage": "<(audio/video)> [lang code] [raw|clean|best]",
+		"desc": "Transcribe audio to text (best accuracy for pt-BR)",
+		"examples": [
+			"(voice note)",
+			"clean (voice note)",
+			"best (voice note)",
+			"en (audio)"
+		],
+		"nobuffer": "[⚠️] - Media incompatible or not found",
+		"tooLarge": "[⚠️] - Audio too large (max 25 MB)",
+		"tooLong": "[⚠️] - Audio too long (max 10 min)",
+		"unsupported": "[⚠️] - Unsupported media type",
+		"failed": "[❌] - Transcription failed, try again",
+		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
 	}
 }

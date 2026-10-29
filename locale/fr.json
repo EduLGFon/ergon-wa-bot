@@ -18,7 +18,10 @@
 	"help": {
 		"usage": "[Nom d'une commande]",
 		"desc": "Voir des informations sur une commande",
-		"examples": ["Gémeaux", "autocollant"],
+		"examples": [
+			"Gémeaux",
+			"autocollant"
+		],
 		"title": "* [📖] - Menu d'aide *",
 		"prefix": "[⚙️] Changer le préfixe: * {{prefix}} *",
 		"lang": "[🌎] Changer la langue: * {{lang}} *"
@@ -40,10 +43,15 @@
 	"prefix": {
 		"usage": "<Préfixe avec jusqu'à 3 chiffres>",
 		"desc": "Changer le préfixe des commandes",
-		"examples": [".", "!"],
+		"examples": [
+			".",
+			"!"
+		],
 		"changed": "[✔️] - Votre nouveau préfixe est: * {{prefix}} *"
 	},
-	"ping": { "desc": "Voir le temps de réponse du bot" },
+	"ping": {
+		"desc": "Voir le temps de réponse du bot"
+	},
 	"choose": {
 		"usage": "<Option 1>, <option 2>, [Option 3], [...]",
 		"desc": "En doute sur ce qu'il faut faire? Choisissez ceci ou",
@@ -64,17 +72,27 @@
 			"Clean tu te souviens de ce que je t'ai demandé hier?"
 		]
 	},
-	"rank": { "desc": "Voir le grade de membres qui ont le plus parlé du groupe" },
+	"rank": {
+		"desc": "Voir le grade de membres qui ont le plus parlé du groupe"
+	},
 	"sticker": {
 		"usage": "<(Image / vidéo)> [Numéro: qualité d'image de 1 à 100 (standard: 1)] [RMBG: supprimez l'arrière-plan d'une image]",
 		"desc": "Créez des autocollants sans fond !!!!",
-		"examples": ["(Image) rmbg", "(Image) 50", "(vidéo)", "(autocollant)"],
+		"examples": [
+			"(Image) rmbg",
+			"(Image) 50",
+			"(vidéo)",
+			"(autocollant)"
+		],
 		"nobuffer": "[⚠️] - Media incompatible ou non trouvé"
 	},
 	"clean": {
 		"usage": "<Nombre de messages (max 200)>",
 		"desc": "Cachez vos crimes effaçant les derniers messages de groupe (nécessite l'autorisation de l'administrateur)",
-		"examples": ["10", "200"],
+		"examples": [
+			"10",
+			"200"
+		],
 		"noAmount": "\"Clean 0\"? Pensez-vous que voici votre chambre que vous ne nettoyez rien?",
 		"deleted": "J'effacerai les derniers messages {{msgsSize}} et je vais ensuite me rendormir ici sur mon réseau",
 		"slowed": "WhatsApp m'a demandé de ralentir, donc je me suis arrêté après avoir effacé {{deleted}} messages sur {{total}}. Attends quelques minutes et relance .clean pour le reste."
@@ -82,17 +100,28 @@
 	"download": {
 		"usage": "[A: Audio] <URL>",
 		"desc": "Télécharger des vidéos ou des audios",
-		"examples": ["(Message avec lien)", "{link}", "A {link}"]
+		"examples": [
+			"(Message avec lien)",
+			"{link}",
+			"A {link}"
+		]
 	},
 	"everyone": {
 		"usage": "[message]",
 		"desc": "Mentionner tous les utilisateurs d'un groupe dans un seul message",
-		"examples": ["", "Le jeu", "Nouvelles urgentes!"]
+		"examples": [
+			"",
+			"Le jeu",
+			"Nouvelles urgentes!"
+		]
 	},
 	"remove": {
 		"usage": "<image>",
 		"desc": "Supprimer l'arrière-plan d'une image",
-		"examples": ["<image>", "(image)"]
+		"examples": [
+			"<image>",
+			"(image)"
+		]
 	},
 	"reveal": {
 		"usage": "(Support de visualisation unique)",
@@ -107,6 +136,26 @@
 	"translate": {
 		"usage": "<Code de langue: en / pt / fr ...> <Text>",
 		"desc": "Traducteur Google",
-		"examples": ["En bottes chat", "Pt le chat dans le chapeau", "ES JE SUIS UN CHAT"]
+		"examples": [
+			"En bottes chat",
+			"Pt le chat dans le chapeau",
+			"ES JE SUIS UN CHAT"
+		]
+	},
+	"transcrypt": {
+		"usage": "<(audio/video)> [lang code] [raw|clean|best]",
+		"desc": "Transcribe audio to text (best accuracy for pt-BR)",
+		"examples": [
+			"(voice note)",
+			"clean (voice note)",
+			"best (voice note)",
+			"en (audio)"
+		],
+		"nobuffer": "[⚠️] - Media incompatible or not found",
+		"tooLarge": "[⚠️] - Audio too large (max 25 MB)",
+		"tooLong": "[⚠️] - Audio too long (max 10 min)",
+		"unsupported": "[⚠️] - Unsupported media type",
+		"failed": "[❌] - Transcription failed, try again",
+		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
 	}
 }

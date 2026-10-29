@@ -18,7 +18,10 @@
 	"help": {
 		"usage": "[Name of a command]",
 		"desc": "See information about a command",
-		"examples": ["gemini", "sticker"],
+		"examples": [
+			"gemini",
+			"sticker"
+		],
 		"title": "*[📖] - Help Menu*",
 		"prefix": "[⚙️] Change prefix: *{{prefix}} *",
 		"lang": "[🌎] Change language: *{{lang}} *"
@@ -40,10 +43,15 @@
 	"prefix": {
 		"usage": "<Prefix with up to 3 digits>",
 		"desc": "Change the prefix of commands",
-		"examples": [".", "!"],
+		"examples": [
+			".",
+			"!"
+		],
 		"changed": "[✔️] - Your new prefix is: *{{prefix}} *"
 	},
-	"ping": { "desc": "See Bot Response Time" },
+	"ping": {
+		"desc": "See Bot Response Time"
+	},
 	"choose": {
 		"usage": "<Option 1>, <Option 2>, [Option 3], [...]",
 		"desc": "In doubt about what to do? Choose this or that",
@@ -64,17 +72,27 @@
 			"Clean Do you remember what I asked you yesterday?"
 		]
 	},
-	"rank": { "desc": "See the rank of members who talked the most in the group" },
+	"rank": {
+		"desc": "See the rank of members who talked the most in the group"
+	},
 	"sticker": {
 		"usage": "<(Image/Video)> [Number: Image Quality from 1 to 100 (Standard: 1)] [RMBG: Remove the background from an image]",
 		"desc": "Create stickers without background !!!!",
-		"examples": ["(Image) RMBG", "(Image) 50", "(video)", "(sticker)"],
+		"examples": [
+			"(Image) RMBG",
+			"(Image) 50",
+			"(video)",
+			"(sticker)"
+		],
 		"nobuffer": "[⚠️] - Media incompatible or not found"
 	},
 	"clean": {
 		"usage": "<Number of messages (max 200)>",
 		"desc": "Hide your crimes erasing the latest group messages (requires administrator permission)",
-		"examples": ["10", "200"],
+		"examples": [
+			"10",
+			"200"
+		],
 		"noAmount": "\"Clean 0\"? Do you think here is your room that you do not clean anything?",
 		"deleted": "I will erase the last {{msgsSize}} messages and then I will go back to sleep right here on my network",
 		"slowed": "WhatsApp asked me to slow down, so I stopped after erasing {{deleted}} of {{total}} messages. Wait a few minutes and run .clean again for the rest."
@@ -82,17 +100,28 @@
 	"download": {
 		"usage": "[A: Audio] <URL>",
 		"desc": "Download videos or audios",
-		"examples": ["(message with link)", "{link}", "A {link}"]
+		"examples": [
+			"(message with link)",
+			"{link}",
+			"A {link}"
+		]
 	},
 	"everyone": {
 		"usage": "[message]",
 		"desc": "Mention all users of a group in a single message",
-		"examples": ["", "The game", "Urgent news!"]
+		"examples": [
+			"",
+			"The game",
+			"Urgent news!"
+		]
 	},
 	"remove": {
 		"usage": "<Image>",
 		"desc": "Remove the background from an image",
-		"examples": ["<Image>", "(image)"]
+		"examples": [
+			"<Image>",
+			"(image)"
+		]
 	},
 	"reveal": {
 		"usage": "(Unique visualization media)",
@@ -107,6 +136,26 @@
 	"translate": {
 		"usage": "<language code: en/pt/fr ...> <text>",
 		"desc": "Google Translator",
-		"examples": ["EN Boots Cat", "pt the cat in the hat", "ES JE Suis Un Chat"]
+		"examples": [
+			"EN Boots Cat",
+			"pt the cat in the hat",
+			"ES JE Suis Un Chat"
+		]
+	},
+	"transcrypt": {
+		"usage": "<(audio/video)> [lang code] [raw|clean|best]",
+		"desc": "Transcribe audio to text (best accuracy for pt-BR)",
+		"examples": [
+			"(voice note)",
+			"clean (voice note)",
+			"best (voice note)",
+			"en (audio)"
+		],
+		"nobuffer": "[⚠️] - Media incompatible or not found",
+		"tooLarge": "[⚠️] - Audio too large (max 25 MB)",
+		"tooLong": "[⚠️] - Audio too long (max 10 min)",
+		"unsupported": "[⚠️] - Unsupported media type",
+		"failed": "[❌] - Transcription failed, try again",
+		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
 	}
 }

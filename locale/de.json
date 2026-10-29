@@ -18,7 +18,10 @@
 	"help": {
 		"usage": "[Name eines Befehls]",
 		"desc": "Siehe Informationen zu einem Befehl",
-		"examples": ["Zwillinge", "Aufkleber"],
+		"examples": [
+			"Zwillinge",
+			"Aufkleber"
+		],
 		"title": "*[📖] - Hilfemenü*",
 		"prefix": "[⚙️] Präfix ändern: *{{prefix}} *",
 		"lang": "[🌎] Sprache ändern: *{{lang}} *"
@@ -40,10 +43,15 @@
 	"prefix": {
 		"usage": "<Präfix mit bis zu 3 Ziffern>",
 		"desc": "Ändern Sie das Präfix der Befehle",
-		"examples": [".", "!"],
+		"examples": [
+			".",
+			"!"
+		],
 		"changed": "[✔️] - Ihr neues Präfix ist: *{{prefix}} *"
 	},
-	"ping": { "desc": "Siehe Bot -Reaktionszeit" },
+	"ping": {
+		"desc": "Siehe Bot -Reaktionszeit"
+	},
 	"choose": {
 		"usage": "<option 1>, <option 2>, [Option 3], [...]",
 		"desc": "Im Zweifelsfall darüber, was zu tun ist? Wählen Sie dies oder das",
@@ -70,13 +78,21 @@
 	"sticker": {
 		"usage": "<(Bild/Video)> [Nummer: Bildqualität von 1 bis 100 (Standard: 1)] [RMBG: Entfernen Sie den Hintergrund aus einem Bild]",
 		"desc": "Erstellen Sie Aufkleber ohne Hintergrund !!!!",
-		"examples": ["(Bild) RMBG", "(Bild) 50", "(Video)", "(Aufkleber)"],
+		"examples": [
+			"(Bild) RMBG",
+			"(Bild) 50",
+			"(Video)",
+			"(Aufkleber)"
+		],
 		"nobuffer": "[⚠️] - Medien inkompatibel oder nicht gefunden"
 	},
 	"clean": {
 		"usage": "<Anzahl der Nachrichten (max. 200)>",
 		"desc": "Verstecken Sie Ihre Verbrechen, in denen die neuesten Gruppennachrichten ausgelöscht werden (erfordert die Erlaubnis der Administrator).",
-		"examples": ["10", "200"],
+		"examples": [
+			"10",
+			"200"
+		],
 		"noAmount": "\"Clean 0\"? Glaubst du, hier ist dein Zimmer, in dem du nichts reinigt?",
 		"deleted": "Ich werde die letzten {{msgsSize}} -Botschaften löschen und dann hier in meinem Netzwerk wieder einschlafen",
 		"slowed": "WhatsApp hat mich gebeten, langsamer zu machen, also habe ich nach {{deleted}} von {{total}} Nachrichten gestoppt. Warte ein paar Minuten und führe .clean erneut für den Rest aus."
@@ -84,17 +100,28 @@
 	"download": {
 		"usage": "[A: Audio] <URL>",
 		"desc": "Laden Sie Videos oder Audios herunter",
-		"examples": ["(Nachricht mit Link)", "{link}", "A {link}"]
+		"examples": [
+			"(Nachricht mit Link)",
+			"{link}",
+			"A {link}"
+		]
 	},
 	"everyone": {
 		"usage": "[Nachricht]",
 		"desc": "Erwähnen Sie alle Benutzer einer Gruppe in einer einzigen Nachricht",
-		"examples": ["", "Das Spiel", "Dringende Neuigkeiten!"]
+		"examples": [
+			"",
+			"Das Spiel",
+			"Dringende Neuigkeiten!"
+		]
 	},
 	"remove": {
 		"usage": "<Abbild>",
 		"desc": "Entfernen Sie den Hintergrund aus einem Bild",
-		"examples": ["<Abbild>", "(Bild)"]
+		"examples": [
+			"<Abbild>",
+			"(Bild)"
+		]
 	},
 	"reveal": {
 		"usage": "(Einzigartige Visualisierungsmedien)",
@@ -109,6 +136,26 @@
 	"translate": {
 		"usage": "<Sprachcode: EN/PT/FR ...> <text>",
 		"desc": "Google Übersetzer",
-		"examples": ["En stoot kat", "pt die Katze im Hut", "Es JE Suis un Chat"]
+		"examples": [
+			"En stoot kat",
+			"pt die Katze im Hut",
+			"Es JE Suis un Chat"
+		]
+	},
+	"transcrypt": {
+		"usage": "<(audio/video)> [lang code] [raw|clean|best]",
+		"desc": "Transcribe audio to text (best accuracy for pt-BR)",
+		"examples": [
+			"(voice note)",
+			"clean (voice note)",
+			"best (voice note)",
+			"en (audio)"
+		],
+		"nobuffer": "[⚠️] - Media incompatible or not found",
+		"tooLarge": "[⚠️] - Audio too large (max 25 MB)",
+		"tooLong": "[⚠️] - Audio too long (max 10 min)",
+		"unsupported": "[⚠️] - Unsupported media type",
+		"failed": "[❌] - Transcription failed, try again",
+		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
 	}
 }

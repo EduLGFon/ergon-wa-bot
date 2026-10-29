@@ -16,6 +16,7 @@ class CacheManager {
 	users: Collection<num, User>
 	events: Map<str, Func>
 	media: Collection<str, Media>
+	transcripts: Collection<str, str>
 	groups: Collection<str, Group>
 	metrics: { msg: any; cmd: any }
 	timeouts: Map<str, ReturnType<typeof setTimeout>>
@@ -33,6 +34,8 @@ class CacheManager {
 		// It stores media data like images, videos, etc.
 		// It uses URL as key to avoid duplicates
 		this.media = new Collection(100, 'url', 64 * 1024 * 1024)
+		// Transcript cache (text keyed by media url hash)
+		this.transcripts = new Collection(500)
 		// Groups collection
 		this.groups = new Collection(100)
 		// Metrics

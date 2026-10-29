@@ -143,5 +143,21 @@
 			"pt the cat in the hat",
 			"es je suis un chat"
 		]
+	},
+	"transcrypt": {
+		"usage": "<(audio/video)> [lang code] [raw|clean|best]",
+		"desc": "Transcribe audio to text (best accuracy for pt-BR)",
+		"examples": [
+			"(voice note)",
+			"clean (voice note)",
+			"best (voice note)",
+			"en (audio)"
+		],
+		"nobuffer": "[⚠️] - Media incompatible or not found",
+		"tooLarge": "[⚠️] - Audio too large (max 25 MB)",
+		"tooLong": "[⚠️] - Audio too long (max 10 min)",
+		"unsupported": "[⚠️] - Unsupported media type",
+		"failed": "[❌] - Transcription failed, try again",
+		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
 	}
 }
