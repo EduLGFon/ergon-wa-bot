@@ -141,7 +141,18 @@ export function registerTgMessageHandler(
 				if (preview) textForWa = `↩️ ${author}: ${preview}\n${text}`.trim()
 			}
 			const waContent = await buildWaContent(textForWa, media, msg)
-			if (!waContent) return
+			if (!waContent) {
+				if (media) {
+					await notifyTopic(
+						tg,
+						tgLimiter,
+						chatId,
+						topicId,
+						`⚠️ Couldn't build WhatsApp message`,
+					)
+				}
+				return
+			}
 			const needsTextFollowUp = !!textForWa &&
 				(!!msg.location || !!msg.video_note || !!msg.poll ||
 					(msg.contact && !String(waContent.text || '').includes(textForWa)))

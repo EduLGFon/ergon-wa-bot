@@ -4,11 +4,27 @@
 export default class Collection<K, V> extends Map<K, V> {
 	primaryKey: str
 	limit: num
+	byteBudget: num
 
-	constructor(limit?: num, PK = 'id') {
+	constructor(limit?: num, PK = 'id', byteBudget?: num) {
 		super()
 		this.primaryKey = PK
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
+		this.byteBudget = byteBudget || 0
+	}
+
+	// Byte size of a stored value - buffers first, then arrays/strings.
+	static entryBytes(value: any): num {
+		if (!value) return 0
+		if (typeof value.buffer?.length === 'number') return value.buffer.length
+		if (typeof value.length === 'number') return value.length
+		return 0
+	}
+
+	get bytes(): num {
+		let total = 0
+		for (const v of this.values()) total += Collection.entryBytes(v)
+		return total
 	}
 
 	// Add: adds a value to the collection
@@ -35,6 +51,18 @@ export default class Collection<K, V> extends Map<K, V> {
 			const iter = this.keys()
 			while (this.size > this.limit) {
 				this.delete(iter.next().value as K)
+			}
+		}
+
+		// Byte budget: evict oldest entries until under budget.
+		if (this.byteBudget > 0) {
+			let total = this.bytes
+			const iter = this.keys()
+			while (total > this.byteBudget && this.size > 0) {
+				const k = iter.next().value as K
+				const v = this.get(k)
+				this.delete(k)
+				total -= Collection.entryBytes(v)
 			}
 		}
 

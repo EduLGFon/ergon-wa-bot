@@ -138,6 +138,8 @@ export async function sendToTopic(
 
 // Recreate the forum topic for a chat whose Telegram topic was deleted.
 // Returns the fresh ids, or null when healing is impossible.
+const healMutex = new Map<string, Promise<{ topicId: number; chatId: string } | null>>()
+
 export async function healThreadMapping(
 	waJid: string,
 	chatId: string,
@@ -145,18 +147,28 @@ export async function healThreadMapping(
 ): Promise<{ topicId: number; chatId: string } | null> {
 	const { db } = relayCtx
 	if (!db) return null
+	const existing = healMutex.get(waJid)
+	if (existing) return existing
+	const run = (async () => {
+		try {
+			const mapping = db.getByJidOrAlias(waJid)
+			if (!mapping) return null
+			const isGroup = waJid.endsWith('@g.us')
+			const freshId = await createForumTopic(mapping.display_name || waJid, isGroup, chatId)
+				.catch(() => null)
+			if (!freshId) return null
+			db.getOrCreate(waJid, freshId, mapping.display_name, mapping.chat_type, chatId)
+			console.log(`[BRIDGE] healed stale topic ${staleTopicId} -> ${freshId} for ${waJid}`)
+			return { topicId: freshId, chatId }
+		} catch {
+			return null
+		}
+	})()
+	healMutex.set(waJid, run)
 	try {
-		const mapping = db.getByJidOrAlias(waJid)
-		if (!mapping || mapping.telegram_topic_id !== staleTopicId) return null
-		const isGroup = waJid.endsWith('@g.us')
-		const freshId = await createForumTopic(mapping.display_name || waJid, isGroup, chatId)
-			.catch(() => null)
-		if (!freshId) return null
-		db.getOrCreate(waJid, freshId, mapping.display_name, mapping.chat_type, chatId)
-		console.log(`[BRIDGE] healed stale topic ${staleTopicId} -> ${freshId} for ${waJid}`)
-		return { topicId: freshId, chatId }
-	} catch {
-		return null
+		return await run
+	} finally {
+		healMutex.delete(waJid)
 	}
 }
 

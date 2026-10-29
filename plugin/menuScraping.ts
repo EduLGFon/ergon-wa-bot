@@ -145,16 +145,19 @@ export default async function scrapURMenu(
 			`https://restaurante.saomateus.ufes.br/cardapio/${year}-${month}-${day}`,
 			{ signal: AbortSignal.timeout(10_000) },
 		)
-		if (!res.ok) return null
+		if (!res.ok) {
+			print('MENUSCRAP', `Menu fetch failed: status=${res.status}`, 'red')
+			return null
+		}
 		const txt = await res.text()
 		return parseMenuHtml(txt)
 	} catch (e: any) {
 		print('MENUSCRAP', 'Error scraping menu', e?.stack || e, 'red')
-		if (retries >= 3) {
+		if (retries >= 5) {
 			print('MENUSCRAP', 'Max retries reached, giving up', 'red')
 			return null
 		}
-		await delay(60_000)
+		await delay(30_000)
 		await randomDelay()
 		return await scrapURMenu(retries + 1)
 	}

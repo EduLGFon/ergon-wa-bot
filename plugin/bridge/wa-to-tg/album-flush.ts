@@ -83,6 +83,11 @@ export async function flushAlbum(key: string): Promise<void> {
 			}
 			console.error('[BRIDGE] failed to relay album singleton:', e)
 		}
+		try {
+			it.media.buffer = undefined as any
+		} catch {
+			// ignore
+		}
 		return
 	}
 
@@ -104,6 +109,18 @@ export async function flushAlbum(key: string): Promise<void> {
 				`⚠️ Couldn't relay a photo group (${chunk.length} photos): ${shortErr(e)}`,
 			)
 		}
+		for (const it of chunk) {
+			try {
+				it.media.buffer = undefined as any
+			} catch {
+				// ignore
+			}
+		}
+	}
+	try {
+		global.gc?.()
+	} catch {
+		// gc not exposed
 	}
 }
 

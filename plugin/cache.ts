@@ -32,7 +32,7 @@ class CacheManager {
 		// Media collection
 		// It stores media data like images, videos, etc.
 		// It uses URL as key to avoid duplicates
-		this.media = new Collection(100, 'url')
+		this.media = new Collection(100, 'url', 64 * 1024 * 1024)
 		// Groups collection
 		this.groups = new Collection(100)
 		// Metrics

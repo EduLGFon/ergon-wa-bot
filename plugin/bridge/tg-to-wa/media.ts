@@ -31,13 +31,13 @@ export function tgBytes(v: unknown): number | null {
 }
 
 export async function downloadTgMedia(tg: Bot, msg: any): Promise<TgDownload | null> {
+	let fileId: string | null = null
+	let kind: TgMedia['kind'] = 'document'
+	let label = 'attachment'
+	let bytes: number | null = null
+	let fileName: string | undefined
+	let mime: string | undefined
 	try {
-		let fileId: string | null = null
-		let kind: TgMedia['kind'] = 'document'
-		let label = 'attachment'
-		let bytes: number | null = null
-		let fileName: string | undefined
-		let mime: string | undefined
 		if (msg.sticker) {
 			fileId = fileIdOf(msg.sticker)
 			kind = 'sticker'
@@ -110,7 +110,7 @@ export async function downloadTgMedia(tg: Bot, msg: any): Promise<TgDownload | n
 		if (!buffer) return fail(false)
 		return { media: { kind, buffer, fileName, mime }, label, bytes, tooLarge: false }
 	} catch {
-		return null
+		return { media: null, label: label ?? 'attachment', bytes: bytes ?? null, tooLarge: false }
 	}
 }
 

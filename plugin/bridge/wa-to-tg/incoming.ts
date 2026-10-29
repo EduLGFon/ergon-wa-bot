@@ -37,6 +37,12 @@ export async function handleWAMessages(
 		let chatId: string | null = null
 		try {
 			if (!m?.message || !m.key) continue
+			try {
+				const hc = ((globalThis as any).__healthCounts ||= { received: 0, relayed: 0 })
+				hc.relayed++
+			} catch {
+				// ignore
+			}
 			// Skip protocol traffic (deletes, history sync, ...) and reaction
 			// carriers: Baileys delivers every reaction BOTH as messages.upsert
 			// with reactionMessage content AND as messages.reaction. The

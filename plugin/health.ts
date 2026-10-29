@@ -17,7 +17,7 @@ import { randomDelay } from '@util/functions.ts'
 import { memStats } from '@util/proto.ts'
 import bot from '@plugin/bot.ts'
 
-const IDLE_SILENCE_MS = 5 * 60 * 1000
+const IDLE_SILENCE_MS = 3 * 60 * 1000
 const PROBE_TIMEOUT_MS = 25_000
 // Randomized schedule between MIN and MAX - a rigid cadence is a passive indicator; a jittered
 // interval looks closer to organic traffic.
@@ -28,6 +28,7 @@ let started = false
 let attachedSock: any = null
 // Timestamp of the last real inbound event (or a successful open/probe).
 let lastInbound = Date.now()
+let lastProbeOk = 0
 // Only probe while the socket reports it is connected.
 let isConnected = false
 let ownedListeners: { name: string; fn: (...args: any[]) => void }[] = []
@@ -145,9 +146,26 @@ function logHealth(): void {
 			// ignore
 		}
 		const idleS = Math.round((Date.now() - lastInbound) / 1000)
+		const probeOk = lastProbeOk ? `${Math.round((Date.now() - lastProbeOk) / 1000)}s` : 'never'
+		let waDl = ''
+		try {
+			const n = Number((globalThis as any).__waDlFail || 0)
+			if (n > 0) waDl = ` waDlFail=${n}`
+		} catch {
+			// ignore
+		}
+		let counts = ''
+		try {
+			const c = (globalThis as any).__healthCounts as
+				| { received?: number; relayed?: number }
+				| undefined
+			if (c) counts = ` rcv=${c.received ?? 0} relay=${c.relayed ?? 0}`
+		} catch {
+			// ignore
+		}
 		print(
 			'HEALTH',
-			`rss=${mem.rss} heap=${mem.heap} lag=${mem.lag}ms idle=${idleS}s ${queue}${drops}${sig}`,
+			`rss=${mem.rss} heap=${mem.heap} lag=${mem.lag}ms idle=${idleS}s probeOk=${probeOk}${waDl}${counts} ${queue}${drops}${sig}`,
 			'gray',
 		)
 	} catch {
@@ -205,6 +223,7 @@ async function tick(): Promise<void> {
 
 	if (alive) {
 		// Receive path answered - just quiet, not deaf.
+		lastProbeOk = Date.now()
 		markInbound()
 		return
 	}

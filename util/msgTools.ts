@@ -44,7 +44,12 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 		author: user?.id!,
 		type: types[0],
 		text: getMsgText(message!),
-		media: await downloadMedia(raw, types),
+		// Lazily resolve only the media KEYS here - the buffer is fetched on
+		// demand by getMedia(). Eagerly downloading every inbound media
+		// message doubled the work with the bridge (which downloads its own
+		// copy) and pinned up to 100 buffers (up to ~2 GB) in cache.media,
+		// which was the main driver of the RSS creep seen in production.
+		media: await downloadMedia(raw, types, false),
 		quoted: await getQuoted(raw), // quoted msg
 		isBot,
 		mime,
@@ -154,7 +159,7 @@ function findMediaNode(content: any): any {
 // 20MB videos exhaust the heap. Images/stickers/audio cap at 8MB cached.
 const MEDIA_CACHE_MAX_BYTES = 20 * 1024 * 1024
 const MEDIA_CACHE_IMAGE_MAX_BYTES = 8 * 1024 * 1024
-async function downloadMedia(raw: any, types: [MsgTypes, str]) {
+async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = true) {
 	if (!isMedia(types[0])) return
 	const inner = unwrapContent(raw?.message || raw)
 	const direct = (inner as any)?.[types[1]]
@@ -171,6 +176,13 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	}
 
 	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
+
+	if (!downloadBuffer) {
+		// Keys only: no network, no cache entry, no RAM. The bridge and
+		// getMedia() fetch the bytes when (and if) they are actually used.
+		return keyObj
+	}
+
 	// Large video/document: return keys only, never buffer into RAM here.
 	// The bridge path (plugin/bridge/wa-to-tg/media.ts) owns capped downloads with
 	// concurrency limits; command paths re-download on demand.
@@ -179,16 +191,19 @@ async function downloadMedia(raw: any, types: [MsgTypes, str]) {
 	if (isHeavy && declaredSize > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
 	const skipCache = declaredSize > MEDIA_CACHE_MAX_BYTES
 	const buffer = await downloadMediaMessage(
-		raw.message ? raw : { message: raw },
+		{ ...(raw as any), message: inner } as any,
 		'buffer',
 		{},
 		{
 			reuploadRequest: bot.sock.updateMediaMessage,
 			logger,
 		},
-	).catch((_e) => {}) //print('DOWNLOAD', 'Error downloading media', e.stack, 'red')})
+	).catch((e) => {
+		print('DOWNLOAD', 'media download failed:', (e as Error)?.message || e, 'red')
+		return undefined
+	})
 
-	if (!buffer) return
+	if (!buffer) return keyObj
 	if (skipCache || (buffer as Buffer).length > MEDIA_CACHE_MAX_BYTES) return keyObj
 	// Heavy types stay out of RAM cache past 8MB even when declared small.
 	if (isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj

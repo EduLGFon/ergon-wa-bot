@@ -21,6 +21,7 @@ import { storedText } from './media-utils.ts'
 import { bucketOfChat, chatForReply, type GroupIds } from './routing.ts'
 import { phoneOf } from './text.ts'
 import { routeEdit } from './errors.ts'
+import { healThreadMapping, isThreadGone } from './send.ts'
 import type { ReplyMapRow } from '../db.ts'
 import type { Bot } from 'grammy'
 
@@ -569,6 +570,34 @@ async function ensureReplyLine(
 		db.saveReactions(chatId, row.tg_msg_id, JSON.stringify(state))
 	} catch (e) {
 		if (isQueueDrop(e)) throw e
+		if (isThreadGone(e)) {
+			const healed = await healThreadMapping(row.wa_jid, chatId, topicId).catch(() => null)
+			if (healed) {
+				try {
+					const sent = await tgCall(
+						() =>
+							tg!.api.sendMessage(healed.chatId, body, {
+								message_thread_id: healed.topicId,
+								reply_parameters: {
+									message_id: row.tg_msg_id,
+									allow_sending_without_reply: true,
+								},
+								...(button as object || {}),
+							}),
+						'message',
+						healed.chatId,
+					)
+					state.s = (sent as { message_id: number }).message_id
+					db.saveReactions(chatId, row.tg_msg_id, JSON.stringify(state))
+					return
+				} catch (e2) {
+					console.error('[BRIDGE] failed to post reaction line:', shortErr(e2))
+					return
+				}
+			}
+			console.error('[BRIDGE] failed to post reaction line:', shortErr(e))
+			return
+		}
 		console.error('[BRIDGE] failed to post reaction line:', shortErr(e))
 		await notifyTopic(chatId, topicId, `Reactions: ${footer.trim()}`)
 	}

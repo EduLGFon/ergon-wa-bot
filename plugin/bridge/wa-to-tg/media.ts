@@ -42,7 +42,7 @@ export interface WaDownload {
 
 export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownload | null> {
 	try {
-		const raw = unwrap(m.message)
+		let raw = unwrap(m.message)
 		if (!raw) return null
 
 		let kind: WaMedia['kind'] | null = null
@@ -96,14 +96,17 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 		inflightDownloads++
 		let buffer: Buffer | Uint8Array | null = null
 		let dlErr: unknown = null
+		let refreshedOnce = false
 		try {
 			// Sticker URLs in particular expire quickly; one transient fetch
 			// failure used to lose the media permanently. Retry a couple of
-			// times with a short backoff before reporting it.
+			// times with a short backoff before reporting it. On the first
+			// failure, ask Baileys to refresh the media URL and retry the
+			// full download.
 			for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
 				try {
 					buffer = await downloadMediaMessage(
-						m as any,
+						{ ...m, message: raw } as any,
 						'buffer',
 						{},
 						{ reuploadRequest: bot.sock.updateMediaMessage, logger },
@@ -111,9 +114,22 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 					if (buffer) break
 				} catch (e) {
 					dlErr = e
+					if (!refreshedOnce) {
+						refreshedOnce = true
+						try {
+							const updated = await bot.sock.updateMediaMessage?.(m as any)
+							if (updated) {
+								m = updated
+								const newRaw = unwrap((m as any).message)
+								if (newRaw) raw = newRaw
+							}
+						} catch {
+							// best effort refresh; retry anyway
+						}
+					}
 				}
 				if (attempt < DOWNLOAD_ATTEMPTS) {
-					await new Promise((r) => setTimeout(r, attempt * 500))
+					await new Promise((r) => setTimeout(r, 1000))
 				}
 			}
 		} finally {
@@ -123,6 +139,14 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 			// Small files (stickers of a few KB) land here when the media URL
 			// expired or the reupload request failed - log the cause so the
 			// generic topic notice can be triaged from server logs.
+			const errName = dlErr instanceof Error
+				? dlErr.name
+				: typeof dlErr === 'object' && dlErr !== null
+				? String((dlErr as { name?: unknown }).name ?? '')
+				: ''
+			const errCode = dlErr && typeof dlErr === 'object'
+				? String((dlErr as { code?: unknown }).code ?? '')
+				: ''
 			const errMsg = dlErr instanceof Error
 				? dlErr.message
 				: typeof dlErr === 'object' && dlErr !== null
@@ -133,11 +157,18 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 					.cause
 				: undefined
 			const causeMsg = cause ? String(cause.code ?? cause.errno ?? cause.message ?? '') : ''
+			try {
+				;(globalThis as any).__waDlFail = ((globalThis as any).__waDlFail || 0) + 1
+			} catch {
+				// ignore
+			}
 			console.warn(
 				`[BRIDGE] WA download failed: ${label} bytes=${bytes ?? '?'} hasUrl=${!!node
-					?.url} hasDirectPath=${!!node?.directPath}${
-					errMsg ? ` err=${String(errMsg).slice(0, 160)}` : ''
-				}${causeMsg ? ` cause=${causeMsg.slice(0, 120)}` : ''}`,
+					?.url} hasDirectPath=${!!node?.directPath}${errName ? ` name=${errName}` : ''}${
+					errCode ? ` code=${errCode}` : ''
+				}${errMsg ? ` err=${String(errMsg).slice(0, 160)}` : ''}${
+					causeMsg ? ` cause=${causeMsg.slice(0, 120)}` : ''
+				}`,
 			)
 			return fail(false)
 		}

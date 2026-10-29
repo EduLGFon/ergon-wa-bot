@@ -86,7 +86,24 @@ function isSessionEntryLike(value: any) {
 }
 
 const warn = console.warn.bind(console)
+let lastWarnClosedSessionLog = 0
 console.warn = (...args) => {
+	try {
+		const first = typeof args[0] === 'string' ? args[0] : ''
+		if (first.includes('Decrypted message with closed session')) {
+			signalErrorCounts.closedSession++
+			const nowMs = Date.now()
+			if (nowMs - lastWarnClosedSessionLog < 3_600_000) return
+			lastWarnClosedSessionLog = nowMs
+		}
+		if (first.includes('Closing open session')) {
+			const nowMs = Date.now()
+			if (nowMs - lastWarnClosedSessionLog < 3_600_000) return
+			lastWarnClosedSessionLog = nowMs
+		}
+	} catch {
+		// fall through to normal warn
+	}
 	if (
 		typeof args[0] === 'string' &&
 		args[0].includes('Session already closed') &&

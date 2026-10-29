@@ -78,6 +78,28 @@ start().catch((e) => {
 async function start() {
 	await bot.connect()
 	await loadCmds()
+	// Cleanup: delete orphaned media cache and sweep old temp files.
+	try {
+		await Deno.remove('conf/gen/cache/media.json').catch(() => null)
+	} catch {
+		// ignore
+	}
+	try {
+		for await (const e of Deno.readDir('conf/gen/temp')) {
+			if (!e.isFile) continue
+			const path = `conf/gen/temp/${e.name}`
+			try {
+				const st = await Deno.stat(path)
+				if (Date.now() - (st.mtime?.getTime() ?? 0) > 24 * 60 * 60 * 1000) {
+					await Deno.remove(path)
+				}
+			} catch {
+				// ignore
+			}
+		}
+	} catch {
+		// temp dir may not exist yet
+	}
 	await cache.resume()
 	await loadEvents()
 

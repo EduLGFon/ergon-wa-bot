@@ -16,7 +16,16 @@ import { getUser } from '@db'
 export default async function (raw: { messages: proto.IWebMessageInfo[] }, _event: str) {
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
-		if (!m?.message) continue
+		if (!m?.message) {
+			console.debug('[UPSERT] skip no-message', m?.key?.id)
+			continue
+		}
+		try {
+			const hc = ((globalThis as any).__healthCounts ||= { received: 0, relayed: 0 })
+			hc.received++
+		} catch {
+			// ignore
+		}
 
 		if (Deno.env.get('SHOW_IDS')) {
 			print(
@@ -42,6 +51,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 			} catch {
 				// best-effort archiving - never break the upsert loop
 			}
+			console.debug('[UPSERT] skip revoke-backup', m?.key?.id)
 			continue
 		}
 
@@ -54,7 +64,10 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 			continue
 		}
 		const { msg, args, cmd, group, user } = parsed
-		if (!user || !msg) continue
+		if (!user || !msg) {
+			console.debug('[UPSERT] skip no-user', m?.key?.id)
+			continue
+		}
 		if (Deno.env.get('SHOW_IDS')) console.log(user.name, msg.text, group?.id || msg.chat, msg)
 		// this is for dev purpouses like getting a group ID
 		if (Deno.env.get('DEV') && !Deno.env.get('DEVS')!.includes(user.lid)) continue

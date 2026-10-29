@@ -29,6 +29,9 @@ export interface MappingRow {
 	profile_pic_url: string | null
 	profile_about: string | null
 	profile_msg_id: number | null
+	// Hash of the downloaded profile photo bytes (see DECISIONS.md#D04).
+	// Dedup compares this so WhatsApp URL token rotation does not re-send.
+	profile_pic_hash: string | null
 }
 
 // Personal/business bucket for dual-supergroup routing.
@@ -103,6 +106,7 @@ function toMapping(row: Record<string, unknown>): MappingRow {
 		profile_pic_url: typeof row.profile_pic_url === 'string' ? row.profile_pic_url : null,
 		profile_about: typeof row.profile_about === 'string' ? row.profile_about : null,
 		profile_msg_id: typeof row.profile_msg_id === 'number' ? row.profile_msg_id : null,
+		profile_pic_hash: typeof row.profile_pic_hash === 'string' ? row.profile_pic_hash : null,
 	}
 }
 
@@ -207,6 +211,9 @@ export class BridgeDB {
 		}
 		if (!mapCols.some((c) => c.name === 'profile_msg_id')) {
 			this.db.exec(`ALTER TABLE mappings ADD COLUMN profile_msg_id INTEGER DEFAULT NULL`)
+		}
+		if (!mapCols.some((c) => c.name === 'profile_pic_hash')) {
+			this.db.exec(`ALTER TABLE mappings ADD COLUMN profile_pic_hash TEXT DEFAULT NULL`)
 		}
 		// Topic IDs collide across groups - every TG→WA lookup is (chat, topic).
 		this.db.exec(
@@ -431,6 +438,7 @@ export class BridgeDB {
 			profile_pic_url: null,
 			profile_about: null,
 			profile_msg_id: null,
+			profile_pic_hash: null,
 		}
 
 		this.db
@@ -552,11 +560,12 @@ export class BridgeDB {
 		picUrl: string | null,
 		about: string | null,
 		msgId: number | null,
+		picHash: string | null = null,
 	): void {
 		try {
 			this.db.prepare(
-				'UPDATE mappings SET profile_pic_url = ?, profile_about = ?, profile_msg_id = ? WHERE whatsapp_jid = ?',
-			).run(picUrl, about, msgId, jid)
+				'UPDATE mappings SET profile_pic_url = ?, profile_about = ?, profile_msg_id = ?, profile_pic_hash = ? WHERE whatsapp_jid = ?',
+			).run(picUrl, about, msgId, picHash, jid)
 		} catch {
 			// Best effort - a lost card only re-sends on the next change.
 		}

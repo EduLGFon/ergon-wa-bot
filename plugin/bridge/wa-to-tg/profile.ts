@@ -101,6 +101,12 @@ export function classificationKeyboard(): InlineKeyboard {
 // Send and pin the profile card for a topic. Never throws: failures land as
 // a topic notice or a server log, never break the message relay. Skips when
 // nothing changed (same pic URL plus same about) unless forced.
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+	const digest = await crypto.subtle.digest('SHA-256', bytes as unknown as BufferSource)
+	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 export async function syncProfileCard(
 	input: ProfileCardInput,
 	opts: { force?: boolean } = {},
@@ -115,19 +121,8 @@ export async function syncProfileCard(
 		const [picUrl, about] = input.isGroup
 			? [await picUrlOf([input.jid]), await groupDescOf(input.jid)]
 			: await Promise.all([picUrlOf(jids), aboutOf(jids)])
-		const prevPic = mapping.profile_pic_url ?? null
-		const prevAbout = mapping.profile_about ?? null
-		if (!opts.force && prevPic === picUrl && prevAbout === about && mapping.profile_msg_id) {
-			return
-		}
-		const phone = !input.isGroup ? (phoneOf(input.jid) || '') : ''
-		// Undecided chats in a dual-group setup carry the Personal/Business
-		// buttons on the card itself - one message, one working button pair,
-		// so the old duplicate-prompt race (two prompts, stale one answering
-		// chat not found) cannot happen.
-		const buttons = mapping.bucket === 'undecided' && isDual(relayCtx.groups)
-			? { reply_markup: classificationKeyboard() }
-			: undefined
+		// Fetch the photo once up front so the dedup can compare a hash of the
+		// bytes (WhatsApp rotates URL tokens, which would otherwise re-send).
 		let picBytes: Uint8Array | null = null
 		if (picUrl) {
 			try {
@@ -140,6 +135,23 @@ export async function syncProfileCard(
 				picBytes = null
 			}
 		}
+		const picHash = picBytes ? await sha256Hex(picBytes) : null
+		const prevPic = mapping.profile_pic_url ?? null
+		const prevAbout = mapping.profile_about ?? null
+		const prevHash = (mapping as any).profile_pic_hash ?? null
+		// Fall back to URL comparison when the fetch failed (no hash).
+		const samePic = picHash ? picHash === prevHash : prevPic === picUrl
+		if (!opts.force && samePic && prevAbout === about && mapping.profile_msg_id) {
+			return
+		}
+		const phone = !input.isGroup ? (phoneOf(input.jid) || '') : ''
+		// Undecided chats in a dual-group setup carry the Personal/Business
+		// buttons on the card itself - one message, one working button pair,
+		// so the old duplicate-prompt race (two prompts, stale one answering
+		// chat not found) cannot happen.
+		const buttons = mapping.bucket === 'undecided' && isDual(relayCtx.groups)
+			? { reply_markup: classificationKeyboard() }
+			: undefined
 		const caption = buildCardText(input.displayName, phone, about, input.isGroup, !!picBytes)
 		const thread = { message_thread_id: input.topicId } as const
 		const api = tg.api
@@ -186,7 +198,7 @@ export async function syncProfileCard(
 			'pin-profile',
 			input.chatId,
 		).catch(() => false)
-		db.setProfile(input.jid, picUrl, about, msgId)
+		db.setProfile(input.jid, picUrl, about, msgId, picHash)
 	} catch (e) {
 		console.error('[BRIDGE] profile card sync failed:', e)
 		await notifyTopic(
