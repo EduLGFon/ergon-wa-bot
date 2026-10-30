@@ -1,10 +1,11 @@
-/**
- * Image-to-sticker conversion using sharp.
- *
- * Handles all 4 static sticker formats (full, crop, circle, rounded)
- * entirely on the main thread - sharp is fast enough that no worker
- * offloading is needed for single images.
- */
+//
+// Image-to-sticker conversion using sharp.
+//
+// Handles all 4 static sticker formats (full, crop, circle, rounded)
+// entirely on the main thread - sharp is fast enough that no worker
+// offloading is needed for single images.
+//
+
 import type { StickerFormat } from '@plugin/sticker/types.ts'
 import sharp from 'sharp'
 

@@ -59,11 +59,12 @@ const postgresAuthState = async (
 						),
 					)) || []
 
+					const byKey = new Map(rows.map((r) => [`${r.category}:${r.key}`, r]))
 					const data: { [_: string]: SignalDataTypeMap[typeof type] } = {}
 					await Promise.all(
 						ids.map((id) => {
 							let value = fromStorableJson(
-								rows.find((r) => r.key === id && r.category === type)?.data,
+								byKey.get(`${type}:${id}`)?.data,
 							)
 							if (type === 'app-state-sync-key' && value) {
 								value = proto.Message.AppStateSyncKeyData.create(value)

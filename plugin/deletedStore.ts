@@ -121,9 +121,10 @@ function extFor(mime: str, type: str): str {
 function findCachedOriginal(chat: str, deletedId: str): Msg | undefined {
 	if (chat.includes('@g.us')) return cache.groups.get(chat)?.msgs.get(deletedId)
 
-	const byLid = cache.users.find((u) => u.lid === chat)?.msgs.get(deletedId)
+	const byLid = (cache.userByLid.get(chat) ?? cache.users.find((u) => u.lid === chat))?.msgs.get(deletedId)
 	if (byLid) return byLid
-	const byPhone = cache.users.find((u) => u.phone === chat.parsePhone())?.msgs.get(deletedId)
+	const phone = chat.parsePhone()
+	const byPhone = (cache.userByPhone.get(phone) ?? cache.users.find((u) => u.phone === phone))?.msgs.get(deletedId)
 	if (byPhone) return byPhone
 
 	// Fallback: scan all chats (ids are unique per message, cheap enough on revoke).

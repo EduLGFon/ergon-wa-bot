@@ -1,10 +1,10 @@
 {
 	"events": {
-		"cooldown": "[🕓] - ¿Tienes prisa? Fuiste gravado en *{{time}} *, espera un poco allí",
+		"cooldown": "[🕓] - ¡Despacio! Cooldown activo, espera un poco ({{time}})",
 		"nodb": "[💡] Este comando requiere una base de datos configurada."
 	},
 	"langs": {
-		"pt": "portugués",
+		"pt": "Portugués",
 		"en": "Inglés",
 		"es": "Español",
 		"fr": "Francés",
@@ -12,19 +12,20 @@
 	},
 	"usage": {
 		"title": "*[❗] - ¿Cómo usar?*",
-		"args": "*[💡] - Tipos de parámetros:*\n<ROBLECTORIO>\n[opcional]\n(Mensaje mencionado)",
+		"args": "*[💡] - Tipos de parámetros:*\n<obligatorio>\n[opcional]\n(Mensaje mencionado)",
 		"examples": "*[💯] - Ejemplos:*"
 	},
 	"help": {
 		"usage": "[Nombre de un comando]",
 		"desc": "Ver información sobre un comando",
 		"examples": [
-			"Géminis",
-			"etiqueta engomada"
+			"",
+			"sticker",
+			"gemini"
 		],
 		"title": "*[📖] - Menú de ayuda*",
-		"prefix": "[⚙️] Cambiar prefijo: *{{prefix}} *",
-		"lang": "[🌎] Cambiar lenguaje: *{{lang}} *"
+		"prefix": "[⚙️] Cambiar prefijo: *{{prefix}}*",
+		"lang": "[🌎] Cambiar lenguaje: *{{lang}}*"
 	},
 	"language": {
 		"usage": "<Código de idioma>",
@@ -36,18 +37,18 @@
 			"{es}: español",
 			"{de}: alemán"
 		],
-		"changed": "[🌎] - El lenguaje cambió a *{{lng}} *",
+		"changed": "[🌎] - El lenguaje cambió a *{{lng}}*",
 		"ask": "[🌎] - ¿Qué idioma prefieres? Actual: *{{current}}*\n{{list}}\nResponde con *{{prefix}}lang <número o código>*",
 		"invalid": "[❗] - \"{{input}}\" no es un idioma válido. Actual: *{{current}}*\n{{list}}\nResponde con *{{prefix}}lang <número o código>*"
 	},
 	"prefix": {
-		"usage": "<Prefijo con hasta 3 dígitos>",
+		"usage": "<Prefijo con hasta 3 caracteres>",
 		"desc": "Cambiar el prefijo de comandos",
 		"examples": [
 			".",
 			"!"
 		],
-		"changed": "[✔️] - Tu nuevo prefijo es: *{{prefix}} *"
+		"changed": "[✔️] - Tu nuevo prefijo es: *{{prefix}}*"
 	},
 	"ping": {
 		"desc": "Ver tiempo de respuesta de bot"
@@ -60,7 +61,7 @@
 			"Debería hacer esto, no debería hacer eso",
 			"Ve al gimnasio, juega GTA 6"
 		],
-		"result": "* [🏆] - Opción elegida:* {{chosen}}"
+		"result": "*[🏆] - Opción elegida:*{{chosen}}"
 	},
 	"gemini": {
 		"usage": "[Limpiar: borra lo histórico] [RESET: borra los recuerdos y la historia] <Ad. Avent> [(Media)]]",
@@ -157,5 +158,20 @@
 		"unsupported": "[⚠️] - Unsupported media type",
 		"failed": "[❌] - Transcription failed, try again",
 		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
+	},
+	"gotcha": {
+		"noTarget": "[❗] - No se encontró objetivo. Responde o menciona a alguien.",
+		"multi": "[❗] - Múltiples candidatos: {{list}}",
+		"empty": "[💡] - Nada encontrado.",
+		"unavailable": "[⚠️] - Medio no disponible",
+		"noText": "[💬] - (sin texto)",
+		"header": "*[🎯] - Gotcha: {{chat}} ({{count}})*",
+		"expired": "[⚠️] - El medio de {{author}} expiró",
+		"usage": "[autor o @mención] [cantidad]",
+		"desc": "Revela mensajes borrados del caché de recuperación (dev).",
+		"examples": [
+			"",
+			"5"
+		]
 	}
 }

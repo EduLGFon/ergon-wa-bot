@@ -1,10 +1,11 @@
-/**
- * EXIF metadata builder and injector for WhatsApp stickers.
- *
- * WhatsApp reads sticker pack info (name, author) from a custom EXIF tag
- * embedded inside the WebP file. This module builds the raw TIFF/EXIF blob
- * and injects it via node-webpmux (works for both static and animated WebP).
- */
+//
+// EXIF metadata builder and injector for WhatsApp stickers.
+//
+// WhatsApp reads sticker pack info (name, author) from a custom EXIF tag
+// embedded inside the WebP file. This module builds the raw TIFF/EXIF blob
+// and injects it via node-webpmux (works for both static and animated WebP).
+//
+
 import type { StickerMetadata } from '@plugin/sticker/types.ts'
 import webpmux from 'node-webpmux'
 

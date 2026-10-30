@@ -1,14 +1,15 @@
-/**
- * FFmpeg command builder and executor for animated (video/GIF) stickers.
- *
- * This module is designed to run INSIDE a worker thread - all I/O is
- * synchronous so it blocks only the worker, never the main event loop.
- *
- * Key features:
- *   • Single-pass multi-format via the `split` filter
- *   • Adaptive quality: retries at lower quality/fps until output ≤ maxSize
- *   • Temp files are namespaced per job to prevent collisions between workers
- */
+//
+// FFmpeg command builder and executor for animated (video/GIF) stickers.
+//
+// This module is designed to run INSIDE a worker thread - all I/O is
+// synchronous so it blocks only the worker, never the main event loop.
+//
+// Key features:
+// • Single-pass multi-format via the `split` filter
+// • Adaptive quality: retries at lower quality/fps until output ≤ maxSize
+// • Temp files are namespaced per job to prevent collisions between workers
+//
+
 import type { StickerFormat } from '@plugin/sticker/types.ts'
 
 const SIZE = 512

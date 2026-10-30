@@ -1,11 +1,12 @@
-/**
- * Sticker engine - public facade.
- *
- * Single entry point for sticker creation:
- *   - Images  -> sharp on the main thread (fast, ~50ms)
- *   - Videos  -> worker thread pool running ffmpeg (non-blocking)
- *   - All outputs get EXIF metadata injected before being returned
- */
+//
+// Sticker engine - public facade.
+//
+// Single entry point for sticker creation:
+// - Images  -> sharp on the main thread (fast, ~50ms)
+// - Videos  -> worker thread pool running ffmpeg (non-blocking)
+// - All outputs get EXIF metadata injected before being returned
+//
+
 export type { StickerFormat, StickerMetadata, StickerResult } from '@plugin/sticker/types.ts'
 import type { StickerOptions, StickerResult } from '@plugin/sticker/types.ts'
 import { processImage } from '@plugin/sticker/image.ts'

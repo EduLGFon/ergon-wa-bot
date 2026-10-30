@@ -1,10 +1,11 @@
-/**
- * Fixed-size worker thread pool for video sticker processing.
- *
- * Manages N workers, each capable of running one ffmpeg job at a time.
- * When all workers are busy, incoming jobs are queued (FIFO).
- * Crashed workers are automatically respawned.
- */
+//
+// Fixed-size worker thread pool for video sticker processing.
+//
+// Manages N workers, each capable of running one ffmpeg job at a time.
+// When all workers are busy, incoming jobs are queued (FIFO).
+// Crashed workers are automatically respawned.
+//
+
 import type {
 	StickerFormat,
 	StickerResult,

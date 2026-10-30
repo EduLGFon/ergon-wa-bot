@@ -93,9 +93,17 @@ export function renderTally(options: string[], t: TallyState): string {
 	const voters = Object.values(t.voters).filter((v) => v.opts.length > 0)
 	if (voters.length === 0) return ''
 	const total = voters.length
+	// Precompute per-option counts in a single pass.
+	const counts = new Array(options.length).fill(0)
+	for (const v of voters) {
+		for (const opt of v.opts) {
+			const idx = options.indexOf(opt)
+			if (idx >= 0) counts[idx]++
+		}
+	}
 	const rows: Array<{ count: number; index: number; line: string }> = options
 		.map((opt, index) => {
-			const count = voters.filter((v) => v.opts.includes(opt)).length
+			const count = counts[index]
 			if (count === 0) return { count, index, line: `${opt} - 0 (0%)` }
 			const pct = Math.round((count * 100) / total)
 			return { count, index, line: `${opt} - ${count} (${pct}%)` }

@@ -5,12 +5,15 @@ export default class Collection<K, V> extends Map<K, V> {
 	primaryKey: str
 	limit: num
 	byteBudget: num
+	// Running total of entry bytes, maintained on set/delete to avoid O(N) rescan.
+	byteTotal: num
 
 	constructor(limit?: num, PK = 'id', byteBudget?: num) {
 		super()
 		this.primaryKey = PK
 		this.limit = limit === 0 ? 0 : limit || 100 // items limit
 		this.byteBudget = byteBudget || 0
+		this.byteTotal = 0
 	}
 
 	// Byte size of a stored value - buffers first, then arrays/strings.
@@ -22,9 +25,50 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	get bytes(): num {
-		let total = 0
-		for (const v of this.values()) total += Collection.entryBytes(v)
-		return total
+		return this.byteTotal
+	}
+
+	// Override set to keep byteTotal in sync and enforce caps.
+	set(key: K, value: V): this {
+		const existing = this.get(key)
+		if (existing !== undefined) {
+			this.byteTotal -= Collection.entryBytes(existing)
+		}
+		this.byteTotal += Collection.entryBytes(value)
+		const ret = super.set(key, value)
+
+		// Item limit: evict oldest entries.
+		if (this.limit && this.size > this.limit) {
+			const iter = this.keys()
+			while (this.size > this.limit) {
+				const k = iter.next().value as K
+				this.delete(k)
+			}
+		}
+
+		// Byte budget: evict oldest entries until under budget.
+		if (this.byteBudget > 0) {
+			const iter = this.keys()
+			while (this.byteTotal > this.byteBudget && this.size > 0) {
+				const k = iter.next().value as K
+				this.delete(k)
+			}
+		}
+
+		return ret
+	}
+
+	// Override delete to keep byteTotal in sync.
+	delete(key: K): boolean {
+		const v = this.get(key)
+		if (v !== undefined) this.byteTotal -= Collection.entryBytes(v)
+		return super.delete(key)
+	}
+
+	// Override clear to reset byteTotal.
+	clear(): void {
+		super.clear()
+		this.byteTotal = 0
 	}
 
 	// Add: adds a value to the collection
@@ -46,25 +90,6 @@ export default class Collection<K, V> extends Map<K, V> {
 		}
 
 		this.set(key, value as V)
-
-		if (this.limit && this.size > this.limit) {
-			const iter = this.keys()
-			while (this.size > this.limit) {
-				this.delete(iter.next().value as K)
-			}
-		}
-
-		// Byte budget: evict oldest entries until under budget.
-		if (this.byteBudget > 0) {
-			let total = this.bytes
-			const iter = this.keys()
-			while (total > this.byteBudget && this.size > 0) {
-				const k = iter.next().value as K
-				const v = this.get(k)
-				this.delete(k)
-				total -= Collection.entryBytes(v)
-			}
-		}
 
 		return value as V
 	}

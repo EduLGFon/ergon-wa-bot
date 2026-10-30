@@ -1,13 +1,13 @@
 {
 	"events": {
-		"cooldown": "[🕓] - Calma calabreso! Você foi taxado em *{{time}}*, espera um pouquinho aí",
+		"cooldown": "[🕓] - Calma! Cooldown ativo, espera um pouquinho aí ({{time}})",
 		"nodb": "[💡] Este comando requer um banco de dados configurado."
 	},
 	"langs": {
 		"pt": "Português",
 		"en": "Inglês",
 		"es": "Espanhol",
-		"fr": "Frances",
+		"fr": "Francês",
 		"de": "Alemão"
 	},
 	"usage": {
@@ -159,5 +159,20 @@
 		"unsupported": "[⚠️] - Unsupported media type",
 		"failed": "[❌] - Transcription failed, try again",
 		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
+	},
+	"gotcha": {
+		"noTarget": "[❗] - Não encontrei alvo. Responda ou mencione alguém.",
+		"multi": "[❗] - Múltiplos candidatos: {{list}}",
+		"empty": "[💡] - Nada encontrado.",
+		"unavailable": "[⚠️] - Mídia indisponível",
+		"noText": "[💬] - (sem texto)",
+		"header": "*[🎯] - Gotcha: {{chat}} ({{count}})*",
+		"expired": "[⚠️] - Mídia de {{author}} expirou",
+		"usage": "[autor ou @menção] [quantidade]",
+		"desc": "Revela mensagens apagadas do cache de recuperação (dev).",
+		"examples": [
+			"",
+			"5"
+		]
 	}
 }

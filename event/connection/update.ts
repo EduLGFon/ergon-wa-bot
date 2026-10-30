@@ -54,7 +54,17 @@ export default async function (event: Partial<ConnectionState>) {
 
 	if (event.qr) {
 		print('SOCK', 'Scan this QR code to login:', 'yellow')
-		qrcode(event.qr, { output: 'console' })
+		// @libs/qrcode's "console" output relies on CSS %c styling, which Deno's
+		// console does not apply, leaving every module the same color (a solid,
+		// unscannable block). Render the module matrix ourselves with ANSI colors.
+		const modules = qrcode(event.qr, { output: 'array' }) as boolean[][]
+		for (const row of modules) {
+			let line = ''
+			for (const dark of row) {
+				line += dark ? '\x1b[30m██\x1b[0m' : '\x1b[97m██\x1b[0m'
+			}
+			console.log(line)
+		}
 	}
 
 	switch (event.connection) {

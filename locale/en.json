@@ -1,6 +1,6 @@
 {
 	"events": {
-		"cooldown": "[🕓] - Are you in a hurry? You were taxed in *{{time}} *, wait a little bit there",
+		"cooldown": "[🕓] - Slow down! Cooldown active, wait a little bit ({{time}})",
 		"nodb": "[💡] This command requires a configured database."
 	},
 	"langs": {
@@ -19,12 +19,13 @@
 		"usage": "[Name of a command]",
 		"desc": "See information about a command",
 		"examples": [
-			"gemini",
-			"sticker"
+			"",
+			"sticker",
+			"gemini"
 		],
 		"title": "*[📖] - Help Menu*",
-		"prefix": "[⚙️] Change prefix: *{{prefix}} *",
-		"lang": "[🌎] Change language: *{{lang}} *"
+		"prefix": "[⚙️] Change prefix: *{{prefix}}*",
+		"lang": "[🌎] Change language: *{{lang}}*"
 	},
 	"language": {
 		"usage": "<Language Code>",
@@ -36,18 +37,18 @@
 			"{es}: Spanish",
 			"{de}: German"
 		],
-		"changed": "[🌎] - Language changed to *{{lng}} *",
+		"changed": "[🌎] - Language changed to *{{lng}}*",
 		"ask": "[🌎] - Which language do you prefer? Current: *{{current}}*\n{{list}}\nReply with *{{prefix}}lang <number or code>*",
 		"invalid": "[❗] - \"{{input}}\" is not a valid language. Current: *{{current}}*\n{{list}}\nReply with *{{prefix}}lang <number or code>*"
 	},
 	"prefix": {
-		"usage": "<Prefix with up to 3 digits>",
+		"usage": "<Prefix with up to 3 characters (letters or symbols)>",
 		"desc": "Change the prefix of commands",
 		"examples": [
 			".",
 			"!"
 		],
-		"changed": "[✔️] - Your new prefix is: *{{prefix}} *"
+		"changed": "[✔️] - Your new prefix is: *{{prefix}}*"
 	},
 	"ping": {
 		"desc": "See Bot Response Time"
@@ -60,7 +61,7 @@
 			"I should do this, I shouldn't do that",
 			"Go to the gym, play GTA 6"
 		],
-		"result": "* [🏆] - chosen option:* {{chosen}}"
+		"result": "*[🏆] - chosen option:*{{chosen}}"
 	},
 	"gemini": {
 		"usage": "[CLEAN: Erases the historical] [Reset: Erases Memories and History] <Prompt> [(Media)]",
@@ -157,5 +158,20 @@
 		"unsupported": "[⚠️] - Unsupported media type",
 		"failed": "[❌] - Transcription failed, try again",
 		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
+	},
+	"gotcha": {
+		"noTarget": "[❗] - No target found. Reply to or mention someone.",
+		"multi": "[❗] - Multiple candidates: {{list}}",
+		"empty": "[💡] - Nothing found.",
+		"unavailable": "[⚠️] - Media unavailable",
+		"noText": "[💬] - (no text)",
+		"header": "*[🎯] - Gotcha: {{chat}} ({{count}})*",
+		"expired": "[⚠️] - Media from {{author}} expired",
+		"usage": "[author or @mention] [amount]",
+		"desc": "Reveals deleted messages from recovery cache (dev).",
+		"examples": [
+			"",
+			"5"
+		]
 	}
 }

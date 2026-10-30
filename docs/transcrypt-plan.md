@@ -1,4 +1,4 @@
-# Implementation plan — `transcrypt` command (pt-BR optimized)
+# Implementation plan - `transcrypt` command (pt-BR optimized)
 
 Status: planning only. Target: best transcription accuracy for Brazilian Portuguese voice/audio messages in the Ergon WA bot.
 
@@ -9,9 +9,9 @@ Status: planning only. Target: best transcription accuracy for Brazilian Portugu
 - Output: the transcript as a WhatsApp text message (or as a document when > 4 000 chars).
 - Default language: `pt-BR`. Optional language override: `.transcrypt en <media>` or `.transcrypt lang=es`.
 - Subcommands:
-  - `raw` — return the provider's raw transcript (no LLM touch-up).
-  - `clean` — run the raw transcript through Gemini for punctuation/casing only.
-  - `best` — run the top two providers and reconcile with Gemini (slower, highest accuracy).
+  - `raw` - return the provider's raw transcript (no LLM touch-up).
+  - `clean` - run the raw transcript through Gemini for punctuation/casing only.
+  - `best` - run the top two providers and reconcile with Gemini (slower, highest accuracy).
 - Cooldown: 10 s. Access: DM + groups (no admin required).
 
 ## 2. Why these providers (pt-BR accuracy)
@@ -46,12 +46,12 @@ For spontaneous WhatsApp voice notes (noisy, accented, short utterances) the cle
 
 ## 4. New files
 
-- `cmd/util/transcrypt.ts` — command (follow `cmd/util/reveal.ts` shape).
-- `util/stt.ts` — provider adapters + auto-selection + preprocessing helpers. Each adapter:
+- `cmd/util/transcrypt.ts` - command (follow `cmd/util/reveal.ts` shape).
+- `util/stt.ts` - provider adapters + auto-selection + preprocessing helpers. Each adapter:
   ```
   transcribe({ buffer, mime, lang, prompt }): Promise<{ text, provider, durationMs }>
   ```
-- `util/transcriptNormalize.ts` (optional) — pt-BR normalization helpers (collapse whitespace, fix common ASR artifacts, punctuation pass via Gemini).
+- `util/transcriptNormalize.ts` (optional) - pt-BR normalization helpers (collapse whitespace, fix common ASR artifacts, punctuation pass via Gemini).
 - Locale entries in `locale/*.json` under `transcrypt`.
 
 ## 5. Command flow

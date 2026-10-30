@@ -41,6 +41,8 @@ async function createUser({ lid, name }: { lid: str; name?: str }): Promise<User
 
 	const user = new User({ id, lid, name })
 	cache.users.add(user.id, user)
+	cache.userByLid.set(lid, user)
+	cache.userByPhone.set(user.phone, user)
 	return user
 }
 
@@ -48,8 +50,14 @@ export async function getUser(
 	{ id, lid, name }: { id?: num; lid?: str; name?: str },
 ): Promise<User | undefined> {
 	if (lid) {
+		const cached = cache.userByLid.get(lid)
+		if (cached) return cached
 		const data = cache.users.find((u) => u.lid === lid)
-		if (data) return data
+		if (data) {
+			cache.userByLid.set(lid, data)
+			cache.userByPhone.set(data.phone, data)
+			return data
+		}
 		const dbUser = await db?.select().from(schema.users).where(eq(schema.users.lid, lid)).catch(
 			() => undefined,
 		)
@@ -58,9 +66,11 @@ export async function getUser(
 
 		const user = new User(dbUser[0])
 		cache.users.add(user.id, user)
+		cache.userByLid.set(lid, user)
+		cache.userByPhone.set(user.phone, user)
 		return user
 	}
-	const data = cache.users.find((u) => u.id === id)
+	const data = cache.users.get(id as num)
 	if (data) return data
 
 	const dbUser = id

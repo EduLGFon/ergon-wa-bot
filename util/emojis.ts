@@ -1,7 +1,7 @@
-/** Emoji names list
- * it will be used to find emojis by name
- * 'ok' -> '✅'
- */
+// Emoji names list
+// it will be used to find emojis by name
+// 'ok' -> '✅'
+//
 
 const emojis = [
 	'😂',

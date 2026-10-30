@@ -1,6 +1,6 @@
 {
 	"events": {
-		"cooldown": "[🕓] - Êtes-vous pressé? Vous avez été taxé en * {{time}} *, attendez un peu là-bas",
+		"cooldown": "[🕓] - Doucement ! Cooldown actif, attends un peu ({{time}})",
 		"nodb": "[💡] Cette commande nécessite une base de données configurée."
 	},
 	"langs": {
@@ -11,20 +11,21 @@
 		"de": "Allemand"
 	},
 	"usage": {
-		"title": "* [❗] - comment utiliser? *",
-		"args": "* [💡] - Types de paramètres: *\n<obligatoire>\n[facultatif]\n(Message mentionné)",
-		"examples": "* [💯] - Exemples: *"
+		"title": "*[❗] - comment utiliser?*",
+		"args": "*[💡] - Types de paramètres:*\n<obligatoire>\n[facultatif]\n(Message mentionné)",
+		"examples": "*[💯] - Exemples:*"
 	},
 	"help": {
 		"usage": "[Nom d'une commande]",
 		"desc": "Voir des informations sur une commande",
 		"examples": [
-			"Gémeaux",
-			"autocollant"
+			"",
+			"sticker",
+			"gemini"
 		],
-		"title": "* [📖] - Menu d'aide *",
-		"prefix": "[⚙️] Changer le préfixe: * {{prefix}} *",
-		"lang": "[🌎] Changer la langue: * {{lang}} *"
+		"title": "*[📖] - Menu d'aide*",
+		"prefix": "[⚙️] Changer le préfixe: *{{prefix}}*",
+		"lang": "[🌎] Changer la langue: *{{lang}}*"
 	},
 	"language": {
 		"usage": "<Code de langue>",
@@ -36,18 +37,18 @@
 			"{es}: espagnol",
 			"{de}: allemand"
 		],
-		"changed": "[🌎] - Langue changée en * {{lng}} *",
+		"changed": "[🌎] - Langue changée en *{{lng}}*",
 		"ask": "[🌎] - Quelle langue préférez-vous ? Actuelle : *{{current}}*\n{{list}}\nRépondez avec *{{prefix}}lang <numéro ou code>*",
 		"invalid": "[❗] - \"{{input}}\" n'est pas une langue valide. Actuelle : *{{current}}*\n{{list}}\nRépondez avec *{{prefix}}lang <numéro ou code>*"
 	},
 	"prefix": {
-		"usage": "<Préfixe avec jusqu'à 3 chiffres>",
+		"usage": "<Préfixe avec jusqu'à 3 caractères>",
 		"desc": "Changer le préfixe des commandes",
 		"examples": [
 			".",
 			"!"
 		],
-		"changed": "[✔️] - Votre nouveau préfixe est: * {{prefix}} *"
+		"changed": "[✔️] - Votre nouveau préfixe est: *{{prefix}}*"
 	},
 	"ping": {
 		"desc": "Voir le temps de réponse du bot"
@@ -60,7 +61,7 @@
 			"Je devrais faire ça, je ne devrais pas faire ça",
 			"Allez au gymnase, jouez à GTA 6"
 		],
-		"result": "* [🏆] - Option choisie: * {{chosen}}"
+		"result": "*[🏆] - Option choisie: *{{chosen}}"
 	},
 	"gemini": {
 		"usage": "[Clean: Efface l'historique] [Réinitialiser: efface les souvenirs et l'histoire] <MIVER> [(Media)]",
@@ -157,5 +158,20 @@
 		"unsupported": "[⚠️] - Unsupported media type",
 		"failed": "[❌] - Transcription failed, try again",
 		"header": "*[🎙️] - Transcription ({{provider}}, {{lang}})*"
+	},
+	"gotcha": {
+		"noTarget": "[❗] - Aucune cible trouvée. Répondez ou mentionnez quelqu'un.",
+		"multi": "[❗] - Plusieurs candidats : {{list}}",
+		"empty": "[💡] - Rien trouvé.",
+		"unavailable": "[⚠️] - Média indisponible",
+		"noText": "[💬] - (pas de texte)",
+		"header": "*[🎯] - Gotcha : {{chat}} ({{count}})*",
+		"expired": "[⚠️] - Le média de {{author}} a expiré",
+		"usage": "[auteur ou @mention] [quantité]",
+		"desc": "Révèle les messages supprimés du cache de récupération (dev).",
+		"examples": [
+			"",
+			"5"
+		]
 	}
 }

@@ -1,9 +1,9 @@
-/**
- * Shared type definitions for the sticker engine.
- * Used by both the main thread and worker threads.
- * Buffers stay as Node Buffer here because sharp and node-webpmux
- * require it; generic media elsewhere uses Uint8Array (see Buf).
- */
+//
+// Shared type definitions for the sticker engine.
+// Used by both the main thread and worker threads.
+// Buffers stay as Node Buffer here because sharp and node-webpmux
+// require it; generic media elsewhere uses Uint8Array (see Buf).
+//
 
 /** Supported sticker crop/resize formats */
 export type StickerFormat = 'full' | 'crop' | 'circle' | 'rounded'

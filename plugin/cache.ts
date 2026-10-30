@@ -14,12 +14,13 @@ class CacheManager {
 	cmds: Collection<str, Cmd>
 	wait: Collection<str, Func>
 	users: Collection<num, User>
+	userByLid: Map<str, User>
+	userByPhone: Map<str, User>
 	events: Map<str, Func>
 	media: Collection<str, Media>
 	transcripts: Collection<str, str>
 	groups: Collection<str, Group>
 	metrics: { msg: any; cmd: any }
-	timeouts: Map<str, ReturnType<typeof setTimeout>>
 
 	constructor() {
 		// wait: arbitrary functions that can be called on events
@@ -30,6 +31,9 @@ class CacheManager {
 		this.cmds = new Collection(0, 'name')
 		// Users collection
 		this.users = new Collection(defaults.cache.users)
+		// Secondary index: lid -> User, for O(1) lookup on the hot path.
+		this.userByLid = new Map()
+		this.userByPhone = new Map()
 		// Media collection
 		// It stores media data like images, videos, etc.
 		// It uses URL as key to avoid duplicates
@@ -40,8 +44,6 @@ class CacheManager {
 		this.groups = new Collection(100)
 		// Metrics
 		this.metrics = { msg: {}, cmd: {} }
-		// Timeouts
-		this.timeouts = new Map()
 	}
 
 	async save() {
