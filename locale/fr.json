@@ -65,7 +65,7 @@
 			"Je devrais faire ça, je ne devrais pas faire ça",
 			"Allez au gymnase, jouez à GTA 6"
 		],
-		"result": "*[🏆] - Option choisie: *{{chosen}}"
+		"result": "*[🏆] - Option choisie:* {{chosen}}"
 	},
 	"gemini": {
 		"usage": "[Clean: Efface l'historique] [Réinitialiser: efface les souvenirs et l'histoire] <MIVER> [(Media)]",
