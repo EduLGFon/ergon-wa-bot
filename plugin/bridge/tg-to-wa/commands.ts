@@ -22,6 +22,23 @@ export function registerTgCommands(
 		await ctx.reply('WhatsApp bridge is active. Each WhatsApp chat mirrors to its own topic.')
 	})
 
+	tg.command('help', async (ctx) => {
+		if (!inSupergroup(ctx)) return
+		const help = [
+			'WhatsApp bridge commands:',
+			'/start - show this intro',
+			'/id - print this supergroup id',
+			'/topics - list active bridged chats',
+			'/new <phone> [name] - bridge a new chat',
+			'/archive (or /close) - archive this chat',
+			'/reopen - reopen an archived chat',
+			'/mute /unmute - pause/resume relay',
+			'/group - open member chat picker',
+			'/personal /business - move chat to a bucket',
+		].join('\n')
+		await ctx.reply(help)
+	})
+
 	tg.command('id', async (ctx) => {
 		await ctx.reply(
 			`Supergroup ID: \`${ctx.chat.id}\`\nSet it as TELEGRAM_SUPERGROUP_PERSONAL or TELEGRAM_SUPERGROUP_BUSINESS in conf/.env.`,

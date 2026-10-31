@@ -29,7 +29,19 @@
 		],
 		"title": "*[📖] - Hilfemenü*",
 		"prefix": "[⚙️] Präfix ändern: *{{prefix}}*",
-		"lang": "[🌎] Sprache ändern: *{{lang}}*"
+		"lang": "[🌎] Sprache ändern: *{{lang}}*",
+		"notFound": "[❓] - Befehl nicht gefunden: \"{{input}}\"",
+		"didYouMean": "[💡] - Meinten Sie \"{{name}}\"?",
+		"devOnly": "[🛠️] - Nur Entwickler",
+		"adminOnly": "[🔒] - Nur Administratoren",
+		"groupsOnly": "[👥] - Nur in Gruppen",
+		"dmOnly": "[📱] - Nur im privaten Chat",
+		"category": {
+			"config": "Konfiguration",
+			"utility": "Werkzeuge",
+			"fun": "Spaß",
+			"dev": "Entwicklung"
+		}
 	},
 	"language": {
 		"usage": "<sprachcode>",

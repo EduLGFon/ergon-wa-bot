@@ -29,7 +29,19 @@
 		],
 		"title": "*[📖] - Menu d'aide*",
 		"prefix": "[⚙️] Changer le préfixe: *{{prefix}}*",
-		"lang": "[🌎] Changer la langue: *{{lang}}*"
+		"lang": "[🌎] Changer la langue: *{{lang}}*",
+		"notFound": "[❓] - Commande introuvable : \"{{input}}\"",
+		"didYouMean": "[💡] - Vouliez-vous dire \"{{name}}\" ?",
+		"devOnly": "[🛠️] - Développeurs uniquement",
+		"adminOnly": "[🔒] - Administrateurs uniquement",
+		"groupsOnly": "[👥] - Groupes uniquement",
+		"dmOnly": "[📱] - Chat privé uniquement",
+		"category": {
+			"config": "Configuration",
+			"utility": "Utilitaires",
+			"fun": "Divertissement",
+			"dev": "Développement"
+		}
 	},
 	"language": {
 		"usage": "<Code de langue>",

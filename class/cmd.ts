@@ -21,6 +21,10 @@ export default abstract class Cmd {
 		restrict: bool // only devs can run the cmd
 		needsDb: bool // cmd requires database to run.
 	}>
+	/** Informational grouping for help/discoverability. */
+	category?: 'config' | 'utility' | 'fun' | 'dev'
+	/** Marks destructive operations (clean, etc.). */
+	dangerous?: bool
 
 	constructor(c: Partial<Cmd>) {
 		this.name = c.name || ''
@@ -38,6 +42,8 @@ export default abstract class Cmd {
 			},
 			c.access,
 		)
+		this.category = c.category
+		this.dangerous = c.dangerous ?? false
 		// Compare command permissions
 		// with this default setting
 	}

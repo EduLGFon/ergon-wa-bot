@@ -29,7 +29,19 @@
 		],
 		"title": "*[📖] - Help Menu*",
 		"prefix": "[⚙️] Change prefix: *{{prefix}}*",
-		"lang": "[🌎] Change language: *{{lang}}*"
+		"lang": "[🌎] Change language: *{{lang}}*",
+		"notFound": "[❓] - Command not found: \"{{input}}\"",
+		"didYouMean": "[💡] - Did you mean \"{{name}}\"?",
+		"devOnly": "[🛠️] - Developers only",
+		"adminOnly": "[🔒] - Admins only",
+		"groupsOnly": "[👥] - Groups only",
+		"dmOnly": "[📱] - Private chat only",
+		"category": {
+			"config": "Config",
+			"utility": "Utility",
+			"fun": "Fun",
+			"dev": "Dev"
+		}
 	},
 	"language": {
 		"usage": "<Language Code>",
