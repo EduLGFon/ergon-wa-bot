@@ -21,17 +21,17 @@
 		}
 	},
 	"imports": {
-		"@google/genai": "npm:@google/genai@^2.30.0",
+		"@google/genai": "npm:@google/genai@^2.32.0",
 		"baileys": "npm:@whiskeysockets/baileys@^7.0.0-rc14",
 		"grammy": "npm:grammy@^1.46.0/web",
-		"i18next": "npm:i18next@^26.4.2",
+		"i18next": "npm:i18next@^26.5.12",
 		"node-webpmux": "npm:node-webpmux@^3.2.1",
 		"sharp": "npm:sharp@^0.35.5",
-		"@types/node": "npm:@types/node@^26.6.5",
+		"@types/node": "npm:@types/node@^26.6.6",
 		"drizzle-orm": "npm:drizzle-orm@^0.45.4",
 		"drizzle-orm/": "npm:/drizzle-orm@^0.45.4/",
 		"drizzle-kit": "npm:drizzle-kit@^0.31.11",
-		"postgres": "npm:postgres@^3.4.9",
+		"postgres": "npm:postgres@^4.0.0",
 		"@libs/qrcode": "jsr:@libs/qrcode@^3.1.0",
 		"@class/": "./class/",
 		"@cmd/": "./cmd/",
@@ -81,6 +81,7 @@
 		]
 	},
 	"nodeModulesDir": "auto",
+	"minimumDependencyAge": 0,
 	"allowScripts": [
 		"npm:@google/genai@2.13.0",
 		"npm:@google/genai@2.15.0",
@@ -88,6 +89,7 @@
 		"npm:@google/genai@2.21.0",
 		"npm:@google/genai@2.28.0",
 		"npm:@google/genai@2.30.0",
+		"npm:@google/genai@2.32.0",
 		"npm:@whiskeysockets/baileys@7.0.0-rc13",
 		"npm:@whiskeysockets/baileys@7.0.0-rc14",
 		"npm:esbuild@0.18.20",
@@ -97,6 +99,7 @@
 		"npm:protobufjs@7.6.5",
 		"npm:protobufjs@7.6.6",
 		"npm:sharp@0.30.7",
-		"npm:sharp@0.33.5"
+		"npm:sharp@0.33.5",
+		"npm:sharp@0.35.5"
 	]
 }
