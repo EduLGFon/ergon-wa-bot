@@ -1,5 +1,6 @@
 // PostgreSQL auth strategy
 // it is used if you setted 'DATABASE_URL' env var
+// SECURITY: holds Baileys auth creds and keys; never log or expose.
 // if you don't have a DB, file system auth storing will be used instead
 import {
 	type AuthenticationState,

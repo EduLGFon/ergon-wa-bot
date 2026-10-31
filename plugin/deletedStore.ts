@@ -1,6 +1,7 @@
 // Disk-backed store for deleted ("revoked") messages.
 // Captures text + media buffers to conf/gen/deleted so the dev-only
 // gotcha command can reveal them later. Nothing is stored in the DB.
+// PRIVACY: holds deleted content and media for recovery; bounded per chat.
 //
 // Never-drop rule: every non-bot delete is archived, even when the media
 // buffer is missing (evicted, never downloaded, expired view-once). In that
@@ -121,10 +122,13 @@ function extFor(mime: str, type: str): str {
 function findCachedOriginal(chat: str, deletedId: str): Msg | undefined {
 	if (chat.includes('@g.us')) return cache.groups.get(chat)?.msgs.get(deletedId)
 
-	const byLid = (cache.userByLid.get(chat) ?? cache.users.find((u) => u.lid === chat))?.msgs.get(deletedId)
+	const byLid = (cache.userByLid.get(chat) ?? cache.users.find((u) => u.lid === chat))?.msgs.get(
+		deletedId,
+	)
 	if (byLid) return byLid
 	const phone = chat.parsePhone()
-	const byPhone = (cache.userByPhone.get(phone) ?? cache.users.find((u) => u.phone === phone))?.msgs.get(deletedId)
+	const byPhone = (cache.userByPhone.get(phone) ?? cache.users.find((u) => u.phone === phone))
+		?.msgs.get(deletedId)
 	if (byPhone) return byPhone
 
 	// Fallback: scan all chats (ids are unique per message, cheap enough on revoke).

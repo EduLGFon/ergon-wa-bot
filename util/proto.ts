@@ -186,6 +186,8 @@ const colorize = (color: string, ...args: any) => {
 // zero-timeout probe. Updated in the background, read synchronously by
 // print() so every log line carries RSS + heap + lag without extra cost.
 let lastLoopLagMs = 0
+let cachedMemUsage: Deno.MemoryUsage | undefined
+let cachedMemUsageAt = 0
 if (!(globalThis as any).__loopLagStarted) {
 	;(globalThis as any).__loopLagStarted = true
 	const probeLoopLag = () => {
@@ -231,9 +233,19 @@ function print(...args: any) {
 	if (typeof args[2] !== 'string') return console.log(...args)
 
 	const color = args.pop()
-	const m = Deno.memoryUsage()
-	const memory = (m.rss as number).bytes().align(5)
-	const heap = (m.heapUsed as number).bytes()
+	// Cache memory stats briefly to avoid a syscall on every log line.
+	let m = cachedMemUsage
+	if (!m || Date.now() - cachedMemUsageAt > 100) {
+		try {
+			m = Deno.memoryUsage()
+			cachedMemUsage = m
+			cachedMemUsageAt = Date.now()
+		} catch {
+			m = cachedMemUsage
+		}
+	}
+	const memory = ((m?.rss as number) ?? 0).bytes().align(5)
+	const heap = ((m?.heapUsed as number) ?? 0).bytes()
 	const lag = lastLoopLagMs > 0 ? ` l:${lastLoopLagMs}ms` : ''
 
 	console.log(

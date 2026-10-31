@@ -1,5 +1,6 @@
 // Messages upsert - main inbound pipeline
 // Handles revoke backup, ctx parse, perms and cooldown
+// SECURITY: inbound parse/filter and permission gate entry point.
 // Then dispatches to the matched command
 import { findCachedOriginal, promotePendingDelete, saveDeleted } from '@plugin/deletedStore.ts'
 import { reactToMsg, sendMsg, startTyping } from '@util/msgAbstractions.ts'

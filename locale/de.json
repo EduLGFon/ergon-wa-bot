@@ -1,7 +1,12 @@
 {
 	"events": {
 		"cooldown": "[🕓] - Langsam! Cooldown aktiv, warte kurz ({{time}})",
-		"nodb": "[💡] Dieser Befehl erfordert eine konfigurierte Datenbank."
+		"nodb": "[💡] Dieser Befehl erfordert eine konfigurierte Datenbank.",
+		"restrict": "[📛] - Nur Entwickler können diesen Befehl verwenden.",
+		"admin": "[📛] - Nur Gruppenadministratoren können diesen Befehl verwenden.",
+		"botAdmin": "[⚠️] - Ich benötige Gruppenadministrator-Rechte dafür.",
+		"groupsOnly": "[⛔] - Dieser Befehl funktioniert nur in Gruppen.",
+		"dmOnly": "[⛔] - Dieser Befehl funktioniert nur im privaten Chat."
 	},
 	"langs": {
 		"pt": "Portugiesisch",
@@ -19,7 +24,6 @@
 		"usage": "[Name eines Befehls]",
 		"desc": "Siehe Informationen zu einem Befehl",
 		"examples": [
-			"",
 			"sticker",
 			"gemini"
 		],
@@ -42,7 +46,7 @@
 		"invalid": "[❗] - \"{{input}}\" ist keine gültige Sprache. Aktuell: *{{current}}*\n{{list}}\nAntworte mit *{{prefix}}lang <Nummer oder Code>*"
 	},
 	"prefix": {
-		"usage": "<Präfix mit bis zu 3 Zeichen>",
+		"usage": "<Präfix mit bis zu 3 Zeichen (Buchstaben oder Symbole)>",
 		"desc": "Ändern Sie das Präfix der Befehle",
 		"examples": [
 			".",

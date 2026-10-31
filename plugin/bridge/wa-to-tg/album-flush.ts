@@ -36,6 +36,16 @@ export function bufferAlbumItem(jid: string, m: proto.IWebMessageInfo, item: Alb
 	const timer = setTimeout(() => {
 		void flushAlbum(key).catch((e) => console.error('[BRIDGE] album flush failed:', e))
 	}, ALBUM_WINDOW_MS)
+	const MAX_PENDING_ALBUMS = 500
+	if (!pendingAlbums.has(key) && pendingAlbums.size >= MAX_PENDING_ALBUMS) {
+		const firstKey = pendingAlbums.keys().next().value
+		if (firstKey !== undefined) {
+			const evicted = pendingAlbums.get(firstKey)
+			if (evicted?.timer) clearTimeout(evicted.timer)
+			pendingAlbums.delete(firstKey)
+			console.warn('[BRIDGE] album: evicted oldest pending album (cap)')
+		}
+	}
 	pendingAlbums.set(key, { items: [item], timer })
 }
 

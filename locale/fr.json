@@ -1,7 +1,12 @@
 {
 	"events": {
 		"cooldown": "[🕓] - Doucement ! Cooldown actif, attends un peu ({{time}})",
-		"nodb": "[💡] Cette commande nécessite une base de données configurée."
+		"nodb": "[💡] Cette commande nécessite une base de données configurée.",
+		"restrict": "[📛] - Seuls les développeurs peuvent utiliser cette commande.",
+		"admin": "[📛] - Seuls les administrateurs du groupe peuvent utiliser cette commande.",
+		"botAdmin": "[⚠️] - J'ai besoin des droits d'administrateur du groupe pour cela.",
+		"groupsOnly": "[⛔] - Cette commande ne fonctionne que dans les groupes.",
+		"dmOnly": "[⛔] - Cette commande ne fonctionne qu'en chat privé."
 	},
 	"langs": {
 		"pt": "portugais",
@@ -19,7 +24,6 @@
 		"usage": "[Nom d'une commande]",
 		"desc": "Voir des informations sur une commande",
 		"examples": [
-			"",
 			"sticker",
 			"gemini"
 		],
@@ -42,7 +46,7 @@
 		"invalid": "[❗] - \"{{input}}\" n'est pas une langue valide. Actuelle : *{{current}}*\n{{list}}\nRépondez avec *{{prefix}}lang <numéro ou code>*"
 	},
 	"prefix": {
-		"usage": "<Préfixe avec jusqu'à 3 caractères>",
+		"usage": "<Préfixe avec jusqu'à 3 caractères (lettres ou symboles)>",
 		"desc": "Changer le préfixe des commandes",
 		"examples": [
 			".",

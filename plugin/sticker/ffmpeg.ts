@@ -48,8 +48,10 @@ export async function encodeVideo(
 	formats: StickerFormat[],
 	maxSize: number,
 ): Promise<FfmpegResult[]> {
+	let last: FfmpegResult[] = []
 	for (const level of LEVELS) {
 		const results = await runFfmpeg(inputPath, outputDir, prefix, formats, level)
+		last = results
 		if (results.every((r) => r.size <= maxSize)) return results
 
 		// too big - clean outputs and retry with lower settings
@@ -57,7 +59,7 @@ export async function encodeVideo(
 	}
 
 	// fallback: return whatever the lowest level produced
-	return await runFfmpeg(inputPath, outputDir, prefix, formats, LEVELS[LEVELS.length - 1])
+	return last
 }
 
 /** Remove all temp files created by a sticker job. */

@@ -1,10 +1,8 @@
 // Ping command - measures WA latency and DB latency
 // Needed to check bot health and connection status
 import { type CmdCtx } from '@conf/types/types.d.ts'
-import { users } from '@conf/schema.ts'
-import { eq } from 'drizzle-orm'
 import Cmd from '@class/cmd.ts'
-import { db } from '@db'
+import { db, pingDb } from '@db'
 
 export default class extends Cmd {
 	constructor() {
@@ -22,7 +20,7 @@ export default class extends Cmd {
 		// Calculate DB Ping by searching for this user's id
 		const DbPing = await measurePing(async () => {
 			if (!db) throw new Error('No DB')
-			await db.select().from(users).where(eq(users.id, user.id))
+			await pingDb(user.id)
 		})
 		text += createStr('🥜', '..Database_', DbPing)
 

@@ -132,6 +132,16 @@ export function bufferCoalesced(
 		entry.chars += part.text.length
 		return
 	}
+	const MAX_COALESCED = 500
+	if (!pendingCoalesced.has(key) && pendingCoalesced.size >= MAX_COALESCED) {
+		const firstKey = pendingCoalesced.keys().next().value
+		if (firstKey !== undefined) {
+			const evicted = pendingCoalesced.get(firstKey)
+			if (evicted?.timer) clearTimeout(evicted.timer)
+			pendingCoalesced.delete(firstKey)
+			console.warn('[BRIDGE] coalesce: evicted oldest pending burst (cap)')
+		}
+	}
 	pendingCoalesced.set(key, {
 		m,
 		label: part.label,

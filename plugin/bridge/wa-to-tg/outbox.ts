@@ -73,6 +73,14 @@ export async function drainOutbox(): Promise<void> {
 				continue
 			}
 			try {
+				// Idempotency guard: if this WA message already landed in the
+				// reply map (e.g. partial success before the drop), skip replay.
+				const waMsgId = m.key?.id
+				const waJid = m.key?.remoteJid
+				if (waMsgId && waJid && db.getByWaMsgId(waMsgId, waJid)) {
+					if (active) db.deleteOutbox(row.id)
+					continue
+				}
 				await handleWAMessages([m], { fromOutbox: true })
 				if (active) db.deleteOutbox(row.id)
 			} catch (e) {

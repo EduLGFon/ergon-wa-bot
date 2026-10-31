@@ -21,6 +21,9 @@ export default class extends Cmd {
 		if (media.length && media.length > 25 * 1024 * 1024) {
 			return send('transcrypt.tooLarge', { user, quoted: msg })
 		}
+		if (!media.length) {
+			print('TRANSCRYPT', 'media size unknown, proceeding', 'yellow')
+		}
 
 		const modes = new Set(['raw', 'clean', 'best'])
 		let mode: 'raw' | 'clean' | 'best' = 'raw'
@@ -72,7 +75,7 @@ export default class extends Cmd {
 
 			cache.transcripts.set(cacheKey, result.text)
 
-			const header = `*[🎙️] - Transcription (${result.provider}, ${lang})*`
+			const header = t('transcrypt.header', { provider: result.provider, lang })
 			if (result.text.length > 4000) {
 				await send(
 					{

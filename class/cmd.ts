@@ -44,33 +44,51 @@ export default abstract class Cmd {
 
 	abstract run(ctx: CmdCtx): Promise<any> // run function
 
+	// SECURITY: permission gate - every command passes through here; deny by default.
 	checkPerms(msg: Msg, user: User, group?: Group) {
 		const send = sendMsg.bind(msg.chat)
 		const react = reactToMsg.bind(msg)
 
-		const isDev = !!Deno.env.get('DEVS')?.includes(user.lid)
+		const devs = Deno.env.get('DEVS')?.split('|').map((v) => v.trim()).filter(Boolean) ?? []
+		const isDev = devs.includes(user.lid)
 		// if a normal user tries to run a only-for-devs cmd
 
-		if (this.access.restrict && !isDev) return react('prohibited')
+		if (this.access.restrict && !isDev) {
+			react('prohibited')
+			send('events.restrict', { user })
+			return false
+		}
 		// restrict means only devs can run this cmd
 
 		if (group) {
 			// if msg chat is a group
-			if (!this.access.groups) return react('block') // this cmd can't run on groups
+			if (!this.access.groups) {
+				react('block')
+				send('events.dmOnly', { user })
+				return false
+			} // this cmd can't run on groups
 
 			// all group admins id
 			const admins = group.members.filter((m) => m.admin).map((m) => m.id)
 
 			// this user is not an admin and can't run this cmd
 			if (this.access.admin && !admins.includes(user.lid) && !isDev) {
-				return react('prohibited') // Devs can use admin cmds for security reasons
+				react('prohibited') // Devs can use admin cmds for security reasons
+				send('events.admin', { user })
+				return false
 			}
 
 			// bot is not an admin and can't run this cmd
 			if (this.access.botAdmin && !admins.includes(bot.lid)) {
-				return react('alert')
+				react('alert')
+				send('events.botAdmin', { user })
+				return false
 			}
-		} else if (!this.access.dm) return react('block') // this cmd can't run on DMs
+		} else if (!this.access.dm) {
+			react('block') // this cmd can't run on DMs
+			send('events.groupsOnly', { user })
+			return false
+		}
 
 		if (this.access.needsDb && !Deno.env.get('DATABASE_URL')) {
 			return send('events.nodb', { user })

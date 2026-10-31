@@ -1,7 +1,12 @@
 {
 	"events": {
 		"cooldown": "[🕓] - Slow down! Cooldown active, wait a little bit ({{time}})",
-		"nodb": "[💡] This command requires a configured database."
+		"nodb": "[💡] This command requires a configured database.",
+		"restrict": "[📛] - Only developers can use this command.",
+		"admin": "[📛] - Only group admins can use this command.",
+		"botAdmin": "[⚠️] - I need admin rights in the group for this.",
+		"groupsOnly": "[⛔] - This command only works in groups.",
+		"dmOnly": "[⛔] - This command only works in private chat."
 	},
 	"langs": {
 		"pt": "Portuguese",
@@ -19,7 +24,6 @@
 		"usage": "[Name of a command]",
 		"desc": "See information about a command",
 		"examples": [
-			"",
 			"sticker",
 			"gemini"
 		],

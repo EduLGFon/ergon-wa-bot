@@ -1,5 +1,6 @@
 // SQLite mapping store for the WA-Telegram bridge.
 // Persists chat and reply mappings at conf/gen/bridge.db.
+// SECURITY: pairing and reply-map scoping; echo guards.
 // Lets restarts resume relay without losing topic links.
 // Uses node:sqlite (Deno built-in compat, no npm dep) plus Deno.mkdir/stat.
 import { DatabaseSync } from 'node:sqlite'

@@ -1,13 +1,16 @@
 # Implementation plan - `transcrypt` command (pt-BR optimized)
 
-Status: planning only. Target: best transcription accuracy for Brazilian Portuguese voice/audio messages in the Ergon WA bot.
+Status: planning only. Target: best transcription accuracy for Brazilian Portuguese voice/audio
+messages in the Ergon WA bot.
 
 ## 1. Goal and UX
 
 - Command: `transcrypt` (file `cmd/util/transcrypt.ts`), aliases `tr`, `transc`, `stt`.
-- Input: a replied/quoted audio, voice note, video, or audio file; optionally a direct media message.
+- Input: a replied/quoted audio, voice note, video, or audio file; optionally a direct media
+  message.
 - Output: the transcript as a WhatsApp text message (or as a document when > 4 000 chars).
-- Default language: `pt-BR`. Optional language override: `.transcrypt en <media>` or `.transcrypt lang=es`.
+- Default language: `pt-BR`. Optional language override: `.transcrypt en <media>` or
+  `.transcrypt lang=es`.
 - Subcommands:
   - `raw` - return the provider's raw transcript (no LLM touch-up).
   - `clean` - run the raw transcript through Gemini for punctuation/casing only.
@@ -16,33 +19,40 @@ Status: planning only. Target: best transcription accuracy for Brazilian Portugu
 
 ## 2. Why these providers (pt-BR accuracy)
 
-Benchmarks consulted (July 2026 cross-provider Portuguese WER comparison + FLEURS/MLS/CommonVoice-PT):
+Benchmarks consulted (July 2026 cross-provider Portuguese WER comparison +
+FLEURS/MLS/CommonVoice-PT):
 
-| Priority | Provider / model | Why | Env key needed |
-| --- | --- | --- | --- |
-| 1 | OpenAI `gpt-4o-transcribe` | Best clean Portuguese (FLEURS-PT 2.5% WER, MLS-PT 5.0%) | `OPENAI_API_KEY` |
-| 2 | ElevenLabs Scribe v1/v2 | Lowest FLEURS WER reported (2.3%) | `ELEVENLABS_API_KEY` |
-| 3 | Azure MAI-Transcribe-2 preview | Best overall score on OpenTranscription (7.72% WER) | `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION` |
-| 4 | Groq Whisper Large v3 Turbo | Fast + cheap fallback (14.31% WER overall) | `GROQ_API_KEY` |
-| 5 | Gemini 2.5 Flash audio (already configured) | Zero new infra, WER ~10.5–11.4%, multimodal context | `GEMINI` (exists) |
+| Priority | Provider / model                            | Why                                                     | Env key needed                             |
+| -------- | ------------------------------------------- | ------------------------------------------------------- | ------------------------------------------ |
+| 1        | OpenAI `gpt-4o-transcribe`                  | Best clean Portuguese (FLEURS-PT 2.5% WER, MLS-PT 5.0%) | `OPENAI_API_KEY`                           |
+| 2        | ElevenLabs Scribe v1/v2                     | Lowest FLEURS WER reported (2.3%)                       | `ELEVENLABS_API_KEY`                       |
+| 3        | Azure MAI-Transcribe-2 preview              | Best overall score on OpenTranscription (7.72% WER)     | `AZURE_SPEECH_KEY` + `AZURE_SPEECH_REGION` |
+| 4        | Groq Whisper Large v3 Turbo                 | Fast + cheap fallback (14.31% WER overall)              | `GROQ_API_KEY`                             |
+| 5        | Gemini 2.5 Flash audio (already configured) | Zero new infra, WER ~10.5–11.4%, multimodal context     | `GEMINI` (exists)                          |
 
-Auto-selection order: use the highest-priority provider whose key is present. `TRANSCRYPT_PROVIDER` env var can force one. If the chosen provider fails, fall through to the next available one.
+Auto-selection order: use the highest-priority provider whose key is present. `TRANSCRYPT_PROVIDER`
+env var can force one. If the chosen provider fails, fall through to the next available one.
 
-For spontaneous WhatsApp voice notes (noisy, accented, short utterances) the clean-read FLEURS numbers understate error. Before locking priority 1, run the small evaluation in §8 on 10 real voice notes and re-rank if needed.
+For spontaneous WhatsApp voice notes (noisy, accented, short utterances) the clean-read FLEURS
+numbers understate error. Before locking priority 1, run the small evaluation in §8 on 10 real voice
+notes and re-rank if needed.
 
 ## 3. Media pipeline
 
-1. `const media = await getMedia(msg)` (existing helper in `util/msgAbstractions.ts`). Prefer quoted media; reject if none.
+1. `const media = await getMedia(msg)` (existing helper in `util/msgAbstractions.ts`). Prefer quoted
+   media; reject if none.
 2. Validate:
    - MIME must be audio/* or video/* (Baileys mimetype from `msg.mime`).
    - Size ≤ 25 MB (WhatsApp hard limit is ~16 MB for voice; keep headroom).
-   - Duration ≤ 10 min; otherwise chunk into 5-min segments (ffmpeg) and concatenate transcripts with `[part N]` markers.
+   - Duration ≤ 10 min; otherwise chunk into 5-min segments (ffmpeg) and concatenate transcripts
+     with `[part N]` markers.
 3. Preprocess with ffmpeg (system binary already used for animated stickers):
    - Convert to 16 kHz mono FLAC/WAV (`-ar 16000 -ac 1`).
    - Light denoise: `afftdn=nf=-25` (optional, gated by `TRANSCRYPT_DENOISE=1`).
    - Trim leading/trailing silence: `silenceremove`.
 4. Write temp file under `conf/gen/temp/transcrypt-<uuid>.flac`; delete in `finally`.
-5. Cache transcript by media URL hash in a new `cache.transcripts` Collection (key: `sha256(media.url + provider + lang)`, TTL 7 days) so repeated `.tr` on the same message is free.
+5. Cache transcript by media URL hash in a new `cache.transcripts` Collection (key:
+   `sha256(media.url + provider + lang)`, TTL 7 days) so repeated `.tr` on the same message is free.
 
 ## 4. New files
 
@@ -51,7 +61,8 @@ For spontaneous WhatsApp voice notes (noisy, accented, short utterances) the cle
   ```
   transcribe({ buffer, mime, lang, prompt }): Promise<{ text, provider, durationMs }>
   ```
-- `util/transcriptNormalize.ts` (optional) - pt-BR normalization helpers (collapse whitespace, fix common ASR artifacts, punctuation pass via Gemini).
+- `util/transcriptNormalize.ts` (optional) - pt-BR normalization helpers (collapse whitespace, fix
+  common ASR artifacts, punctuation pass via Gemini).
 - Locale entries in `locale/*.json` under `transcrypt`.
 
 ## 5. Command flow
@@ -70,15 +81,19 @@ run({ msg, args, user, send, react, startTyping, t }):
   10. finally: delete temp file.
 ```
 
-Prompt/hotwords: pass the quoted message text and group name as a "context prompt" to providers that support it (Whisper `prompt`, GPT-4o `prompt`). This lifts accuracy on names/commands.
+Prompt/hotwords: pass the quoted message text and group name as a "context prompt" to providers that
+support it (Whisper `prompt`, GPT-4o `prompt`). This lifts accuracy on names/commands.
 
 ## 6. Gemini cleanup (optional, opt-in via `clean`/`best`)
 
 System instruction (pt-BR):
 
-> Você é um corretor de transcrição. Corrija apenas pontuação, maiúsculas e erros óbvios de reconhecimento (ex.: "vc" -> "você" quando claro). Não adicione, remova ou parafraseie conteúdo. Preserve nomes próprios. Responda só com a transcrição corrigida.
+> Você é um corretor de transcrição. Corrija apenas pontuação, maiúsculas e erros óbvios de
+> reconhecimento (ex.: "vc" -> "você" quando claro). Não adicione, remova ou parafraseie conteúdo.
+> Preserve nomes próprios. Responda só com a transcrição corrigida.
 
-Default mode returns raw provider output (most faithful, lowest hallucination risk). `clean` is for readability; `best` reconciles two ASR hypotheses.
+Default mode returns raw provider output (most faithful, lowest hallucination risk). `clean` is for
+readability; `best` reconciles two ASR hypotheses.
 
 ## 7. Locale strings (add to en/es/fr/de/pt)
 
@@ -98,16 +113,20 @@ Default mode returns raw provider output (most faithful, lowest hallucination ri
 
 ## 8. Evaluation (to lock the primary provider)
 
-- Collect 10 real pt-BR WhatsApp voice notes (varied accents, noise, lengths) with human reference transcripts.
-- Run each provider; compute WER with the same normalizer as the benchmarks (lowercase, strip punctuation, spell digits, hyphens -> spaces).
+- Collect 10 real pt-BR WhatsApp voice notes (varied accents, noise, lengths) with human reference
+  transcripts.
+- Run each provider; compute WER with the same normalizer as the benchmarks (lowercase, strip
+  punctuation, spell digits, hyphens -> spaces).
 - Pick the provider with lowest mean WER; keep a fallback chain.
 - Re-run after any provider model update.
 
 ## 9. Privacy and limits
 
-- Audio is sent to the selected third-party STT API. Document in help/README. No audio is persisted; temp files deleted in `finally`; only transcripts cached.
+- Audio is sent to the selected third-party STT API. Document in help/README. No audio is persisted;
+  temp files deleted in `finally`; only transcripts cached.
 - Rate-limit via existing cooldown + a per-user daily cap (e.g. 30 transcriptions) to control cost.
-- For groups, optionally restrict to admins via `access.admin` if cost becomes an issue (configurable).
+- For groups, optionally restrict to admins via `access.admin` if cost becomes an issue
+  (configurable).
 
 ## 10. Verification
 

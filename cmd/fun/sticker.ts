@@ -34,7 +34,8 @@ export default class extends Cmd {
 
 		// ── No usable media → batch-create from recent cached messages ──
 		if (!media || !isVisual(media.target.type)) {
-			const chat = group || (cache.userByLid.get(msg.chat) ?? cache.users.find((u) => u.lid === msg.chat))!
+			const chat = group ||
+				(cache.userByLid.get(msg.chat) ?? cache.users.find((u) => u.lid === msg.chat))!
 			const msgs = chat.msgs.reverse().slice(1)
 
 			const firstInvalid = msgs.findIndex(

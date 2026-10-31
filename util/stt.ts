@@ -27,6 +27,7 @@ export async function preprocess(media: { buffer: Uint8Array; mime: string }): P
 		args: ['-y', '-i', inPath, '-ar', '16000', '-ac', '1', '-af', af, outPath],
 		stdout: 'null',
 		stderr: 'null',
+		signal: AbortSignal.timeout(60_000),
 	})
 	const { code } = await cmd.output()
 	await Deno.remove(inPath).catch(() => {})
@@ -57,6 +58,7 @@ export async function transcribe(opts: {
 		args: [SCRIPT, audioPath, opts.lang, model, 'int8'],
 		stdout: 'piped',
 		stderr: 'piped',
+		signal: AbortSignal.timeout(300_000),
 	})
 	const { code, stdout, stderr } = await cmd.output()
 	await Deno.remove(audioPath).catch(() => {})

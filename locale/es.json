@@ -1,7 +1,12 @@
 {
 	"events": {
 		"cooldown": "[🕓] - ¡Despacio! Cooldown activo, espera un poco ({{time}})",
-		"nodb": "[💡] Este comando requiere una base de datos configurada."
+		"nodb": "[💡] Este comando requiere una base de datos configurada.",
+		"restrict": "[📛] - Solo los desarrolladores pueden usar este comando.",
+		"admin": "[📛] - Solo los administradores del grupo pueden usar este comando.",
+		"botAdmin": "[⚠️] - Necesito ser administrador del grupo para esto.",
+		"groupsOnly": "[⛔] - Este comando solo funciona en grupos.",
+		"dmOnly": "[⛔] - Este comando solo funciona en chats privados."
 	},
 	"langs": {
 		"pt": "Portugués",
@@ -19,7 +24,6 @@
 		"usage": "[Nombre de un comando]",
 		"desc": "Ver información sobre un comando",
 		"examples": [
-			"",
 			"sticker",
 			"gemini"
 		],
@@ -42,7 +46,7 @@
 		"invalid": "[❗] - \"{{input}}\" no es un idioma válido. Actual: *{{current}}*\n{{list}}\nResponde con *{{prefix}}lang <número o código>*"
 	},
 	"prefix": {
-		"usage": "<Prefijo con hasta 3 caracteres>",
+		"usage": "<Prefijo con hasta 3 caracteres (letras o símbolos)>",
 		"desc": "Cambiar el prefijo de comandos",
 		"examples": [
 			".",

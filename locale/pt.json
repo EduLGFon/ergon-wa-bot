@@ -1,7 +1,12 @@
 {
 	"events": {
 		"cooldown": "[🕓] - Calma! Cooldown ativo, espera um pouquinho aí ({{time}})",
-		"nodb": "[💡] Este comando requer um banco de dados configurado."
+		"nodb": "[💡] Este comando requer um banco de dados configurado.",
+		"restrict": "[📛] - Apenas desenvolvedores podem usar este comando.",
+		"admin": "[📛] - Apenas administradores do grupo podem usar este comando.",
+		"botAdmin": "[⚠️] - Preciso ser administrador do grupo para isso.",
+		"groupsOnly": "[⛔] - Este comando funciona apenas em grupos.",
+		"dmOnly": "[⛔] - Este comando funciona apenas em conversas privadas."
 	},
 	"langs": {
 		"pt": "Português",
@@ -19,7 +24,6 @@
 		"usage": "[comando]",
 		"desc": "Mostra a lista de comandos ou a ajuda detalhada de um comando.",
 		"examples": [
-			"",
 			"sticker",
 			"gemini"
 		],

@@ -114,6 +114,13 @@ export class StickerPool {
 			pw.busy = false
 			pw.pending = undefined
 
+			// tear down the dead worker (listeners + handle) before replacing
+			try {
+				instance.terminate()
+			} catch {
+				// already dead
+			}
+
 			// replace the dead worker
 			const idx = this.workers.indexOf(pw)
 			if (idx !== -1) this.workers[idx] = this.spawn()

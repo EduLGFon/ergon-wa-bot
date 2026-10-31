@@ -1,5 +1,6 @@
 // Cache manager:
 // It controls, limit and save user/group cache
+// SECURITY: enforces caps and oldest-first eviction for memory bounds.
 // Cache saved on conf/gen/cache/*.json
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import Collection from '@class/collection.ts'

@@ -29,7 +29,7 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	// Override set to keep byteTotal in sync and enforce caps.
-	set(key: K, value: V): this {
+	override set(key: K, value: V): this {
 		const existing = this.get(key)
 		if (existing !== undefined) {
 			this.byteTotal -= Collection.entryBytes(existing)
@@ -59,14 +59,14 @@ export default class Collection<K, V> extends Map<K, V> {
 	}
 
 	// Override delete to keep byteTotal in sync.
-	delete(key: K): boolean {
+	override delete(key: K): boolean {
 		const v = this.get(key)
 		if (v !== undefined) this.byteTotal -= Collection.entryBytes(v)
 		return super.delete(key)
 	}
 
 	// Override clear to reset byteTotal.
-	clear(): void {
+	override clear(): void {
 		super.clear()
 		this.byteTotal = 0
 	}
@@ -84,9 +84,12 @@ export default class Collection<K, V> extends Map<K, V> {
 		const existing = this.get(key)
 		if (existing) {
 			if (!value) return existing as V
-			// Merge: existing fields take priority over new ones
-			// Object.assign(value, existing) mutates value and preserves its prototype
-			value = Object.assign(value, existing) as V
+			// Merge: fresh (new) fields take priority over cached (existing) ones,
+			// while keeping cached fields that the new value does not provide.
+			// Preserve the new value's prototype so class instances keep methods.
+			const merged = Object.create(Object.getPrototypeOf(value) as object)
+			Object.assign(merged, existing, value)
+			value = merged as V
 		}
 
 		this.set(key, value as V)

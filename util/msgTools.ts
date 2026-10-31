@@ -19,7 +19,7 @@ async function getCtx(raw: proto.IWebMessageInfo): Promise<CmdCtx> {
 	const { message, key, pushName } = raw
 	const fakeCtx = {} as CmdCtx
 	if (!key) {
-		print('CTX', 'msg without key', raw, 'red')
+		print('CTX', 'msg without key', 'red')
 		return fakeCtx
 	}
 
@@ -96,8 +96,8 @@ async function checkMatch(key: proto.IMessageKey) {
 			`User (${member}|${memberAlt} / ${oldUser.id}|${newUser.id}) has two entries.`,
 			'blue',
 		)
-		print(oldUser, newUser)
-		print(oldMsgs, newMsgs)
+		// Avoid logging personal data (names/phones/memories); keep ids only.
+		print('MATCH', `merged ${oldMsgs.length} msg rows into author ${oldUser.id}`, 'blue')
 
 		const author = oldUser.id
 		for (const m of newMsgs) {
@@ -110,6 +110,14 @@ async function checkMatch(key: proto.IMessageKey) {
 		await db?.delete(msgs).where(eq(msgs.author, newUser.id))
 		await db?.update(users).set({ lid: newUser.lid }).where(eq(users.id, oldUser.id))
 		await db?.delete(users).where(eq(users.id, newUser.id))
+		// Keep in-memory caches in sync after the merge.
+		cache.users.delete(newUser.id)
+		cache.userByLid.delete(newUser.lid)
+		try {
+			cache.userByPhone.delete(newUser.lid.parsePhone())
+		} catch {
+			// best effort
+		}
 	}
 }
 
@@ -269,7 +277,7 @@ async function getQuoted(raw: proto.IWebMessageInfo) {
 
 	const quoted = {
 		type: types[0], // msg type
-		media: await downloadMedia(quotedRaw, types),
+		media: await downloadMedia(quotedRaw, types, false),
 		text: getMsgText(quotedRaw as proto.IMessage),
 		mime: findKey(quotedRaw, 'mimetype'),
 	} as Msg

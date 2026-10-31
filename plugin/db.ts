@@ -111,6 +111,13 @@ export async function getGroup(id: str): Promise<Group | null> {
 	return group
 }
 
+// DB round-trip probe used by the ping command (kept in plugin/db.ts so
+// commands never touch SQL directly).
+export async function pingDb(userId: num): Promise<void> {
+	if (!db) throw new Error('No DB')
+	await db.select().from(schema.users).where(eq(schema.users.id, userId))
+}
+
 // True when Baileys failed groupMetadata because the bot may not query the
 // group (removed, never a member). Boom shape seen in prod: data 403 with
 // an "Error: forbidden" message.

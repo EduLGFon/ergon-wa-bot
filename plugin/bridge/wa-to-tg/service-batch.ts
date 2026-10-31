@@ -67,6 +67,16 @@ export function bufferServiceEvent(jid: string, action: string, names: string[])
 	const home = chatForMapping(mapping, relayCtx.groups)
 	let acc = pendingService.get(jid)
 	if (!acc) {
+		const MAX_PENDING_SERVICE = 500
+		if (!pendingService.has(jid) && pendingService.size >= MAX_PENDING_SERVICE) {
+			const firstKey = pendingService.keys().next().value
+			if (firstKey !== undefined) {
+				const evicted = pendingService.get(firstKey)
+				if (evicted?.timer) clearTimeout(evicted.timer)
+				pendingService.delete(firstKey)
+				console.warn('[BRIDGE] service: evicted oldest pending (cap)')
+			}
+		}
 		const timer = setTimeout(() => {
 			void flushService(jid).catch((e) => console.error('[BRIDGE] service flush failed:', e))
 		}, windowFor(home))

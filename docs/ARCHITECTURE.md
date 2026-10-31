@@ -239,6 +239,9 @@ Loader sets `cmd.name` from filename; category dir is informational.
   over 256MB sent as document.
 - `util/reveal.ts` (`reveal`, alias `r`): re-sends view-once media with caption (stickers back as
   images).
+- `util/transcrypt.ts` (`transcrypt`, aliases `tr,transc,stt`, cooldown 5s): local speech-to-text
+  via faster-whisper (no online APIs); preprocesses audio with ffmpeg, runs the Python venv, caches
+  results per media+lang+mode.
 - `util/gotcha.ts` (`gotcha`, restrict): recovers deleted messages from `deletedStore` disk cache;
   resolves target by mention/JID/phone-digits/name substring/current chat; trailing number = limit;
   re-sends texts grouped by author plus media attachments.
