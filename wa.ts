@@ -137,6 +137,12 @@ const onExit = async () => {
 	}
 	await cache.save()
 	try {
+		const { default: Group } = await import('@class/group.ts')
+		await Group.flushCounts()
+	} catch {
+		// best effort
+	}
+	try {
 		const { shutdownStickers } = await import('@plugin/sticker/index.ts')
 		await shutdownStickers()
 	} catch {

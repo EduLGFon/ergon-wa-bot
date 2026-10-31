@@ -1,5 +1,6 @@
 // stt - local speech-to-text via faster-whisper (no online APIs / AI)
 // - preprocesses audio with ffmpeg, runs faster-whisper in the python venv
+// - keeps a long-lived daemon so the model is loaded only once
 export type SttResult = { text: string; provider: string; durationMs: number }
 
 const PY = 'conf/gen/python/bin/python3'
@@ -40,6 +41,58 @@ export async function preprocess(media: { buffer: Uint8Array; mime: string }): P
 	return out
 }
 
+// Daemon singleton
+let daemonProc: Deno.ChildProcess | null = null
+let daemonReader: ReadableStreamDefaultReader<Uint8Array> | null = null
+let daemonWriter: WritableStreamDefaultWriter<Uint8Array> | null = null
+let daemonBusy = false
+const daemonQueue: Array<() => void> = []
+
+function ensureDaemon(): void {
+	if (daemonProc) return
+	const proc = new Deno.Command(PY, {
+		args: [SCRIPT, '--daemon'],
+		stdin: 'piped',
+		stdout: 'piped',
+		stderr: 'inherit',
+	}).spawn()
+	daemonProc = proc
+	daemonReader = proc.stdout.getReader()
+	daemonWriter = proc.stdin.getWriter()
+}
+
+async function daemonTranscribe(audioPath: string, lang: string, model: string): Promise<any> {
+	// Serialize requests
+	while (daemonBusy) {
+		await new Promise<void>((resolve) => daemonQueue.push(resolve))
+	}
+	daemonBusy = true
+	try {
+		ensureDaemon()
+		const line = `${audioPath}\t${lang}\t${model}\tint8\n`
+		await daemonWriter!.write(new TextEncoder().encode(line))
+		// read one response line
+		let buf = ''
+		while (true) {
+			const { value, done } = await daemonReader!.read()
+			if (done) throw new Error('daemon closed')
+			buf += new TextDecoder().decode(value)
+			const nl = buf.indexOf('\n')
+			if (nl !== -1) {
+				const resp = buf.slice(0, nl)
+				// leave remainder (none expected)
+				const parsed = JSON.parse(resp)
+				if (parsed?.error) throw new Error(parsed.error)
+				return parsed
+			}
+		}
+	} finally {
+		daemonBusy = false
+		const next = daemonQueue.shift()
+		if (next) next()
+	}
+}
+
 export async function transcribe(opts: {
 	buffer: Uint8Array
 	mime: string
@@ -54,18 +107,26 @@ export async function transcribe(opts: {
 	const audioPath = `${tmpDir}/tc-audio-${crypto.randomUUID()}.flac`
 	await Deno.writeFile(audioPath, opts.buffer)
 	const model = Deno.env.get('TRANSCRYPT_MODEL') || 'medium'
-	const cmd = new Deno.Command(PY, {
-		args: [SCRIPT, audioPath, opts.lang, model, 'int8'],
-		stdout: 'piped',
-		stderr: 'piped',
-		signal: AbortSignal.timeout(300_000),
-	})
-	const { code, stdout, stderr } = await cmd.output()
-	await Deno.remove(audioPath).catch(() => {})
-	if (code !== 0) {
-		throw new Error(new TextDecoder().decode(stderr) || `whisper exit ${code}`)
+	let parsed: any
+	try {
+		parsed = await daemonTranscribe(audioPath, opts.lang, model)
+	} catch (_e) {
+		// Fall back to one-shot invocation
+		const cmd = new Deno.Command(PY, {
+			args: [SCRIPT, audioPath, opts.lang, model, 'int8'],
+			stdout: 'piped',
+			stderr: 'piped',
+			signal: AbortSignal.timeout(300_000),
+		})
+		const { code, stdout, stderr } = await cmd.output()
+		if (code !== 0) {
+			throw new Error(new TextDecoder().decode(stderr) || `whisper exit ${code}`)
+		}
+		parsed = JSON.parse(new TextDecoder().decode(stdout))
+		if (parsed?.error) throw new Error(parsed.error)
+	} finally {
+		await Deno.remove(audioPath).catch(() => {})
 	}
-	const parsed = JSON.parse(new TextDecoder().decode(stdout))
 	const text = (parsed?.text ?? '').trim()
 	if (!text) throw new Error('empty transcript')
 	return { text, provider: `faster-whisper/${model}`, durationMs: Date.now() - t0 }

@@ -2,7 +2,7 @@
 // Local STT via faster-whisper (no online APIs), tuned for pt-BR
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import { getMedia } from '@util/msgAbstractions.ts'
-import { preprocess, selectedProvider, transcribe } from '@util/stt.ts'
+import { selectedProvider, transcribe } from '@util/stt.ts'
 import cache from '@plugin/cache.ts'
 import Cmd from '@class/cmd.ts'
 
@@ -62,12 +62,11 @@ export default class extends Cmd {
 		}
 
 		try {
-			const processed = await preprocess({ buffer: media.buffer, mime: media.mime })
 			const prompt = media.target?.text ? `Contexto: ${media.target.text}` : undefined
 
 			const result = await transcribe({
-				buffer: processed,
-				mime: 'audio/flac',
+				buffer: media.buffer,
+				mime: media.mime,
 				lang,
 				mode,
 				prompt,

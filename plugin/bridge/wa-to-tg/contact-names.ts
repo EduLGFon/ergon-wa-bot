@@ -58,17 +58,30 @@ export function learnContactName(
 
 // LID/PN counterpart of a member JID via the signal store (best effort -
 // mentions often arrive as LID while the member spoke as PN, or the reverse).
+const counterpartCache = new Map<string, { value: string; at: number }>()
+const COUNTERPART_TTL_MS = 5 * 60 * 1000
+
 async function counterpartOf(key: string): Promise<string> {
+	const cached = counterpartCache.get(key)
+	if (cached && Date.now() - cached.at < COUNTERPART_TTL_MS) return cached.value
+	let value = ''
 	try {
 		const repo = (bot.sock as any)?.signalRepository?.lidMapping
-		if (!repo) return ''
-		const other = key.endsWith('@lid')
-			? await repo.getPNForLID?.(key)
-			: (key.endsWith('@s.whatsapp.net') ? await repo.getLIDForPN?.(key) : '')
-		return keyOf(typeof other === 'string' ? other : '')
+		if (repo) {
+			const other = key.endsWith('@lid')
+				? await repo.getPNForLID?.(key)
+				: (key.endsWith('@s.whatsapp.net') ? await repo.getLIDForPN?.(key) : '')
+			value = keyOf(typeof other === 'string' ? other : '')
+		}
 	} catch {
-		return ''
+		value = ''
 	}
+	counterpartCache.set(key, { value, at: Date.now() })
+	if (counterpartCache.size > 1000) {
+		const first = counterpartCache.keys().next().value
+		if (first !== undefined) counterpartCache.delete(first)
+	}
+	return value
 }
 
 // Display name for a mentioned JID, or null when never seen speak. Tries the

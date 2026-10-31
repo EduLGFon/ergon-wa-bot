@@ -129,6 +129,12 @@ export function selfJid(): string {
 // Full canonical JID for an incoming key. Falls back to lidMapping when
 // the server sent a bare LID with no alt (first sighting of a contact).
 // Group keys stay on the group JID with no sender aliases.
+const canonicalCache = new Map<
+	string,
+	{ value: { canonical: string; aliases: string[] }; at: number }
+>()
+const CANONICAL_TTL_MS = 5 * 60 * 1000
+
 export async function canonicalChatJid(
 	key: {
 		remoteJid?: string | null
@@ -138,8 +144,16 @@ export async function canonicalChatJid(
 ): Promise<{ canonical: string; aliases: string[] }> {
 	const primary = normalizeJid(key?.remoteJid)
 	const alts = altJidsOf(key)
+	const cacheKey = `${primary}|${alts.join(',')}`
+	const cached = canonicalCache.get(cacheKey)
+	if (cached && Date.now() - cached.at < CANONICAL_TTL_MS) return cached.value
+
 	let canonical = pickCanonical(primary, alts)
-	if (!canonical.endsWith('@lid')) return { canonical, aliases: [primary, ...alts] }
+	if (!canonical.endsWith('@lid')) {
+		const value = { canonical, aliases: [primary, ...alts] }
+		canonicalCache.set(cacheKey, { value, at: Date.now() })
+		return value
+	}
 	try {
 		const pn = await (bot.sock as any)?.signalRepository?.lidMapping?.getPNForLID(canonical)
 		const norm = normalizeJid(pn)
@@ -148,5 +162,12 @@ export async function canonicalChatJid(
 		// Mapping unknown yet - the next sighting with an alt heals it.
 	}
 	const aliases = [...new Set([primary, ...alts, canonical].filter(Boolean))]
-	return { canonical, aliases }
+	const value = { canonical, aliases }
+	canonicalCache.set(cacheKey, { value, at: Date.now() })
+	// Bound cache size
+	if (canonicalCache.size > 1000) {
+		const first = canonicalCache.keys().next().value
+		if (first !== undefined) canonicalCache.delete(first)
+	}
+	return value
 }

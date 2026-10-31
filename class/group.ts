@@ -42,39 +42,70 @@ export default class Group {
 		}
 	}
 
+	// Pending counts accumulated in memory and flushed periodically so we
+	// don't issue a Postgres upsert on every single inbound message.
+	static pendingCounts: Map<string, Map<string, number>> = new Map()
+	static flushTimer: ReturnType<typeof setInterval> | null = null
+	static flushScheduled = false
+
+	static ensureFlushTimer() {
+		if (Group.flushTimer) return
+		Group.flushTimer = setInterval(() => {
+			void Group.flushCounts()
+		}, 5_000)
+		Group.flushTimer.unref?.()
+	}
+
+	static async flushCounts() {
+		if (!Deno.env.get('DATABASE_URL') || !db) return
+		const snapshot = Group.pendingCounts
+		Group.pendingCounts = new Map()
+		for (const [group, authors] of snapshot) {
+			for (const [author, n] of authors) {
+				try {
+					await db?.insert(msgs).values({
+						author: Number(author),
+						group: group,
+						count: n,
+					}).onConflictDoUpdate({
+						target: [msgs.author, msgs.group],
+						set: { count: sql`${msgs.count} + ${n}` },
+					})
+				} catch (e) {
+					// Re-queue on failure for a later retry.
+					let g = Group.pendingCounts.get(group)
+					if (!g) {
+						g = new Map()
+						Group.pendingCounts.set(group, g)
+					}
+					g.set(author, (g.get(author) || 0) + n)
+					print('GROUP', `countMsg flush failed for ${group}/${author}: ${e}`, 'red')
+				}
+			}
+		}
+	}
+
 	async countMsg(msg: Msg) {
 		// +1 to group member msgs count
 		this.msgs.add(msg.key.id!, msg) // add it to cache
 		if (!Deno.env.get('DATABASE_URL') || msg.isBot) return
 		if (!db) return
 
-		// Retry once after a short pause: prod showed transient Postgres
-		// blips (15/09 5x UPSERT failures) that succeed on second try.
-		try {
-			await db?.insert(msgs).values({
-				author: msg.author,
-				group: this.id.parsePhone(),
-			}).onConflictDoUpdate({
-				target: [msgs.author, msgs.group],
-				set: { count: sql`${msgs.count} + 1` },
-			})
-		} catch (e) {
-			await new Promise((r) => setTimeout(r, 1_000))
-			await db?.insert(msgs).values({
-				author: msg.author,
-				group: this.id.parsePhone(),
-			}).onConflictDoUpdate({
-				target: [msgs.author, msgs.group],
-				set: { count: sql`${msgs.count} + 1` },
-			}).catch((retryErr) => {
-				// Caller logs once; rethrow to keep the UPSERT/countMsg tag.
-				throw retryErr instanceof Error ? retryErr : new Error(String(retryErr ?? e))
-			})
+		Group.ensureFlushTimer()
+		const groupKey = this.id.parsePhone()
+		let authors = Group.pendingCounts.get(groupKey)
+		if (!authors) {
+			authors = new Map()
+			Group.pendingCounts.set(groupKey, authors)
 		}
+		authors.set(String(msg.author), (authors.get(String(msg.author)) || 0) + 1)
+		await Promise.resolve()
 	}
 
 	async getCountedMsgs() {
 		if (!Deno.env.get('DATABASE_URL')) return []
+
+		await Group.flushCounts()
 
 		const dbMsgs = await db?.select().from(msgs).where(eq(msgs.group, this.id.parsePhone()))
 			.orderBy(desc(msgs.count))

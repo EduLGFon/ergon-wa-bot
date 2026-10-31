@@ -136,7 +136,29 @@ export async function downloadTgFile(
 			await res.body?.cancel().catch(() => {})
 			return 'too-large'
 		}
-		const buf = new Uint8Array(await res.arrayBuffer())
+		// Stream into a growing buffer with an early cap abort so we never
+		// hold more than TG_DOWNLOAD_CAP_BYTES (+ one chunk) in memory.
+		const reader = res.body?.getReader()
+		if (!reader) return null
+		const chunks: Uint8Array[] = []
+		let total = 0
+		while (true) {
+			const { value, done } = await reader.read()
+			if (done) break
+			if (!value) continue
+			if (total + value.length > TG_DOWNLOAD_CAP_BYTES) {
+				await reader.cancel().catch(() => {})
+				return 'too-large'
+			}
+			chunks.push(value)
+			total += value.length
+		}
+		const buf = new Uint8Array(total)
+		let off = 0
+		for (const c of chunks) {
+			buf.set(c, off)
+			off += c.length
+		}
 		if (buf.length > TG_DOWNLOAD_CAP_BYTES) return 'too-large'
 		return buf
 	} catch (e) {
