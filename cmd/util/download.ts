@@ -80,6 +80,7 @@ export default class extends Cmd {
 		try {
 			await randomDelay(250, 1_000)
 			await react('loading') // indicate that the download is in progress
+			await send('[⌛] - Downloading…')
 
 			const cmdObj = new Deno.Command(defaults.runner.ytdlp, { args: cliArgs })
 			const { stdout, stderr } = await cmdObj.output()

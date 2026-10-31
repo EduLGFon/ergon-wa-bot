@@ -53,8 +53,8 @@
 			"português"
 		],
 		"changed": "[🌎] - Idioma alterado para {{lng}}",
-		"ask": "[🌎] - Qual idioma você prefere? Atual: *{{current}}*\n{{list}}\nResponda com *{{prefix}}lang <número ou código>*",
-		"invalid": "[❗] - \"{{input}}\" não é um idioma válido. Atual: *{{current}}*\n{{list}}\nResponda com *{{prefix}}lang <número ou código>*"
+		"ask": "[🌎] - Qual idioma você prefere? Atual: *{{current}}*{{list}}\nResponda com*{{prefix}}lang <número ou código>*",
+		"invalid": "[❗] - \"{{input}}\" não é um idioma válido. Atual: *{{current}}*{{list}}\nResponda com*{{prefix}}lang <número ou código>*"
 	},
 	"prefix": {
 		"usage": "<letra ou símbolo, até 3 caracteres>",

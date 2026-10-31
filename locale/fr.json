@@ -9,7 +9,7 @@
 		"dmOnly": "[⛔] - Cette commande ne fonctionne qu'en chat privé."
 	},
 	"langs": {
-		"pt": "portugais",
+		"pt": "Portugais",
 		"en": "Anglais",
 		"es": "Espagnol",
 		"fr": "Français",
@@ -45,7 +45,7 @@
 	},
 	"language": {
 		"usage": "<Code de langue>",
-		"desc": "Changer la langue des bot",
+		"desc": "Changer la langue du bot",
 		"examples": [
 			"{pt}: Portugais",
 			"{en}: anglais",
@@ -54,8 +54,8 @@
 			"{de}: allemand"
 		],
 		"changed": "[🌎] - Langue changée en *{{lng}}*",
-		"ask": "[🌎] - Quelle langue préférez-vous ? Actuelle : *{{current}}*\n{{list}}\nRépondez avec *{{prefix}}lang <numéro ou code>*",
-		"invalid": "[❗] - \"{{input}}\" n'est pas une langue valide. Actuelle : *{{current}}*\n{{list}}\nRépondez avec *{{prefix}}lang <numéro ou code>*"
+		"ask": "[🌎] - Quelle langue préférez-vous ? Actuelle : *{{current}}*{{list}}\nRépondez avec*{{prefix}}lang <numéro ou code>*",
+		"invalid": "[❗] - \"{{input}}\" n'est pas une langue valide. Actuelle : *{{current}}*{{list}}\nRépondez avec*{{prefix}}lang <numéro ou code>*"
 	},
 	"prefix": {
 		"usage": "<Préfixe avec jusqu'à 3 caractères (lettres ou symboles)>",

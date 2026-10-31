@@ -54,8 +54,8 @@
 			"{de}: alemán"
 		],
 		"changed": "[🌎] - El lenguaje cambió a *{{lng}}*",
-		"ask": "[🌎] - ¿Qué idioma prefieres? Actual: *{{current}}*\n{{list}}\nResponde con *{{prefix}}lang <número o código>*",
-		"invalid": "[❗] - \"{{input}}\" no es un idioma válido. Actual: *{{current}}*\n{{list}}\nResponde con *{{prefix}}lang <número o código>*"
+		"ask": "[🌎] - ¿Qué idioma prefieres? Actual: *{{current}}*{{list}}\nResponde con*{{prefix}}lang <número o código>*",
+		"invalid": "[❗] - \"{{input}}\" no es un idioma válido. Actual: *{{current}}*{{list}}\nResponde con*{{prefix}}lang <número o código>*"
 	},
 	"prefix": {
 		"usage": "<Prefijo con hasta 3 caracteres (letras o símbolos)>",

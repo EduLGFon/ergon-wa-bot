@@ -56,7 +56,8 @@ export async function createForumTopic(
 ): Promise<number> {
 	const { tg } = relayCtx
 	if (!tg) throw new Error('Telegram bot not initialized')
-	const name = sanitizeTopicName(displayName) || 'Unknown'
+	const prefix = _isGroup ? '👥 ' : '👤 '
+	const name = sanitizeTopicName(prefix + (displayName || 'Unknown')) || 'Unknown'
 	// Topic creation is a Bot API call like any other - it goes through the
 	// limiter so a burst of new chats can't flood the supergroup budget.
 	const topic = await tgCall(() => tg!.api.createForumTopic(chatId, name), 'new-topic', chatId)
