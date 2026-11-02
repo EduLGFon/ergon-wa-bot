@@ -12,6 +12,34 @@
 
 import type { StickerFormat } from '@plugin/sticker/types.ts'
 
+// Resolve the ffmpeg binary to an absolute path so workers can find it even
+// when their inherited PATH is stripped (e.g. under pm2/systemd).
+function resolveFfmpeg(): string {
+	const candidates = [
+		'/usr/bin/ffmpeg',
+		'/usr/local/bin/ffmpeg',
+		'/opt/homebrew/bin/ffmpeg',
+	]
+	for (const c of candidates) {
+		try {
+			Deno.statSync(c)
+			return c
+		} catch { /* not present */ }
+	}
+	const path = Deno.env.get('PATH') ?? ''
+	for (const dir of path.split(':')) {
+		if (!dir) continue
+		const c = `${dir}/ffmpeg`
+		try {
+			Deno.statSync(c)
+			return c
+		} catch { /* not present */ }
+	}
+	return 'ffmpeg'
+}
+
+const FFMPEG = resolveFfmpeg()
+
 const SIZE = 512
 const MAX_DURATION = 11
 const TIMEOUT_MS = 60_000
@@ -106,7 +134,7 @@ async function runFfmpeg(
 
 	let proc
 	try {
-		const cmd = new Deno.Command('ffmpeg', {
+		const cmd = new Deno.Command(FFMPEG, {
 			args,
 			stdin: 'null',
 			stdout: 'piped',
