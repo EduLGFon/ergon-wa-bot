@@ -275,11 +275,21 @@ async function getQuoted(raw: proto.IWebMessageInfo) {
 	const types = getMsgType(quotedRaw) // quoted message type
 	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
+	const ctxInfo = findKey(raw.message, 'contextInfo')
+	const stanzaId = ctxInfo?.stanzaId as str | undefined
+	const participant = ctxInfo?.participant as str | undefined
+	const remoteJid = (ctxInfo?.remoteJid as str | undefined) || raw.key?.remoteJid!
+	const quotedKey = stanzaId
+		? ({ id: stanzaId, remoteJid, fromMe: false, participant } as proto.IMessageKey)
+		: ({} as proto.IMessageKey)
+
 	const quoted = {
 		type: types[0], // msg type
 		media: await downloadMedia(quotedRaw, types, false),
 		text: getMsgText(quotedRaw as proto.IMessage),
 		mime: findKey(quotedRaw, 'mimetype'),
+		message: quotedRaw,
+		key: quotedKey,
 	} as Msg
 
 	if (isMedia(types[0]) || quoted.text) {
