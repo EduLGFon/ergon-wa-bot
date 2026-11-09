@@ -1,10 +1,9 @@
 // msgAbstractions - Baileys send, react and typing touchpoint
 // - wraps sendMsg with media cache lookup and locale templates
+import { downloadMedia, getCtx, getMsgType } from '@util/msgTools.ts'
 import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
-import { downloadMedia } from '@util/msgTools.ts'
 import type { AnyMessageContent } from 'baileys'
 import { randomEmoji } from '@util/emojis.ts'
-import { getCtx } from '@util/msgTools.ts'
 import cache from '@plugin/cache.ts'
 import emojis from '@util/emojis.ts'
 import { getFixedT } from 'i18next'
@@ -27,8 +26,13 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 	let media = cache.media.get(target.media.url)
 	print('GETMEDIA', 'cacheHit=' + !!media, 'yellow')
 	if (!media) {
-		// media not cached, download it
-		await downloadMedia(target, [target.type, 'media'])
+		// media not cached, re-download it using the real Baileys key stored in
+		// the message content (imageMessage/videoMessage/stickerMessage/...),
+		// not the literal 'media'. Passing 'media' made direct lookup miss and
+		// forced the findMediaNode fallback, which fails for quoted media whose
+		// downloadMediaMessage call only carries a synthetic quoted key.
+		const rawType = getMsgType((target as any).message ?? target)[1]
+		await downloadMedia(target, [target.type, rawType])
 		media = cache.media.get(target.media.url)
 		print('GETMEDIA', 'afterDownload cacheHit=' + !!media, 'yellow')
 		if (!media) return // failed to download media
