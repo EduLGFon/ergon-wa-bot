@@ -234,7 +234,8 @@ Loader sets `cmd.name` from filename; category dir is informational.
 - `fun/rank.ts` (`rank`, groups only, needs DB): leaderboard from `group.getCountedMsgs()`, skipping
   users who left.
 - `fun/sticker.ts` (`sticker`, aliases `s,sexo`, cooldown 5s, subCmds `rmbg,rounded,circle`):
-  sticker factory; quality from `args[0]`; batch mode pulls contiguous same-author visuals from
+  sticker factory; quality from `args[0]`; resolves media from the message or its quoted image/video
+  (quoted media re-downloaded on demand); batch mode pulls contiguous same-author visuals from
   history when no media given; `rmbg` runs `plugin/removeBg.py`; formats
   `full,crop[,rounded,circle]`; EXIF pack `Ergon Bot` + author + date.
 - `util/download.ts` (`download`, alias `d`, cooldown 10s): yt-dlp via `defaults.runner.ytdlp` with

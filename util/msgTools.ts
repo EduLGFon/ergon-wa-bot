@@ -406,4 +406,4 @@ function getMsgType(m: proto.IMessage): [MsgTypes, str] {
 	return ['event', Object.keys(m!)[0]] // return raw type
 }
 
-export { checkMatch, downloadMedia, getCtx }
+export { checkMatch, downloadMedia, getCtx, getMsgType }

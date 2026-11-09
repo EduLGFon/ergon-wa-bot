@@ -173,3 +173,15 @@ loss. Coalesced text batches and album items are parked per original WA message 
 in-memory timer fires, so they re-enter the normal batching path on replay. Verified:
 `scripts/outbox_smoke.ts` (real DB + worker + fake Telegram API) plus the full `coalesce_smoke.ts`;
 no live WA/TG smoke.
+
+## D13 - Quoted-media sticker resolution uses the real Baileys key (2026-11-09)
+
+`.s` replying to an image/video quote previously fell through to batch mode or usage because
+`getMedia()` re-downloaded with the literal key `'media'`, so `inner['media']` never matched and the
+Baileys download was built from a `Msg` carrying only a synthetic quoted key. `getMedia()` now
+derives the raw Baileys key (`imageMessage`/`videoMessage`/`stickerMessage`/...) from the stored
+message content via `getMsgType`, and `getQuoted()` already stores keys-only media so the bytes are
+fetched on demand. Quoted stickers still reveal as plain images, and no-media input still shows
+`usage.sticker`. Verified: `deno check`, `deno lint`, `deno fmt --check`, and
+`scripts/sticker_quote_smoke.ts` (synthetic quoted image/video bytes resolve and route through
+`createStickers`); no live WA smoke.
