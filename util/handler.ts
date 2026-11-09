@@ -1,6 +1,11 @@
 // Handler loader: discovers command and event modules from disk and binds them to the
-// live Baileys socket. Event dispatch is guarded so one bad message or a mid-reconnect
-// clear() can never throw synchronously and kill the process.
+// live Baileys socket. Each file loads in isolation with a file-attributed skip line: a
+// broken command only degrades that command, but any broken event file fails fast after
+// the summary line. Events are load-bearing for reconnect/auth/relay, so a silent boot
+// without them looks healthy to the supervisor yet cannot reconnect; a restart loop is
+// safer and already bounded by the crash keep-alive 3-in-5min guard. Event dispatch is
+// guarded so one bad message or a mid-reconnect clear() can never throw synchronously
+// and kill the process.
 import { type BaileysEventMap } from 'baileys'
 import cache from '@plugin/cache.ts'
 import bot from '@plugin/bot.ts'
@@ -10,22 +15,77 @@ export { loadCmds, loadEvents }
 
 async function folderHandler(path: str, handler: Func) {
 	path = Deno.realPathSync(path)
+	const kind = path.includes('event') ? 'events' : 'cmds'
+	const single = kind === 'events' ? 'event' : 'cmd'
 	let count = 0
+	let failed = 0
 
 	for (const { name: category } of Deno.readDirSync(path)) {
-		// For each category folder
-		for (const { name: file } of Deno.readDirSync(`${path}/${category}`)) {
+		// For each category folder, isolated so one bad entry cannot kill boot
+		let files: Deno.DirEntry[]
+		try {
+			files = [...Deno.readDirSync(`${path}/${category}`)]
+		} catch (e) {
+			failed++
+			print(
+				'HANDLER',
+				`skip ${single} ${category}: ${(e as Error)?.message || e}`,
+				'red',
+			)
+			continue
+		}
+		for (const { name: file } of files) {
 			if (!file.endsWith('.ts')) continue
-			// for each file of each category
-			const imported = await import(`file://${path}/${category}/${file}`)
+			// for each file of each category, isolated so one bad file cannot kill boot
+			const rel = `${category}/${file}`
+			let imported: any
+			try {
+				imported = await import(`file://${path}/${category}/${file}`)
+			} catch (e) {
+				failed++
+				print(
+					'HANDLER',
+					`skip ${single} ${rel}: ${
+						(e as Error)?.message || e
+					} - check network/JSR cache, restart to retry`,
+					'red',
+				)
+				continue
+			}
+			if (imported?.default === undefined) {
+				failed++
+				print(
+					'HANDLER',
+					`skip ${single} ${rel}: no default export`,
+					'red',
+				)
+				continue
+			}
 
-			// call callback function to this file
-			handler(file, category, imported.default)
-			count++
+			try {
+				// call callback function to this file
+				handler(file, category, imported.default)
+				count++
+			} catch (e) {
+				failed++
+				print(
+					'HANDLER',
+					`skip ${single} ${rel}: ${(e as Error)?.message || e}`,
+					'red',
+				)
+			}
 		}
 	}
 
-	print('HANDLER', `${count} ${path.includes('event') ? 'events' : 'cmds'} loaded`, 'yellow')
+	const suffix = failed > 0 ? ` (${failed} failed, see HANDLER skip lines)` : ''
+	if (kind === 'events' && failed > 0) {
+		// Fail closed: a boot without reconnect/auth/relay handlers looks healthy to
+		// the supervisor but can never recover, so throw and let PM2 restart and retry
+		// (a transient JSR/network outage self-heals on the next attempt).
+		print('HANDLER', `${count} ${kind} loaded${suffix}`, 'red')
+		throw new Error(`HANDLER: ${failed} event file(s) failed, failing fast`)
+	}
+	print('HANDLER', `${count} ${kind} loaded${suffix}`, failed > 0 ? 'red' : 'yellow')
 	return
 }
 
