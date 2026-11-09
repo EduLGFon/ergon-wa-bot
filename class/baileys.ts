@@ -48,7 +48,9 @@ function normalizeVersion(v: unknown): [number, number, number] | null {
 		const nums = parts.map((p) =>
 			typeof p === 'number' ? p : typeof p === 'string' && p.trim() !== '' ? Number(p) : NaN
 		)
-		if (!nums.every((n) => Number.isFinite(n))) return null
+		// WA versions are non-negative integers - reject NaN/Infinity, negatives and
+		// fractional or numeric-string garbage so a bad fetch can never reach Baileys.
+		if (!nums.every((n) => Number.isInteger(n) && n >= 0)) return null
 		return [nums[0], nums[1], nums[2]]
 	}
 	if (Array.isArray(v)) return triple(v)
@@ -106,9 +108,18 @@ async function resolveVersion(): Promise<[number, number, number]> {
 // socket is closed (Socket/socket.js sendRawMessage/waitForMessage). During 428/503 flaps
 // background queries (USync device fetch, LID pnToLID, media-conn refresh) raced the
 // teardown and surfaced as unhandled rejections (CRASH ... kept alive). Gate the choke
-// points: while the ws is still connecting, wait for it to open (queue); once it is
-// closed for good, degrade to the empty result every caller already handles instead of
-// throwing 428 into a caller that will not catch it.
+// points: while the ws is still connecting, wait for it to open (queue, bounded by
+// WAIT_OPEN_TIMEOUT_MS); once it is closed for good, degrade to the empty result every
+// caller already handles instead of throwing 428 into a caller that will not catch it.
+// Audit (rc14): `undefined` from executeUSyncQuery is safe because every reachable
+// caller guards the result - getUSyncDevices (messages-send.js), fetchStatus and
+// fetchDisappearingDuration (chats.js) all check `if (result)`, and the base-scope
+// closures this wrapper cannot reach (onWhatsApp, pnFromLIDUSync in socket.js) check
+// `if (results)` the same way. Nothing destructures the result unguarded, and the LID
+// store treats [] as "no mapping" (logs and degrades). The refreshMediaConn
+// closed-for-good path still throws the natural 428 (unchanged behavior): it only
+// feeds the media-upload path, whose senders already catch (command sends via the
+// upsert try/catch, TG-to-WA relay via its handler try/catch into a topic warning).
 // Upper bound for the wait-for-open queue: a reconnect (backoff capped at 30s plus
 // connect) can legitimately take longer, in which case the caller degrades to the
 // empty result instead of hanging a sender or an inflight limiter slot forever.
@@ -148,8 +159,7 @@ function guardClosedSocketQueries(sock: WASocket) {
 	sock.executeUSyncQuery = (async (q: Parameters<typeof innerUSync>[0]) => {
 		if (!isOpen()) {
 			await waitOpen()
-			// getUSyncDevices checks `if (result)`; pnFromLIDUSync falls back to [];
-			// onWhatsApp falls back to [] - undefined is the safe empty result here.
+			// Degraded: every reachable caller guards the result (see audit above).
 			if (!isOpen()) return undefined
 		}
 		try {
