@@ -35,39 +35,67 @@ let cachedAt = 0
 let cachedSource = 'unresolved'
 const VERSION_REFRESH_MS = 6 * 60 * 60 * 1000
 
-function isWaVersion(v: unknown): v is [number, number, number] {
-	return Array.isArray(v) && v.length === 3 && v.every((n) => Number.isFinite(n))
+// Baileys reads config.version as a [major, minor, patch] tuple: validate-connection.js
+// calls config.version.join('.') for the registration node. Any other shape (an upstream
+// shape change, a string from a config source) throws
+// `TypeError: config.version.join is not a function`, surfaces as a close event with
+// `Code undefined`, and loops the reconnect path (30/10 out.log: 6x in ~50s).
+// normalizeVersion coerces every plausible shape to a fresh tuple and returns null when
+// nothing usable remains, so makeWASocket always gets the shape Baileys requires.
+function normalizeVersion(v: unknown): [number, number, number] | null {
+	const triple = (parts: unknown[]): [number, number, number] | null => {
+		if (parts.length !== 3) return null
+		const nums = parts.map((p) =>
+			typeof p === 'number' ? p : typeof p === 'string' && p.trim() !== '' ? Number(p) : NaN
+		)
+		if (!nums.every((n) => Number.isFinite(n))) return null
+		return [nums[0], nums[1], nums[2]]
+	}
+	if (Array.isArray(v)) return triple(v)
+	if (typeof v === 'string') return triple(v.trim().split('.'))
+	if (v && typeof v === 'object') {
+		const o = v as Record<string, unknown>
+		const major = o[0] ?? o.major ?? o.primary
+		const minor = o[1] ?? o.minor ?? o.secondary
+		const patch = o[2] ?? o.patch ?? o.tertiary
+		return triple([major, minor, patch])
+	}
+	return null
 }
 
 async function resolveVersion(): Promise<[number, number, number]> {
 	const now = Date.now()
 	if (cachedVersion && now - cachedAt < VERSION_REFRESH_MS) return cachedVersion
 
-	cachedVersion = null
+	const prev = cachedVersion
+	let next: [number, number, number] | null = null
 	// 1. Baileys repo pin - authoritative, refreshed upstream (#2728 fixed its staleness).
 	try {
 		const { version } = await fetchLatestBaileysVersion()
-		if (isWaVersion(version)) {
-			cachedVersion = version
-			cachedSource = 'baileys'
-		}
+		next = normalizeVersion(version)
+		if (next) cachedSource = 'baileys'
 	} catch {
 		// fall through to the live source
 	}
 	// 2. Live client_revision from web.whatsapp.com/sw.js - what servers currently expect.
-	if (!cachedVersion) {
+	if (!next) {
 		try {
 			const { version } = await fetchLatestWaWebVersion()
-			if (isWaVersion(version)) {
-				cachedVersion = version
-				cachedSource = 'wa web'
-			}
+			next = normalizeVersion(version)
+			if (next) cachedSource = 'wa web'
 		} catch {
 			// fall through to the pinned last-resort
 		}
 	}
-	if (!cachedVersion) {
-		cachedVersion = FALLBACK_WA_VERSION
+	if (next) {
+		cachedVersion = next
+	} else if (prev) {
+		// Transient fetch failure on reconnect: keep the last known-good version
+		// instead of dropping to the stale pin.
+		cachedVersion = prev
+		if (!cachedSource.endsWith('(stale)')) cachedSource += ' (stale)'
+	} else {
+		cachedVersion = [...FALLBACK_WA_VERSION]
 		cachedSource = 'pinned fallback'
 	}
 	cachedAt = Date.now()
