@@ -5,7 +5,8 @@
 // Keying mappings by the raw remoteJid splits one person into two topics,
 // so every bridge path canonicalizes first: prefer the PN when either side
 // has it, else the normalized primary. Async PN resolution via lidMapping
-// covers sightings where the server sent no alt at all.
+// covers sightings where the server sent no alt at all; a miss is cached
+// only briefly so the next sighting retries once the PN is known.
 import { jidNormalizedUser } from 'baileys'
 import bot from '@plugin/bot.ts'
 
@@ -134,6 +135,10 @@ const canonicalCache = new Map<
 	{ value: { canonical: string; aliases: string[] }; at: number }
 >()
 const CANONICAL_TTL_MS = 5 * 60 * 1000
+// Unresolved LID-only sightings retry the signal store quickly. Pinning a
+// miss for the full TTL keeps the LID canonical after the PN becomes known,
+// so a later PN sighting can open a second topic instead of healing.
+const CANONICAL_MISS_TTL_MS = 15 * 1000
 
 export async function canonicalChatJid(
 	key: {
@@ -146,7 +151,10 @@ export async function canonicalChatJid(
 	const alts = altJidsOf(key)
 	const cacheKey = `${primary}|${alts.join(',')}`
 	const cached = canonicalCache.get(cacheKey)
-	if (cached && Date.now() - cached.at < CANONICAL_TTL_MS) return cached.value
+	const ttl = cached?.value?.canonical?.endsWith('@lid')
+		? CANONICAL_MISS_TTL_MS
+		: CANONICAL_TTL_MS
+	if (cached && Date.now() - cached.at < ttl) return cached.value
 
 	let canonical = pickCanonical(primary, alts)
 	if (!canonical.endsWith('@lid')) {

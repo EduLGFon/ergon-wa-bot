@@ -1,6 +1,7 @@
 // SQLite mapping store for the WA-Telegram bridge.
 // Persists chat and reply mappings at conf/gen/bridge.db.
 // SECURITY: pairing and reply-map scoping; echo guards.
+// Boot also folds duplicate LID/PN mappings onto one surviving topic.
 // Lets restarts resume relay without losing topic links.
 // Uses node:sqlite (Deno built-in compat, no npm dep) plus Deno.mkdir/stat.
 import { DatabaseSync } from 'node:sqlite'
@@ -109,6 +110,16 @@ function toMapping(row: Record<string, unknown>): MappingRow {
 		profile_msg_id: typeof row.profile_msg_id === 'number' ? row.profile_msg_id : null,
 		profile_pic_hash: typeof row.profile_pic_hash === 'string' ? row.profile_pic_hash : null,
 	}
+}
+
+// Winner of a duplicate pair: newest topic first, then latest activity,
+// then the higher Telegram topic id as a deterministic tie-break.
+function newerFirst(a: MappingRow, b: MappingRow): [MappingRow, MappingRow] {
+	if (a.created_at !== b.created_at) return a.created_at > b.created_at ? [a, b] : [b, a]
+	if (a.last_active_at !== b.last_active_at) {
+		return a.last_active_at > b.last_active_at ? [a, b] : [b, a]
+	}
+	return a.telegram_topic_id >= b.telegram_topic_id ? [a, b] : [b, a]
 }
 
 // Serialized WA messages parked after a queue drop. The worker replays them
@@ -319,6 +330,7 @@ export class BridgeDB {
 		`)
 		this.db.exec('CREATE INDEX IF NOT EXISTS idx_outbox_next ON wa_outbox(next_at, id)')
 		this.purgePoisonedAliases()
+		this.reconcileDuplicateMappings()
 	}
 
 	// Drop alias rows that mix chats with senders. A past wa-to-tg bug
@@ -469,20 +481,25 @@ export class BridgeDB {
 	}
 
 	// Alias-aware lookup: resolves @lid/@s.whatsapp.net variants to the
-	// canonical mapping so one contact never gets two topics.
+	// canonical mapping so one contact never gets two topics. An archived
+	// direct row yields to an active canonical row (duplicate merge keeps
+	// the loser archived as history, but its JID must still relay).
 	getByJidOrAlias(jid: string): MappingRow | undefined {
 		const direct = this.getByJid(jid)
-		if (direct) return direct
+		if (direct && !direct.archived) return direct
 		try {
 			const link = this.db.prepare('SELECT canonical FROM jid_aliases WHERE alias = ?').get(
 				jid,
 			) as { canonical?: unknown } | undefined
 			const canonical = typeof link?.canonical === 'string' ? link.canonical : null
-			if (canonical && canonical !== jid) return this.getByJid(canonical)
+			if (canonical && canonical !== jid) {
+				const target = this.getByJid(canonical)
+				if (target && !target.archived) return target
+			}
 		} catch {
 			// Alias table missing on very old DBs before init() - direct miss.
 		}
-		return undefined
+		return direct
 	}
 
 	// Remember that an alias JID means the same chat as the canonical one.
@@ -510,6 +527,96 @@ export class BridgeDB {
 		} catch {
 			// Best effort - stale rows just miss quote resolution.
 		}
+	}
+
+	// Fold a duplicate LID/PN mapping onto the surviving row. No Telegram
+	// calls: replies move, the loser JID becomes an alias of the winner,
+	// and the loser row is archived so its topic stays as history. Bucket
+	// and mute state are carried over so a merge never silently loses a
+	// classification or un-mutes a chat.
+	mergeDuplicateMapping(loserJid: string, winnerJid: string): boolean {
+		if (!loserJid || !winnerJid || loserJid === winnerJid) return false
+		const loser = this.getByJid(loserJid)
+		const winner = this.getByJid(winnerJid)
+		if (!loser || !winner) return false
+		this.repointReplies(loserJid, winnerJid)
+		try {
+			// A stale reverse link would make winner resolve back to loser.
+			this.db.prepare('DELETE FROM jid_aliases WHERE alias = ?').run(winnerJid)
+		} catch {
+			// Alias table missing on very old DBs - addAlias is best effort.
+		}
+		this.addAlias(loserJid, winnerJid)
+		this.archive(loserJid)
+		if (winner.bucket === 'undecided' && loser.bucket !== 'undecided') {
+			this.setBucket(winnerJid, loser.bucket)
+		}
+		if (loser.muted && !winner.muted) this.setMuted(winnerJid, true)
+		return true
+	}
+
+	// Boot reconcile for the duplicate topics left by the old LID/PN race:
+	// two active rows joined by a user alias pair are the same contact, so
+	// keep the newest topic and archive the other. Only exactly one @lid
+	// plus one @s.whatsapp.net row is merged - same-domain rows are
+	// different contacts and are never touched.
+	reconcileDuplicateMappings(): number {
+		let rows: MappingRow[]
+		try {
+			rows = this.getAllActive()
+		} catch {
+			return 0
+		}
+		if (rows.length < 2) return 0
+		const byJid = new Map(rows.map((row) => [row.whatsapp_jid, row]))
+		const neighbors = new Map<string, Set<string>>()
+		try {
+			const aliasRows = this.db.prepare('SELECT alias, canonical FROM jid_aliases').all() as {
+				alias: string
+				canonical: string
+			}[]
+			for (const { alias, canonical } of aliasRows) {
+				if (alias === canonical || !byJid.has(alias) || !byJid.has(canonical)) continue
+				const a = neighbors.get(alias) ?? new Set<string>()
+				a.add(canonical)
+				neighbors.set(alias, a)
+				const c = neighbors.get(canonical) ?? new Set<string>()
+				c.add(alias)
+				neighbors.set(canonical, c)
+			}
+		} catch {
+			return 0
+		}
+		let merged = 0
+		const seen = new Set<string>()
+		for (const jid of byJid.keys()) {
+			if (seen.has(jid)) continue
+			const component: string[] = []
+			const stack = [jid]
+			while (stack.length > 0) {
+				const cur = stack.pop()!
+				if (seen.has(cur)) continue
+				seen.add(cur)
+				component.push(cur)
+				for (const next of neighbors.get(cur) ?? []) {
+					if (!seen.has(next)) stack.push(next)
+				}
+			}
+			if (component.length !== 2) continue
+			const [a, b] = component.map((key) => byJid.get(key)!)
+			if (a.chat_type !== b.chat_type) continue
+			const aLid = a.whatsapp_jid.endsWith('@lid')
+			const bLid = b.whatsapp_jid.endsWith('@lid')
+			const aPn = a.whatsapp_jid.endsWith('@s.whatsapp.net')
+			const bPn = b.whatsapp_jid.endsWith('@s.whatsapp.net')
+			if (!((aLid && bPn) || (aPn && bLid))) continue
+			const [winner, loser] = newerFirst(a, b)
+			if (this.mergeDuplicateMapping(loser.whatsapp_jid, winner.whatsapp_jid)) merged++
+		}
+		if (merged > 0) {
+			console.log(`[BRIDGE] reconciled ${merged} duplicate LID/PN mapping(s)`)
+		}
+		return merged
 	}
 
 	// Alias-aware reverse lookup: tries the canonical JID plus every known
@@ -545,6 +652,16 @@ export class BridgeDB {
 
 	setBucket(jid: string, bucket: Bucket): void {
 		this.db.prepare('UPDATE mappings SET bucket = ? WHERE whatsapp_jid = ?').run(bucket, jid)
+	}
+
+	// Stamp the supergroup that physically hosts a mapping. Used when a
+	// legacy '' row is already in its home group and only the column is
+	// stale, so lookups and "already classified" checks agree with reality.
+	setTelegramChat(jid: string, chatId: string): void {
+		this.db.prepare('UPDATE mappings SET telegram_chat_id = ? WHERE whatsapp_jid = ?').run(
+			chatId,
+			jid,
+		)
 	}
 
 	setPromptMsgId(jid: string, msgId: number | null): void {

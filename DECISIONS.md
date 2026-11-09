@@ -185,3 +185,32 @@ fetched on demand. Quoted stickers still reveal as plain images, and no-media in
 `usage.sticker`. Verified: `deno check`, `deno lint`, `deno fmt --check`, and
 `scripts/sticker_quote_smoke.ts` (synthetic quoted image/video bytes resolve and route through
 `createStickers`); no live WA smoke.
+
+## D14 - Bridge bucket split-brain heal and LID/PN duplicate merge (2026-11-09)
+
+Three related failures shared one root: the mapping row could disagree with the Telegram group that
+actually hosts its topic, and LID/PN sightings could race into two mappings.
+
+- Split-brain rows (`bucket=business` but `telegram_chat_id=personal`, or the reverse) are now
+  repointed to the hosting group before classification. Every send uses `telegram_chat_id`, so the
+  host is the only reliable evidence; the bucket follows it. `/business` and its button answer
+  "Already in Business" only when both the bucket and the host match the business home group, and
+  the next tap is a real move instead of a no-op. `moveTopic` also stamps a legacy empty
+  `telegram_chat_id` when the topic is already in its home group.
+- Boot reconcile folds a duplicate LID/PN pair onto one surviving row. Only exactly one `@lid` and
+  one `@s.whatsapp.net` row connected by the user alias table are merged; same-domain rows are
+  different contacts and are never touched. The newest topic wins (`created_at`, then activity, then
+  topic id), replies are repointed, the loser JID becomes an alias of the winner, and the loser row
+  is archived. Bucket and mute state are carried over so a merge never loses a classification or
+  un-mutes a chat. No Telegram messages or topics are deleted; the loser topic stays as history.
+- `canonicalChatJid` caches an unresolved LID-only result for only 15s instead of the full 5min, so
+  the next sighting retries `getPNForLID`. `ensureTopicMapping` keys its in-flight creation lock by
+  every known LID/PN variant, so a bare-LID and a PN+alt sighting collapse onto one creation.
+  Healing never downgrades a PN row to a bare LID.
+- `getByJidOrAlias` now lets an archived direct row yield to an active alias canonical, so a merged
+  loser JID still relays to the surviving topic.
+
+Verified: `scripts/bridge_bucket_smoke.ts` (synthetic temp DB plus fake Telegram API) covers the
+concurrent LID/PN upsert, split-brain classify plus move, boot duplicate merge, and muted-chat
+guard; `deno check`, `deno lint`, and `deno fmt --check` pass. No live WA/TG smoke in this
+environment.
