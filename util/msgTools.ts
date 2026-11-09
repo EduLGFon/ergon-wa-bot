@@ -167,6 +167,25 @@ function findMediaNode(content: any): any {
 // 20MB videos exhaust the heap. Images/stickers/audio cap at 8MB cached.
 const MEDIA_CACHE_MAX_BYTES = 20 * 1024 * 1024
 const MEDIA_CACHE_IMAGE_MAX_BYTES = 8 * 1024 * 1024
+const MSG_DL_ATTEMPTS = 2
+const MSG_DL_RETRY_MS = 500
+const MSG_DL_JITTER_MS = 250
+
+// True for stale/expired media keys: OpenSSL rejects the decrypt
+// deterministically (code ERR_OSSL_EVP_BAD_DECRYPT, message "bad decrypt").
+// Retrying never helps, so these skip the retry below.
+function isBadDecrypt(e: unknown): boolean {
+	try {
+		const rec = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>
+		const cause = rec.cause as Record<string, unknown> | undefined
+		const text = [rec.code, rec.name, rec.message, cause?.code, cause?.message]
+			.filter((p) => typeof p === 'string').join(' ').toLowerCase()
+		return text.includes('bad_decrypt') || text.includes('bad decrypt')
+	} catch {
+		return false
+	}
+}
+
 async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = true) {
 	if (!isMedia(types[0])) return
 	const inner = unwrapContent(raw?.message || raw)
@@ -198,20 +217,35 @@ async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = 
 	const declaredSize = Number(msg.fileLength?.low ?? msg.fileLength ?? 0)
 	if (isHeavy && declaredSize > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
 	const skipCache = declaredSize > MEDIA_CACHE_MAX_BYTES
-	const buffer = await downloadMediaMessage(
-		{ ...(raw as any), message: inner } as any,
-		'buffer',
-		{},
-		{
-			reuploadRequest: bot.sock.updateMediaMessage,
-			logger,
-		},
-	).catch((e) => {
-		print('DOWNLOAD', 'media download failed:', (e as Error)?.message || e, 'red')
-		return undefined
-	})
+	// Bounded retry for transient CDN failures (fetch failed) with backoff
+	// plus jitter. Stale keys (bad decrypt) fail permanently - no retry.
+	// Failure degrades to keys-only metadata; getMedia() then reports its
+	// own miss instead of crashing the command.
+	let buffer: Buffer | Uint8Array | null | undefined
+	let dlErr: unknown = null
+	for (let attempt = 1; attempt <= MSG_DL_ATTEMPTS; attempt++) {
+		try {
+			buffer = await downloadMediaMessage(
+				{ ...(raw as any), message: inner } as any,
+				'buffer',
+				{},
+				{
+					reuploadRequest: bot.sock.updateMediaMessage,
+					logger,
+				},
+			) as Buffer | Uint8Array | null | undefined
+		} catch (e) {
+			dlErr = e
+		}
+		if (buffer || attempt >= MSG_DL_ATTEMPTS || isBadDecrypt(dlErr)) break
+		await new Promise((r) => setTimeout(r, MSG_DL_RETRY_MS + Math.random() * MSG_DL_JITTER_MS))
+	}
 
-	if (!buffer) return keyObj
+	if (!buffer) {
+		const errMsg = dlErr instanceof Error ? dlErr.message : String(dlErr ?? 'unknown')
+		print('DOWNLOAD', 'media download failed:', errMsg.slice(0, 160), 'red')
+		return keyObj
+	}
 	if (skipCache || (buffer as Buffer).length > MEDIA_CACHE_MAX_BYTES) return keyObj
 	// Heavy types stay out of RAM cache past 8MB even when declared small.
 	if (isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
