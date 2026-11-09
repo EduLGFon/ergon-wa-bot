@@ -109,6 +109,10 @@ async function resolveVersion(): Promise<[number, number, number]> {
 // points: while the ws is still connecting, wait for it to open (queue); once it is
 // closed for good, degrade to the empty result every caller already handles instead of
 // throwing 428 into a caller that will not catch it.
+// Upper bound for the wait-for-open queue: a reconnect (backoff capped at 30s plus
+// connect) can legitimately take longer, in which case the caller degrades to the
+// empty result instead of hanging a sender or an inflight limiter slot forever.
+const WAIT_OPEN_TIMEOUT_MS = 15_000
 function guardClosedSocketQueries(sock: WASocket) {
 	const isOpen = () => {
 		try {
@@ -123,12 +127,21 @@ function guardClosedSocketQueries(sock: WASocket) {
 		((e as { output?: { statusCode?: unknown } })?.output?.statusCode === 428 ||
 			(e as Error)?.message === 'Connection Closed')
 	const waitOpen = async () => {
+		let timer: ReturnType<typeof setTimeout> | undefined
 		try {
-			// Throws immediately when the ws is closed/closing; waits for 'open'
-			// while a fresh socket is still connecting.
-			await sock.waitForSocketOpen()
+			await Promise.race([
+				// Throws immediately when the ws is closed/closing; waits for 'open'
+				// while a fresh socket is still connecting. The timer bounds the
+				// queue so a socket that never opens cannot hang the caller.
+				sock.waitForSocketOpen(),
+				new Promise<void>((resolve) => {
+					timer = setTimeout(resolve, WAIT_OPEN_TIMEOUT_MS)
+				}),
+			])
 		} catch {
 			// closed for good - the callers below degrade instead of throwing
+		} finally {
+			if (timer !== undefined) clearTimeout(timer)
 		}
 	}
 	const innerUSync = sock.executeUSyncQuery.bind(sock)
