@@ -8,7 +8,7 @@
 // videos spike RSS (5GB spike in prod logs). WA_DOWNLOAD_CAP_BYTES caps at
 // 50MB (Telegram cloud Bot API send limit is 50MB) with a fileLength
 // pre-check so huge files fail fast without ever allocating. Concurrency is
-// capped at 3 simultaneous downloads for the same reason.
+// capped at 2 simultaneous downloads for the same reason.
 import { downloadMediaMessage, type proto } from 'baileys'
 import { waBytes } from './media-utils.ts'
 import { logger } from '@util/proto.ts'
@@ -18,6 +18,9 @@ import bot from '@plugin/bot.ts'
 export const WA_DOWNLOAD_CAP_BYTES = 50_000_000
 const MAX_CONCURRENT_DOWNLOADS = 2
 const DOWNLOAD_ATTEMPTS = 3
+const RETRY_BASE_MS = 500
+const RETRY_MAX_MS = 4000
+const RETRY_JITTER_MS = 250
 let inflightDownloads = 0
 
 export interface WaMedia {
@@ -38,6 +41,22 @@ export interface WaDownload {
 	label: string
 	bytes: number | null
 	tooLarge: boolean
+}
+
+// True for stale/expired media keys: OpenSSL rejects the decrypt
+// deterministically (code ERR_OSSL_EVP_BAD_DECRYPT, message "bad decrypt").
+// Retrying or refreshing the URL never helps, so these skip the retry loop
+// and the transient-failure counter straight to the skip notice.
+function isBadDecrypt(e: unknown): boolean {
+	try {
+		const rec = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>
+		const cause = rec.cause as Record<string, unknown> | undefined
+		const text = [rec.code, rec.name, rec.message, cause?.code, cause?.message]
+			.filter((p) => typeof p === 'string').join(' ').toLowerCase()
+		return text.includes('bad_decrypt') || text.includes('bad decrypt')
+	} catch {
+		return false
+	}
 }
 
 export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownload | null> {
@@ -99,10 +118,12 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 		let refreshedOnce = false
 		try {
 			// Sticker URLs in particular expire quickly; one transient fetch
-			// failure used to lose the media permanently. Retry a couple of
-			// times with a short backoff before reporting it. On the first
+			// failure used to lose the media permanently. Retry bounded times
+			// with exponential backoff plus jitter before reporting it, so a
+			// CDN outage does not retry in lockstep. On the first transient
 			// failure, ask Baileys to refresh the media URL and retry the
-			// full download.
+			// full download. Stale keys (bad decrypt) fail permanently - no
+			// refresh, no retry.
 			for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
 				try {
 					buffer = await downloadMediaMessage(
@@ -114,6 +135,7 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 					if (buffer) break
 				} catch (e) {
 					dlErr = e
+					if (isBadDecrypt(e)) break
 					if (!refreshedOnce) {
 						refreshedOnce = true
 						try {
@@ -128,17 +150,22 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 						}
 					}
 				}
-				if (attempt < DOWNLOAD_ATTEMPTS) {
-					await new Promise((r) => setTimeout(r, 1000))
-				}
+				if (buffer || attempt >= DOWNLOAD_ATTEMPTS || isBadDecrypt(dlErr)) break
+				const baseMs = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** (attempt - 1))
+				await new Promise((r) => setTimeout(r, baseMs + Math.random() * RETRY_JITTER_MS))
 			}
 		} finally {
 			inflightDownloads = Math.max(0, inflightDownloads - 1)
 		}
 		if (!buffer) {
+			// Permanent (stale media key): skip straight to the notice path
+			// with a clear line. Retrying never helps and these must not
+			// inflate the transient __waDlFail HEALTH counter.
+			const permanent = isBadDecrypt(dlErr)
 			// Small files (stickers of a few KB) land here when the media URL
 			// expired or the reupload request failed - log the cause so the
-			// generic topic notice can be triaged from server logs.
+			// generic topic notice can be triaged from server logs. URLs and
+			// direct paths never hit the log (identifiers), only booleans.
 			const errName = dlErr instanceof Error
 				? dlErr.name
 				: typeof dlErr === 'object' && dlErr !== null
@@ -157,18 +184,24 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 					.cause
 				: undefined
 			const causeMsg = cause ? String(cause.code ?? cause.errno ?? cause.message ?? '') : ''
-			try {
-				;(globalThis as any).__waDlFail = ((globalThis as any).__waDlFail || 0) + 1
-			} catch {
-				// ignore
+			if (!permanent) {
+				try {
+					;(globalThis as any).__waDlFail = ((globalThis as any).__waDlFail || 0) + 1
+				} catch {
+					// ignore
+				}
 			}
 			console.warn(
-				`[BRIDGE] WA download failed: ${label} bytes=${bytes ?? '?'} hasUrl=${!!node
-					?.url} hasDirectPath=${!!node?.directPath}${errName ? ` name=${errName}` : ''}${
-					errCode ? ` code=${errCode}` : ''
-				}${errMsg ? ` err=${String(errMsg).slice(0, 160)}` : ''}${
-					causeMsg ? ` cause=${causeMsg.slice(0, 120)}` : ''
-				}`,
+				permanent
+					? `[BRIDGE] WA download skipped: ${label} bytes=${
+						bytes ?? '?'
+					} stale key (bad decrypt)`
+					: `[BRIDGE] WA download failed: ${label} bytes=${bytes ?? '?'} hasUrl=${!!node
+						?.url} hasDirectPath=${!!node?.directPath}${
+						errName ? ` name=${errName}` : ''
+					}${errCode ? ` code=${errCode}` : ''}${
+						errMsg ? ` err=${String(errMsg).slice(0, 160)}` : ''
+					}${causeMsg ? ` cause=${causeMsg.slice(0, 120)}` : ''}`,
 			)
 			return fail(false)
 		}
