@@ -121,7 +121,14 @@ export default async function (event: Partial<ConnectionState>) {
 
 				// 1. Teardown the old socket to prevent memory leaks and zombie intervals!
 				try {
-					bot.sock?.ev?.removeAllListeners('connection.update')
+					// Drop ALL listeners on the dead ev buffer (not just connection.update):
+					// Baileys end() never destroys it, so buffered core/bridge handlers
+					// could still flush and fire IQ/USync queries on the closed ws, which
+					// reject with Boom 428 and surface as unhandled rejections.
+					// loadEvents() + reattachBridge() re-register everything on the new ev.
+					// (Baileys .d.ts narrows removeAllListeners to one event; at runtime it
+					// is Node EventEmitter, where no-arg clears everything.)
+					;(bot.sock?.ev?.removeAllListeners as unknown as () => void)?.()
 					bot.sock?.ws?.close()
 					bot.sock?.end(undefined)
 				} catch (_e) {
