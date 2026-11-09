@@ -1,12 +1,88 @@
 // Topic mapping ensure - one chat, one forum topic, in one place.
 //
 // Concurrent upserts for the same new chat await the in-flight creation
-// instead of opening a second topic. LID/PN variants heal onto the
-// canonical JID (keeping the existing topic), outgoing messages never
+// instead of opening a second topic. The lock is keyed by every known
+// LID/PN variant, so a bare-LID and a PN+alt sighting collapse onto one
+// creation. LID/PN variants heal onto the canonical JID (keeping the
+// existing topic, never downgrading PN to LID), outgoing messages never
 // rename, and real contact renames update the Telegram topic title too.
+import { createForumTopic, sanitizeTopicName } from './chat.ts'
 import { inflightTopics, relayCtx, tgCall } from './state.ts'
 import { chatForMapping, chatOfBucket } from './routing.ts'
-import { createForumTopic, sanitizeTopicName } from './chat.ts'
+import type { BridgeDB, MappingRow } from '../db.ts'
+import { isPnJid } from './jid.ts'
+
+function variantsOf(jid: string, aliases: string[] = []): string[] {
+	return [...new Set([jid, ...aliases].filter(Boolean))]
+}
+
+function findMapping(db: BridgeDB, variants: string[]): MappingRow | undefined {
+	for (const variant of variants) {
+		const mapping = db.getByJidOrAlias(variant)
+		if (mapping) return mapping
+	}
+	return undefined
+}
+
+// Fold an active row stored under the other LID/PN variant onto this
+// sighting. PN is always the survivor: a bare LID must attach to it, never
+// rewrite it. Returns the surviving row, or undefined when there is
+// nothing to heal (normal create/refresh flow).
+function adoptExisting(
+	db: BridgeDB,
+	jid: string,
+	variants: string[],
+	chatType: '1:1' | 'group',
+): MappingRow | undefined {
+	const direct = db.getByJid(jid)
+	const own = direct && !direct.archived ? direct : undefined
+	const candidates: MappingRow[] = []
+	for (const variant of variants) {
+		const known = db.getByJidOrAlias(variant)
+		if (!known || known.archived || known.whatsapp_jid === jid) continue
+		if (known.chat_type !== chatType) continue
+		// Only LID<->PN pairs are the same chat. Same-domain rows are
+		// different contacts (or poison) and must never be merged.
+		if (isPnJid(known.whatsapp_jid) === isPnJid(jid)) continue
+		candidates.push(known)
+	}
+	if (candidates.length === 0) return undefined
+	const pn = candidates.find((candidate) => isPnJid(candidate.whatsapp_jid))
+	if (pn && !isPnJid(jid)) {
+		if (own) db.mergeDuplicateMapping(jid, pn.whatsapp_jid)
+		db.addAlias(jid, pn.whatsapp_jid)
+		db.repointReplies(jid, pn.whatsapp_jid)
+		db.updateLastActive(pn.whatsapp_jid)
+		return db.getByJid(pn.whatsapp_jid) ?? pn
+	}
+	for (const known of candidates) {
+		if (own) {
+			db.mergeDuplicateMapping(known.whatsapp_jid, jid)
+			continue
+		}
+		const old = known.whatsapp_jid
+		db.delete(old)
+		db.getOrCreate(
+			jid,
+			known.telegram_topic_id,
+			known.display_name,
+			known.chat_type,
+			known.telegram_chat_id,
+		)
+		db.addAlias(old, jid)
+		for (const alias of variants) db.addAlias(alias, jid)
+		db.repointReplies(old, jid)
+		// A healed row is still the same chat - keep its bucket and prompt
+		// state so classification is never asked twice.
+		db.setBucket(jid, known.bucket)
+		db.setPromptMsgId(jid, known.prompt_msg_id)
+		if (known.muted) db.setMuted(jid, true)
+		db.updateLastActive(jid)
+		return db.getByJid(jid) ?? known
+	}
+	db.updateLastActive(jid)
+	return own
+}
 
 // Ensure a forum topic mapping exists - creates or refreshes it, updates
 // activity and returns null when muted so the caller skips silently.
@@ -24,11 +100,13 @@ export async function ensureTopicMapping(
 	isGroup: boolean,
 	opts: { canRename?: boolean; aliases?: string[] } = {},
 ): Promise<{ topicId: number; chatId: string; isNew: boolean } | null> {
-	const pending = inflightTopics.get(jid)
+	const variants = variantsOf(jid, opts.aliases)
+	const pending = variants.map((variant) => inflightTopics.get(variant)).find(Boolean)
 	if (pending) {
 		const { topicId } = await pending
 		const { db, groups } = relayCtx
-		const mapping = db?.getByJidOrAlias(jid)
+		if (!db) return null
+		const mapping = adoptExisting(db, jid, variants, chatType) ?? findMapping(db, variants)
 		if (!mapping || mapping.muted) return null
 		return {
 			topicId: mapping.telegram_topic_id ?? topicId,
@@ -37,11 +115,12 @@ export async function ensureTopicMapping(
 		}
 	}
 	const task = createOrRefreshMapping(jid, displayName, chatType, isGroup, opts)
-	inflightTopics.set(jid, task)
+	for (const variant of variants) inflightTopics.set(variant, task)
 	try {
 		const { topicId, isNew } = await task
 		const { db, groups } = relayCtx
-		const mapping = db?.getByJidOrAlias(jid)
+		if (!db) return null
+		const mapping = findMapping(db, variants)
 		if (!mapping || mapping.muted) return null
 		return {
 			topicId: mapping.telegram_topic_id ?? topicId,
@@ -49,7 +128,9 @@ export async function ensureTopicMapping(
 			isNew,
 		}
 	} finally {
-		if (inflightTopics.get(jid) === task) inflightTopics.delete(jid)
+		for (const variant of variants) {
+			if (inflightTopics.get(variant) === task) inflightTopics.delete(variant)
+		}
 	}
 }
 
@@ -63,41 +144,22 @@ async function createOrRefreshMapping(
 	const { db, tg, groups } = relayCtx
 	if (!db) throw new Error('Bridge DB not initialized')
 	const canRename = opts.canRename ?? true
-	const rememberAliases = (): void => {
-		for (const a of opts.aliases || []) db.addAlias(a, jid)
+	const variants = variantsOf(jid, opts.aliases)
+	const rememberAliases = (canonical: string): void => {
+		for (const alias of variants) db.addAlias(alias, canonical)
 	}
-	// Heal a mapping stored under a previous variant (bare LID first
-	// sighting, then PN with alt): keep the existing topic, move the row
-	// and its replies onto the canonical JID instead of creating dupe.
-	// Cross-kind heals (group <-> DM) are never legitimate - a poisoned
-	// alias must not let a group steal a DM topic or vice versa.
-	for (const variant of [...new Set([jid, ...(opts.aliases || [])])]) {
-		const known = db.getByJidOrAlias(variant)
-		if (
-			known && !known.archived && known.whatsapp_jid !== jid &&
-			known.chat_type === chatType
-		) {
-			const old = known.whatsapp_jid
-			db.delete(old)
-			db.getOrCreate(
-				jid,
-				known.telegram_topic_id,
-				known.display_name,
-				known.chat_type,
-				known.telegram_chat_id,
-			)
-			db.addAlias(old, jid)
-			db.repointReplies(old, jid)
-			// A healed row is still the same chat - keep its bucket and
-			// prompt state so classification is never asked twice.
-			db.setBucket(jid, known.bucket)
-			db.setPromptMsgId(jid, known.prompt_msg_id)
-			rememberAliases()
-			db.updateLastActive(jid)
-			return { topicId: known.telegram_topic_id, isNew: false }
-		}
+	// Heal a mapping stored under a previous LID/PN variant: keep the
+	// existing topic, move the row and its replies onto the canonical JID
+	// instead of creating a dupe. Cross-kind heals (group <-> DM) and
+	// same-domain rows are never legitimate - a poisoned alias must not let
+	// a group steal a DM topic or merge two different contacts.
+	const healed = adoptExisting(db, jid, variants, chatType)
+	if (healed) {
+		rememberAliases(healed.whatsapp_jid)
+		db.updateLastActive(healed.whatsapp_jid)
+		return { topicId: healed.telegram_topic_id, isNew: false }
 	}
-	let mapping = db.getByJidOrAlias(jid)
+	let mapping = findMapping(db, variants)
 	if (!mapping || mapping.archived) {
 		// Reactivated chats reopen where their bucket lives - a business
 		// chat unarchived into the personal group would split-brain the
@@ -105,19 +167,21 @@ async function createOrRefreshMapping(
 		const home = !mapping || mapping.bucket === 'undecided'
 			? groups.personal
 			: chatOfBucket(mapping.bucket, groups)
+		const target = mapping?.whatsapp_jid ?? jid
 		const freshTopicId = await createForumTopic(displayName, isGroup, home)
-		mapping = db.getOrCreate(jid, freshTopicId, displayName, chatType, home)
-		rememberAliases()
+		mapping = db.getOrCreate(target, freshTopicId, displayName, chatType, home)
+		rememberAliases(target)
 		return { topicId: mapping.telegram_topic_id, isNew: true }
 	}
-	rememberAliases()
+	const canonical = mapping.whatsapp_jid
+	rememberAliases(canonical)
 	if (mapping.display_name !== displayName) {
 		if (!canRename) {
-			db.updateLastActive(jid)
+			db.updateLastActive(canonical)
 			return { topicId: mapping.telegram_topic_id, isNew: false }
 		}
 		mapping = db.getOrCreate(
-			jid,
+			canonical,
 			mapping.telegram_topic_id,
 			displayName,
 			chatType,
@@ -139,7 +203,7 @@ async function createOrRefreshMapping(
 			)
 		}
 	} else {
-		db.updateLastActive(jid)
+		db.updateLastActive(canonical)
 	}
 	return { topicId: mapping.telegram_topic_id, isNew: false }
 }

@@ -370,12 +370,13 @@ without touching WA.
   archived/muted flags, last-active) and `reply_map` (TG msg <-> WA key + kind + text/entity
   snapshot + poll crypto columns + live poll vote roster + merged reaction roster
   - per-message secret for encrypted edits, pruned past 7d, weekly VACUUM). `jid_aliases` maps user
-    LID<->PN only (group JIDs refused, boot purges mixed rows). In-memory echo sets
-    (`pendingTgEdits`, `pendingTgReacts`, `pendingTgPins`, `pendingFollowUps`, 1000-cap) suppress
-    relaying our own TG edits/reactions/ pins/caption-follow-ups back. `mappings` also keeps the
-    pinned profile card state (`profile_pic_url`, `profile_about`, `profile_msg_id`, see D04).
-    `contact_names` maps speaker JIDs to learned display names for @Name mention rendering (see
-    D06).
+    LID<->PN only (group JIDs refused, boot purges mixed rows). Boot also folds a duplicate LID/PN
+    pair onto the newest topic (replies repointed, loser JID aliased, loser row archived; no
+    Telegram message or topic deletes). In-memory echo sets (`pendingTgEdits`, `pendingTgReacts`,
+    `pendingTgPins`, `pendingFollowUps`, 1000-cap) suppress relaying our own TG edits/reactions/
+    pins/caption-follow-ups back. `mappings` also keeps the pinned profile card state
+    (`profile_pic_url`, `profile_about`, `profile_msg_id`, see D04). `contact_names` maps speaker
+    JIDs to learned display names for @Name mention rendering (see D06).
 - `format.ts`: pure converters - TG entities (UTF-16 offsets) to WA inline markers (`*bold*`,
   `_italic_`, `~strike~`, `` `code` ``, triple-backtick pre, links, `> quote`) and back (pre -> bold
   -> italic -> strike -> code passes).
@@ -390,14 +391,16 @@ without touching WA.
   `wa_outbox` and replayed by `wa-to-tg/outbox.ts` once both lanes are quiet (see D12).
 - WA->TG (`wa-to-tg.ts` facade + 36 modules): `relay.ts` attaches eight socket listeners (upsert,
   reaction, update, delete, call, group-participants, groups, contacts); `incoming.ts` is the main
-  loop (skip protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via
-  `jid.ts`, resolve/create topic in the chat's group, mentions, media download, special-content
-  degrade, then hand off); `dispatch.ts` assembles the body (quote resolve, label, entities, sticker
-  fallback), routes album-or-direct (classification buttons ride on the profile card); `chat.ts`
-  owns name resolution (own pushName ignored for outgoing 1:1) and topic creation; `topics.ts` owns
-  the mapping ensure (per-JID in-flight lock, LID/PN alias healing with bucket kept, outgoing never
-  renames, 1:1 renames update the forum title); `routing.ts` resolves the personal/business home
-  group (`TELEGRAM_SUPERGROUP_PERSONAL/_BUSINESS`, legacy fallback, single-group mode when equal);
+  loop (skip protocol/reaction/status, echo-dedupe via `reply_map`, canonicalize LID/PN via `jid.ts`
+  with a short-lived negative cache so unresolved LID sightings retry the signal store,
+  resolve/create topic in the chat's group, mentions, media download, special-content degrade, then
+  hand off); `dispatch.ts` assembles the body (quote resolve, label, entities, sticker fallback),
+  routes album-or-direct (classification buttons ride on the profile card); `chat.ts` owns name
+  resolution (own pushName ignored for outgoing 1:1) and topic creation; `topics.ts` owns the
+  mapping ensure (in-flight lock keyed by every known LID/PN variant, LID/PN alias healing with
+  bucket kept and PN never downgraded to LID, outgoing never renames, 1:1 renames update the forum
+  title); `routing.ts` resolves the personal/business home group
+  (`TELEGRAM_SUPERGROUP_PERSONAL/_BUSINESS`, legacy fallback, single-group mode when equal);
   `move.ts` moves topics across groups (business: old topic wiped
   - known messages deleted, then the topic itself - plus a fresh profile card in the new topic;
     personal: newest-100 `copyMessage` replay sourced from each row's home group with re-threading,
@@ -448,23 +451,26 @@ without touching WA.
   reaction/edit/pin/poll-answer handlers with echo marks (pin resolves `pinned_message` service
   posts back to the WA original, 30-day duration; poll answers rebuild the encrypted vote);
   `buckets.ts` Personal/Business buttons (`callback_query`, chat resolved via stored card ID) plus
-  `/personal` `/business` topic commands, serialized per chat (double-tap never opens two topics);
-  `content.ts` WA payload builders (`Buffer.from` at boundary, webm->webp transcode, tgs->document,
-  native poll creation, contact text fallback); `media.ts` largest-photo pick + `getFile` fetch with
-  double size caps; `replies.ts` notices + ffmpeg webm conversion; `album.ts` batching;
-  `coalesce.ts` (same-author plain texts join into one WA send, see D11); `commands.ts` topic admin
+  `/personal` `/business` topic commands, serialized per chat (double-tap never opens two topics),
+  with a host-aware "already" check plus split-brain bucket repoint before every move; `content.ts`
+  WA payload builders (`Buffer.from` at boundary, webm->webp transcode, tgs->document, native poll
+  creation, contact text fallback); `media.ts` largest-photo pick + `getFile` fetch with double size
+  caps; `replies.ts` notices + ffmpeg webm conversion; `album.ts` batching; `coalesce.ts`
+  (same-author plain texts join into one WA send, see D11); `commands.ts` topic admin
   (`/start /id /topics /archive /close /reopen /mute /unmute`); `group-menu.ts` `/group` settings
   menu (one edited message: mute toggle, bucket move, member browser with pages, type-to-search
   intercept, member card with start-chat); `group-members.ts` WA roster source (60s metadata cache,
   learned labels, pure filter); `newchat.ts` `/new <phone> [name]` with `onWhatsApp` verification
   (inherits the group's bucket).
 - Cross-cutting: pairing auto-creates on first WA sight (or `/new`) into the personal group as
-  `undecided` until the buttons/commands classify it; renames sync, mute/archive pause both
-  directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes no
-  delete event); pins sync both ways except TG->WA unpin (no Bot API update on unpin); WA reactions
-  merge into the mirror with counts plus a viewer button (see D09) while TG->WA reactions need bot
-  admin + opt-in `allowed_updates` (now including `callback_query`); every failure becomes a topic
-  `warning` notice + log, never a throw or loop. `scripts/bridge_buckets.ts` bulk-classifies
+  `undecided` until the buttons/commands classify it; a row whose bucket disagrees with the group
+  that actually hosts its topic is repointed to the host at classify time, so `/business` only
+  answers "Already" when the topic really is in the business group; renames sync, mute/archive pause
+  both directions; edits bounded by TG 48h / WA ~15min windows; deletes are WA->TG only (TG exposes
+  no delete event); pins sync both ways except TG->WA unpin (no Bot API update on unpin); WA
+  reactions merge into the mirror with counts plus a viewer button (see D09) while TG->WA reactions
+  need bot admin + opt-in `allowed_updates` (now including `callback_query`); every failure becomes
+  a topic `warning` notice + log, never a throw or loop. `scripts/bridge_buckets.ts` bulk-classifies
   existing chats (dry-run default, `--yes` applies).
 
 ## 15. Setup wizard (`setup.ts` + `setup/`)

@@ -7,10 +7,10 @@
 // PERSONAL_REPLAY_CAP newest mapped messages, oldest-first, re-threading
 // replies whose target was also copied. Uncopied rows keep their old
 // group, so edits/deletes of pre-move messages still land correctly.
-import { chatOfBucket } from './routing.ts'
 import { createForumTopic, sanitizeTopicName } from './chat.ts'
 import { syncProfileCard } from './profile.ts'
 import { relayCtx, tgCall } from './state.ts'
+import { chatOfBucket } from './routing.ts'
 import type { Bucket } from '../db.ts'
 
 export const PERSONAL_REPLAY_CAP = 100
@@ -65,8 +65,10 @@ async function moveTopicUnsafe(
 	const toChat = chatOfBucket(bucket, groups)
 	if (fromChat === toChat) {
 		// Same group (single-group mode or already home) - stamp the
-		// bucket, never open a second topic.
+		// bucket, never open a second topic. Legacy '' rows are stamped
+		// onto the real host too, so later host checks agree with reality.
 		db.setBucket(jid, bucket)
+		db.setTelegramChat(jid, toChat)
 		db.setPromptMsgId(jid, null)
 		return {
 			moved: false,
