@@ -17,7 +17,11 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 	const target = msg.media ? msg : msg.quoted
 
 	if (!target || !target.media) return
-	print('GETMEDIA', 'target=' + (target === msg ? 'msg' : 'quoted') + ' type=' + target.type, 'yellow')
+	print(
+		'GETMEDIA',
+		'target=' + (target === msg ? 'msg' : 'quoted') + ' type=' + target.type,
+		'yellow',
+	)
 	if (startTyping) await startTyping()
 
 	let media = cache.media.get(target.media.url)
