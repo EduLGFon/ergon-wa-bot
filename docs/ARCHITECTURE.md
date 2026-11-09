@@ -170,7 +170,10 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   subclass (name = filename); `event/<cat>/<file>.ts` default-exports a function where `cat.file`
   must equal a Baileys event name. `loadCmds` fills `cache.cmds`; `loadEvents` fills `cache.events`,
   `removeAllListeners(name)` then `ev.on(name, guarded dispatch)` so a bad handler or mid-reconnect
-  `clear()` never throws synchronously.
+  `clear()` never throws synchronously. Each file loads in isolation: a failed command file is
+  skipped with a `HANDLER` skip line and boot continues, while a failed event file throws after the
+  summary line so the supervisor restarts - a boot without event handlers looks healthy but can
+  never reconnect.
 - `proto.ts`: installs `global.print` logger (`[date|rss h:heap l:lag|TAG] - msg`, filters Baileys
   session noise, throttles libsignal Bad MAC/decrypt/closed-session to 1/h with counters for
   HEALTH), silent Baileys `logger` stub, `now()` (TZ-aware via defaults), `shortDuration()`, all
