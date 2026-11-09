@@ -20,14 +20,16 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		env: {
 			NODE_EXTRA_CA_CERTS: 'conf/smufesrootca.pem',
 		},
-		// Split stdout/stderr so crashes do not drown relay logs. PM2 has
+		// Split stdout/stderr so crashes do not drown relay logs. Do NOT set
+		// log_file here: PM2 writes the combined log plus out_file to the
+		// same path, duplicating every line in out.log. out_file/err_file
+		// below log each stream exactly once. PM2 has
 		// no built-in size rotation - install pm2-logrotate once on the
 		// host (see scripts/setup-logrotate.sh note below) with:
 		//   pm2 install pm2-logrotate
 		//   pm2 set pm2-logrotate:max_size 50M
 		//   pm2 set pm2-logrotate:retain 7
 		//   pm2 set pm2-logrotate:compress true
-		log_file: 'conf/gen/out.log',
 		out_file: 'conf/gen/out.log',
 		error_file: 'conf/gen/err.log',
 		merge_logs: true,

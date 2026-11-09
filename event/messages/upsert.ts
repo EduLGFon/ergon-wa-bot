@@ -13,12 +13,29 @@ import cache from '@plugin/cache.ts'
 import { getFixedT } from 'i18next'
 import { getUser } from '@db'
 
+// History/backfill upserts without a user store or body are expected and
+// benign - count them and report at most once an hour instead of logging
+// every skip (10k+/day in prod). Follows the libsignal 1/h throttle pattern.
+const skipCounts = { noMessage: 0, revokeBackup: 0, noUser: 0 }
+let lastSkipLog = 0
+function logSkip(kind: 'noMessage' | 'revokeBackup' | 'noUser', id?: string | null) {
+	skipCounts[kind]++
+	const nowMs = Date.now()
+	if (nowMs - lastSkipLog < 3_600_000) return
+	lastSkipLog = nowMs
+	console.debug(
+		`[UPSERT] skips throttled (1/h, no-message=${skipCounts.noMessage} revoke-backup=${skipCounts.revokeBackup} no-user=${skipCounts.noUser}) last=${
+			id || '-'
+		}`,
+	)
+}
+
 // messages upsert event
 export default async function (raw: { messages: proto.IWebMessageInfo[] }, _event: str) {
 	// sometimes you can receive more then 1 message per trigger, so use for
 	for (const m of raw.messages) {
 		if (!m?.message) {
-			console.debug('[UPSERT] skip no-message', m?.key?.id)
+			logSkip('noMessage', m?.key?.id)
 			continue
 		}
 		try {
@@ -52,7 +69,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 			} catch {
 				// best-effort archiving - never break the upsert loop
 			}
-			console.debug('[UPSERT] skip revoke-backup', m?.key?.id)
+			logSkip('revokeBackup', m?.key?.id)
 			continue
 		}
 
@@ -66,7 +83,7 @@ export default async function (raw: { messages: proto.IWebMessageInfo[] }, _even
 		}
 		const { msg, args, cmd, group, user } = parsed
 		if (!user || !msg) {
-			console.debug('[UPSERT] skip no-user', m?.key?.id)
+			logSkip('noUser', m?.key?.id)
 			continue
 		}
 		if (Deno.env.get('SHOW_IDS')) console.log(user.name, msg.text, group?.id || msg.chat, msg)
