@@ -102,6 +102,86 @@ async function resolveVersion(): Promise<[number, number, number]> {
 	return cachedVersion
 }
 
+// Reconnect-race guard: Baileys query paths throw Boom 428 Connection Closed when the
+// socket is closed (Socket/socket.js sendRawMessage/waitForMessage). During 428/503 flaps
+// background queries (USync device fetch, LID pnToLID, media-conn refresh) raced the
+// teardown and surfaced as unhandled rejections (CRASH ... kept alive). Gate the choke
+// points: while the ws is still connecting, wait for it to open (queue); once it is
+// closed for good, degrade to the empty result every caller already handles instead of
+// throwing 428 into a caller that will not catch it.
+function guardClosedSocketQueries(sock: WASocket) {
+	const isOpen = () => {
+		try {
+			return !!sock.ws?.isOpen
+		} catch {
+			return false
+		}
+	}
+	// A 428 raised only because the ws is (now) closed - anything else rethrows untouched.
+	const isClosedRace = (e: unknown) =>
+		!isOpen() &&
+		((e as { output?: { statusCode?: unknown } })?.output?.statusCode === 428 ||
+			(e as Error)?.message === 'Connection Closed')
+	const waitOpen = async () => {
+		try {
+			// Throws immediately when the ws is closed/closing; waits for 'open'
+			// while a fresh socket is still connecting.
+			await sock.waitForSocketOpen()
+		} catch {
+			// closed for good - the callers below degrade instead of throwing
+		}
+	}
+	const innerUSync = sock.executeUSyncQuery.bind(sock)
+	sock.executeUSyncQuery = (async (q: Parameters<typeof innerUSync>[0]) => {
+		if (!isOpen()) {
+			await waitOpen()
+			// getUSyncDevices checks `if (result)`; pnFromLIDUSync falls back to [];
+			// onWhatsApp falls back to [] - undefined is the safe empty result here.
+			if (!isOpen()) return undefined
+		}
+		try {
+			return await innerUSync(q)
+		} catch (e) {
+			if (isClosedRace(e)) {
+				print('SOCK', 'USync skipped: socket closed mid-query', 'yellow')
+				return undefined
+			}
+			throw e
+		}
+	}) as typeof sock.executeUSyncQuery
+	const innerMediaConn = sock.refreshMediaConn.bind(sock)
+	sock.refreshMediaConn = (async (force?: boolean) => {
+		if (!isOpen()) await waitOpen()
+		// Still closed: delegate and let the natural 428 propagate (unchanged behavior).
+		// The common connecting-window race is absorbed by the wait above.
+		return await innerMediaConn(force)
+	}) as typeof sock.refreshMediaConn
+	// pnToLIDFunc is Baileys' USync injection point (socket.js pnFromLIDUSync, handed to
+	// the LID mapping store); declared private in the .d.ts but a plain field at runtime.
+	// [] means "no mapping", which the store logs and degrades from without throwing.
+	const lidStore = sock.signalRepository?.lidMapping as unknown as {
+		pnToLIDFunc?: (jids: string[]) => Promise<unknown>
+	} | undefined
+	const innerPnToLid = lidStore?.pnToLIDFunc
+	if (lidStore && innerPnToLid) {
+		lidStore.pnToLIDFunc = async (jids) => {
+			if (!isOpen()) {
+				await waitOpen()
+				if (!isOpen()) return []
+			}
+			try {
+				return await innerPnToLid(jids)
+			} catch (e) {
+				if (isClosedRace(e)) {
+					print('SOCK', 'LID lookup skipped: socket closed mid-query', 'yellow')
+					return []
+				}
+				throw e
+			}
+		}
+	}
+}
+
 export default class Baileys {
 	lid: str = ''
 	sock!: WASocket
@@ -169,6 +249,11 @@ export default class Baileys {
 				isJidMetaAI(jid) ||
 				isJidStatusBroadcast(jid),
 		})
+
+		// Gate Baileys background queries (USync, media-conn, LID lookup) so they wait
+		// out a connecting socket or degrade while it is closed instead of throwing
+		// 428 Connection Closed into callers that will not catch it.
+		guardClosedSocketQueries(this.sock)
 
 		// save login creds
 		this.sock.ev.on('creds.update', saveCreds)
