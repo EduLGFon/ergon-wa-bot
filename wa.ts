@@ -43,8 +43,13 @@ globalThis.addEventListener('unhandledrejection', (e) => {
 	e.preventDefault()
 	try {
 		const reason = (e as PromiseRejectionEvent).reason as any
+		// Surface the WA status code (428 closed-race vs 503 vs 408) so reconnect-race
+		// noise is triaged without guessing. 428-while-closed itself is guarded at the
+		// socket boundary (class/baileys.ts) and owned by event/connection/update.ts;
+		// the 3-in-5min and 2GB bounds below stay unchanged for everything else.
+		const status = reason?.output?.statusCode ?? reason?.statusCode
 		const msg = reason?.message || reason?.output?.payload?.message || String(reason)
-		recordCrash('Unhandled rejection', msg)
+		recordCrash('Unhandled rejection', typeof status === 'number' ? `${msg} [${status}]` : msg)
 	} catch {
 		// Never throw from the crash handler itself.
 	}
