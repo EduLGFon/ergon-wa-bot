@@ -38,12 +38,13 @@ export default class extends Cmd {
 			if (!outStat) {
 				// Python step failed (unsupported/corrupt image, missing model, OOM, ...).
 				// Fall back to the original image instead of throwing ENOENT.
-				print(
-					'CMD/remove',
-					`removeBg produced no output, using original. py: ${
-						String(pyOut).slice(0, 500)
-					}`,
-					'yellow',
+				// Debug-level only: the fallback is the designed path, not an error.
+				// The resource_tracker semaphore line is venv-teardown noise, strip it.
+				const pySnippet = String(pyOut).split('\n').filter((line) =>
+					!line.includes('resource_tracker')
+				).join('\n').slice(0, 500)
+				console.debug(
+					`[CMD/remove] removeBg fallback (expected): using original. py: ${pySnippet}`,
 				)
 			} else {
 				buffer = await Deno.readFile(outPath).catch(() => media.buffer)
