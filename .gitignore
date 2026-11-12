@@ -18,6 +18,9 @@ build
 
 # Settings
 *.env
+conf/.env.docker
+docker/postgres.env
+docker/backups/
 test
 
 # Modules

@@ -141,6 +141,18 @@ of standard sticker formatting libraries:
 
 ---
 
+### 🐳 Docker (bot + PostgreSQL)
+
+Everything can run in Docker, including PostgreSQL. The migration script copies the current host
+database and `conf/gen` state into persistent volumes. See [docker/README.md](docker/README.md).
+
+```bash
+scripts/docker-migrate.sh
+pm2 stop wa
+docker compose up -d --build
+docker compose logs -f app
+```
+
 ### Also, read the important notes below
 
 # `-1.` 🗒️ Important Notes:

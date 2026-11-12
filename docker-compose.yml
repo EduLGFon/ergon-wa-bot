@@ -1,0 +1,68 @@
+name: ergon-wa-bot
+
+services:
+    postgres:
+        image: postgres:18-alpine
+        container_name: ergon-wa-postgres
+        restart: unless-stopped
+        env_file:
+            - docker/postgres.env
+        environment:
+            PGDATA: /var/lib/postgresql/data
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+            interval: 5s
+            timeout: 5s
+            retries: 12
+            start_period: 10s
+        networks:
+            - ergon
+        logging:
+            driver: json-file
+            options:
+                max-size: '50m'
+                max-file: '5'
+
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: ergon-wa-bot:local
+        container_name: ergon-wa
+        restart: unless-stopped
+        init: true
+        stop_grace_period: 20s
+        depends_on:
+            postgres:
+                condition: service_healthy
+        env_file:
+            - conf/.env.docker
+        environment:
+            TZ: America/Sao_Paulo
+            NODE_EXTRA_CA_CERTS: /app/conf/smufesrootca.pem
+            HF_HOME: /app/conf/gen/cache/huggingface
+            U2NET_HOME: /app/conf/gen/cache/u2net
+            DENO_NO_UPDATE_CHECK: '1'
+        volumes:
+            - appdata:/app/conf/gen
+        networks:
+            - ergon
+        logging:
+            driver: json-file
+            options:
+                max-size: '50m'
+                max-file: '5'
+
+volumes:
+    pgdata:
+        name: ergon-wa-bot_pgdata
+        external: true
+    appdata:
+        name: ergon-wa-bot_appdata
+        external: true
+
+networks:
+    ergon:
+        name: ergon-wa-bot
