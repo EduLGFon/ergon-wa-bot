@@ -199,8 +199,9 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   `alert`, `loading`, ...).
 - `weather.ts`: Open-Meteo 1-day forecast for campus coords, WMO code map, tip line
   (umbrella/heat/coat), 5s timeout, null on failure.
-- `menuParser.ts`: pure RU HTML -> `ParsedMenuResult` (breakfast items, lunch/dinner
-  mains/sides/salads/desserts, hours, emojis).
+- `menuParser.ts`: pure RU HTML/RSS -> `ParsedMenuResult` (breakfast items, lunch/dinner
+  mains/sides/salads/desserts, hours, emojis). Meals are located by heading text, not CSS classes;
+  heading matching normalizes case/accents/punctuation and keeps unknown bold sections.
 - `calendarAnalytics.ts`: classifies `DD/MM/YYYY -> CalendarEvent[]` into new-today / ending-today /
   ongoing-student / other, with dup detection shared with the calendar parser.
 - `bulletinTitles.ts`: non-repeating shuffled title picker persisted in
@@ -318,9 +319,10 @@ when under 10s, then `delay(timeout)` before `run`.
   (DB write-through), strips placeholders from reply text.
 - `plugin/menuScraping.ts`: RU bulletin scheduler (Deno.cron: 6h BRT daily, 15-min weekday change
   checks, Sunday 3h BRT calendar refresh). Scrapes
-  `restaurante.saomateus.ufes.br/cardapio/YYYY-MM-DD`, parses via `util/menuParser.ts`, diffs
-  against `menu.txt`, composes via `util/dailySummary.ts` (weather + calendar inputs), sends to
-  `GROUPS0` in DEV else `getAllowedTagsList()` + hardcoded group, pins for 24h.
+  `restaurante.saomateus.ufes.br/cardapio/YYYY-MM-DD` and its RSS feed in parallel, keeps the more
+  complete parse from `util/menuParser.ts`, diffs against `menu.txt`, composes via
+  `util/dailySummary.ts` (weather + calendar inputs), sends to `GROUPS0` in DEV else
+  `getAllowedTagsList()` + hardcoded group, pins for 24h.
 - `plugin/groupAnnouncer.ts`: `#diurno`/`#noturno`/`#todos` fan-out across `GROUPS1`/`GROUPS2` with
   media/quote support, FIFO queue with 1-2.5s pacing.
 - `plugin/runCode.ts`: multi-language runner driven by `defaults.runner`. `eval` runs in-process

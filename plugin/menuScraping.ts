@@ -2,7 +2,7 @@
 // Schedules menu sends, update checks and calendar cron
 // Builds summary with weather and calendar events
 import { analyzeCalendarEvents, type ClassifiedCalendar } from '@util/calendarAnalytics.ts'
-import { type ParsedMenuResult, parseMenuHtml } from '@util/menuParser.ts'
+import { type ParsedMenuResult, parseMenuHtml, parseMenuRss } from '@util/menuParser.ts'
 import { updateCalendarCache } from '@plugin/calendarParser.ts'
 import { getAllowedTagsList } from '@plugin/groupAnnouncer.ts'
 import { generateDailySummary } from '@util/dailySummary.ts'
@@ -134,33 +134,83 @@ export async function sendURMenu(
 	}
 }
 
+const MENU_URL = 'https://restaurante.saomateus.ufes.br/cardapio'
+
+async function fetchMenuSource(url: string): Promise<string> {
+	// Timeout so a hung RU site never wedges the bulletin; retries handle transient drops.
+	const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+	if (!res.ok) throw new Error(`status=${res.status} url=${url}`)
+	return await res.text()
+}
+
+function menuScore(menu: ParsedMenuResult | null): number {
+	if (!menu?.hasMenu) return -1
+	let score = 0
+	if (menu.breakfast) score += menu.breakfast.items.length > 0 ? 2 : 0
+	for (const meal of [menu.lunch, menu.dinner]) {
+		if (!meal) continue
+		score += 2
+		for (
+			const field of [
+				meal.mainDish,
+				meal.optionDish,
+				meal.sideDish,
+				meal.salads,
+				meal.dessert,
+				meal.juice,
+			]
+		) {
+			if (field) score += 1
+		}
+	}
+	return score
+}
+
 // scrap university's restaurant menu
+// HTML and RSS are independent sources: if the page markup changes, the feed
+// usually still has the same menu, and the most complete parse wins.
 export default async function scrapURMenu(
 	retries = 0,
 ): Promise<ParsedMenuResult | null> {
 	updateDate()
-	try {
-		// Timeout so a hung RU site never wedges the bulletin; retries handle transient drops.
-		const res = await fetch(
-			`https://restaurante.saomateus.ufes.br/cardapio/${year}-${month}-${day}`,
-			{ signal: AbortSignal.timeout(10_000) },
-		)
-		if (!res.ok) {
-			print('MENUSCRAP', `Menu fetch failed: status=${res.status}`, 'red')
-			return null
-		}
-		const txt = await res.text()
-		return parseMenuHtml(txt)
-	} catch (e: any) {
-		print('MENUSCRAP', 'Error scraping menu', e?.stack || e, 'red')
-		if (retries >= 5) {
-			print('MENUSCRAP', 'Max retries reached, giving up', 'red')
-			return null
-		}
-		await delay(30_000)
-		await randomDelay()
-		return await scrapURMenu(retries + 1)
+	const url = `${MENU_URL}/${year}-${month}-${day}`
+
+	const [htmlResult, rssResult] = await Promise.allSettled([
+		fetchMenuSource(url).then(parseMenuHtml),
+		fetchMenuSource(`${MENU_URL}/rss/${year}-${month}-${day}`).then(parseMenuRss),
+	])
+
+	const htmlMenu = htmlResult.status === 'fulfilled' ? htmlResult.value : null
+	const rssMenu = rssResult.status === 'fulfilled' ? rssResult.value : null
+	const best = menuScore(rssMenu) > menuScore(htmlMenu) ? rssMenu : htmlMenu
+
+	if (best?.hasMenu) {
+		if (best === rssMenu) print('MENUSCRAP', 'Using RSS menu fallback', 'yellow')
+		return best
 	}
+
+	// Only complain when neither source produced a menu, so a flaky secondary
+	// feed does not spam the logs while the primary page still works.
+	if (htmlResult.status === 'rejected') {
+		print('MENUSCRAP', 'HTML menu fetch failed', htmlResult.reason, 'red')
+	}
+	if (rssResult.status === 'rejected') {
+		print('MENUSCRAP', 'RSS menu fetch failed', rssResult.reason, 'red')
+	}
+
+	// Both sources answered and neither has a menu: RU has nothing published.
+	// Do not hammer the site with retries on a closed day.
+	const bothFetched = htmlResult.status === 'fulfilled' &&
+		rssResult.status === 'fulfilled'
+	if (bothFetched) return null
+
+	if (retries >= 5) {
+		print('MENUSCRAP', 'Max retries reached, giving up', 'red')
+		return null
+	}
+	await delay(30_000)
+	await randomDelay()
+	return await scrapURMenu(retries + 1)
 }
 
 function updateDate() {
