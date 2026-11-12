@@ -3,6 +3,7 @@
 // Builds summary with weather and calendar events
 import { analyzeCalendarEvents, type ClassifiedCalendar } from '@util/calendarAnalytics.ts'
 import { type ParsedMenuResult, parseMenuHtml, parseMenuRss } from '@util/menuParser.ts'
+import { chooseMenu, shouldRetry } from '@util/menuSelection.ts'
 import { updateCalendarCache } from '@plugin/calendarParser.ts'
 import { getAllowedTagsList } from '@plugin/groupAnnouncer.ts'
 import { generateDailySummary } from '@util/dailySummary.ts'
@@ -143,29 +144,6 @@ async function fetchMenuSource(url: string): Promise<string> {
 	return await res.text()
 }
 
-function menuScore(menu: ParsedMenuResult | null): number {
-	if (!menu?.hasMenu) return -1
-	let score = 0
-	if (menu.breakfast) score += menu.breakfast.items.length > 0 ? 2 : 0
-	for (const meal of [menu.lunch, menu.dinner]) {
-		if (!meal) continue
-		score += 2
-		for (
-			const field of [
-				meal.mainDish,
-				meal.optionDish,
-				meal.sideDish,
-				meal.salads,
-				meal.dessert,
-				meal.juice,
-			]
-		) {
-			if (field) score += 1
-		}
-	}
-	return score
-}
-
 // scrap university's restaurant menu
 // HTML and RSS are independent sources: if the page markup changes, the feed
 // usually still has the same menu, and the most complete parse wins.
@@ -182,10 +160,10 @@ export default async function scrapURMenu(
 
 	const htmlMenu = htmlResult.status === 'fulfilled' ? htmlResult.value : null
 	const rssMenu = rssResult.status === 'fulfilled' ? rssResult.value : null
-	const best = menuScore(rssMenu) > menuScore(htmlMenu) ? rssMenu : htmlMenu
+	const { menu: best, source } = chooseMenu(htmlMenu, rssMenu)
 
 	if (best?.hasMenu) {
-		if (best === rssMenu) print('MENUSCRAP', 'Using RSS menu fallback', 'yellow')
+		if (source === 'rss') print('MENUSCRAP', 'Using RSS menu (more complete)', 'yellow')
 		return best
 	}
 
@@ -200,9 +178,12 @@ export default async function scrapURMenu(
 
 	// Both sources answered and neither has a menu: RU has nothing published.
 	// Do not hammer the site with retries on a closed day.
-	const bothFetched = htmlResult.status === 'fulfilled' &&
-		rssResult.status === 'fulfilled'
-	if (bothFetched) return null
+	const canRetry = shouldRetry(
+		htmlResult.status === 'fulfilled',
+		rssResult.status === 'fulfilled',
+		best,
+	)
+	if (!canRetry) return null
 
 	if (retries >= 5) {
 		print('MENUSCRAP', 'Max retries reached, giving up', 'red')

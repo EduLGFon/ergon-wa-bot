@@ -1,5 +1,5 @@
-import { ok, strictEqual } from 'node:assert/strict'
 import { parseMenuHtml, parseMenuRss } from '@util/menuParser.ts'
+import { ok, strictEqual } from 'node:assert/strict'
 
 const disclaimer = '<p>*O cardápio poderá sofrer alterações sem comunicação prévia</p>'
 

@@ -82,10 +82,10 @@ root file on demand rather than claiming it already exists.
 - Linter: `deno lint` (excludes `no-explicit-any`, `no-import-prefix`, `no-unversioned-import`).
 - Type checker: `deno check` (compiler `strict: true`, `skipLibCheck: false`, types
   `conf/types/global.d.ts`). Same verify chain as the linter.
-- Test command: no test suite is committed (no `*.test.ts` in the tree). When a suite is introduced,
-  run it with `deno test`; until then verification is the formatter + type check + lint chain plus a
-  targeted runtime smoke (`deno task dev` or `deno task start:dev`, bridge `-- --find-id` when
-  touching pairing). Never claim a test run you did not perform.
+- Test command: the menu parser/selection suites live in `util/*_test.ts` and run with `deno test`;
+  verification is the formatter + type check + lint chain plus a targeted runtime smoke
+  (`deno task dev` or `deno task start:dev`, bridge `-- --find-id` when touching pairing). Never
+  claim a test run you did not perform.
 - Run commands: `deno task dev` (watch-HMR), `deno task start:dev` (single run), `deno task start` /
   `restart` / `stop` (PM2 prod), `deno task db:gen` / `db:push` / `db:pull` (drizzle-kit),
   `deno task wizard` (interactive setup), `deno task check` / `lint` / `fmt` / `verify` (`verify` is
