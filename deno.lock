@@ -3,19 +3,19 @@
   "specifiers": {
     "jsr:@libs/qrcode@*": "3.1.0",
     "jsr:@libs/qrcode@^3.1.0": "3.1.0",
-    "npm:@google/genai@^2.32.0": "2.32.0",
+    "npm:@google/genai@3": "3.0.0",
     "npm:@types/node@^26.6.6": "26.6.6",
     "npm:@whiskeysockets/baileys@^7.0.0-rc14": "7.0.0-rc14_sharp@0.35.5",
     "npm:astring@1.9.0": "1.9.0",
     "npm:drizzle-kit@*": "0.31.11",
     "npm:drizzle-kit@~0.31.11": "0.31.11",
-    "npm:drizzle-orm@~0.45.4": "0.45.4_postgres@4.0.0",
+    "npm:drizzle-orm@~0.45.4": "0.45.4_postgres@4.1.0",
     "npm:grammy@^1.46.0": "1.46.0",
-    "npm:i18next@^26.7.1": "26.7.1",
+    "npm:i18next@^27.1.0": "27.1.0",
     "npm:meriyah@6.1.4": "6.1.4",
     "npm:node-webpmux@^3.2.1": "3.2.1",
     "npm:pm2@*": "7.0.4",
-    "npm:postgres@4": "4.0.0",
+    "npm:postgres@^4.1.0": "4.1.0",
     "npm:sharp@~0.35.5": "0.35.5"
   },
   "jsr": {
@@ -446,15 +446,14 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
-    "@google/genai@2.32.0": {
-      "integrity": "sha512-60c79uXpR0a47bmGqDxbXEBuQUalNmwo5mx5kqb91jIW4FoqpsLSt86DeVhRhtH5+s/16Wqxt3sXzFQn2U1OHQ==",
+    "@google/genai@3.0.0": {
+      "integrity": "sha512-0o2uBXPWBNUu0jWg2Id5iBtCnsd7lnxKPQfnijKvNublG/zj40CToERvz/eyfNjzzXt2kwuvxpouLUrRCZ2WUQ==",
       "dependencies": [
         "google-auth-library",
         "p-retry",
         "protobufjs",
         "ws"
-      ],
-      "scripts": true
+      ]
     },
     "@grammyjs/types@5.0.0": {
       "integrity": "sha512-iq1Qrq1iPKkB8yAa0qSuIURMZOCuqTY5pWy5gHpCeL1oQ+GPadGhw/cDTVE8waJwuCzacUzuIjRv1sESvk7u7A=="
@@ -930,7 +929,7 @@
       ],
       "bin": true
     },
-    "drizzle-orm@0.45.4_postgres@4.0.0": {
+    "drizzle-orm@0.45.4_postgres@4.1.0": {
       "integrity": "sha512-NiM1YZpJ2UxyeE67DpDDZ+Tsw4YLX3trSlkNT7Tm9eKoUNb1LvaAaQzXgYQsWs+AQ9TUmmwMmBOCXuqqxUWKKQ==",
       "dependencies": [
         "postgres"
@@ -1207,8 +1206,8 @@
         "debug@4.4.3"
       ]
     },
-    "i18next@26.7.1": {
-      "integrity": "sha512-cX+3RRVczel/V2kCMTACckSGSpqgtWYEA6beXNYVms7dOQiHojdPYHD26lT4IKimNeoGWrLvtPgjftbRvmZJVw=="
+    "i18next@27.1.0": {
+      "integrity": "sha512-xdjb2OXFRm33rClqknpJmmYBvrPcaoEQ7/4kur5uTrbqckqzkbRO0ns6gFFki5TDmHzbIrFYpNBXhaRafmhJ/Q=="
     },
     "ieee754@1.2.1": {
       "integrity": "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="
@@ -1451,8 +1450,8 @@
       ],
       "bin": true
     },
-    "postgres@4.0.0": {
-      "integrity": "sha512-kBh8qXtcvvIAc00DftQyOxz7M/3Zxww1tRMXZPLzipNXXl5PIzHml+9zB3Mrge2U8ldc0WF1ZdLp1iYQi7Kh3A=="
+    "postgres@4.1.0": {
+      "integrity": "sha512-s+0WH67YAyLdBQUb6XczbziBhY+C9uiQsg9S8R5RHdZhk6sdyK6202E+T2tXpiInSEEjDLRSJ3OpYBe3PN6MsQ=="
     },
     "process-warning@5.1.0": {
       "integrity": "sha512-jQSaVHsPgtyw60e1rQ/A+/ArPEj/S8pS/vFnyGa/gYFXrKk/6RuDkoqVDQ5NI5MmS01698ltlAk0NoDBNLujRw=="
@@ -1692,15 +1691,15 @@
   "workspace": {
     "dependencies": [
       "jsr:@libs/qrcode@^3.1.0",
-      "npm:@google/genai@^2.32.0",
+      "npm:@google/genai@3",
       "npm:@types/node@^26.6.6",
       "npm:@whiskeysockets/baileys@^7.0.0-rc14",
       "npm:drizzle-kit@~0.31.11",
       "npm:drizzle-orm@~0.45.4",
       "npm:grammy@^1.46.0",
-      "npm:i18next@^26.7.1",
+      "npm:i18next@^27.1.0",
       "npm:node-webpmux@^3.2.1",
-      "npm:postgres@4",
+      "npm:postgres@^4.1.0",
       "npm:sharp@~0.35.5"
     ]
   }
