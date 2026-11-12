@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rustc \
     tzdata \
     xz-utils \
+    zsh \
     && rm -rf /var/lib/apt/lists/*
 
 # Python venv expected by conf/defaults.json, util/stt.ts and the rembg/yt-dlp

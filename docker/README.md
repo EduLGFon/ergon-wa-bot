@@ -22,8 +22,10 @@ snapshotted with its backup API, and `conf/gen` is copied without the host Pytho
 scripts/docker-migrate.sh
 ```
 
-This creates the volumes, restores the database and copies the app state. Then stop the host bot
-before starting the container, because both would use the same WhatsApp session:
+This creates the volumes, restores the database when the container database is fresh, and copies the
+app state. The database is restored automatically only when there are no rows in `public.users`. If
+the container already has data, the script skips the restore and only copies app state. Then stop
+the host bot before starting the container, because both would use the same WhatsApp session:
 
 ```bash
 pm2 stop wa
@@ -88,9 +90,36 @@ docker run --rm -v ergon-wa-bot_appdata:/data -v "$PWD":/backup postgres:18-alpi
 
 ## Re-running the migration
 
-`RESET_DATA=1` clears the app-state volume before copying. Without it, files are overwritten but
-extras from an older migration may remain.
+A fresh container database is restored automatically. When `public.users` already has rows, the
+script skips the database restore and only copies app state.
+
+`RESTORE_DB=1` forces the database restore. This is destructive: the current container database is
+dumped to `docker/backups/pre-restore-YYYYmmdd-HHMMSS.sql` (gitignored), then replaced with the host
+database, so any rows written in the container since the last migration are lost unless you restore
+that backup.
+
+```bash
+RESTORE_DB=1 scripts/docker-migrate.sh
+```
+
+`RESET_DATA=1` clears the app-state volume before copying and also forces the database restore.
+Without it, files are overwritten but extras from an older migration may remain.
 
 ```bash
 RESET_DATA=1 scripts/docker-migrate.sh
 ```
+
+## Manual volume setup
+
+The migration script creates the external volumes. If you skip it, create them before the first
+`docker compose up`:
+
+```bash
+docker volume create ergon-wa-bot_pgdata
+docker volume create ergon-wa-bot_appdata
+```
+
+A new `pgdata` volume starts with an empty database. The migration script is what copies the host
+schema and data, so without it (or a manual dump and restore) the bot has no data to work with.
+Running the migration script later also works: it detects the empty database and restores it
+automatically.

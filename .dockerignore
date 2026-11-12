@@ -3,6 +3,12 @@
 node_modules
 **/node_modules
 conf/gen
+.env
+*.env
+**/.env
+**/*.env
+cookies.txt
+**/cookies.txt
 conf/.env
 conf/.env.docker
 docker/postgres.env

@@ -5,10 +5,12 @@ services:
         image: postgres:18-alpine
         container_name: ergon-wa-postgres
         restart: unless-stopped
+        stop_grace_period: 30s
         env_file:
             - docker/postgres.env
         environment:
             PGDATA: /var/lib/postgresql/data
+            TZ: America/Sao_Paulo
         volumes:
             - pgdata:/var/lib/postgresql/data
         healthcheck:
