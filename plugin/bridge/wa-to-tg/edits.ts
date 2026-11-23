@@ -7,7 +7,7 @@ import { annotateMentions, getMsgText, hasMentionAll, mentionedJidsOf, phoneOf }
 import { reapplyReactions, storeMirrorBase } from './reaction-summary.ts'
 import { resolveContactName } from './contact-names.ts'
 import { describeErr, logEditFailure, routeEdit } from './errors.ts'
-import { TG_TEXT_LIMIT } from './chunk.ts'
+import { sendTgText, TG_TEXT_LIMIT } from './chunk.ts'
 import { chatForReply } from './routing.ts'
 import { type proto, WAMessageStubType } from 'baileys'
 import { waMarkdownToTgEntities } from '../format.ts'
@@ -100,7 +100,7 @@ export async function handleWaEdits(
 			// limit (with a trailing marker) and relay the tail as one
 			// follow-up message so the full text still lands in the topic.
 			const editBody = body.length > TG_TEXT_LIMIT
-				? `${body.slice(0, TG_TEXT_LIMIT - 1)}...`
+				? `${body.slice(0, TG_TEXT_LIMIT - 3)}...`
 				: body
 			const editAlt = editBody.slice(0, 1024) || undefined
 			const kept = entities.filter((e) => e.offset + e.length <= editBody.length)
@@ -155,15 +155,23 @@ export async function handleWaEdits(
 			} catch {
 				// Reaction re-apply is best effort - the edit above landed.
 			}
-			// Tail of an over-limit text edit lands as a follow-up message.
+			// Tail of an over-limit text edit lands as a follow-up message,
+			// chunked through the same limiter so Telegram never rejects it.
 			if ((route === 'text' || route === 'both') && body.length > TG_TEXT_LIMIT) {
-				await tgCall(
-					() =>
-						tg!.api.sendMessage(chatId, body.slice(TG_TEXT_LIMIT - 1), {
-							message_thread_id: mapping.telegram_topic_id,
-						}),
-					'message',
+				const tailStart = TG_TEXT_LIMIT - 3
+				const tailBody = body.slice(tailStart)
+				const tailEntities = entities
+					.filter((e) => e.offset >= tailStart)
+					.map((e) => ({ ...e, offset: e.offset - tailStart }))
+				await sendTgText(
+					tg!.api,
 					chatId,
+					mapping.telegram_topic_id,
+					tailBody,
+					tailEntities,
+					undefined,
+					() => {},
+					false,
 				).catch(() => null)
 			}
 		} catch (e) {

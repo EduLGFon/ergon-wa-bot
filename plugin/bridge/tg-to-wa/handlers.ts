@@ -156,49 +156,51 @@ export function registerTgMessageHandler(
 			const needsTextFollowUp = !!textForWa &&
 				(!!msg.location || !!msg.video_note || !!msg.poll ||
 					(msg.contact && !String(waContent.text || '').includes(textForWa)))
-			await waSend(async () => {
-				const sent = await bot.sock.sendMessage(
+			const sent = await waSend(() =>
+				bot.sock.sendMessage(
 					mapping.whatsapp_jid,
 					waContent,
 					quoted ? { quoted } : undefined,
 				)
-				if (sent?.key?.id) {
-					db.saveReplyMap(
-						msg.message_id,
-						mapping.whatsapp_jid,
-						sent.key.id,
-						JSON.stringify(sent.key),
-						'unknown',
-						null,
-						null,
-						{
-							chatId,
-							replyTo: msg.reply_to_message?.message_id ?? null,
-						},
-					)
-					// Telegram-created polls become native WA polls - keep the
-					// metadata so votes relay both ways (the secret backfills
-					// from the send echo, the creator is always us).
-					const pollId = msg.poll?.id
-					const pollOpts = msg.poll ? tgPollOptions(msg) : null
-					if (pollId && pollOpts) {
-						db.savePollMeta(chatId, msg.message_id, {
-							secret: null,
-							options: pollOpts,
-							multi: msg.poll?.allows_multiple_answers === true,
-							creator: selfJid(),
-							pollId,
-						})
-					}
+			)
+			if (sent?.key?.id) {
+				db.saveReplyMap(
+					msg.message_id,
+					mapping.whatsapp_jid,
+					sent.key.id,
+					JSON.stringify(sent.key),
+					'unknown',
+					null,
+					null,
+					{
+						chatId,
+						replyTo: msg.reply_to_message?.message_id ?? null,
+					},
+				)
+				// Telegram-created polls become native WA polls - keep the
+				// metadata so votes relay both ways (the secret backfills
+				// from the send echo, the creator is always us).
+				const pollId = msg.poll?.id
+				const pollOpts = msg.poll ? tgPollOptions(msg) : null
+				if (pollId && pollOpts) {
+					db.savePollMeta(chatId, msg.message_id, {
+						secret: null,
+						options: pollOpts,
+						multi: msg.poll?.allows_multiple_answers === true,
+						creator: selfJid(),
+						pollId,
+					})
 				}
-				if (needsTextFollowUp) {
-					const follow = await bot.sock.sendMessage(mapping.whatsapp_jid, {
+			}
+			if (needsTextFollowUp) {
+				const follow = await waSend(() =>
+					bot.sock.sendMessage(mapping.whatsapp_jid, {
 						text: textForWa,
 					})
-					if (follow?.key?.id) db.markFollowUp(follow.key.id)
-				}
-				db.updateLastActive(mapping.whatsapp_jid)
-			})
+				)
+				if (follow?.key?.id) db.markFollowUp(follow.key.id)
+			}
+			db.updateLastActive(mapping.whatsapp_jid)
 		} catch (e) {
 			console.error('[BRIDGE] TG->WA relay failed:', e)
 			const topicId = (ctx.msg as any)?.message_thread_id
