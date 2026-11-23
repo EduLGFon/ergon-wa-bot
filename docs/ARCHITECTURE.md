@@ -104,8 +104,9 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   HEALTH.
 - PM2 (`conf/ecosystem.config.cjs`): app `wa`, `interpreter: deno`,
   `--v8-flags=--expose-gc --env=conf/.env`, `autorestart`, `min_uptime: 10s`, exponential backoff,
-  `log_file: conf/gen/out.log` + split `error_file: conf/gen/err.log`, pm2-logrotate via
-  `scripts/setup-logrotate.sh` (50M, retain 7, compress).
+  `out_file: conf/gen/out.log` + `error_file: conf/gen/err.log` (do NOT set `log_file`: PM2 would
+  write the combined log to the same path and duplicate every line in out.log), `merge_logs: true`,
+  pm2-logrotate via `scripts/setup-logrotate.sh` (50M, retain 7, compress).
 
 ## 5. Configuration
 
