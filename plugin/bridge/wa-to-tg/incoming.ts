@@ -223,10 +223,10 @@ export async function handleWAMessages(
 				if (rich) text = rich
 			}
 			if (!text && !media && !special) {
-				if (topicId !== null) await notifyEmptyRelay(cid, topicId, dl, m, senderName)
 				if (mediaFailedTransient && opts.fromOutbox) {
 					throw new Error(`wa media download failed: ${dl?.label ?? 'attachment'}`)
 				}
+				if (topicId !== null) await notifyEmptyRelay(cid, topicId, dl, m, senderName)
 				continue
 			}
 
