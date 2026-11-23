@@ -3,19 +3,19 @@
   "specifiers": {
     "jsr:@libs/qrcode@*": "3.1.0",
     "jsr:@libs/qrcode@^3.1.0": "3.1.0",
-    "npm:@google/genai@3": "3.0.0",
+    "npm:@google/genai@^3.6.1": "3.6.1",
     "npm:@types/node@^26.6.6": "26.6.6",
     "npm:@whiskeysockets/baileys@^7.0.0-rc14": "7.0.0-rc14_sharp@0.35.5",
     "npm:astring@1.9.0": "1.9.0",
     "npm:drizzle-kit@*": "0.31.11",
     "npm:drizzle-kit@~0.31.11": "0.31.11",
-    "npm:drizzle-orm@~0.45.4": "0.45.4_postgres@4.1.0",
-    "npm:grammy@^1.46.0": "1.46.0",
-    "npm:i18next@^27.1.0": "27.1.0",
+    "npm:drizzle-orm@~0.45.4": "0.45.4_postgres@4.1.1",
+    "npm:grammy@^1.48.0": "1.48.0",
+    "npm:i18next@^27.2.6": "27.2.6",
     "npm:meriyah@6.1.4": "6.1.4",
     "npm:node-webpmux@^3.2.1": "3.2.1",
     "npm:pm2@*": "7.0.4",
-    "npm:postgres@^4.1.0": "4.1.0",
+    "npm:postgres@^4.1.1": "4.1.1",
     "npm:sharp@~0.35.5": "0.35.5"
   },
   "jsr": {
@@ -446,8 +446,8 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
-    "@google/genai@3.0.0": {
-      "integrity": "sha512-0o2uBXPWBNUu0jWg2Id5iBtCnsd7lnxKPQfnijKvNublG/zj40CToERvz/eyfNjzzXt2kwuvxpouLUrRCZ2WUQ==",
+    "@google/genai@3.6.1": {
+      "integrity": "sha512-DQIkZkl+VoZc+RUSaJ41vRuywjQDpP0t/oUf5/ddQhNW6JsPjVULW2EgHmuJ1mrr6ACtrmUdPlqtNXF1yfKySg==",
       "dependencies": [
         "google-auth-library",
         "p-retry",
@@ -455,8 +455,8 @@
         "ws"
       ]
     },
-    "@grammyjs/types@5.0.0": {
-      "integrity": "sha512-iq1Qrq1iPKkB8yAa0qSuIURMZOCuqTY5pWy5gHpCeL1oQ+GPadGhw/cDTVE8waJwuCzacUzuIjRv1sESvk7u7A=="
+    "@grammyjs/types@5.2.0": {
+      "integrity": "sha512-URnzUV3rBEkEtsHz/+/na8uDJS45eD0vXGM73Ucps2nKpdVfhT4+EyYV8lDftazVRoWN2mT2hjMzMEbSPURBhA=="
     },
     "@hapi/boom@9.1.4": {
       "integrity": "sha512-Ls1oH8jaN1vNsqcaHVYJrKmgMcKsC1wcp8bujvXrHaAqD2iDYq3HoOwsxwo09Cuda5R5nC0o0IxlrlTuvPuzSw==",
@@ -929,7 +929,7 @@
       ],
       "bin": true
     },
-    "drizzle-orm@0.45.4_postgres@4.1.0": {
+    "drizzle-orm@0.45.4_postgres@4.1.1": {
       "integrity": "sha512-NiM1YZpJ2UxyeE67DpDDZ+Tsw4YLX3trSlkNT7Tm9eKoUNb1LvaAaQzXgYQsWs+AQ9TUmmwMmBOCXuqqxUWKKQ==",
       "dependencies": [
         "postgres"
@@ -1168,8 +1168,8 @@
     "google-logging-utils@1.1.3": {
       "integrity": "sha512-eAmLkjDjAFCVXg7A1unxHsLf961m6y17QFqXqAXGj/gVkKFrEICfStRfwUlGNfeCEjNRa32JEWOUTlYXPyyKvA=="
     },
-    "grammy@1.46.0": {
-      "integrity": "sha512-/8Qw+iisrUdOMk+p2mjEHouMm/BBdBEN1DHh16wiTpRUZkxDG3PxexdjCvR+wvK3LWPdrEvnQbdrwpU954sPhg==",
+    "grammy@1.48.0": {
+      "integrity": "sha512-/QMphprJxroslpNCFR3SFQwOobjf6uCAmz+OzK94FAVvhQxG/NmKqnkLVhnKkcZ6hruwAFKka6+34Zzg5CjAiQ==",
       "dependencies": [
         "@grammyjs/types",
         "abort-controller",
@@ -1206,8 +1206,8 @@
         "debug@4.4.3"
       ]
     },
-    "i18next@27.1.0": {
-      "integrity": "sha512-xdjb2OXFRm33rClqknpJmmYBvrPcaoEQ7/4kur5uTrbqckqzkbRO0ns6gFFki5TDmHzbIrFYpNBXhaRafmhJ/Q=="
+    "i18next@27.2.6": {
+      "integrity": "sha512-ScRHHL/oAHaEgi78K770XIDQmOiq3BLjD4zxEoDeva4NLXXLPb83mzeSjFw7SefkwCEpLNC+560Pg0Q3BnCLsA=="
     },
     "ieee754@1.2.1": {
       "integrity": "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="
@@ -1450,8 +1450,8 @@
       ],
       "bin": true
     },
-    "postgres@4.1.0": {
-      "integrity": "sha512-s+0WH67YAyLdBQUb6XczbziBhY+C9uiQsg9S8R5RHdZhk6sdyK6202E+T2tXpiInSEEjDLRSJ3OpYBe3PN6MsQ=="
+    "postgres@4.1.1": {
+      "integrity": "sha512-1kJDojqNZC+iTHHXh6eif0J98LUtyLAePe/qkW1GK35eh2JixlsAiIKq3FGI+xqI+SUGTNodzf7TScVeIIyUug=="
     },
     "process-warning@5.1.0": {
       "integrity": "sha512-jQSaVHsPgtyw60e1rQ/A+/ArPEj/S8pS/vFnyGa/gYFXrKk/6RuDkoqVDQ5NI5MmS01698ltlAk0NoDBNLujRw=="
@@ -1691,15 +1691,15 @@
   "workspace": {
     "dependencies": [
       "jsr:@libs/qrcode@^3.1.0",
-      "npm:@google/genai@3",
+      "npm:@google/genai@^3.6.1",
       "npm:@types/node@^26.6.6",
       "npm:@whiskeysockets/baileys@^7.0.0-rc14",
       "npm:drizzle-kit@~0.31.11",
       "npm:drizzle-orm@~0.45.4",
-      "npm:grammy@^1.46.0",
-      "npm:i18next@^27.1.0",
+      "npm:grammy@^1.48.0",
+      "npm:i18next@^27.2.6",
       "npm:node-webpmux@^3.2.1",
-      "npm:postgres@^4.1.0",
+      "npm:postgres@^4.1.1",
       "npm:sharp@~0.35.5"
     ]
   }
