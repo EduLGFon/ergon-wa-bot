@@ -15,6 +15,7 @@ import type { RateLimiter } from './rate-limiter.ts'
 import { formatBytes } from './format.ts'
 import type { BridgeDB } from './db.ts'
 import type { Bot } from 'grammy'
+import bot from '@plugin/bot.ts'
 
 export { formatBytes }
 export { buildWaContent, restoreWaKey, tgReactionToWaEmoji } from './tg-to-wa/content.ts'
@@ -32,7 +33,39 @@ export function registerTgHandlers(
 	// One bot serves both forum groups - any update outside them is ignored.
 	const inSupergroup = (ctx: { chat?: { id?: string | number } }): boolean =>
 		bucketOfChat(ctx.chat?.id ?? '', groups) !== null
-	const waSend = <T>(fn: () => Promise<T>): Promise<T> => waLimiter.enqueue(fn, 'wa-send')
+	const waitOpen = async (): Promise<void> => {
+		try {
+			await Promise.race([
+				(bot.sock?.waitForSocketOpen?.() as Promise<void> | undefined) ?? Promise.resolve(),
+				new Promise<void>((resolve) => setTimeout(resolve, 15_000)),
+			])
+		} catch {
+			// closed for good - caller degrades via the existing notice fallback
+		}
+	}
+	const isClosedRace = (e: unknown): boolean => {
+		const status = (e as { output?: { statusCode?: unknown }; statusCode?: unknown })?.output
+			?.statusCode ??
+			(e as { statusCode?: unknown })?.statusCode
+		const msg = (e as Error)?.message
+		return status === 1006 || status === 428 || msg === 'Connection Closed' ||
+			String(msg ?? '').includes('1006')
+	}
+	const waSend = <T>(fn: () => Promise<T>): Promise<T> => {
+		const run = async (attempt: number): Promise<T> => {
+			if (!bot.sock?.ws?.isOpen) await waitOpen()
+			try {
+				return await waLimiter.enqueue(fn, 'wa-send')
+			} catch (e) {
+				if (isClosedRace(e) && attempt === 0) {
+					await waitOpen()
+					return run(1)
+				}
+				throw e
+			}
+		}
+		return run(0)
+	}
 	// TG-side notices route by destination group so business warnings never
 	// consume personal budget. Falls back to the personal limiter before boot.
 	const tgRoute = <T>(
