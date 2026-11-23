@@ -154,7 +154,7 @@ console.error = (...args) => {
 // libsignal - count it for HEALTH without spamming (74x in 24d).
 const origLog = console.log.bind(console)
 let lastClosedSessionLog = 0
-// Note: print() calls console.log internally, so only intercept the raw
+// Note: print() writes via origLog directly, so only intercept the raw
 // libsignal line to avoid recursion.
 console.log = (...args) => {
 	try {
@@ -230,7 +230,7 @@ function print(...args: any) {
 	) {
 		return
 	}
-	if (typeof args[2] !== 'string') return console.log(...args)
+	if (typeof args[2] !== 'string') return origLog(...args)
 
 	const color = args.pop()
 	// Cache memory stats briefly to avoid a syscall on every log line.
@@ -248,7 +248,7 @@ function print(...args: any) {
 	const heap = ((m?.heapUsed as number) ?? 0).bytes()
 	const lag = lastLoopLagMs > 0 ? ` l:${lastLoopLagMs}ms` : ''
 
-	console.log(
+	origLog(
 		...colorize(
 			color,
 			`[ ${now()} |${memory} h:${heap}${lag}|${args?.shift()?.align(11)}] -`,
