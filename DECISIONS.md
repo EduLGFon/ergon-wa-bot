@@ -1,216 +1,101 @@
 # Decisions
 
-Append-only architecture decision records. Newest at the bottom. Reference from code as
-`// See DECISIONS.md#D01`.
+Append-only ADRs. Reference from code as `// See DECISIONS.md#D01`.
 
 ## D01 - Telegram bridge as a bot plugin (2026-10-08)
 
-The relay logic stays in `bridge/` (own deno.jsonc scope, one module per concern) and the bot owns
-its lifecycle through `plugin/bridge.ts`, the only entry `wa.ts`, `event/connection/update.ts` and
-`cmd/dev/memory.ts` use. Chosen over moving `bridge/` under `plugin/`: same ownership boundary with
-a fraction of the churn (no import rewrites across 40+ modules, no alias or tooling changes).
-`bridge/mod.ts` gains `stopBridge()` so SIGINT/SIGTERM stops grammy polling and closes the SQLite
-handle; previously `onExit` only flushed cache and stickers.
+Decision: relay logic stays in `bridge/`; bot owns lifecycle via `plugin/bridge.ts`, used only by
+`wa.ts`, `event/connection/update.ts`, `cmd/dev/memory.ts`. Reason: same ownership boundary with far
+less churn than moving `bridge/` under `plugin/`. Consequences: `bridge/mod.ts` gains `stopBridge()`
+for SIGINT/SIGTERM.
 
 ## D02 - Bridge tree lives under plugin/ (2026-10-08)
 
-Supersedes the D01 layout note: per owner direction the whole `bridge/` tree moved to
-`plugin/bridge/` (facades plus `wa-to-tg/` and `tg-to-wa/` module dirs, scope config, lockfile and
-docs). `plugin/bridge.ts` stays beside it as the lifecycle facade, so `wa.ts`,
-`event/connection/update.ts` and `cmd/dev/memory.ts` needed no changes for this move. Pure rename
-landed alone; path fixes (scope config, `--find-id` help strings, scripts, setup prompts, docs)
-followed in the next commit. `agents.md` path references were updated in the working tree but left
-uncommitted next to the prior pending hunk for owner review.
+Supersedes the D01 layout note. Decision: move the whole `bridge/` tree to `plugin/bridge/`;
+`plugin/bridge.ts` stays the lifecycle facade, so callers need no changes. Reason: owner direction.
+Consequences: pure rename; path fixes followed in the next commit.
 
 ## D03 - Unpinned dependency ranges (2026-10-08)
 
-Import maps use caret ranges instead of exact pins (for example `npm:grammy@^1.46.0`), so compatible
-updates flow on fresh installs without a manual bump per release. Ranges still exclude majors (and
-minors on 0.x packages); both `deno.lock` files stay committed and exact, and blanket major upgrades
-remain forbidden without review. Docs and `agents.md` name packages without versions and point at
-the import maps as the range source.
+Decision: import maps use caret ranges; lockfiles stay exact. Reason: compatible updates flow
+without a manual bump per release. Consequences: no blanket majors; docs point at import maps as the
+range source.
 
 ## D04 - Pinned WA profile card per bridge topic (2026-10-08)
 
-Each new bridge topic opens with a pinned profile card: the WA profile photo (DM avatar or group
-icon via `profilePictureUrl(..., 'image')`) plus the about/status text (DMs via `fetchStatus`,
-groups via `groupMetadata.desc`), sent through the normal flood queue and pinned with
-`pinChatMessage`. Picture changes arrive as `contacts.update` with `imgUrl` changed/removed (Baileys
-emits this for both DMs and groups); the handler re-sends the card, unpins the previous card message
-(kept as history, never deleted) and pins the fresh one. About text has no push event, so it is a
-snapshot at each card send. A hidden photo degrades to a text-only card, never a failure. Only new
-topics get cards plus later change events: pre-existing mappings get no backfill. Storage is three
-safe-ADD `mappings` columns (`profile_pic_url`, `profile_about`, `profile_msg_id`) holding the last
-seen state plus the card message id for unpin; pic URLs may carry tokens, so they live only in the
-local bridge DB (same trust level as `reply_map` content) and are never logged. Needs the bot to
-have pin rights in the supergroup (same prerequisite as WA pin sync, already warned at boot).
-Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
+Decision: new topics open with a pinned profile card (photo plus about); picture changes re-send and
+re-pin; a hidden photo degrades to a text-only card; no backfill for pre-existing mappings. Reason:
+richer topic identity with minimal storage and no failure on missing photos. Consequences: three
+safe-ADD `mappings` columns; pic URLs stay local-only and are never logged; needs bot pin rights in
+the supergroup.
 
 ## D05 - Classification buttons on the profile card, business wipes (2026-10-08)
 
-The standalone new-chat prompt is gone: it had no in-flight lock, so concurrent upserts each posted
-one (two or more prompts per chat, every stale pair answering chat not found because only the latest
-id was stored). The Personal/Business buttons now ride on the pinned profile card itself, which is
-sent exactly once per new topic via the `isNew` flag, so duplicates are structurally impossible.
-Taps resolve through `mappings` matching `prompt_msg_id` or `profile_msg_id` (legacy prompts keep
-working until used). Tapping Personal in the home group just strips the keyboard; tapping Business
-wipes the old topic (best-effort deletes of known messages, capped at 50, then `deleteForumTopic`,
-no pointer and no confirm per owner direction), opens a fresh business topic with a buttonless
-profile card plus a summary line. Personal moves are unchanged (replay plus pointer). Cleanup
-deletes use a new droppable `cleanup` queue label so a wipe never stalls relay. Verified:
-`deno task verify` chain only (no live WA/TG smoke in this environment).
+Decision: Personal/Business buttons ride on the pinned card sent once per new topic; Business wipes
+the old topic and opens a fresh one. Reason: the standalone prompt had no in-flight lock, so
+concurrent upserts posted duplicate prompts. Consequences: duplicates structurally impossible;
+cleanup uses a droppable `cleanup` queue.
 
 ## D06 - Learned @Name mention rendering (2026-10-08)
 
-Bare-number mention tokens (`@1234567890`) relayed terribly because the bridge knew no member names.
-Every relayed group message now teaches a speaker directory (participant JID to pushName); mentions
-pairing a numeric token with a known JID render as `@Name`, readable tokens keep the sender's
-wording. Learned only per owner direction: the owner's address book (`contacts.upsert`, history-sync
-contacts) is never read. Storage is a new `contact_names` table (jid PK, name, updated_at,
-LRU-capped at 2000 rows) plus a 500-entry memory cache, so per-message cost is one Map lookup and
-SQLite is written only on new or changed names. Lookups try the normalized JID plus its LID/PN
-counterpart via the Baileys signal store. Output stays plain text (no Telegram entities), so nobody
-gets false-pinged; owner-ping spans are recomputed after replacement. Same contract in `incoming.ts`
-and `edits.ts`. Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
+Decision: relayed group messages teach a speaker directory; numeric mention tokens render as
+`@Name`; the owner's address book is never read. Reason: bare-number tokens relayed poorly because
+the bridge knew no member names. Consequences: `contact_names` table (LRU 2000) plus a 500-entry
+cache; output stays plain text (no false pings).
 
 ## D07 - Silent group joins/exits (2026-10-08)
 
-Join/exit service lines relay with `disable_notification` per owner direction (visible in the topic,
-never pinging); promote/demote lines still notify normally. First landed as a drop, then corrected:
-silence means no ping, not gone. Verified: `deno task verify` chain only (no live WA/TG smoke in
-this environment).
+Decision: join/exit lines relay with `disable_notification`; promote/demote lines still notify.
+Reason: owner direction; silence means no ping, not gone.
 
 ## D08 - Group settings menu with member browser (2026-10-08)
 
-`/group` in a group topic opens one menu message edited in place (menu, paged member list, search
-results, member card), so 1000+ rosters cost a single message: one WA `groupMetadata` fetch cached
-60s, pages of 8, tiny callback payloads (`gm:<tok>:<op>:<arg>`, JIDs stay server-side in capped
-15min sessions), in-memory search filter. Search arms a 60s intercept: the user's next typed
-non-command message in the topic is consumed and deleted instead of relaying to WhatsApp (needs bot
-delete rights; without them the query stays visible but search still runs). Member card offers
-start-chat mirroring `/new` (verify, topic in the same group, mapping, profile card, duplicate
-guard). Menu also toggles mute and personal/business moves (business wipes per D05). Verified:
-`deno task verify` chain only (no live WA/TG smoke in this environment).
+Decision: `/group` opens one in-place menu (paged roster, search, member card); search arms a 60s
+intercept. Reason: avoid per-member message spam on large rosters. Consequences: needs bot delete
+rights for the search intercept.
 
-## D09 - Merged WA reaction footer with viewer button (2026-10-09)
+## D09 - Merged WA reaction footer with viewer button (2026-10-09, updated 2026-10-20)
 
-Telegram bots get one native reaction per message and reject many WhatsApp emojis, so the old
-last-writer-wins mirror showed a single mapped emoji and dropped the rest. Every WA reaction now
-tracks by author from the upsert carriers (the `messages.reaction` event carries no author, so its
-listener is gone) and renders a compact footer inside the mirror itself (`heart 2  thumbsup 1`,
-original WA emojis verbatim, nothing mapped away) with a stateless `rx:<mirrorId>` button that
-reveals who reacted on each emoji (short rosters as an alert, long ones as a topic reply). Native
-Telegram reactions are intentionally no longer set: Telegram rejects many WA emojis, the footer
-already preserves every original, and each native attempt cost an API slot. (2026-10-20 update:
-removed the best-effort call and its `REACTION_INVALID` heart retry; the footer is the sole
-display.) Roster persists as JSON on the `reply_map` row (`wa_reactions`: per-author name plus emoji
-plus timestamp, capped at 100 voters and 20 emojis, plus the fallback line id), so it survives
-restarts and prunes with the row after 7 days - no retention widening; reactor names are the same
-display names already relayed in message labels. Editable mirrors (text, short media captions) carry
-the footer in place; stickers, polls and long texts keep a compact reply line instead. WA text edits
-refresh the stored base and re-apply the footer; deletes clear the roster, line and button with the
-mirror. `BRIDGE_REACTION_SUMMARY` is retired (always-on behavior, env key kept as a no-op for
-compat). Verified: `deno task verify` chain only (no live WA/TG smoke in this environment).
+Decision: track reactions by author; render a compact footer in the mirror with an `rx:<mirrorId>`
+viewer button; native Telegram reactions no longer set; `BRIDGE_REACTION_SUMMARY` retired (no-op for
+compat). Reason: Telegram allows one native reaction per message and rejects many WhatsApp emojis.
+Consequences: roster stored as JSON on the `reply_map` row (100 voters / 20 emojis), pruning with
+the row after 7 days; no retention widening.
 
 ## D10 - Tap-to-vote poll buttons with voter viewer (2026-10-09)
 
-Same UX as the D09 reaction footer, adapted to polls (TG polls cannot be edited, so the tally reply
-is the vote content). The tally is now counts-only with one tap-to-vote button per option (ticked on
-the owner's picks) plus a viewer button showing who voted what (alert when short, topic reply when
-long). A tap rebuilds the encrypted selection and sends it like a native TG poll answer; the tally
-refreshes when the WA echo lands (idempotent, no echo guard needed). Taps toggle on multi polls and
-replace on single ones; clearing a whole vote or re-tapping a single pick only toasts, because the
-vote builder requires a non-empty selection. The owner matches by bare account JID, stable since own
-votes always echo with fromMe. Multi is captured at mirror time (`selectableCount > 1`), stored in
-the poll meta (old bare-array rows still read), and the TG mirror is now multi-answer when WA is. No
-new retention: the roster already lived on the reply_map row and the same voter names moved from
-inline to behind the button. Verified: `deno task verify` chain plus a targeted poll-logic smoke
-(option parsing both shapes, toggle/replace selection math, tally and viewer rendering); no live
-WA/TG smoke in this environment.
+Decision: counts-only tally with tap-to-vote buttons and a viewer button; taps toggle on multi,
+replace on single. Reason: Telegram polls cannot be edited, so the tally reply is the vote surface.
+Consequences: multi captured at mirror time; no new retention.
 
 ## D11 - Burst joining for relay texts and service events (2026-10-09)
 
-Rapid bursts used to cost one Telegram/WhatsApp send per message: a fast typist, a reconnect
-backlog, or a mass invite sprayed N sends (N slots, N notifications) through the paced flood queues.
-Three small buffers now join them, all in-memory only (same trust level as the existing album
-buffers, no schema or retention change):
-
-- WA-to-TG `wa-to-tg/coalesce.ts`: text-only messages from the same sender in the same chat wait out
-  a short sliding window (base 1800ms, `BRIDGE_COALESCE_MS`) and cross as one body (one sender
-  label, parts joined by newline, entities and owner-mention spans rebased). The window stretches to
-  4s/6s while the lane pressure (queued plus parked) passes 20/100, so a burst that would arrive
-  late anyway arrives joined instead. Caps at 5 parts (`BRIDGE_COALESCE_MAX`) and 3500 chars.
-- WA-to-TG `wa-to-tg/service-batch.ts`: `group-participants.update` events batch per chat over 3s
-  (`BRIDGE_SERVICE_BATCH_MS`, same pressure stretch) into one service line (`joined` / `left` /
-  `promote` / `demote` lines joined by newline), silent unless the batch holds an admin change. Same
-  `service-line` shed label, so deep backlogs still drop these first.
-- TG-to-WA `tg-to-wa/coalesce.ts`: plain texts from the same author in the same topic join over 1.5s
-  (`BRIDGE_TG_COALESCE_MS`) into one WA send. Every TG id keeps its own reply_map row (same WA id),
-  so TG-side edits and replies of any part still resolve. Media, polls, contacts, locations,
-  replies, quoted messages and commands flush any pending burst first and always send alone, so chat
-  order is preserved in both directions. Trade-off (WA-to-TG only): one Telegram message keeps one
-  reply_map row, so only the first WA id of a joined batch resolves for later WA quotes, edits and
-  deletes; follow-ups degrade to the existing unmapped fallbacks (header instead of native reply, no
-  tombstone). Chosen over per-part rows because the reply_map primary key is one row per Telegram
-  message. Verified: `deno task
-verify` chain only (no live WA/TG smoke in this environment).
+Decision: three in-memory buffers join rapid bursts (WA-to-TG text coalesce, service-event batch,
+TG-to-WA text coalesce). Reason: rapid bursts cost one send per message and sprayed N sends through
+paced queues. Consequences: a joined WA-to-TG batch keeps one `reply_map` row, so only the first WA
+id resolves for later quotes, edits and deletes.
 
 ## D12 - Durable outbox for queue-shed payloads (2026-10-20)
 
-The Telegram queue is deliberately bounded (500 slots at ~3s spacing, parked producers wait 60s), so
-a sustained WA burst used to lose payload messages after the wait expired - 222+ operations in the
-October logs, including text, photos, documents and voice notes. Sends that reject with a queue drop
-now park the original WA message in `wa_outbox` as a protobuf-encoded `WebMessageInfo` BLOB, then
-return without a topic notice (which would also be dropped). A worker replays rows oldest-first
-every 15s once both Telegram lanes are below 100 queued calls, routing them through the normal
-incoming pipeline so mapping, dedupe, media re-download and edit/quote fallbacks behave like fresh
-traffic. Rows expire after 24h; queue pressure defers instead of counting as a failure, while
-decode/replay errors retry three times. Media bytes are not stored, so replay re-downloads from the
-original URL (and posts the usual download-failure notice if it has expired). Trade-offs: a drop
-that occurs after a multi-call message's first API call can replay the already-sent part, and a
-shutdown between send and row deletion can duplicate one message; both are preferable to silent
-loss. Coalesced text batches and album items are parked per original WA message before their
-in-memory timer fires, so they re-enter the normal batching path on replay. Verified:
-`scripts/outbox_smoke.ts` (real DB + worker + fake Telegram API) plus the full `coalesce_smoke.ts`;
-no live WA/TG smoke.
+Decision: queue drops park the original WA message in `wa_outbox` (protobuf BLOB); a worker replays
+oldest-first; rows expire after 24h. Reason: the bounded Telegram queue used to lose payload
+messages on sustained bursts. Consequences: replay may duplicate a part after a partial send;
+preferable to silent loss.
 
 ## D13 - Quoted-media sticker resolution uses the real Baileys key (2026-11-09)
 
-`.s` replying to an image/video quote previously fell through to batch mode or usage because
-`getMedia()` re-downloaded with the literal key `'media'`, so `inner['media']` never matched and the
-Baileys download was built from a `Msg` carrying only a synthetic quoted key. `getMedia()` now
-derives the raw Baileys key (`imageMessage`/`videoMessage`/`stickerMessage`/...) from the stored
-message content via `getMsgType`, and `getQuoted()` already stores keys-only media so the bytes are
-fetched on demand. Quoted stickers still reveal as plain images, and no-media input still shows
-`usage.sticker`. Verified: `deno check`, `deno lint`, `deno fmt --check`, and
-`scripts/sticker_quote_smoke.ts` (synthetic quoted image/video bytes resolve and route through
-`createStickers`); no live WA smoke.
+Decision: `getMedia()` derives the raw Baileys key (`imageMessage`/`videoMessage`/...) from stored
+content via `getMsgType`; quoted keys are stored keys-only so bytes fetch on demand. Reason: the old
+literal `'media'` key never matched, so `.s` on a quoted image/video fell through to batch/usage.
+Consequences: quoted stickers still reveal as plain images; no-media input still shows
+`usage.sticker`.
 
 ## D14 - Bridge bucket split-brain heal and LID/PN duplicate merge (2026-11-09)
 
-Three related failures shared one root: the mapping row could disagree with the Telegram group that
-actually hosts its topic, and LID/PN sightings could race into two mappings.
-
-- Split-brain rows (`bucket=business` but `telegram_chat_id=personal`, or the reverse) are now
-  repointed to the hosting group before classification. Every send uses `telegram_chat_id`, so the
-  host is the only reliable evidence; the bucket follows it. `/business` and its button answer
-  "Already in Business" only when both the bucket and the host match the business home group, and
-  the next tap is a real move instead of a no-op. `moveTopic` also stamps a legacy empty
-  `telegram_chat_id` when the topic is already in its home group.
-- Boot reconcile folds a duplicate LID/PN pair onto one surviving row. Only exactly one `@lid` and
-  one `@s.whatsapp.net` row connected by the user alias table are merged; same-domain rows are
-  different contacts and are never touched. The newest topic wins (`created_at`, then activity, then
-  topic id), replies are repointed, the loser JID becomes an alias of the winner, and the loser row
-  is archived. Bucket and mute state are carried over so a merge never loses a classification or
-  un-mutes a chat. No Telegram messages or topics are deleted; the loser topic stays as history.
-- `canonicalChatJid` caches an unresolved LID-only result for only 15s instead of the full 5min, so
-  the next sighting retries `getPNForLID`. `ensureTopicMapping` keys its in-flight creation lock by
-  every known LID/PN variant, so a bare-LID and a PN+alt sighting collapse onto one creation.
-  Healing never downgrades a PN row to a bare LID.
-- `getByJidOrAlias` now lets an archived direct row yield to an active alias canonical, so a merged
-  loser JID still relays to the surviving topic.
-
-Verified: `scripts/bridge_bucket_smoke.ts` (synthetic temp DB plus fake Telegram API) covers the
-concurrent LID/PN upsert, split-brain classify plus move, boot duplicate merge, and muted-chat
-guard; `deno check`, `deno lint`, and `deno fmt --check` pass. No live WA/TG smoke in this
-environment.
+Decision: repoint split-brain rows to the hosting group before classification; boot reconcile folds
+a duplicate LID/PN pair onto the newest topic (replies repointed, loser JID aliased, loser row
+archived); `canonicalChatJid` negative-caches unresolved LID for 15s; `ensureTopicMapping` locks
+keyed by every known variant; `getByJidOrAlias` lets an archived row yield to an active alias.
+Reason: the mapping row could disagree with the group hosting its topic, and LID/PN sightings could
+race into two mappings. Consequences: no Telegram messages or topics are deleted; bucket and mute
+state carry over; PN rows are never downgraded to LID.
