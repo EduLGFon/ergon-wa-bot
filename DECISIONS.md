@@ -99,3 +99,13 @@ keyed by every known variant; `getByJidOrAlias` lets an archived row yield to an
 Reason: the mapping row could disagree with the group hosting its topic, and LID/PN sightings could
 race into two mappings. Consequences: no Telegram messages or topics are deleted; bucket and mute
 state carry over; PN rows are never downgraded to LID.
+
+## D15 - PM2 log split and bounded WA media retry (2026-11-23)
+
+Decision: PM2 uses `out_file: conf/gen/out.log` plus `error_file: conf/gen/err.log` with
+`merge_logs: true` and no `log_file` (avoids duplicating every line in out.log); transient WA media
+downloads in the bridge retry with bounded backoff plus one URL refresh before degrading to the skip
+notice, while bad-decrypt (stale key) fails permanently with no retry, refresh, or transient-counter
+bump. Reason: combined PM2 log duplicated stdout/stderr; transient fetch failures lost media
+permanently, but stale keys never recover by retrying. Consequences: no new retention; media retry
+counters stay bounded.
