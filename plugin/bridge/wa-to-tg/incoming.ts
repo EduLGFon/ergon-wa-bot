@@ -20,6 +20,7 @@ import { handleWaPin } from './pins.ts'
 import { learnContactName, resolveContactName } from './contact-names.ts'
 import { syncProfileCard } from './profile.ts'
 import { downloadWaMedia } from './media.ts'
+import { waDownloadFailureLine } from './media-utils.ts'
 import { findKey } from '@util/functions.ts'
 import { dispatchPrepared } from './dispatch.ts'
 import { isQueueDrop } from '../rate-limiter.ts'
@@ -35,6 +36,7 @@ export async function handleWAMessages(
 	for (const m of messages) {
 		let topicId: number | null = null
 		let chatId: string | null = null
+		let mediaFailedForRetry = false
 		try {
 			if (!m?.message || !m.key) continue
 			try {
@@ -188,6 +190,19 @@ export async function handleWAMessages(
 			let text = annotated.text
 			const dl = await downloadWaMedia(m)
 			const media = dl?.media ?? null
+			const mediaFailedTransient = !!dl && dl.media === null && !dl.tooLarge && !dl.permanent
+			mediaFailedForRetry = mediaFailedTransient
+			if (mediaFailedTransient && !opts.fromOutbox) {
+				try {
+					db.enqueueOutbox(proto.WebMessageInfo.encode(m).finish())
+				} catch (persistErr) {
+					console.error('[BRIDGE] failed to park failed-media WA message:', persistErr)
+				}
+			}
+			if (dl && dl.media === null && text.trim()) {
+				const line = waDownloadFailureLine(dl.label, dl.bytes, !!dl.tooLarge)
+				text = `${text}\n${line}`
+			}
 			let special = getSpecialContent(m.message)
 			// Content Telegram can't represent natively degrades to text
 			// BEFORE entity parsing, so formatting offsets stay consistent.
@@ -208,10 +223,16 @@ export async function handleWAMessages(
 				if (rich) text = rich
 			}
 			if (!text && !media && !special) {
+				if (mediaFailedTransient && opts.fromOutbox) {
+					throw new Error(`wa media download failed: ${dl?.label ?? 'attachment'}`)
+				}
 				if (topicId !== null) await notifyEmptyRelay(cid, topicId, dl, m, senderName)
 				continue
 			}
 
+			if (mediaFailedTransient && opts.fromOutbox) {
+				throw new Error(`wa media download failed: ${dl?.label ?? 'attachment'}`)
+			}
 			await dispatchPrepared({
 				db,
 				jid,
@@ -229,6 +250,7 @@ export async function handleWAMessages(
 				special,
 			})
 		} catch (e) {
+			if (opts.fromOutbox && mediaFailedForRetry) throw e
 			if (isQueueDrop(e)) {
 				// The Telegram side is deliberately shedding load. Park the
 				// original WA message as a protobuf BLOB so it survives a
