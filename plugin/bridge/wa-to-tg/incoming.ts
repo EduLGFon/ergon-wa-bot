@@ -20,6 +20,7 @@ import { handleWaPin } from './pins.ts'
 import { learnContactName, resolveContactName } from './contact-names.ts'
 import { syncProfileCard } from './profile.ts'
 import { downloadWaMedia } from './media.ts'
+import { waDownloadFailureLine } from './media-utils.ts'
 import { findKey } from '@util/functions.ts'
 import { dispatchPrepared } from './dispatch.ts'
 import { isQueueDrop } from '../rate-limiter.ts'
@@ -188,6 +189,18 @@ export async function handleWAMessages(
 			let text = annotated.text
 			const dl = await downloadWaMedia(m)
 			const media = dl?.media ?? null
+			const mediaFailedTransient = !!dl && dl.media === null && !dl.tooLarge && !dl.permanent
+			if (mediaFailedTransient && !opts.fromOutbox) {
+				try {
+					db.enqueueOutbox(proto.WebMessageInfo.encode(m).finish())
+				} catch (persistErr) {
+					console.error('[BRIDGE] failed to park failed-media WA message:', persistErr)
+				}
+			}
+			if (dl && dl.media === null && text.trim()) {
+				const line = waDownloadFailureLine(dl.label, dl.bytes, !!dl.tooLarge)
+				text = `${text}\n${line}`
+			}
 			let special = getSpecialContent(m.message)
 			// Content Telegram can't represent natively degrades to text
 			// BEFORE entity parsing, so formatting offsets stay consistent.
@@ -212,6 +225,9 @@ export async function handleWAMessages(
 				continue
 			}
 
+			if (mediaFailedTransient && opts.fromOutbox) {
+				throw new Error(`wa media download failed: ${dl?.label ?? 'attachment'}`)
+			}
 			await dispatchPrepared({
 				db,
 				jid,

@@ -41,6 +41,7 @@ export interface WaDownload {
 	label: string
 	bytes: number | null
 	tooLarge: boolean
+	permanent: boolean
 }
 
 // True for stale/expired media keys: OpenSSL rejects the decrypt
@@ -99,7 +100,13 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 			return null
 		}
 		const bytes = waBytes(node?.fileLength)
-		const fail = (tooLarge = false): WaDownload => ({ media: null, label, bytes, tooLarge })
+		const fail = (tooLarge = false, permanent = false): WaDownload => ({
+			media: null,
+			label,
+			bytes,
+			tooLarge,
+			permanent,
+		})
 		if (!node?.url && !node?.directPath) {
 			console.warn(`[BRIDGE] WA download no-url: ${label} bytes=${bytes ?? '?'}`)
 			return fail(false)
@@ -203,7 +210,7 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 						errMsg ? ` err=${String(errMsg).slice(0, 160)}` : ''
 					}${causeMsg ? ` cause=${causeMsg.slice(0, 120)}` : ''}`,
 			)
-			return fail(false)
+			return fail(false, permanent)
 		}
 		// Double-check actual size: declared fileLength can lie.
 		if ((buffer as Uint8Array).length > WA_DOWNLOAD_CAP_BYTES) {
@@ -221,6 +228,7 @@ export async function downloadWaMedia(m: proto.IWebMessageInfo): Promise<WaDownl
 			label,
 			bytes,
 			tooLarge: false,
+			permanent: false,
 		}
 	} catch {
 		return null
