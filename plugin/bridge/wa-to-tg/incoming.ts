@@ -36,6 +36,7 @@ export async function handleWAMessages(
 	for (const m of messages) {
 		let topicId: number | null = null
 		let chatId: string | null = null
+		let mediaFailedForRetry = false
 		try {
 			if (!m?.message || !m.key) continue
 			try {
@@ -190,6 +191,7 @@ export async function handleWAMessages(
 			const dl = await downloadWaMedia(m)
 			const media = dl?.media ?? null
 			const mediaFailedTransient = !!dl && dl.media === null && !dl.tooLarge && !dl.permanent
+			mediaFailedForRetry = mediaFailedTransient
 			if (mediaFailedTransient && !opts.fromOutbox) {
 				try {
 					db.enqueueOutbox(proto.WebMessageInfo.encode(m).finish())
@@ -222,6 +224,9 @@ export async function handleWAMessages(
 			}
 			if (!text && !media && !special) {
 				if (topicId !== null) await notifyEmptyRelay(cid, topicId, dl, m, senderName)
+				if (mediaFailedTransient && opts.fromOutbox) {
+					throw new Error(`wa media download failed: ${dl?.label ?? 'attachment'}`)
+				}
 				continue
 			}
 
@@ -245,6 +250,7 @@ export async function handleWAMessages(
 				special,
 			})
 		} catch (e) {
+			if (opts.fromOutbox && mediaFailedForRetry) throw e
 			if (isQueueDrop(e)) {
 				// The Telegram side is deliberately shedding load. Park the
 				// original WA message as a protobuf BLOB so it survives a
