@@ -158,7 +158,7 @@ export async function handleWaEdits(
 			// Tail of an over-limit text edit lands as a follow-up message,
 			// chunked through the same limiter so Telegram never rejects it.
 			if ((route === 'text' || route === 'both') && body.length > TG_TEXT_LIMIT) {
-				const tailStart = TG_TEXT_LIMIT
+				const tailStart = TG_TEXT_LIMIT - 3
 				const tailBody = body.slice(tailStart)
 				const tailEntities = entities
 					.filter((e) => e.offset >= tailStart)

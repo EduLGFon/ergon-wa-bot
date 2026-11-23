@@ -34,13 +34,18 @@ export function registerTgHandlers(
 	const inSupergroup = (ctx: { chat?: { id?: string | number } }): boolean =>
 		bucketOfChat(ctx.chat?.id ?? '', groups) !== null
 	const waitOpen = async (): Promise<void> => {
+		let timer: ReturnType<typeof setTimeout> | undefined
 		try {
 			await Promise.race([
 				(bot.sock?.waitForSocketOpen?.() as Promise<void> | undefined) ?? Promise.resolve(),
-				new Promise<void>((resolve) => setTimeout(resolve, 15_000)),
+				new Promise<void>((resolve) => {
+					timer = setTimeout(resolve, 15_000)
+				}),
 			])
 		} catch {
 			// closed for good - caller degrades via the existing notice fallback
+		} finally {
+			if (timer !== undefined) clearTimeout(timer)
 		}
 	}
 	const isClosedRace = (e: unknown): boolean => {
