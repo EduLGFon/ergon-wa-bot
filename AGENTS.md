@@ -66,6 +66,6 @@ Global defaults: ~/.config/opencode/AGENTS.md
 - Import ordering descending by line length with aliases. Header comment on every file; TODO format
   // TODO(#issue): action - reason. File size ~150 soft, review ~300.
 - Update docs/ARCHITECTURE.md in same commit on behavior change; DECISIONS.md append-only;
-  .env.example on new config. plan.md referenced but absent - confirm with owner.
+  .env.example on new config.
 - Bridge/TG specifics: handler ordering terminal relay; 4096 chunk via chunk.ts; callback queries
   answered once; roster JIDs @lid prefer MemberItem.pn.
