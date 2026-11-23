@@ -486,7 +486,7 @@ venv), Strong (+ `db:push`) setups and `git pull + reinstall + db:gen` updates w
 `reset.ts` does Light reset (wipe `conf/gen/{auth,cache,temp}`) and Strong reset (truncate auth
 tables), plus a manual `.env` parser.
 
-## 16. Conventions AI agents must follow (`AGENTS.md`)
+## 16. Conventions AI agents must follow (`agents.md`)
 
 - Imports in every file sorted descending by line length (longest first), keeping logical statement
   order (do not break code to satisfy order).
@@ -540,4 +540,4 @@ tables), plus a manual `.env` parser.
 - Random delays are intentional anti-ban pacing; do not remove.
 - `sticker`/`Buffer`: `Buf` is `Uint8Array` everywhere except the sharp/webpmux/Baileys boundary,
   which needs real `Buffer`.
-- `TODO.md` tracks open work.
+- `todo.md` tracks one item: store group keys before sending.
