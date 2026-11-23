@@ -186,7 +186,12 @@ function isBadDecrypt(e: unknown): boolean {
 	}
 }
 
-async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = true) {
+async function downloadMedia(
+	raw: any,
+	types: [MsgTypes, str],
+	downloadBuffer = true,
+	commandPath = false,
+) {
 	if (!isMedia(types[0])) return
 	const inner = unwrapContent(raw?.message || raw)
 	const direct = (inner as any)?.[types[1]]
@@ -195,14 +200,24 @@ async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = 
 		: findMediaNode(inner)
 	if (!msg?.url) return
 
-	const keyObj: MediaMsg = {
+	const keyObj: any = {
 		url: msg.url,
 		directPath: msg.directPath,
 		mediaKey: msg.mediaKey,
 		thumbnailDirectPath: msg.thumbnailDirectPath,
+		mime: msg.mimetype,
+		length: msg.fileLength?.low ?? msg.fileLength ?? 0,
+		duration: msg.seconds || 0,
+		height: msg.height || 0,
+		width: msg.width || 0,
+		type: types[0],
 	}
 
-	if (cache.media.has(msg.url)) return keyObj // return metadata to reuse it later
+	if (cache.media.has(msg.url)) {
+		const cached = cache.media.get(msg.url)
+		if (downloadBuffer && cached?.buffer) keyObj.buffer = cached.buffer
+		return keyObj // return metadata to reuse it later
+	}
 
 	if (!downloadBuffer) {
 		// Keys only: no network, no cache entry, no RAM. The bridge and
@@ -210,23 +225,26 @@ async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = 
 		return keyObj
 	}
 
-	// Large video/document: return keys only, never buffer into RAM here.
-	// The bridge path (plugin/bridge/wa-to-tg/media.ts) owns capped downloads with
-	// concurrency limits; command paths re-download on demand.
+	// Large video/document: command paths bypass the 8MB RAM-cache guard via
+	// streaming/temp-file handling below; non-command paths keep keys only.
 	const isHeavy = types[0] === 'video' || types[0] === 'document'
 	const declaredSize = Number(msg.fileLength?.low ?? msg.fileLength ?? 0)
-	if (isHeavy && declaredSize > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
+	if (!commandPath && isHeavy && declaredSize > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
 	const skipCache = declaredSize > MEDIA_CACHE_MAX_BYTES
 	// Bounded retry for transient CDN failures (fetch failed) with backoff
 	// plus jitter. Stale keys (bad decrypt) fail permanently - no retry.
-	// Failure degrades to keys-only metadata; getMedia() then reports its
-	// own miss instead of crashing the command.
+	// URL refresh is attempted once on the first transient failure, mirroring
+	// the bridge downloader, to recover expired CDN URLs.
 	let buffer: Buffer | Uint8Array | null | undefined
 	let dlErr: unknown = null
+	let refreshedOnce = false
+	let workingRaw: any = raw
+	let workingInner: any = inner
+	let workingMsg: any = msg
 	for (let attempt = 1; attempt <= MSG_DL_ATTEMPTS; attempt++) {
 		try {
 			buffer = await downloadMediaMessage(
-				{ ...(raw as any), message: inner } as any,
+				{ ...(workingRaw as any), message: workingInner } as any,
 				'buffer',
 				{},
 				{
@@ -236,6 +254,32 @@ async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = 
 			) as Buffer | Uint8Array | null | undefined
 		} catch (e) {
 			dlErr = e
+			if (isBadDecrypt(e)) break
+			if (!refreshedOnce) {
+				refreshedOnce = true
+				try {
+					const updated = await bot.sock.updateMediaMessage?.(workingRaw as any)
+					if (updated) {
+						workingRaw = updated
+						const newInner = unwrapContent((updated as any)?.message || updated)
+						const newDirect = newInner?.[types[1]]
+						const newNode = newDirect && typeof newDirect === 'object' &&
+								(newDirect.url || newDirect.mediaKey)
+							? newDirect
+							: findMediaNode(newInner)
+						if (newNode?.url) {
+							workingInner = newInner
+							workingMsg = newNode
+							keyObj.url = newNode.url
+							keyObj.directPath = newNode.directPath
+							keyObj.mediaKey = newNode.mediaKey
+							keyObj.thumbnailDirectPath = newNode.thumbnailDirectPath
+						}
+					}
+				} catch {
+					// best effort refresh; retry anyway
+				}
+			}
 		}
 		if (buffer || attempt >= MSG_DL_ATTEMPTS || isBadDecrypt(dlErr)) break
 		await new Promise((r) => setTimeout(r, MSG_DL_RETRY_MS + Math.random() * MSG_DL_JITTER_MS))
@@ -246,22 +290,33 @@ async function downloadMedia(raw: any, types: [MsgTypes, str], downloadBuffer = 
 		print('DOWNLOAD', 'media download failed:', errMsg.slice(0, 160), 'red')
 		return keyObj
 	}
-	if (skipCache || (buffer as Buffer).length > MEDIA_CACHE_MAX_BYTES) return keyObj
-	// Heavy types stay out of RAM cache past 8MB even when declared small.
-	if (isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
+	// Command paths may keep oversized buffers (temp-file/streaming) without
+	// caching them; non-command paths discard oversized buffers.
+	if (!commandPath) {
+		if (skipCache || (buffer as Buffer).length > MEDIA_CACHE_MAX_BYTES) return keyObj
+		// Heavy types stay out of RAM cache past 8MB even when declared small.
+		if (isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES) return keyObj
+	}
 
-	// media cache
-	cache.media.add(msg.url, {
-		buffer,
-		url: msg.url,
-		mime: msg.mimetype,
-		length: msg.fileLength?.low,
-		duration: msg.seconds || 0, // for audio and video
-		type: types[0],
-		height: msg.height || 0,
-		width: msg.width || 0,
-	})
+	// media cache (only when within caps)
+	if (
+		!skipCache &&
+		(buffer as Buffer).length <= MEDIA_CACHE_MAX_BYTES &&
+		!(isHeavy && (buffer as Buffer).length > MEDIA_CACHE_IMAGE_MAX_BYTES)
+	) {
+		cache.media.add(keyObj.url, {
+			buffer,
+			url: keyObj.url,
+			mime: workingMsg.mimetype ?? msg.mimetype,
+			length: workingMsg.fileLength?.low ?? msg.fileLength?.low,
+			duration: workingMsg.seconds || msg.seconds || 0,
+			type: types[0],
+			height: workingMsg.height || msg.height || 0,
+			width: workingMsg.width || msg.width || 0,
+		})
+	}
 
+	keyObj.buffer = buffer
 	return keyObj
 }
 
@@ -305,9 +360,8 @@ async function getQuoted(raw: proto.IWebMessageInfo) {
 		const stanza = findKey(m, 'contextInfo')?.stanzaId || 'no-stanza'
 		print('QUOTED/shape', `${stanza} keys=${Object.keys(quotedOrig).join(',')}`, 'blue')
 	}
-	let quotedRaw: any = quotedOrig
+	const quotedRaw: any = unwrapContent(quotedOrig)
 	const types = getMsgType(quotedRaw) // quoted message type
-	if (Object.keys(quotedRaw)[0] === 'viewOnceMessageV2') quotedRaw = quotedRaw.viewOnceMessageV2!
 
 	const ctxInfo = findKey(raw.message, 'contextInfo')
 	const stanzaId = ctxInfo?.stanzaId as str | undefined
