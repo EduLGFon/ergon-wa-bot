@@ -1,6 +1,7 @@
 // msgAbstractions - Baileys send, react and typing touchpoint
 // - wraps sendMsg with media cache lookup and locale templates
 import { downloadMedia, getCtx, getMsgType } from '@util/msgTools.ts'
+import { findCachedOriginal } from '@plugin/deletedStore.ts'
 import { type CmdCtx, type Msg } from '@conf/types/types.d.ts'
 import type { AnyMessageContent } from 'baileys'
 import { randomEmoji } from '@util/emojis.ts'
@@ -25,29 +26,53 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 
 	let media = cache.media.get(target.media.url)
 	print('GETMEDIA', 'cacheHit=' + !!media, 'yellow')
-	if (!media) {
-		// media not cached, re-download it using the real Baileys key stored in
-		// the message content (imageMessage/videoMessage/stickerMessage/...),
-		// not the literal 'media'. Passing 'media' made direct lookup miss and
-		// forced the findMediaNode fallback, which fails for quoted media whose
-		// downloadMediaMessage call only carries a synthetic quoted key.
-		const rawType = getMsgType((target as any).message ?? target)[1]
-		await downloadMedia(target, [target.type, rawType])
-		media = cache.media.get(target.media.url)
-		print('GETMEDIA', 'afterDownload cacheHit=' + !!media, 'yellow')
-		if (!media) return // failed to download media
+	if (media) {
+		return {
+			target,
+			buffer: media.buffer,
+			url: target.media.url,
+			mime: media.mime,
+			length: media.length,
+			duration: media.duration,
+			type: target.type,
+			height: media.height,
+			width: media.width,
+		}
 	}
 
+	// Prefer the original cached message by stanzaId (group/user msgs or
+	// deletedStore) so downloadMediaMessage runs against a real key/message
+	// instead of the synthetic quoted key with an expired URL.
+	let source: any = target
+	let sourceTypes: [any, str] = [target.type, getMsgType((target as any).message ?? target)[1]]
+	if (!msg.media && target?.key?.id) {
+		const original = findCachedOriginal(target.chat ?? msg.chat, target.key.id)
+		if (original?.message) {
+			source = original
+			sourceTypes = [original.type, getMsgType(original.message)[1]]
+		}
+	}
+
+	const downloaded: any = await downloadMedia(source, sourceTypes, true, true)
+	let buffer = downloaded?.buffer
+	if (!buffer) {
+		media = cache.media.get(target.media.url)
+		if (media) buffer = media.buffer
+	}
+	print('GETMEDIA', 'afterDownload hasBuffer=' + !!buffer, 'yellow')
+	if (!buffer) return // failed to download media
+
+	const cached = cache.media.get(target.media.url) ?? cache.media.get(downloaded?.url)
 	return {
 		target,
-		buffer: media.buffer,
-		url: target.media.url,
-		mime: media.mime,
-		length: media.length,
-		duration: media.duration,
+		buffer,
+		url: downloaded?.url ?? target.media.url,
+		mime: cached?.mime ?? downloaded?.mime ?? target.mime ?? '',
+		length: cached?.length ?? downloaded?.length ?? buffer.length,
+		duration: cached?.duration ?? downloaded?.duration ?? 0,
 		type: target.type,
-		height: media.height,
-		width: media.width,
+		height: cached?.height ?? downloaded?.height ?? 0,
+		width: cached?.width ?? downloaded?.width ?? 0,
 	}
 }
 
