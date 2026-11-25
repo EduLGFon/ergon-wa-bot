@@ -2,8 +2,10 @@
 // Audio sidecar extraction for WhatsApp sound stickers.
 //
 // The visual is encoded by the sticker engine; this module only pulls the
-// first seconds of the source video into OGG/Opus for the embedded AudioMessage.
+// audio track (up to the animated-sticker cap) into OGG/Opus for the embedded
+// AudioMessage, padding short tracks so they never end before the video.
 //
+import { STICKER_MAX_DURATION_S } from '@plugin/sticker/limits.ts'
 import { FFMPEG } from '@plugin/sticker/ffmpeg.ts'
 
 const TIMEOUT_MS = 30_000
@@ -11,6 +13,11 @@ const TIMEOUT_MS = 30_000
 export interface ExtractAudioOptions {
 	tempDir: string
 	maxSeconds: number
+	/**
+	 * Output duration. When set, the track is padded with silence and cut at
+	 * this many seconds so it never ends before the animated sticker.
+	 */
+	targetSeconds?: number
 }
 
 /**
@@ -21,11 +28,17 @@ export interface ExtractAudioOptions {
  */
 export async function extractAudio(
 	input: Uint8Array,
-	{ tempDir, maxSeconds }: ExtractAudioOptions,
+	{ tempDir, maxSeconds, targetSeconds }: ExtractAudioOptions,
 ): Promise<Buffer | null> {
 	const id = crypto.randomUUID()
 	const inputPath = `${tempDir}/snd_${id}.bin`
 	const outputPath = `${tempDir}/snd_${id}.ogg`
+
+	// The input read and the padded output both stay inside the WhatsApp cap.
+	const inputCapS = Math.min(maxSeconds, STICKER_MAX_DURATION_S)
+	const outputCapS = targetSeconds && targetSeconds > 0
+		? Math.min(STICKER_MAX_DURATION_S, Math.max(1, targetSeconds))
+		: null
 
 	await Deno.writeFile(inputPath, input)
 	try {
@@ -37,10 +50,11 @@ export async function extractAudio(
 					'-hide_banner',
 					'-loglevel',
 					'error',
+					'-t',
+					String(inputCapS),
 					'-i',
 					inputPath,
-					'-t',
-					String(maxSeconds),
+					...(outputCapS === null ? [] : ['-af', 'apad', '-t', String(outputCapS)]),
 					'-vn',
 					'-ac',
 					'1',

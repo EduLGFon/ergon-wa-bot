@@ -1,6 +1,7 @@
 // Sticker maker - builds stickers via sticker engine plus rmbg fallback
 // Needed for fast media fun without manual editing
 import { createStickers, type StickerFormat } from '@plugin/sticker/index.ts'
+import { STICKER_MAX_DURATION_S } from '@plugin/sticker/limits.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
 import { extractAudio } from '@plugin/sticker/audio.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
@@ -126,13 +127,17 @@ export default class extends Cmd {
 		let audio: Buffer | null = null
 		let seconds = 0
 		if (isVideo) {
+			// Round up so a source just over an integer is not cut short.
+			const targetS = Math.min(
+				STICKER_MAX_DURATION_S,
+				Math.max(1, Math.ceil(opts.durationS || STICKER_MAX_DURATION_S)),
+			)
 			audio = await extractAudio(buffer, {
 				tempDir: defaults.runner.tempFolder,
-				maxSeconds: 5,
+				maxSeconds: STICKER_MAX_DURATION_S,
+				targetSeconds: targetS,
 			})
-			if (audio) {
-				seconds = Math.min(5, Math.max(1, Math.round(opts.durationS || 5)))
-			}
+			if (audio) seconds = targetS
 		}
 
 		for (const s of stickers) {

@@ -10,6 +10,7 @@
 // • Temp files are namespaced per job to prevent collisions between workers
 //
 
+import { STICKER_MAX_DURATION_S } from '@plugin/sticker/limits.ts'
 import type { StickerFormat } from '@plugin/sticker/types.ts'
 
 // Resolve the ffmpeg binary to an absolute path so workers can find it even
@@ -41,7 +42,6 @@ function resolveFfmpeg(): string {
 export const FFMPEG = resolveFfmpeg()
 
 const SIZE = 512
-const MAX_DURATION = 11
 const TIMEOUT_MS = 60_000
 
 /**
@@ -124,7 +124,7 @@ async function runFfmpeg(
 	const args = [
 		'-y', // overwrite
 		'-t',
-		String(MAX_DURATION), // cap input duration
+		String(STICKER_MAX_DURATION_S), // cap input duration
 		'-i',
 		inputPath,
 		'-filter_complex',

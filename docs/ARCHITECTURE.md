@@ -249,7 +249,8 @@ Loader sets `cmd.name` from filename; category dir is informational.
   (quoted media re-downloaded on demand, using the resolved type; an unrecoverable view-once quote
   replies `sticker.viewOnceUnavailable` instead of entering batch mode); batch mode pulls contiguous
   same-author visuals from history when no media given; `rmbg` runs `plugin/removeBg.py`; videos
-  with an audio track automatically send a sound sticker with a 5s OGG/Opus sidecar; formats
+  with an audio track automatically send a sound sticker whose OGG/Opus sidecar matches the video
+  duration, both capped together at 10s (short audio is silence-padded); formats
   `full,crop[,rounded,circle]`; EXIF pack `Ergon Bot` + author + date.
 - `util/download.ts` (`download`, alias `d`, cooldown 10s): yt-dlp via `defaults.runner.ytdlp` with
   cookies, Chrome impersonation, retries, 2G cap; URL from text or quoted text; `a` suffix = mp3;
@@ -347,13 +348,13 @@ when under 10s, then `delay(timeout)` before `run`.
   `DD/MM/YYYY` keys with dup detection; `cache.ts:updateCalendarCache` writes
   `conf/gen/cache/calendar_<year>.json`. Debug via `scripts/dump_calendar.ts`.
 - `plugin/sticker/`: custom engine. `index.ts:createStickers` (pool size 2, quality 80, 1MB cap);
-  `image.ts` sharp resize + SVG circle/rounded masks; `pool.ts`/`worker.ts` Deno worker queue
-  (max 8) for ffmpeg jobs; `ffmpeg.ts` single-pass multi-format libwebp encodes with adaptive
-  quality levels (60/15fps down to 15/8fps), 11s video cap, 60s timeout; `audio.ts` extracts the
-  first 5s of a video into OGG/Opus for sound stickers; `audioSticker.ts` patches WAProto at runtime
-  for Message field 134 and StickerMessage field 26 and builds/relays sound stickers; `exif.ts` EXIF
-  via node-webpmux. `Buffer` (not `Uint8Array`) is required at the sharp/webpmux/Baileys boundary
-  only.
+  `limits.ts` holds the shared 10s animated-sticker cap; `image.ts` sharp resize + SVG
+  circle/rounded masks; `pool.ts`/`worker.ts` Deno worker queue (max 8) for ffmpeg jobs; `ffmpeg.ts`
+  single-pass multi-format libwebp encodes with adaptive quality levels (60/15fps down to 15/8fps),
+  10s video cap, 60s timeout; `audio.ts` extracts up to 10s into OGG/Opus and pads short tracks to
+  the requested target duration for sound stickers; `audioSticker.ts` patches WAProto at runtime for
+  Message field 134 and StickerMessage field 26 and builds/relays sound stickers; `exif.ts` EXIF via
+  node-webpmux. `Buffer` (not `Uint8Array`) is required at the sharp/webpmux/Baileys boundary only.
 - `plugin/removeBg.py`: rembg entry used by `sticker rmbg` and `remove`.
 
 ## 13. Gemini AI flow

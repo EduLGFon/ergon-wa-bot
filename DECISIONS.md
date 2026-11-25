@@ -139,3 +139,13 @@ web-class companion devices, so quotes arrive with an empty media key and the ge
 #2930/#2907). Consequences: no new media retention or cache; the default browser stays
 `macOS('Chrome')`; android requires re-pairing (fresh auth) and is rejected on WhatsApp Business
 accounts; unrecoverable quotes fail with a localized explanation instead of retrying the decrypt.
+
+## D19 - Sound-sticker audio matches the animated sticker duration (2026-11-25)
+
+Decision: `plugin/sticker/limits.ts` exports `STICKER_MAX_DURATION_S = 10`, used by the video
+encoder, the audio extractor, the command metadata and the `AudioMessage` clamp; `extractAudio`
+accepts `targetSeconds`, pads the track with `apad` and cuts at that target (clamped to 1..10).
+Reason: separate 11s video, 5s extraction and 5s metadata caps cut the soundtrack before the
+animation ended, and WhatsApp limits animated stickers to 10s. Consequences: audio and video end
+together at the source length up to 10s; short audio is silence-padded, so it never ends first;
+silent videos keep the plain-sticker fallback.
