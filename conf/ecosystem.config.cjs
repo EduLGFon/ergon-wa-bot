@@ -19,6 +19,9 @@ module.exports = { // yea, i really need to use module.exports. don't rage!
 		interpreter_args: runtime_args,
 		env: {
 			NODE_EXTRA_CA_CERTS: 'conf/smufesrootca.pem',
+			// Pairs as an Android companion for view-once delivery; needs a fresh
+			// re-pair. Deno --env does not override PM2's existing process env.
+			WA_BROWSER: 'android',
 		},
 		// Split stdout/stderr so crashes do not drown relay logs. Do NOT set
 		// log_file here: PM2 writes the combined log plus out_file to the
