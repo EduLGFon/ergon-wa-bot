@@ -93,18 +93,15 @@
 		"desc": "See the rank of members who talked the most in the group"
 	},
 	"sticker": {
-		"usage": "<(Image/Video)> [Number: Image Quality from 1 to 100 (Standard: 1)] [RMBG: Remove the background from an image] [som: sound sticker from a video]",
-		"desc": "Create stickers from an image or short video. Use som when replying to a video with audio to create a sound sticker.",
+		"usage": "<(Image/Video)> [Number: Image Quality from 1 to 100 (Standard: 1)] [RMBG: Remove the background from an image]",
+		"desc": "Create stickers from an image or short video. Videos with audio automatically become sound stickers.",
 		"examples": [
 			"(Image) RMBG",
 			"(Image) 50",
 			"(video)",
-			"(video) som",
 			"(sticker)"
 		],
-		"nobuffer": "[⚠️] - Media incompatible or not found",
-		"somOnlyVideo": "[⚠️] - The som option only works when replying to a video.",
-		"somNoAudio": "[⚠️] - This video has no audio; sent it as a normal sticker."
+		"nobuffer": "[⚠️] - Media incompatible or not found"
 	},
 	"clean": {
 		"usage": "<Number of messages (max 200)>",

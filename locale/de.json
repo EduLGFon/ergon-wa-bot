@@ -93,13 +93,12 @@
 		"desc": "Sehen Sie den Rang der Mitglieder, die in der Gruppe am meisten gesprochen haben"
 	},
 	"sticker": {
-		"usage": "<(Bild/Video)> [Nummer: Bildqualität von 1 bis 100 (Standard: 1)] [RMBG: Entfernen Sie den Hintergrund aus einem Bild] [som: Sound-Sticker aus einem Video]",
+		"usage": "<(Bild/Video)> [Nummer: Bildqualität von 1 bis 100 (Standard: 1)] [RMBG: Entfernen Sie den Hintergrund aus einem Bild]",
 		"desc": "Erstellen Sie Aufkleber ohne Hintergrund !!!!",
 		"examples": [
 			"(Bild) RMBG",
 			"(Bild) 50",
 			"(Video)",
-			"(Video) som",
 			"(Aufkleber)"
 		],
 		"nobuffer": "[⚠️] - Medien inkompatibel oder nicht gefunden"

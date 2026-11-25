@@ -117,4 +117,12 @@ sticker through a runtime WAProto patch (`Message` field 134, `StickerMessage` f
 decode unwraps the same wrapper. Reason: Baileys 7.0.0-rc14 does not know the beta fields, and
 auto-attaching audio would silently change existing sticker behavior. Consequences: feature is
 beta-only; older clients fall back to a silent sticker; bridge/reveal still drop the audio; remove
-the patch when WAProto ships the fields.
+the patch when WAProto ships the fields. Superseded by D17 for automatic attachment.
+
+## D17 - Sound stickers by default for videos with audio (2026-11-24)
+
+Supersedes D16's opt-in `som` flag. Decision: every video sticker path attempts a 5s OGG/Opus
+sidecar and sends a sound sticker when the source has audio; silent videos fall back to a normal
+sticker with no notice. Reason: owner direction, and requiring a flag added friction to the common
+case. Consequences: one extra ffmpeg pass per video sticker, no silent-video opt-out yet, and the
+D16 beta/client compatibility caveats still apply.
