@@ -8,6 +8,7 @@
 //
 import { generateWAMessageFromContent, prepareWAMessageMedia, proto } from 'baileys'
 import type { WAMediaUploadFunction, WAMessage } from 'baileys'
+import { STICKER_MAX_DURATION_S } from '@plugin/sticker/limits.ts'
 
 const TAG_AUDIO_STICKER = 134 * 8 + 2
 const TAG_STICKER_AUDIO = 26 * 8 + 2
@@ -106,7 +107,7 @@ export async function buildAudioStickerMessage(input: AudioStickerInput): Promis
 			audio: input.audio,
 			mimetype: 'audio/ogg; codecs=opus',
 			ptt: false,
-			seconds: Math.min(10, Math.max(1, Math.round(input.seconds))),
+			seconds: Math.min(STICKER_MAX_DURATION_S, Math.max(1, Math.round(input.seconds))),
 		},
 		{ upload: input.upload },
 	)
