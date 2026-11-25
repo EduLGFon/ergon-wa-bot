@@ -38,7 +38,7 @@ function resolveFfmpeg(): string {
 	return 'ffmpeg'
 }
 
-const FFMPEG = resolveFfmpeg()
+export const FFMPEG = resolveFfmpeg()
 
 const SIZE = 512
 const MAX_DURATION = 11

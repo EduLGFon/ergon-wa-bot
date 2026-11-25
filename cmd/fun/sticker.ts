@@ -2,6 +2,7 @@
 // Needed for fast media fun without manual editing
 import { createStickers, type StickerFormat } from '@plugin/sticker/index.ts'
 import defaults from '@conf/defaults.json' with { type: 'json' }
+import { extractAudio } from '@plugin/sticker/audio.ts'
 import { type CmdCtx } from '@conf/types/types.d.ts'
 import { getMedia } from '@util/msgAbstractions.ts'
 import { randomDelay } from '@util/functions.ts'
@@ -16,14 +17,20 @@ export default class extends Cmd {
 		super({
 			alias: ['s', 'sexo'],
 			cooldown: 5_000,
-			subCmds: ['rmbg', 'rounded', 'circle'],
+			subCmds: ['rmbg', 'rounded', 'circle', 'som'],
 		})
 	}
 
-	async run({ msg, args, user, group, send, react }: CmdCtx) {
+	async run({ msg, args, user, group, send, react, t }: CmdCtx) {
 		const media = await getMedia(msg)
 		const formats = this.parseFormats(args)
+		const withSound = args.includes(this.subCmds[3])
 		const quality = Number(args[0]) || undefined
+
+		if (withSound && media?.target.type !== 'video') {
+			return send({ text: t('sticker.somOnlyVideo') })
+		}
+
 		const metadata = {
 			pack: `=== Ergon Bot ===\n` +
 				`[👑] Author: ${user.name}\n` +
@@ -56,6 +63,7 @@ export default class extends Cmd {
 					metadata,
 					quality,
 					send,
+					{ withSound: false, durationS: cached.duration ?? 0, t },
 				)
 			}
 			return
@@ -82,6 +90,7 @@ export default class extends Cmd {
 			metadata,
 			quality,
 			send,
+			{ withSound, durationS: media.duration ?? 0, t },
 		)
 	}
 
@@ -103,6 +112,7 @@ export default class extends Cmd {
 		metadata: { pack: string; author: string },
 		quality: number | undefined,
 		send: CmdCtx['send'],
+		opts: { withSound: boolean; durationS: number; t: CmdCtx['t'] },
 	): Promise<void> {
 		// Sticker engine (sharp/webpmux) requires Node Buffer - narrow here.
 		const stickers = await createStickers({
@@ -113,9 +123,35 @@ export default class extends Cmd {
 			quality,
 		})
 
+		// Sound stickers embed one audio track for every generated format.
+		let audio: Buffer | null = null
+		let seconds = 0
+		if (opts.withSound && isVideo) {
+			audio = await extractAudio(buffer, {
+				tempDir: defaults.runner.tempFolder,
+				maxSeconds: 5,
+			})
+			if (audio) {
+				seconds = Math.min(5, Math.max(1, Math.round(opts.durationS || 5)))
+			} else {
+				await send({ text: opts.t('sticker.somNoAudio') })
+			}
+		}
+
 		for (const s of stickers) {
 			if (!isVideo) await randomDelay(1_000, 2_500)
-			await send({ sticker: s.buffer })
+			if (audio) {
+				await send({
+					soundSticker: {
+						sticker: s.buffer,
+						audio,
+						seconds,
+						isAnimated: isVideo,
+					},
+				})
+			} else {
+				await send({ sticker: s.buffer })
+			}
 		}
 	}
 

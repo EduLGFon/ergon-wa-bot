@@ -51,9 +51,22 @@ interface CmdCtx {
 	args: str[]
 	cmd: Cmd
 	startTyping(): Promise<void>
-	send(str: str | AnyMessageContent, opts?: { user?: User; quoted?: Msg }): Promise<CmdCtx>
+	send(
+		str: str | AnyMessageContent | SoundStickerContent,
+		opts?: { user?: User; quoted?: Msg },
+	): Promise<CmdCtx>
 	react(emoji: str | (typeof emojis)[keyof typeof emojis]): Promise<void>
 	t: TFunction<'translation', undefined>
+}
+
+/** Outbound-only content for WhatsApp sound stickers. */
+type SoundStickerContent = {
+	soundSticker: {
+		sticker: Uint8Array
+		audio: Uint8Array
+		seconds: number
+		isAnimated: boolean
+	}
 }
 
 type GoogleFile = {
@@ -68,4 +81,4 @@ type Gparams = {
 	file?: GoogleFile
 }
 
-export type { CmdCtx, GoogleFile, Gparams, Msg, MsgTypes }
+export type { CmdCtx, GoogleFile, Gparams, Msg, MsgTypes, SoundStickerContent }

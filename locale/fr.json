@@ -93,12 +93,13 @@
 		"desc": "Voir le grade de membres qui ont le plus parlé du groupe"
 	},
 	"sticker": {
-		"usage": "<(Image / vidéo)> [Numéro: qualité d'image de 1 à 100 (standard: 1)] [RMBG: supprimez l'arrière-plan d'une image]",
+		"usage": "<(Image / vidéo)> [Numéro: qualité d'image de 1 à 100 (standard: 1)] [RMBG: supprimez l'arrière-plan d'une image] [som: autocollant sonore depuis une vidéo]",
 		"desc": "Créez des autocollants sans fond !!!!",
 		"examples": [
 			"(Image) rmbg",
 			"(Image) 50",
 			"(vidéo)",
+			"(vidéo) som",
 			"(autocollant)"
 		],
 		"nobuffer": "[⚠️] - Media incompatible ou non trouvé"

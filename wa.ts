@@ -1,6 +1,7 @@
 // Entry point: wires prototypes/locales, connects the WhatsApp socket, loads commands/events,
 // schedules the daily bulletin, and installs process-wide crash guards so transient network
 // errors never kill the bot silently (prod showed 13 fatal body-read crashes + multi-hour gaps).
+import { installAudioStickerProto } from '@plugin/sticker/audioSticker.ts'
 import { loadCmds, loadEvents } from '@util/handler.ts'
 import cache from '@plugin/cache.ts'
 import locale from '@util/locale.ts'
@@ -72,6 +73,7 @@ globalThis.addEventListener('error', (e) => {
 })
 
 proto() // load prototypes
+installAudioStickerProto() // decode field 134 before socket traffic
 locale() // load locales
 
 start().catch((e) => {

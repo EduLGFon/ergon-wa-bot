@@ -96,16 +96,19 @@
 		"desc": "Mostra quem mais conversou no grupo. Só funciona em grupos."
 	},
 	"sticker": {
-		"usage": "[número 1-100] [rmbg] [rounded] [circle] [respondendo foto/vídeo/figurinha]",
-		"desc": "Transforma foto ou vídeo curto em figurinha, sem precisar digitar texto. Se enviar várias fotos seguidas, cria todas de uma vez. Use rmbg só em foto para tirar o fundo.",
+		"usage": "[número 1-100] [rmbg] [rounded] [circle] [som] [respondendo foto/vídeo/figurinha]",
+		"desc": "Transforma foto ou vídeo curto em figurinha, sem precisar digitar texto. Se enviar várias fotos seguidas, cria todas de uma vez. Use rmbg só em foto para tirar o fundo. Use som respondendo a um vídeo com áudio para criar figurinha com som.",
 		"examples": [
 			"respondendo foto: (sem texto)",
 			"respondendo foto: rmbg",
 			"respondendo foto: 50",
 			"respondendo foto: rounded circle",
+			"respondendo vídeo: som",
 			"respondendo figurinha: (sem texto para virar foto)"
 		],
-		"nobuffer": "[⚠️] - Não encontrei foto, vídeo ou figurinha. Envie junto ou responda a mensagem com o comando"
+		"nobuffer": "[⚠️] - Não encontrei foto, vídeo ou figurinha. Envie junto ou responda a mensagem com o comando",
+		"somOnlyVideo": "[⚠️] - O parâmetro som só funciona respondendo a um vídeo.",
+		"somNoAudio": "[⚠️] - Esse vídeo não tem áudio; enviei como figurinha normal."
 	},
 	"clean": {
 		"usage": "<quantidade> [reverse]",

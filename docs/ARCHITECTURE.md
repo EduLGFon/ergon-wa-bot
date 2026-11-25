@@ -33,8 +33,8 @@ directory, file, data flow, and convention so you can locate code fast.
   for Deno compatibility).
 - DB: `drizzle-orm` + `postgres` (postgres-js) + `drizzle-kit` migrations.
 - AI: `npm:@google/genai` (Gemini chat + file upload).
-- Media: `sharp` (static stickers), system `ffmpeg` (animated stickers), `node-webpmux` (WebP EXIF),
-  Python venv (`rembg`, `onnxruntime`, `yt-dlp`).
+- Media: `sharp` (static stickers), system `ffmpeg` (animated stickers and sound-sticker audio),
+  `node-webpmux` (WebP EXIF), Python venv (`rembg`, `onnxruntime`, `yt-dlp`).
 - i18n: `i18next` with a custom Deno file backend.
 - QR render: `jsr:@libs/qrcode`.
 - Process: PM2 (`conf/ecosystem.config.cjs`) in prod, `deno task dev` locally.
@@ -235,11 +235,12 @@ Loader sets `cmd.name` from filename; category dir is informational.
   `getMedia`; `randomDelay` + typing first.
 - `fun/rank.ts` (`rank`, groups only, needs DB): leaderboard from `group.getCountedMsgs()`, skipping
   users who left.
-- `fun/sticker.ts` (`sticker`, aliases `s,sexo`, cooldown 5s, subCmds `rmbg,rounded,circle`):
+- `fun/sticker.ts` (`sticker`, aliases `s,sexo`, cooldown 5s, subCmds `rmbg,rounded,circle,som`):
   sticker factory; quality from `args[0]`; resolves media from the message or its quoted image/video
   (quoted media re-downloaded on demand); batch mode pulls contiguous same-author visuals from
-  history when no media given; `rmbg` runs `plugin/removeBg.py`; formats
-  `full,crop[,rounded,circle]`; EXIF pack `Ergon Bot` + author + date.
+  history when no media given; `rmbg` runs `plugin/removeBg.py`; `som` on a video extracts a short
+  OGG/Opus sidecar and sends a sound sticker; formats `full,crop[,rounded,circle]`; EXIF pack
+  `Ergon Bot` + author + date.
 - `util/download.ts` (`download`, alias `d`, cooldown 10s): yt-dlp via `defaults.runner.ytdlp` with
   cookies, Chrome impersonation, retries, 2G cap; URL from text or quoted text; `a` suffix = mp3;
   over 256MB sent as document.
@@ -338,8 +339,11 @@ when under 10s, then `delay(timeout)` before `run`.
 - `plugin/sticker/`: custom engine. `index.ts:createStickers` (pool size 2, quality 80, 1MB cap);
   `image.ts` sharp resize + SVG circle/rounded masks; `pool.ts`/`worker.ts` Deno worker queue
   (max 8) for ffmpeg jobs; `ffmpeg.ts` single-pass multi-format libwebp encodes with adaptive
-  quality levels (60/15fps down to 15/8fps), 11s video cap, 60s timeout; `exif.ts` EXIF via
-  node-webpmux. `Buffer` (not `Uint8Array`) is required at the sharp/webpmux/Baileys boundary only.
+  quality levels (60/15fps down to 15/8fps), 11s video cap, 60s timeout; `audio.ts` extracts the
+  first 5s of a video into OGG/Opus for sound stickers; `audioSticker.ts` patches WAProto at runtime
+  for Message field 134 and StickerMessage field 26 and builds/relays sound stickers; `exif.ts` EXIF
+  via node-webpmux. `Buffer` (not `Uint8Array`) is required at the sharp/webpmux/Baileys boundary
+  only.
 - `plugin/removeBg.py`: rembg entry used by `sticker rmbg` and `remove`.
 
 ## 13. Gemini AI flow
@@ -518,7 +522,7 @@ tables), plus a manual `.env` parser.
 - DB/cache: `conf/schema.ts` + `plugin/db.ts` + `plugin/cache.ts` + `class/user.ts` /
   `class/group.ts`.
 - Stickers: `cmd/fun/sticker.ts` -> `plugin/sticker/index.ts` ->
-  `image.ts`/`ffmpeg.ts`/`pool.ts`/`exif.ts`.
+  `image.ts`/`ffmpeg.ts`/`audio.ts`/`audioSticker.ts`/`pool.ts`/`exif.ts`.
 - Bulletin wrong: `plugin/menuScraping.ts` -> `util/menuParser.ts`, `util/weather.ts`,
   `plugin/calendar/cache.ts`, `util/calendarAnalytics.ts`, `util/dailySummary.ts`.
 - Bridge WA->TG: `plugin/bridge/wa-to-tg/relay.ts` -> `incoming.ts` -> `send.ts`; TG->WA:
@@ -541,4 +545,8 @@ tables), plus a manual `.env` parser.
 - Random delays are intentional anti-ban pacing; do not remove.
 - `sticker`/`Buffer`: `Buf` is `Uint8Array` everywhere except the sharp/webpmux/Baileys boundary,
   which needs real `Buffer`.
+- Sound stickers are beta: WAProto lacks Message field 134 and StickerMessage field 26, so
+  `plugin/sticker/audioSticker.ts` patches encode/decode at runtime. Remove the patch when Baileys
+  ships the fields. Older clients may render only the silent sticker; bridge/reveal still drop the
+  audio track.
 - `TODO.md` tracks open work.

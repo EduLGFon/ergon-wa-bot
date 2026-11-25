@@ -93,12 +93,13 @@
 		"desc": "Ver el rango de miembros que más hablaban en el grupo"
 	},
 	"sticker": {
-		"usage": "<(Imagen/video)> [Número: calidad de imagen de 1 a 100 (estándar: 1)] [RMBG: eliminar el fondo de una imagen]",
+		"usage": "<(Imagen/video)> [Número: calidad de imagen de 1 a 100 (estándar: 1)] [RMBG: eliminar el fondo de una imagen] [som: pegatina con sonido desde un vídeo]",
 		"desc": "¡Crea pegatinas sin fondo!",
 		"examples": [
 			"(Imagen) rmbg",
 			"(Imagen) 50",
 			"(video)",
+			"(video) som",
 			"(etiqueta engomada)"
 		],
 		"nobuffer": "[⚠️] - Medios incompatibles o no encontrados"

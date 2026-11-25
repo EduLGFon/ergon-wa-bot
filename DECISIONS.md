@@ -109,3 +109,12 @@ notice, while bad-decrypt (stale key) fails permanently with no retry, refresh, 
 bump. Reason: combined PM2 log duplicated stdout/stderr; transient fetch failures lost media
 permanently, but stale keys never recover by retrying. Consequences: no new retention; media retry
 counters stay bounded.
+
+## D16 - Sound stickers behind an opt-in `som` flag (2026-11-24)
+
+Decision: `sticker som` on a video extracts a 5s OGG/Opus sidecar and sends it as a WhatsApp sound
+sticker through a runtime WAProto patch (`Message` field 134, `StickerMessage` field 26); receive
+decode unwraps the same wrapper. Reason: Baileys 7.0.0-rc14 does not know the beta fields, and
+auto-attaching audio would silently change existing sticker behavior. Consequences: feature is
+beta-only; older clients fall back to a silent sticker; bridge/reveal still drop the audio; remove
+the patch when WAProto ships the fields.
