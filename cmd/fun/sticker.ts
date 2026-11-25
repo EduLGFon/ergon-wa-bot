@@ -35,7 +35,11 @@ export default class extends Cmd {
 		}
 
 		// ── No usable media → batch-create from recent cached messages ──
-		if (!media || !isVisual(media.target.type)) {
+		if (!media || !isVisual(media.type)) {
+			// An unrecoverable view-once quote must not fall into batch mode.
+			if (msg.quoted?.mediaUnavailable === 'view-once') {
+				return send('sticker.viewOnceUnavailable', { user })
+			}
 			const chat = group ||
 				(cache.userByLid.get(msg.chat) ?? cache.users.find((u) => u.lid === msg.chat))!
 			const msgs = chat.msgs.reverse().slice(1)
@@ -53,7 +57,7 @@ export default class extends Cmd {
 				if (!cached) continue
 				await this.processAndSend(
 					cached.buffer,
-					m.type === 'video',
+					cached.type === 'video',
 					formats,
 					metadata,
 					quality,
@@ -67,20 +71,20 @@ export default class extends Cmd {
 		randomDelay(69, 500).then(() => react('random'))
 
 		// ── Sticker received → reveal as plain image ────────────────────
-		if (media.target.type === 'sticker') {
+		if (media.type === 'sticker') {
 			// Baileys send requires Node Buffer - narrow here.
 			return send({ image: Buffer.from(media.buffer) })
 		}
 
 		// ── Optional: remove background before creating sticker ─────────
 		let buffer = media.buffer
-		if (args.includes(this.subCmds[0]) && media.target.type === 'image') {
+		if (args.includes(this.subCmds[0]) && media.type === 'image') {
 			buffer = await this.removeBg(buffer)
 		}
 
 		await this.processAndSend(
 			buffer,
-			media.target.type === 'video',
+			media.type === 'video',
 			formats,
 			metadata,
 			quality,

@@ -126,3 +126,16 @@ sidecar and sends a sound sticker when the source has audio; silent videos fall 
 sticker with no notice. Reason: owner direction, and requiring a flag added friction to the common
 case. Consequences: one extra ffmpeg pass per video sticker, no silent-video opt-out yet, and the
 D16 beta/client compatibility caveats still apply.
+
+## D18 - View-once quote fallback and opt-in Android companion (2026-11-25)
+
+Decision: `getMsgType` unwraps view-once wrappers and types the inner media node; `downloadMedia`
+refuses a decrypt without a usable URL and non-empty media key; `getMedia` resolves the quoted
+original by stanzaId even when the quote carries no keys; `.reveal`/`.sticker` fall back to the
+specific `reveal.unavailable`/`sticker.viewOnceUnavailable` messages; `WA_BROWSER=android` opts into
+`Browsers.android('13')`. Reason: WhatsApp's Nov 2026 change withholds view-once content from
+web-class companion devices, so quotes arrive with an empty media key and the generic
+`sticker.nobuffer` text was misleading; Android-class pairing receives view-once again (Baileys
+#2930/#2907). Consequences: no new media retention or cache; the default browser stays
+`macOS('Chrome')`; android requires re-pairing (fresh auth) and is rejected on WhatsApp Business
+accounts; unrecoverable quotes fail with a localized explanation instead of retrying the decrypt.
