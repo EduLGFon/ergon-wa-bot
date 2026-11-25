@@ -1,6 +1,11 @@
 // msgAbstractions - Baileys send, react and typing touchpoint
 // - wraps sendMsg with media cache lookup and locale templates
-import { type CmdCtx, type Msg, type SoundStickerContent } from '@conf/types/types.d.ts'
+import {
+	type CmdCtx,
+	type Msg,
+	type MsgTypes,
+	type SoundStickerContent,
+} from '@conf/types/types.d.ts'
 import { buildAudioStickerMessage } from '@plugin/sticker/audioSticker.ts'
 import { downloadMedia, getCtx, getMsgType } from '@util/msgTools.ts'
 import { findCachedOriginal } from '@plugin/deletedStore.ts'
@@ -17,7 +22,9 @@ export { getMedia, reactToMsg, sendMsg, startTyping }
 async function getMedia(msg: Msg, startTyping?: Func) {
 	const target = msg.media ? msg : msg.quoted
 
-	if (!target || !target.media) return
+	// Do not bail when the quote has no media keys: the original may still be
+	// cached by stanzaId (legacy/Android view-once capture).
+	if (!target) return
 	print(
 		'GETMEDIA',
 		'target=' + (target === msg ? 'msg' : 'quoted') + ' type=' + target.type,
@@ -25,13 +32,14 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 	)
 	if (startTyping) await startTyping()
 
-	let media = cache.media.get(target.media.url)
+	const targetUrl = target.media?.url
+	let media = targetUrl ? cache.media.get(targetUrl) : undefined
 	print('GETMEDIA', 'cacheHit=' + !!media, 'yellow')
 	if (media) {
 		return {
 			target,
 			buffer: media.buffer,
-			url: target.media.url,
+			url: targetUrl!,
 			mime: media.mime,
 			length: media.length,
 			duration: media.duration,
@@ -43,35 +51,51 @@ async function getMedia(msg: Msg, startTyping?: Func) {
 
 	// Prefer the original cached message by stanzaId (group/user msgs or
 	// deletedStore) so downloadMediaMessage runs against a real key/message
-	// instead of the synthetic quoted key with an expired URL.
+	// instead of the synthetic quoted key with an expired URL. This also
+	// rescues quoted view-once media when the quote itself arrived without
+	// keys (WhatsApp Nov 2026 web-class behavior) but the original was cached.
 	let source: any = target
-	let sourceTypes: [any, str] = [target.type, getMsgType((target as any).message ?? target)[1]]
-	if (!msg.media && target?.key?.id) {
+	let sourceTypes: [MsgTypes, str] = [
+		target.type,
+		getMsgType((target as any).message ?? target)[1],
+	]
+	if (!msg.media && target.key?.id) {
 		const original = findCachedOriginal(target.chat ?? msg.chat, target.key.id)
 		if (original?.message) {
 			source = original
-			sourceTypes = [original.type, getMsgType(original.message)[1]]
+			sourceTypes = getMsgType(original.message)
 		}
 	}
 
-	const downloaded: any = await downloadMedia(source, sourceTypes, true, true)
+	let downloaded: any = await downloadMedia(source, sourceTypes, true, true)
+	let resolvedType = sourceTypes[0]
+	// The cached original may itself lack usable keys (post-Nov-2026
+	// view-once): fall back to the quote's own keys when they exist.
+	if (!downloaded && source !== target && target.media?.url) {
+		source = target
+		sourceTypes = [target.type, getMsgType((target as any).message ?? target)[1]]
+		downloaded = await downloadMedia(source, sourceTypes, true, true)
+		resolvedType = sourceTypes[0]
+	}
+
 	let buffer = downloaded?.buffer
-	if (!buffer) {
-		media = cache.media.get(target.media.url)
+	if (!buffer && targetUrl) {
+		media = cache.media.get(targetUrl)
 		if (media) buffer = media.buffer
 	}
 	print('GETMEDIA', 'afterDownload hasBuffer=' + !!buffer, 'yellow')
 	if (!buffer) return // failed to download media
 
-	const cached = cache.media.get(target.media.url) ?? cache.media.get(downloaded?.url)
+	const cached = (targetUrl ? cache.media.get(targetUrl) : undefined) ??
+		cache.media.get(downloaded?.url)
 	return {
 		target,
 		buffer,
-		url: downloaded?.url ?? target.media.url,
+		url: downloaded?.url ?? targetUrl,
 		mime: cached?.mime ?? downloaded?.mime ?? target.mime ?? '',
 		length: cached?.length ?? downloaded?.length ?? buffer.length,
 		duration: cached?.duration ?? downloaded?.duration ?? 0,
-		type: target.type,
+		type: resolvedType,
 		height: cached?.height ?? downloaded?.height ?? 0,
 		width: cached?.width ?? downloaded?.width ?? 0,
 	}

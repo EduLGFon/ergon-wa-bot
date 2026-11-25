@@ -234,7 +234,8 @@ export default class Baileys {
 			// 'Desktop' tuples are terminated by WA with 428 since mid-2026; a Chrome
 			// tuple advertises the WEB_BROWSER subplatform WA accepts.
 			// WA_BROWSER overrides for A/B tests without a code change:
-			// macos-chrome (default), ubuntu-chrome, windows-chrome, ubuntu-firefox.
+			// macos-chrome (default), ubuntu-chrome, windows-chrome, ubuntu-firefox,
+			// android (opt-in Android companion, needs fresh auth).
 			browser: pickBrowser(),
 			version,
 			syncFullHistory: false,
@@ -289,12 +290,15 @@ export default class Baileys {
 
 // WA_BROWSER env override for 428 A/B tests: lets prod compare Chrome
 // tuples without a redeploy. Unknown values fall back to macOS Chrome.
+// `android` pairs as an Android companion (view-once delivery returns for
+// personal accounts); it requires a fresh auth and WhatsApp Business rejects it.
 function pickBrowser(): [string, string, string] {
 	const raw = (Deno.env.get('WA_BROWSER') || '').trim().toLowerCase()
 	try {
 		if (raw === 'ubuntu-chrome') return Browsers.ubuntu('Chrome')
 		if (raw === 'windows-chrome') return Browsers.windows('Chrome')
 		if (raw === 'ubuntu-firefox') return Browsers.ubuntu('Firefox')
+		if (raw === 'android') return Browsers.android('13')
 		if (raw && raw !== 'macos-chrome') {
 			console.warn(`[SOCK] unknown WA_BROWSER=${raw}, using macos-chrome`)
 		}

@@ -121,6 +121,66 @@ const vidResult = await getMedia(outerVideo as any)
 check('quoted video resolves bytes', !!vidResult && vidResult.buffer?.length > 0)
 check('quoted video type is video', vidResult?.type === 'video')
 
+// View-once wrappers are typed by their inner node, not a fixed image type.
+const viewOnceRaw: any = {
+	viewOnceMessageV2: { message: { videoMessage: { url: 'https://example.invalid/vo.mp4' } } },
+}
+const voTypes = getMsgType(viewOnceRaw)
+check(
+	'view-once wrapper maps to inner video',
+	voTypes[0] === 'video' && voTypes[1] === 'videoMessage',
+)
+
+// Empty quote keys + a cached original (captured before the Nov 2026 change)
+// must still resolve bytes through getMedia.
+if (videoBytes.length) {
+	const voChat = '1@s.whatsapp.net'
+	const voOriginal: any = {
+		chat: voChat,
+		type: 'video',
+		text: '',
+		media: {
+			url: videoMsg.media.url,
+			directPath: '/y',
+			mediaKey: videoMsg.media.mediaKey,
+		},
+		message: videoMsg.message,
+		key: { id: 'VO-ORIG', remoteJid: voChat, fromMe: false },
+	}
+	const voUser: any = {
+		id: 9001,
+		lid: voChat,
+		phone: voChat.parsePhone(),
+		msgs: new Map([['VO-ORIG', voOriginal]]),
+	}
+	cache.users.set(voUser.id, voUser)
+	cache.userByLid.set(voChat, voUser)
+
+	const voQuote: any = {
+		type: 'video',
+		text: '',
+		mediaUnavailable: 'view-once',
+		message: { videoMessage: { url: 'https://example.invalid/vo.mp4' } },
+		key: { id: 'VO-ORIG', remoteJid: voChat, fromMe: false },
+	}
+	const voResult = await getMedia({ chat: voChat, quoted: voQuote } as any)
+	check('quoted view-once resolves cached original', !!voResult && voResult.buffer?.length > 0)
+	check('quoted view-once type is video', voResult?.type === 'video')
+}
+
+// Nothing recoverable: no cached original and no media key. Must not throw.
+const voMiss: any = {
+	type: 'video',
+	text: '',
+	mediaUnavailable: 'view-once',
+	message: { videoMessage: { url: 'https://example.invalid/vo-miss.mp4' } },
+	key: { id: 'VO-MISSING', remoteJid: '1@s.whatsapp.net', fromMe: false },
+}
+check(
+	'unrecoverable view-once returns undefined',
+	(await getMedia({ chat: '1@s.whatsapp.net', quoted: voMiss } as any)) === undefined,
+)
+
 // Route resolved image bytes through createStickers.
 if (imgResult) {
 	const stickers = await createStickers({

@@ -13,7 +13,8 @@ const visualTypes = {
 	ptvMessage: 'video',
 	videoMessage: 'video',
 	imageMessage: 'image',
-	viewOnceMessageV2: 'image',
+	// View-once wrappers are typed by their inner node in getMsgType; a fixed
+	// image mapping mislabels view-once video/audio/document content.
 	stickerMessage: 'sticker',
 }
 

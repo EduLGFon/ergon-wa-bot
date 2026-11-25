@@ -91,10 +91,11 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   `@plugin/bridge.ts`) + watchdog re-bind. After `MAX_CONSECUTIVE_RECONNECTS` (8) it exits non-zero
   so PM2's exponential backoff restart owns the recovery.
 - Socket stability (`class/baileys.ts`): advertises `Browsers.macOS('Chrome')` by default
-  (`WA_BROWSER` env overrides for A/B: ubuntu-chrome, windows-chrome, ubuntu-firefox - WA terminates
-  the `Desktop`/DARWIN tuple with 428 since mid-2026) and resolves the WA Web version live (Baileys
-  repo -> `web.whatsapp.com/sw.js` -> pinned fallback) instead of a hardcoded pin. Retry counters
-  capped at 500 keys with oldest-first eviction.
+  (`WA_BROWSER` env overrides: ubuntu-chrome, windows-chrome, ubuntu-firefox; opt-in `android` pairs
+  as an Android companion with a fresh auth - WA terminates the `Desktop`/DARWIN tuple with 428
+  since mid-2026) and resolves the WA Web version live (Baileys repo -> `web.whatsapp.com/sw.js` ->
+  pinned fallback) instead of a hardcoded pin. Retry counters capped at 500 keys with oldest-first
+  eviction.
 - Watchdog (`plugin/health.ts`): tracks the last real inbound event; after 5min of silence while
   connected it probes `sock.onWhatsApp(ownNumber)` on a randomized 60-120s schedule; a failed probe
   calls `sock.end()`, funnelling into the guarded reconnect above. Re-binds after every reconnect
@@ -123,7 +124,9 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   `TELEGRAM_SUPERGROUP_PERSONAL`/`_BUSINESS` (legacy `TELEGRAM_SUPERGROUP_ID` fallback),
   `RATE_LIMIT_MS` (legacy base spacing), `TELEGRAM_RATE_LIMIT_MS_PERSONAL`/`_BUSINESS` (per-lane
   spacing, business falls back to personal - raise it to shed business load). `WA_BROWSER` (Baileys
-  browser tuple A/B). Loaded via `--env=conf/.env`; `setup/reset.ts:loadEnv()` reparses it manually.
+  browser tuple A/B; `android` is an opt-in Android companion requiring re-pairing/fresh auth and
+  rejected on WhatsApp Business accounts). Loaded via `--env=conf/.env`; `setup/reset.ts:loadEnv()`
+  reparses it manually.
 - `conf/defaults.json`: non-secret defaults - `lang: pt`, `prefix: .`, campus lat/long,
   `ai.gemini_chain` + `ai.gemini_pro`, cache caps
   (`users 200, groups 200, dmMsgs 60, groupMsgs 200`), and the `runner` table for `runCode` (yt-dlp
@@ -136,8 +139,9 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
 - `class/baileys.ts`: `Baileys` singleton wrapper (`lid`, `sock`). `connect()` picks
   `postgresAuthState('2')` when `DATABASE_URL` is set, else Baileys
   `useMultiFileAuthState('conf/gen/auth')`. Socket opts: `markOnlineOnConnect:
-  false`, macOS
-  Desktop browser id, pinned version, `syncFullHistory: false`, `shouldIgnoreJid` filters
+  false`, Chrome
+  browser tuple (macOS by default, `WA_BROWSER` overrides including opt-in `android`), pinned
+  version, `syncFullHistory: false`, `shouldIgnoreJid` filters
   bot/broadcast/newsletter/MetaAI/status JIDs.
 - `class/cmd.ts`: abstract `Cmd` base every command extends. Fields: `name` (set by loader from
   filename), `alias`, `subCmds`, `cooldown` (default 3000, 0 allowed), `access` (`dm`, `groups`,
@@ -184,13 +188,18 @@ deaf-session watchdog) -> dynamic `import('@plugin/bridge.ts'):startBridge()` ->
   auto-localizes lookup keys.
 - `msgTools.ts`: inbound core. `getCtx(raw)` builds `CmdCtx` (chat/author/type filter, group+user
   resolution, LID handling, pushName sync, media/quote download, prefix parse via `getInput` incl.
-  quoted-text fallback for `.g`). `downloadMedia` unwraps view-once/ephemeral wrappers, never
-  buffers heavy video/document over 8MB into `cache.media` (keys only).
+  quoted-text fallback for `.g`). `getMsgType` types view-once wrappers by their inner media node
+  (empty/stub wrappers fall through to `event`); `downloadMedia` unwraps view-once/ephemeral
+  wrappers, never decrypts without a usable URL plus non-empty media key, and never buffers heavy
+  video/document over 8MB into `cache.media` (keys only). `getQuoted` flags an unrecoverable
+  view-once quote as `mediaUnavailable: 'view-once'`.
   `rescueOrphanQuote`/`deletedStore.savePendingQuote` handle replies to uncached messages (silent,
-  no GOTCHA logs).
+  no GOTCHA logs) and skip URL-only keys.
 - `msgAbstractions.ts`: the only outbound touchpoint. `sendMsg` localizes `usage.*` keys through the
   `help` command and other keys via i18n, then `sock.sendMessage` and returns a fresh `getCtx`.
-  `reactToMsg` maps names through `emojis.ts`. `getMedia` prefers quoted media with cache fallback.
+  `reactToMsg` maps names through `emojis.ts`. `getMedia` prefers quoted media with cache fallback,
+  resolves the original by stanzaId even when the quote has no media keys (view-once rescue), and
+  returns the resolved content type.
 - `geminiApi.ts`: Gemini chat wrapper (file upload with polling, model config with url-context
   tool + HIGH thinking + PT system prompt + stored memories, `{MEMORY:..}` extraction, per-user
   history update, reply send). Called only by `cmd/fun/gemini.ts`.
@@ -237,15 +246,16 @@ Loader sets `cmd.name` from filename; category dir is informational.
   users who left.
 - `fun/sticker.ts` (`sticker`, aliases `s,sexo`, cooldown 5s, subCmds `rmbg,rounded,circle`):
   sticker factory; quality from `args[0]`; resolves media from the message or its quoted image/video
-  (quoted media re-downloaded on demand); batch mode pulls contiguous same-author visuals from
-  history when no media given; `rmbg` runs `plugin/removeBg.py`; videos with an audio track
-  automatically send a sound sticker with a 5s OGG/Opus sidecar; formats
+  (quoted media re-downloaded on demand, using the resolved type; an unrecoverable view-once quote
+  replies `sticker.viewOnceUnavailable` instead of entering batch mode); batch mode pulls contiguous
+  same-author visuals from history when no media given; `rmbg` runs `plugin/removeBg.py`; videos
+  with an audio track automatically send a sound sticker with a 5s OGG/Opus sidecar; formats
   `full,crop[,rounded,circle]`; EXIF pack `Ergon Bot` + author + date.
 - `util/download.ts` (`download`, alias `d`, cooldown 10s): yt-dlp via `defaults.runner.ytdlp` with
   cookies, Chrome impersonation, retries, 2G cap; URL from text or quoted text; `a` suffix = mp3;
   over 256MB sent as document.
 - `util/reveal.ts` (`reveal`, alias `r`): re-sends view-once media with caption (stickers back as
-  images).
+  images, video by resolved type); an unrecoverable view-once quote replies `reveal.unavailable`.
 - `util/transcrypt.ts` (`transcrypt`, aliases `tr,transc,stt`, cooldown 5s): local speech-to-text
   via faster-whisper (no online APIs); preprocesses audio with ffmpeg, runs the Python venv, caches
   results per media+lang+mode.
@@ -543,6 +553,10 @@ tables), plus a manual `.env` parser.
   20MB TG cap plus 50MB WA cap with concurrency limit: over-cap media produce actionable oversize
   lines, other failures produce generic download lines, not crashes.
 - Random delays are intentional anti-ban pacing; do not remove.
+- View-once quotes from Nov 2026 arrive without usable media keys on web-class linked devices.
+  `getMedia` still resolves a cached original by stanzaId; otherwise `.reveal`/`.sticker` reply with
+  `reveal.unavailable`/`sticker.viewOnceUnavailable`. `WA_BROWSER=android` restores delivery for
+  personal accounts but needs fresh auth and is rejected by WhatsApp Business.
 - `sticker`/`Buffer`: `Buf` is `Uint8Array` everywhere except the sharp/webpmux/Baileys boundary,
   which needs real `Buffer`.
 - Sound stickers are beta: WAProto lacks Message field 134 and StickerMessage field 26, so

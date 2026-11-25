@@ -147,6 +147,69 @@ function unwrapContent(content: any): any {
 	return content
 }
 
+// View-once wrappers. WhatsApp's Nov 2026 change withholds the media key from
+// web-class linked devices, so these may arrive with empty/stub content.
+const viewOnceKeys = ['viewOnceMessage', 'viewOnceMessageV2', 'viewOnceMessageV2Extension']
+const directMediaKeys = [
+	'imageMessage',
+	'videoMessage',
+	'audioMessage',
+	'stickerMessage',
+	'documentMessage',
+]
+
+// hasMediaKey: true for a non-empty proto media key (Buffer/Uint8Array/string).
+function hasMediaKey(key: unknown): bool {
+	if (!key) return false
+	if (typeof key === 'string') return key.length > 0
+	if (Array.isArray(key)) return key.length > 0
+	if (key instanceof ArrayBuffer) return key.byteLength > 0
+	if (ArrayBuffer.isView(key)) return key.byteLength > 0
+	return false
+}
+
+// hasUsableMediaKeys: a decrypt needs both a URL and a non-empty media key.
+function hasUsableMediaKeys(node: any): bool {
+	return !!node && typeof node === 'object' &&
+		typeof node.url === 'string' && node.url.trim().length > 0 &&
+		hasMediaKey(node.mediaKey)
+}
+
+// viewOnceInner: content inside a view-once wrapper, or undefined when the
+// content is not view-once. Empty/stub wrappers return an empty object so the
+// type falls through to event instead of the old hardcoded image.
+function viewOnceInner(content: any): any | undefined {
+	let cur = content
+	let found = false
+	for (let i = 0; i < 5 && cur && typeof cur === 'object'; i++) {
+		const key = viewOnceKeys.find((k) => cur[k])
+		if (key) {
+			const wrapper = cur[key]
+			if (!wrapper || typeof wrapper !== 'object') return undefined
+			found = true
+			cur = wrapper.message ?? wrapper
+			continue
+		}
+		const inner = wrapperKeys.map((k) => cur[k]).find(Boolean)?.message
+		if (!inner) break
+		cur = inner
+	}
+	return found ? cur : undefined
+}
+
+// isViewOnceContent: true when content nests a view-once wrapper (even behind
+// an ephemeral/edit layer) or keeps the media-level viewOnce flag.
+function isViewOnceContent(content: any): bool {
+	let cur = content
+	for (let i = 0; i < 5 && cur && typeof cur === 'object'; i++) {
+		if (viewOnceKeys.some((k) => cur[k])) return true
+		const inner = wrapperKeys.map((k) => cur[k]).find(Boolean)?.message
+		if (!inner) break
+		cur = inner
+	}
+	return directMediaKeys.some((k) => cur?.[k]?.viewOnce === true)
+}
+
 // findMediaNode: locate the inner node holding url/mediaKey, skipping
 // quotedMessage like findKey does to avoid grabbing quoted media.
 function findMediaNode(content: any): any {
@@ -198,7 +261,10 @@ async function downloadMedia(
 	const msg = direct && typeof direct === 'object' && (direct.url || direct.mediaKey)
 		? direct
 		: findMediaNode(inner)
-	if (!msg?.url) return
+	// Empty view-once keys (WhatsApp Nov 2026 web-class behavior) and stub
+	// nodes must never reach the decrypt path: it throws and retrying cannot
+	// recover them.
+	if (!hasUsableMediaKeys(msg)) return
 
 	const keyObj: any = {
 		url: msg.url,
@@ -267,7 +333,7 @@ async function downloadMedia(
 								(newDirect.url || newDirect.mediaKey)
 							? newDirect
 							: findMediaNode(newInner)
-						if (newNode?.url) {
+						if (hasUsableMediaKeys(newNode)) {
 							workingInner = newInner
 							workingMsg = newNode
 							keyObj.url = newNode.url
@@ -362,6 +428,7 @@ async function getQuoted(raw: proto.IWebMessageInfo) {
 	}
 	const quotedRaw: any = unwrapContent(quotedOrig)
 	const types = getMsgType(quotedRaw) // quoted message type
+	const viewOnce = isViewOnceContent(quotedOrig)
 
 	const ctxInfo = findKey(raw.message, 'contextInfo')
 	const stanzaId = ctxInfo?.stanzaId as str | undefined
@@ -380,12 +447,17 @@ async function getQuoted(raw: proto.IWebMessageInfo) {
 		key: quotedKey,
 	} as Msg
 
+	// View-once quote with no usable keys: WhatsApp withheld the content from
+	// this linked device. Commands still try a cached original by stanzaId;
+	// this flag only selects the specific localized failure message.
+	if (viewOnce && !quoted.media) quoted.mediaUnavailable = 'view-once'
+
 	if (isMedia(types[0]) || quoted.text) {
 		// The quote may reference an original the bot never cached (sent
 		// before bot start, evicted). Stash a speculative copy keyed by the
-		// stanzaId; it stays hidden until a revoke for it arrives. Real
-		// view-once quotes arrive normalized (plain imageMessage), so no
-		// wrapper sniffing here - the stanzaId correlation is what matters.
+		// stanzaId; it stays hidden until a revoke for it arrives. View-once
+		// quotes may arrive without usable keys, so only text/usable media is
+		// stashed - the stanzaId correlation is what matters.
 		await rescueOrphanQuote(raw, quotedOrig, quoted, types).catch(() => {})
 	}
 
@@ -412,19 +484,20 @@ async function rescueOrphanQuote(
 
 	// Media keys: prefer the downloaded result, else rebuild from the inner
 	// node (the download may have failed, but keys persist for a later retry).
+	// Empty view-once keys are useless, so do not stash a URL-only entry.
 	let media = quoted.media
-	if (!media?.url) {
+	if (!hasUsableMediaKeys(media)) {
 		const node = findMediaNode(unwrapContent(quotedOrig))
-		if (node?.url) {
-			media = {
+		media = hasUsableMediaKeys(node)
+			? {
 				url: node.url,
 				directPath: node.directPath,
 				mediaKey: node.mediaKey,
 				thumbnailDirectPath: node.thumbnailDirectPath,
 			}
-		}
+			: undefined
 	}
-	if (!quoted.text && !media?.url) return // nothing worth stashing
+	if (!quoted.text && !hasUsableMediaKeys(media)) return // nothing worth stashing
 
 	const authorUser = participant ? await getUser({ lid: participant }).catch(() => null) : null
 
@@ -452,12 +525,15 @@ function getMsgText(m: proto.IMessage) {
 
 // getMsgType: Get the type of a raw message
 function getMsgType(m: proto.IMessage): [MsgTypes, str] {
+	// View-once wrappers hide the real node: classify by the inner content so
+	// a view-once video/audio is not collapsed into the old hardcoded image.
+	const target = viewOnceInner(m) ?? m
 	for (const [rawType, newType] of Object.entries(allMsgTypes)) {
-		const res = findKey(m, rawType)
+		const res = findKey(target, rawType)
 		if (res) return [newType, rawType] as [MsgTypes, str] // ['image', 'imageMessage']
 	}
 
-	return ['event', Object.keys(m!)[0]] // return raw type
+	return ['event', Object.keys(target ?? {})[0] ?? ''] // return raw type
 }
 
-export { checkMatch, downloadMedia, getCtx, getMsgType }
+export { checkMatch, downloadMedia, getCtx, getMsgType, hasUsableMediaKeys, isViewOnceContent }

@@ -42,6 +42,9 @@ interface Msg {
 	key: proto.IMessageKey
 	message?: proto.IMessage | null
 	// this null is needed bc Baileys may return it as null or undefined
+	// Set on a quoted Msg when WhatsApp withheld view-once media from this
+	// linked device (empty media key); no retry can recover it.
+	mediaUnavailable?: 'view-once'
 }
 
 interface CmdCtx {

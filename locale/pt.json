@@ -105,7 +105,8 @@
 			"respondendo foto: rounded circle",
 			"respondendo figurinha: (sem texto para virar foto)"
 		],
-		"nobuffer": "[⚠️] - Não encontrei foto, vídeo ou figurinha. Envie junto ou responda a mensagem com o comando"
+		"nobuffer": "[⚠️] - Não encontrei foto, vídeo ou figurinha. Envie junto ou responda a mensagem com o comando",
+		"viewOnceUnavailable": "[⚠️] - Essa mídia de visualização única não é mais entregue aos dispositivos conectados. Abra no celular pareado ou reconecte como companion Android."
 	},
 	"clean": {
 		"usage": "<quantidade> [reverse]",
@@ -149,7 +150,8 @@
 		"desc": "Mostra de novo uma foto, vídeo ou áudio de visualização única. Você precisa responder a mensagem.",
 		"examples": [
 			"respondendo foto de visualização única: (sem texto)"
-		]
+		],
+		"unavailable": "[⚠️] - Essa mídia de visualização única não é mais entregue aos dispositivos conectados. Abra no celular pareado ou reconecte como companion Android."
 	},
 	"translate": {
 		"usage": "<idioma destino> <texto>",

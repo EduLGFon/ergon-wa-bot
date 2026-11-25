@@ -101,7 +101,8 @@
 			"(video)",
 			"(sticker)"
 		],
-		"nobuffer": "[⚠️] - Media incompatible or not found"
+		"nobuffer": "[⚠️] - Media incompatible or not found",
+		"viewOnceUnavailable": "[⚠️] - This view-once media is no longer delivered to linked devices. Open it on the paired phone, or re-pair as an Android companion."
 	},
 	"clean": {
 		"usage": "<Number of messages (max 200)>",
@@ -148,7 +149,8 @@
 			"(Unique viewing video)",
 			"(Unique viewing audio)",
 			"(sticker)"
-		]
+		],
+		"unavailable": "[⚠️] - This view-once media is no longer delivered to linked devices. Open it on the paired phone, or re-pair as an Android companion."
 	},
 	"translate": {
 		"usage": "<language code: en/pt/fr ...> <text>",

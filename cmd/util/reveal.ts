@@ -15,16 +15,21 @@ export default class extends Cmd {
 
 	async run({ msg, send, react, t }: CmdCtx) {
 		const media = await getMedia(msg).catch((_e) => react('x'))
-		if (!media) return send(t('sticker.nobuffer'), { quoted: msg })
+		if (!media) {
+			if (msg.quoted?.mediaUnavailable === 'view-once') {
+				return send(t('reveal.unavailable'), { quoted: msg })
+			}
+			return send(t('sticker.nobuffer'), { quoted: msg })
+		}
 		await randomDelay(1_000, 2_000)
 
 		const msgObj = {
 			caption: media.target.text
 				? `*View once revealed:* "${media.target.text.encode()}"`
 				: '*View once revealed*',
-		} as AnyMessageContent
-		;(msgObj as any)[media.target.type === 'sticker' ? 'image' : media.target.type] =
-			media.buffer
+		} as AnyMessageContent // Use the resolved type: a view-once video must send as video even when
+		 // the wrapper's own type was generic; stickers reveal as images.
+		;(msgObj as any)[media.type === 'sticker' ? 'image' : media.type] = media.buffer
 
 		send(msgObj, { quoted: msg })
 	}
